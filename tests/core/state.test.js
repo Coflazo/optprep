@@ -70,3 +70,15 @@ test('countdown uses an injectable clock', () => {
   assert.equal(c.expired(), true);
   assert.equal(c.remaining(), 0);
 });
+
+import { zapnMeets, zapnReadiness } from '../../src/core/readiness.js';
+
+test('zapn targets: lower is better for *Over metrics, higher otherwise', () => {
+  assert.equal(zapnMeets({ metric: 'movesOver', value: 1.5 }, { metric: 'movesOver', value: 2 }), true);
+  assert.equal(zapnMeets({ metric: 'movesOver', value: 2.5 }, { metric: 'movesOver', value: 2 }), false);
+  assert.equal(zapnMeets({ metric: 'span', value: 9 }, { metric: 'span', value: 9 }), true);
+  assert.equal(zapnMeets({ metric: 'accuracy', value: 0.8 }, { metric: 'accuracy', value: 0.9 }), false);
+  const runs = [0.91, 0.95, 0.93].map((v, i) => ({ at: i, mode: 'exam', metric: 'accuracy', value: v }));
+  assert.equal(zapnReadiness(runs, { metric: 'accuracy', value: 0.9 }).ready, true);
+  assert.equal(zapnReadiness(runs.slice(1), { metric: 'accuracy', value: 0.9 }).ready, false);
+});

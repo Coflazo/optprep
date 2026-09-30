@@ -14,3 +14,17 @@ export function readiness(examRuns, target, window = 3) {
   for (let i = recent.length - 1; i >= 0 && runMeetsTarget(recent[i], target); i--) streak++;
   return { ready: recent.length === window && streak === window, streak, needed: window };
 }
+
+// Zap-N: a game result { metric, value } against ZAPN_TARGETS. "...Over" metrics
+// count excess moves or guesses, so lower is better.
+export function zapnMeets(result, target) {
+  if (!result || result.metric !== target.metric) return false;
+  return target.metric.endsWith('Over') ? result.value <= target.value : result.value >= target.value;
+}
+
+export function zapnReadiness(runs, target, window = 3) {
+  const exams = runs.filter((r) => r.mode === 'exam').sort((a, b) => a.at - b.at).slice(-window);
+  let streak = 0;
+  for (let i = exams.length - 1; i >= 0 && zapnMeets(exams[i], target); i--) streak++;
+  return { ready: exams.length === window && streak === window, streak, needed: window };
+}

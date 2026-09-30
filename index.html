@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>OA Trainer</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="src/ui/styles.css">
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar" aria-label="Main navigation">
+      <div class="brand">OA Trainer</div>
+      <nav id="nav"></nav>
+    </aside>
+    <main class="main" id="view" tabindex="-1"></main>
+  </div>
+  <noscript>This trainer needs JavaScript. Serve the folder with ./run.sh and open http://127.0.0.1:8765.</noscript>
+  <script type="module" src="app.js"></script>
+</body>
+</html>

@@ -87,7 +87,7 @@ th { font-weight: 600; font-size: 13px; color: var(--text-2); text-align: left; 
 tbody tr:hover { background: var(--surface-2); }
 
 /* Badges carry real state only */
-.badge { display: inline-block; padding: 1px 8px; border-radius: var(--radius-sm); font-size: 12px; border: 1px solid var(--border); }
+.badge { display: inline-block; white-space: nowrap; padding: 1px 8px; border-radius: var(--radius-sm); font-size: 12px; border: 1px solid var(--border); }
 .badge.ok { color: var(--correct); background: var(--correct-bg); border-color: transparent; }
 .badge.no { color: var(--wrong); background: var(--wrong-bg); border-color: transparent; }
 .badge.warn { color: var(--warn); background: var(--warn-bg); border-color: transparent; }
@@ -134,3 +134,39 @@ input.big { font-family: var(--mono); font-size: 18px; width: 160px; }
 .stage { position: relative; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); min-height: 360px; padding: 20px; user-select: none; }
 .stage .hud { display: flex; justify-content: space-between; font-size: 13px; color: var(--text-2); margin-bottom: 12px; }
 kbd { font-size: 12px; border: 1px solid var(--border); border-bottom-width: 2px; border-radius: 4px; padding: 0 5px; background: var(--surface); }
+
+/* Rank */
+.rank-list { list-style: none; padding: 0; margin: 8px 0 0; display: grid; gap: 8px; }
+.rank-row { display: grid; grid-template-columns: 28px 1fr auto auto; gap: 12px; align-items: center; padding: 10px 12px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface); cursor: grab; }
+.rank-row.is-selected { border-color: var(--accent); }
+.rank-row.is-correct { border-color: var(--correct); background: var(--correct-bg); }
+.rank-row.is-wrong { border-color: var(--wrong); background: var(--wrong-bg); }
+.rank-pos { color: var(--text-2); }
+.rank-move { display: flex; gap: 4px; }
+.small-note { font-size: 13px; }
+/* Orderbook */
+.ob-table td, .ob-table th { vertical-align: middle; }
+.ob-trades { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0; }
+.ob-net { margin-top: 6px; }
+.linkish { border: 0; background: none; cursor: pointer; padding: 0 2px; color: inherit; }
+.btn.ob-buy { border-color: var(--warn); }
+.btn.ob-sell { border-color: var(--viz-1); }
+
+/* Misc */
+ul.plain { list-style: none; padding: 0; margin: 0; }
+ul.plain li { padding: 6px 0; border-top: 1px solid var(--border); }
+ul.plain li:first-child { border-top: 0; }
+.palette { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 16px; }
+.palette .btn.small { min-width: 34px; justify-content: center; }
+.palette .btn.answered { border-color: var(--text-2); }
+.exam-note { min-height: 22px; color: var(--wrong); font-size: 14px; margin: 8px 0; }
+details > summary { cursor: pointer; }
+.review-item { padding: 8px 0 16px; }
+.solution { margin-top: 12px; }
+
+/* Brand block */
+.sidebar .brand { padding: 6px 8px 14px; border-bottom: 1px solid var(--border); margin-bottom: 8px; }
+.brand-link { display: inline-flex; color: var(--text); }
+.brand-sub { font-size: 13px; font-weight: 600; margin-top: 6px; }
+.brand-note { font-size: 11px; color: var(--text-2); margin-top: 2px; }
+svg.logo { display: block; }
