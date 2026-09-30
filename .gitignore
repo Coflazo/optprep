@@ -8,3 +8,5 @@ __pycache__/
 .venv/
 .pytest_cache/
 backend/data/*.db
+backend/data/library/
+backend/data/zapn/

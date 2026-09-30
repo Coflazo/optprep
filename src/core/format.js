@@ -1,6 +1,7 @@
 // Display formatting shared by every section. Generators compute exact values and
 // only these functions round.
-export const fmtP = (p) => (p === 0 ? '0' : p === 1 ? '1' : p.toFixed(3).replace(/0+$/, '').replace(/\.$/, ''));
+// Probabilities: three decimals, but two significant figures below 0.01 so small values never print as 0.
+export const fmtP = (p) => (p === 0 ? '0' : p === 1 ? '1' : p > 0 && p < 0.01 ? String(Number(p.toPrecision(2))) : p.toFixed(3).replace(/0+$/, '').replace(/\.$/, ''));
 export const fmtPct = (p) => `${(p * 100).toFixed(p < 0.1 ? 1 : 0)}%`;
 export function fmtNum(x) {
   if (!Number.isFinite(x)) return String(x);

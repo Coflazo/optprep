@@ -60,7 +60,10 @@ export function rankView(item, { onChange } = {}) {
         const pos = [...list.children].indexOf(row);
         const p = row.querySelector('.rank-p');
         p.hidden = false;
-        p.textContent = `p = ${item.statements[si].p.toFixed(3)}`;
+        const st = item.statements[si];
+        p.textContent = `p = ${st.exact || st.p.toFixed(3)}`;
+        // How this statement's probability is found: the link to check when the order was wrong.
+        if (st.how && !row.querySelector('.rank-how')) row.querySelector('.rank-text').append(h('div', { class: 'rank-how muted small-note' }, st.how));
         row.classList.add(item.answerOrder[pos] === si ? 'is-correct' : 'is-wrong');
       });
     },

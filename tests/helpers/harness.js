@@ -6,7 +6,8 @@ import assert from 'node:assert/strict';
 import { makeRng } from '../../src/core/rng.js';
 import { validateItem } from '../../src/core/contract.js';
 
-export const itemKey = (it) => `${it.prompt.text}|${JSON.stringify(it.prompt.visual || null)}`;
+// Distinct = different prompt, visual, rank statements or orderbook board.
+export const itemKey = (it) => `${it.prompt.text}|${JSON.stringify(it.prompt.visual || null)}|${JSON.stringify((it.statements || []).map((x) => x.text))}|${JSON.stringify(it.board || null)}`;
 
 export function familySuite(section, family, { seeds = 120, verifySeeds = 40 } = {}) {
   const levels = family.levels?.length ? family.levels : [1];

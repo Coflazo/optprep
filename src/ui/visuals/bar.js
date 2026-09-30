@@ -16,6 +16,12 @@ export const W = 560;
 const FONT = { tick: 13, label: 14, title: 15, value: 12 };
 export const col = (i) => `var(--viz-${(i % 5) + 1})`;
 
+// Leave headroom below the most negative bar so its value label clears the category labels.
+function negFloor(values) {
+  const lo = Math.min(0, ...values), hi = Math.max(0, ...values);
+  return lo < 0 ? lo - 0.12 * (hi - lo) : lo;
+}
+
 export function niceTicks(lo, hi, count = 5) {
   if (!(hi > lo)) hi = lo + 1;
   const raw = (hi - lo) / count;
@@ -79,7 +85,7 @@ export default function bar(spec) {
   const h = 320;
   const label = `${spec.title || 'Bar chart'}. ${ser.map((x) => `${x.name}: ${cats.map((c, i) => `${c} ${x.values[i]}${unit}`).join(', ')}`).join('; ')}.`;
   const svg = root(w, h, label);
-  const f = frame({ w, h, title: spec.title, xLabel: spec.xLabel, yLabel: spec.yLabel, yLo: Math.min(0, ...all), yHi: Math.max(0, ...all), legend: ser.map((x) => x.name) });
+  const f = frame({ w, h, title: spec.title, xLabel: spec.xLabel, yLabel: spec.yLabel, yLo: negFloor(all), yHi: Math.max(0, ...all), legend: ser.map((x) => x.name) });
   const band = (f.x1 - f.x0) / cats.length;
   const bw = (band * 0.78) / ser.length;
   const showValues = spec.valueLabels !== false && n <= 40;
