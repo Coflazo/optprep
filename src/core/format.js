@@ -1,0 +1,12 @@
+// Display formatting shared by every section. Generators compute exact values and
+// only these functions round.
+export const fmtP = (p) => (p === 0 ? '0' : p === 1 ? '1' : p.toFixed(3).replace(/0+$/, '').replace(/\.$/, ''));
+export const fmtPct = (p) => `${(p * 100).toFixed(p < 0.1 ? 1 : 0)}%`;
+export function fmtNum(x) {
+  if (!Number.isFinite(x)) return String(x);
+  if (Number.isInteger(x)) return x.toLocaleString('en-US');
+  const a = Math.abs(x);
+  const dp = a >= 100 ? 1 : a >= 10 ? 2 : 3;
+  return x.toFixed(dp).replace(/0+$/, '').replace(/\.$/, '');
+}
+export const fmtFrac = (q) => q.toString();

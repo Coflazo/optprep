@@ -1,0 +1,136 @@
+/* Tokens follow the Mental Math Forge design system (calm, one accent, no gradients).
+   no-slop-ui: 1px borders, radius <= 10px, shadow <= 0 2px 8px, 100-200ms colour/opacity only. */
+:root {
+  --bg: #FAFAF7;
+  --surface: #FFFFFF;
+  --surface-2: #F3F2EE;
+  --text: #111111;
+  --text-2: #5F5E5A;
+  --border: #E6E4DF;
+  --accent: #1F1F1F;
+  --accent-text: #FFFFFF;
+  --correct: #2F7D4F;
+  --correct-bg: #EAF4EE;
+  --wrong: #B23B3B;
+  --wrong-bg: #F8EAEA;
+  --warn: #9A6B12;
+  --warn-bg: #F7F0E1;
+  --ring: #1F1F1F;
+  --viz-1: #3E6FA8;
+  --viz-2: #C07A2C;
+  --viz-3: #5E8C61;
+  --viz-4: #8A5A9E;
+  --viz-5: #B24A4A;
+  --radius: 8px;
+  --radius-sm: 6px;
+  --shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  --font: system-ui, -apple-system, "SF Pro Text", "Helvetica Neue", sans-serif;
+  --mono: ui-monospace, "SF Mono", Menlo, monospace;
+  --sidebar: 240px;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #111213; --surface: #18191B; --surface-2: #202124; --text: #ECECEA; --text-2: #A3A29E;
+    --border: #2C2D30; --accent: #ECECEA; --accent-text: #111213; --ring: #ECECEA;
+    --correct: #6BBF8A; --correct-bg: #16271D; --wrong: #E07A7A; --wrong-bg: #2C1717;
+    --warn: #D9A94A; --warn-bg: #2A2314;
+    --viz-1: #7FA7D6; --viz-2: #E0A461; --viz-3: #8DBE90; --viz-4: #B892CC; --viz-5: #E08585;
+  }
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; }
+body { background: var(--bg); color: var(--text); font: 15px/1.5 var(--font); -webkit-font-smoothing: antialiased; }
+.num, .timer, code, kbd { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+h1 { font-size: 24px; line-height: 1.25; margin: 0 0 4px; font-weight: 650; }
+h2 { font-size: 18px; margin: 24px 0 8px; font-weight: 620; }
+h3 { font-size: 15px; margin: 16px 0 6px; font-weight: 620; }
+p { margin: 0 0 12px; }
+.muted { color: var(--text-2); }
+a { color: inherit; }
+button, input, select { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
+
+/* Layout: fixed sidebar + content */
+.app { display: grid; grid-template-columns: var(--sidebar) 1fr; min-height: 100vh; }
+.sidebar { position: sticky; top: 0; height: 100vh; overflow-y: auto; background: var(--surface); border-right: 1px solid var(--border); padding: 16px 12px; }
+.sidebar .brand { font-weight: 650; padding: 4px 8px 12px; }
+.sidebar nav a { display: flex; justify-content: space-between; align-items: center; padding: 7px 8px; border-radius: var(--radius-sm); text-decoration: none; color: var(--text-2); transition: background-color 120ms ease, color 120ms ease; }
+.sidebar nav a:hover { background: var(--surface-2); color: var(--text); }
+.sidebar nav a[aria-current="page"] { background: var(--surface-2); color: var(--text); font-weight: 560; }
+.sidebar .group { margin: 16px 8px 4px; font-size: 12px; color: var(--text-2); }
+.main { padding: 32px; max-width: 980px; width: 100%; }
+@media (max-width: 760px) {
+  .app { grid-template-columns: 1fr; }
+  .sidebar { position: static; height: auto; border-right: 0; border-bottom: 1px solid var(--border); }
+  .main { padding: 20px 16px; }
+}
+
+/* Surfaces */
+.panel { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; box-shadow: var(--shadow); }
+.panel + .panel { margin-top: 16px; }
+.row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+.spread { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.stack > * + * { margin-top: 12px; }
+
+/* Buttons */
+.btn { display: inline-flex; align-items: center; gap: 6px; min-height: 36px; padding: 0 14px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface); cursor: pointer; transition: background-color 120ms ease, border-color 120ms ease; text-decoration: none; }
+.btn:hover { background: var(--surface-2); }
+.btn.primary { background: var(--accent); color: var(--accent-text); border-color: var(--accent); }
+.btn.primary:hover { opacity: 0.9; }
+.btn:disabled { opacity: 0.45; cursor: not-allowed; }
+.btn.small { min-height: 30px; padding: 0 10px; font-size: 13px; }
+
+/* Tables and lists */
+table { border-collapse: collapse; width: 100%; }
+th, td { padding: 8px 10px; border-bottom: 1px solid var(--border); vertical-align: top; }
+th { font-weight: 600; font-size: 13px; color: var(--text-2); text-align: left; }
+tbody tr:hover { background: var(--surface-2); }
+
+/* Badges carry real state only */
+.badge { display: inline-block; padding: 1px 8px; border-radius: var(--radius-sm); font-size: 12px; border: 1px solid var(--border); }
+.badge.ok { color: var(--correct); background: var(--correct-bg); border-color: transparent; }
+.badge.no { color: var(--wrong); background: var(--wrong-bg); border-color: transparent; }
+.badge.warn { color: var(--warn); background: var(--warn-bg); border-color: transparent; }
+
+/* Question area */
+.qhead { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 12px; color: var(--text-2); font-size: 13px; }
+.timer { font-size: 15px; color: var(--text); }
+.timer.low { color: var(--wrong); }
+.prompt { font-size: 18px; line-height: 1.5; margin: 4px 0 16px; }
+.visual { margin: 0 0 16px; overflow-x: auto; }
+.visual svg { display: block; max-width: 100%; height: auto; }
+.visual-table table { width: auto; min-width: 50%; }
+.options { display: grid; gap: 8px; }
+.option { display: flex; gap: 12px; align-items: center; text-align: left; width: 100%; padding: 12px 14px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface); cursor: pointer; transition: border-color 120ms ease, background-color 120ms ease; }
+.option:hover { border-color: var(--text-2); }
+.option[aria-pressed="true"] { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+.option .key { font-family: var(--mono); font-size: 12px; color: var(--text-2); width: 16px; }
+.option .val { font-family: var(--mono); font-size: 16px; }
+.option.is-correct { border-color: var(--correct); background: var(--correct-bg); }
+.option.is-wrong { border-color: var(--wrong); background: var(--wrong-bg); }
+
+/* Feedback and solution */
+.feedback { border-left: 3px solid var(--border); padding: 10px 14px; margin: 16px 0; background: var(--surface-2); border-radius: 0 var(--radius-sm) var(--radius-sm) 0; }
+.feedback.ok { border-left-color: var(--correct); }
+.feedback.no { border-left-color: var(--wrong); }
+.steps { counter-reset: step; list-style: none; padding: 0; margin: 8px 0; }
+.steps li { counter-increment: step; position: relative; padding: 8px 0 8px 32px; border-top: 1px solid var(--border); }
+.steps li:first-child { border-top: 0; }
+.steps li .n { position: absolute; left: 0; top: 8px; font-family: var(--mono); font-size: 12px; color: var(--text-2); }
+.steps li .why { color: var(--text-2); font-size: 14px; margin-top: 2px; }
+.steps li.broken { background: var(--wrong-bg); }
+.rule { font-family: var(--mono); font-size: 14px; padding: 8px 12px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface); }
+
+/* Inputs */
+label.field { display: block; font-size: 13px; color: var(--text-2); margin-bottom: 4px; }
+input[type=number], input[type=text], select { min-height: 36px; padding: 0 10px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface); }
+input.big { font-family: var(--mono); font-size: 18px; width: 160px; }
+
+/* Progress bar (readiness, exam progress) */
+.bar { height: 6px; background: var(--surface-2); border-radius: 3px; overflow: hidden; }
+.bar > span { display: block; height: 100%; background: var(--accent); transition: width 150ms ease; }
+
+/* Game stage used by Zap-N views */
+.stage { position: relative; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); min-height: 360px; padding: 20px; user-select: none; }
+.stage .hud { display: flex; justify-content: space-between; font-size: 13px; color: var(--text-2); margin-bottom: 12px; }
+kbd { font-size: 12px; border: 1px solid var(--border); border-bottom-width: 2px; border-radius: 4px; padding: 0 5px; background: var(--surface); }
