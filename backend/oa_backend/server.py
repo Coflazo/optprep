@@ -1,0 +1,155 @@
+"""HTTP server: the static trainer plus a JSON API on 127.0.0.1.
+
+    GET  /api/health            engine and database status
+    POST /api/answers           [{section, family, correct, ms, difficulty?, confidence?, score?}]
+    POST /api/runs              {section, mode, score, max, ...}
+    GET  /api/state             last client state snapshot
+    PUT  /api/state             store a client state snapshot (backup and cross-browser sync)
+    GET  /api/analytics         forecasts, weakest families and calibration per section
+    GET  /api/verification      latest library verification report
+    GET  /api/banks/<name>      precomputed puzzle bank (Zap-N)
+"""
+from __future__ import annotations
+
+import argparse
+import http.server
+import json
+import re
+from pathlib import Path
+from typing import Any
+
+from . import analytics
+from .db import Database
+from .engine import available as engine_available
+
+REPO = Path(__file__).resolve().parents[2]
+DATA = REPO / "backend" / "data"
+MAX_BODY = 2_000_000
+BANK_NAME = re.compile(r"^[a-z0-9-]{1,40}$")
+SECTIONS = ["bto", "nl", "ll", "iv", "ob"]
+
+
+def section_families(section: str, db: Database) -> list[str]:
+    lib = DATA / "library" / f"{section}.json"
+    if lib.exists():
+        try:
+            return json.loads(lib.read_text())["families"]
+        except (OSError, KeyError, json.JSONDecodeError):
+            pass
+    return sorted({a["family"] for a in db.answers(section)})
+
+
+def build_analytics(db: Database) -> dict[str, Any]:
+    out: dict[str, Any] = {"sections": {}}
+    all_rows = db.answers()
+    for s in SECTIONS:
+        rows = [r for r in all_rows if r["section"] == s]
+        fams = section_families(s, db)
+        if not rows or not fams:
+            out["sections"][s] = {"answers": len(rows), "forecast": None, "weakest": []}
+            continue
+        out["sections"][s] = {
+            "answers": len(rows),
+            "forecast": analytics.forecast_section(s, rows, fams, seed=7),
+            "weakest": analytics.weakest_families(s, rows, fams),
+        }
+    out["calibration"] = analytics.calibration([r for r in all_rows if r["section"] in ("bto", "nl")])
+    return out
+
+
+def make_handler(db: Database, root: Path):
+    class Handler(http.server.SimpleHTTPRequestHandler):
+        def __init__(self, *a: Any, **kw: Any) -> None:
+            super().__init__(*a, directory=str(root), **kw)
+
+        def log_message(self, *args: Any) -> None:  # quiet
+            pass
+
+        def end_headers(self) -> None:
+            self.send_header("Cache-Control", "no-store")
+            super().end_headers()
+
+        def _json(self, code: int, payload: Any) -> None:
+            body = json.dumps(payload).encode()
+            self.send_response(code)
+            self.send_header("Content-Type", "application/json")
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+
+        def _body(self) -> Any:
+            length = int(self.headers.get("Content-Length") or 0)
+            if length <= 0 or length > MAX_BODY:
+                raise ValueError("body missing or too large")
+            return json.loads(self.rfile.read(length))
+
+        def do_GET(self) -> None:  # noqa: N802
+            path = self.path.split("?", 1)[0]
+            if not path.startswith("/api/"):
+                return super().do_GET()
+            try:
+                if path == "/api/health":
+                    return self._json(200, {"ok": True, "engine": engine_available(), "answers": len(db.answers())})
+                if path == "/api/state":
+                    return self._json(200, {"ok": True, "state": db.get_state()})
+                if path == "/api/analytics":
+                    return self._json(200, {"ok": True, **build_analytics(db)})
+                if path == "/api/verification":
+                    f = DATA / "verification" / "report.json"
+                    return self._json(200, {"ok": True, "report": json.loads(f.read_text()) if f.exists() else None})
+                if path.startswith("/api/banks/"):
+                    name = path.rsplit("/", 1)[1]
+                    f = DATA / "banks" / f"{name}.json"
+                    if not BANK_NAME.match(name) or not f.exists():
+                        return self._json(404, {"ok": False, "error": "no such bank"})
+                    return self._json(200, {"ok": True, "bank": json.loads(f.read_text())})
+                return self._json(404, {"ok": False, "error": "unknown endpoint"})
+            except Exception as e:  # report, never crash the server thread
+                return self._json(500, {"ok": False, "error": str(e)})
+
+        def do_POST(self) -> None:  # noqa: N802
+            try:
+                body = self._body()
+                if self.path == "/api/answers":
+                    rows = body if isinstance(body, list) else [body]
+                    return self._json(200, {"ok": True, "stored": db.add_answers(rows)})
+                if self.path == "/api/runs":
+                    db.add_run(body)
+                    return self._json(200, {"ok": True})
+                return self._json(404, {"ok": False, "error": "unknown endpoint"})
+            except (ValueError, json.JSONDecodeError, TypeError) as e:
+                return self._json(400, {"ok": False, "error": str(e)})
+
+        def do_PUT(self) -> None:  # noqa: N802
+            try:
+                if self.path != "/api/state":
+                    return self._json(404, {"ok": False, "error": "unknown endpoint"})
+                body = self._body()
+                if not isinstance(body, dict) or body.get("version") != 1:
+                    raise ValueError("state must be a version 1 object")
+                db.put_state(body)
+                return self._json(200, {"ok": True})
+            except (ValueError, json.JSONDecodeError) as e:
+                return self._json(400, {"ok": False, "error": str(e)})
+
+    return Handler
+
+
+def make_server(port: int, db_path: Path, root: Path = REPO) -> http.server.ThreadingHTTPServer:
+    db = Database(db_path)
+    return http.server.ThreadingHTTPServer(("127.0.0.1", port), make_handler(db, root))
+
+
+def main() -> None:
+    ap = argparse.ArgumentParser(description="OA trainer backend")
+    ap.add_argument("--port", type=int, default=8765)
+    ap.add_argument("--db", type=Path, default=DATA / "progress.db")
+    args = ap.parse_args()
+    args.db.parent.mkdir(parents=True, exist_ok=True)
+    srv = make_server(args.port, args.db)
+    print(f"OA Trainer: http://127.0.0.1:{args.port}  (engine: {'on' if engine_available() else 'not built'})")
+    srv.serve_forever()
+
+
+if __name__ == "__main__":
+    main()
