@@ -178,6 +178,6 @@ export default {
     predict: { question: '10 flips: is P(no two heads in a row) above or below (3/4)^9 ≈ 0.075?', answer: 'Above: 144/1024 ≈ 0.141. Overlapping pairs are positively correlated in the "safe" direction.' },
     edge: 'n = 1: no HH is certain (2/2); n = 2: 3/4, where the independence guess happens to be exact.',
     rule: 'Count strings: C(n,k) for head counts, Fibonacci for no HH, a run-length table for runs.',
-    contrast: '"Exactly k heads" (positions chosen) against "k heads in a row" (positions adjacent): the second is far rarer for k ≥ 3.',
+    contrast: '"Exactly k heads" (any positions) is a binomial count, C(n, k). "At least k heads in a row" (adjacent positions, runs overlap) is not: count the strings with no such run by a recursion and take the complement.',
   },
 };

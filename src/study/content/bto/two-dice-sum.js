@@ -52,11 +52,17 @@ export default {
     S('picture'),
     { type: 'text', text: 'Draw the 36 outcomes as a 6 × 6 grid: rows are the first die, columns the second, each cell holds the sum. The highlighted cells below are the 6 ways to make 7; they lie on one diagonal, because every sum lives on its own anti-diagonal.' },
     { type: 'diagram', diagram: 'grid', spec: { ...gridFor((s) => s === 7), count: 6 }, caption: 'The 36 ordered outcomes. Sum 7 is the longest diagonal: 6 cells.' },
+    { type: 'check', scope: 'reading the grid', questions: [
+      { make: (rng) => { const r = rng.int(1, 6), c = rng.int(1, 6); return { type: 'number', q: `In the grid, which sum sits in row ${r} (first die) and column ${c} (second die)?`, answer: r + c, explain: `The cell holds first + second = ${r} + ${c} = ${r + c}.` }; } },
+    ] },
     { type: 'diagram', diagram: 'bar', spec: { title: 'Ordered pairs per sum', xLabel: 'sum', yLabel: 'pairs', categories: SUMS.map(String), series: [{ name: 'pairs', values: SUMS.map(ways) }], valueLabels: true }, caption: 'Counting the diagonals gives a tent: 1, 2, 3, 4, 5, 6, 5, 4, 3, 2, 1. The count is 6 − |sum − 7|.' },
-    { type: 'diagram', diagram: 'tree', spec: { root: { label: 'start', children: [{ p: '1/6', label: 'first 6', children: [{ p: '1/6', label: 'second 6 → sum 12', mark: true }, { p: '5/6', label: 'second not 6' }] }, { p: '5/6', label: 'first not 6' }] }, total: '1/36' }, caption: 'The same count as a tree: sum 12 needs 6 then 6, one path of probability 1/6 × 1/6 = 1/36. The grid is faster for sums; trees shine when order or stopping matters.' },
-    { type: 'check', scope: 'reading the grid and the tent', questions: [
+    { type: 'check', scope: 'the tent of counts', questions: [
       { type: 'number', q: 'In the grid, how many cells have sum 8?', answer: ways(8), explain: `Sum 8 is the diagonal next to 7: 6 − |8 − 7| = ${ways(8)} cells.` },
       { type: 'choice', q: 'Which two sums are equally likely?', options: ['4 and 10', '4 and 8', '6 and 9', '2 and 7'], answer: 0, traps: { 1: '8 is 1 away from 7 (5 pairs) but 4 is 3 away (3 pairs)', 2: '6 is 1 away from 7 (5 pairs), 9 is 2 away (4 pairs)', 3: '2 has 1 pair, 7 has 6' }, explain: 'The tent is symmetric about 7: sums 7 − k and 7 + k have the same count. 4 and 10 are both 3 away (3 pairs each).' },
+    ] },
+    { type: 'diagram', diagram: 'tree', spec: { root: { label: 'start', children: [{ p: '1/6', label: 'first 6', children: [{ p: '1/6', label: 'second 6 → sum 12', mark: true }, { p: '5/6', label: 'second not 6' }] }, { p: '5/6', label: 'first not 6' }] }, total: '1/36' }, caption: 'The same count as a tree: sum 12 needs 6 then 6, one path of probability 1/6 × 1/6 = 1/36. The grid is faster for sums; trees shine when order or stopping matters.' },
+    { type: 'check', scope: 'the tree for one path', questions: [
+      { type: 'choice', q: 'On the tree, what is the probability of the path "first 6, then second not 6"?', options: ['5/36', '1/6', '5/6', '6/36'], answer: 0, traps: { 1: 'read only the first branch and forgot to multiply by the second', 2: 'read only the second branch', 3: 'added the path to its sibling instead of multiplying along it' }, explain: 'Multiply along the path: 1/6 × 5/6 = 5/36.' },
     ] },
 
     S('derivation'),

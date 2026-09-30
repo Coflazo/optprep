@@ -238,7 +238,7 @@ export default {
       { say: 'For "at least one", compute P(none) as a chain and subtract from 1.', why: 'The complement is one product; the direct count has many cases.' },
     ],
     predict: { question: 'Two cards: is P(same colour) above or below 1/2?', answer: 'Below: 25/51 ≈ 0.49. The first card removes one card of its own colour.' },
-    edge: 'Draw 27 cards: two share a colour with certainty, since only 26 of each colour exist.',
+    edge: 'Draw 27 cards: both colours appear with certainty, since only 26 of each colour exist. (Any 3 cards already include two of the same colour.)',
     rule: 'Pair 3/51, same suit 12/51, same colour 25/51, two aces 1/221, flush ≈ 0.002.',
     contrast: 'With replacement the fractions stay fixed (1/4, 1/13, 1/2); without replacement they shrink. The gap is small for two cards and large for many.',
   },

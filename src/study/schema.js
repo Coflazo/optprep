@@ -13,6 +13,7 @@ export const BLOCK_TYPES = ['section', 'text', 'callout', 'diagram', 'steps', 'p
 export const CHECK_EXEMPT = ['why', 'worked', 'predict', 'rule', 'tryit'];
 export const CALLOUT_TONES = ['idea', 'trap', 'speed', 'rule', 'contrast', 'edge', 'transfer'];
 export const KINDS = ['family', 'game', 'foundation', 'strategy'];
+const TEACHING = ['text', 'diagram', 'callout', 'formula', 'list', 'compare'];
 
 const str = (x) => typeof x === 'string' && x.trim().length > 0;
 const strOrFn = (x) => str(x) || typeof x === 'function';
@@ -67,6 +68,12 @@ function sectionChecks(L) {
     if (!cur || CHECK_EXEMPT.includes(cur.key)) return;
     const hasCheck = units.some((b) => b.type === 'check') || units.some((b) => b.type === 'steps' && b.steps.every((s) => s.checks?.length));
     if (!hasCheck) e.push(`${L.id}: section "${cur.key}" needs micro-check questions`);
+    // Smallest-unit rule: at most 3 teaching blocks in a row before the learner answers something.
+    let run = 0;
+    for (const b of units) {
+      if (b.type === 'check' || b.type === 'steps') run = 0;
+      else if (TEACHING.includes(b.type) && ++run > 3) { e.push(`${L.id}: section "${cur.key}" teaches 4+ blocks in a row without a check (check after every smallest unit)`); break; }
+    }
     const stepsBlocks = units.filter((b) => b.type === 'steps');
     stepsBlocks.forEach((b) => b.steps.forEach((s, i) => { if (!s.checks?.length) e.push(`${L.id}: step ${i + 1} in "${cur.key}" needs 1-3 checks`); }));
   };
