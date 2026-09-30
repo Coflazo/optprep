@@ -4,6 +4,18 @@ import { SECTION_MODULES } from '../../sections/index.js';
 import { readiness, zapnReadiness } from '../../core/readiness.js';
 import { srsDue } from '../../core/srs.js';
 import { GAMES } from '../../zapn/index.js';
+import { BOOK_BY_ID } from '../../study/content/index.js';
+import { lessonsOf } from '../../study/schema.js';
+import { statusOf } from '../../study/progress.js';
+
+// "Study: 4/32 mastered" under a task name, once that task's book is written.
+function studyLine(store, id) {
+  const b = BOOK_BY_ID[id];
+  if (!b || b.pending) return null;
+  const ls = lessonsOf(b);
+  const m = ls.filter((l) => ['mastered', 'review'].includes(statusOf(store, l.id))).length;
+  return h('div', { class: 'muted small-note' }, h('a', { href: `#/study/book/${id}` }, 'Study'), `: ${m}/${ls.length} lessons mastered`);
+}
 
 export function formatLine(cfg) {
   const e = cfg.exam;
@@ -31,7 +43,7 @@ export function homePage(root, { store, sync }) {
     if (id === 'zapn') {
       const z = zapnStatus(store);
       return h('tr', {},
-        h('td', {}, h('a', { href: '#/zapn' }, 'Zap-N')),
+        h('td', {}, h('a', { href: '#/zapn' }, 'Zap-N'), studyLine(store, 'zapn')),
         h('td', { class: 'muted' }, '9 mini-games; exam mode mirrors each game'),
         h('td', { class: 'num' }, `${z.ready} of ${z.total} games at target`),
         h('td', {}, z.ready === z.total ? h('span', { class: 'badge ok' }, 'Ready') : h('span', { class: 'badge' }, 'Not yet')),
@@ -42,7 +54,7 @@ export function homePage(root, { store, sync }) {
     const built = SECTION_MODULES[id].families.length > 0;
     const fmt = (r) => (id === 'iv' ? (r.score / r.max).toFixed(2) : `${r.score}/${r.max}`);
     return h('tr', {},
-      h('td', {}, h('a', { href: `#/s/${id}` }, cfg.title)),
+      h('td', {}, h('a', { href: `#/s/${id}` }, cfg.title), studyLine(store, id)),
       h('td', { class: 'muted' }, formatLine(cfg)),
       h('td', { class: 'num' }, st.last.length ? st.last.map(fmt).join('  ') : '—'),
       h('td', {}, !built ? h('span', { class: 'badge warn' }, 'Being built') : st.ready ? h('span', { class: 'badge ok' }, 'Ready') : h('span', { class: 'badge' }, `Streak ${st.streak}/${st.needed}`)),

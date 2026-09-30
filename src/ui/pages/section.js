@@ -4,6 +4,7 @@ import { SECTION_MODULES } from '../../sections/index.js';
 import { srsDue } from '../../core/srs.js';
 import { formatLine, sectionStatus } from './home.js';
 import { buildLibrary, librarySets, setCount } from '../../core/library.js';
+import { lessonForFamily, BOOK_BY_ID } from '../../study/content/index.js';
 
 export function sectionPage(root, { store, id }) {
   const cfg = SECTIONS[id];
@@ -24,6 +25,7 @@ export function sectionPage(root, { store, id }) {
       h('td', {}, h('strong', {}, f.title), h('div', { class: 'muted small-note' }, f.skill)),
       h('td', { class: 'num', style: { textAlign: 'right' } }, s ? `${s.correct}/${s.n}` : '—'),
       h('td', { style: { textAlign: 'right', whiteSpace: 'nowrap' } },
+        lessonForFamily(id, f.id) ? [h('a', { class: 'btn small', href: `#/study/lesson/${lessonForFamily(id, f.id)}` }, 'Study'), ' '] : null,
         h('a', { class: 'btn small', href: `#/s/${id}/learn/${f.id}` }, 'Learn'), ' ',
         h('a', { class: 'btn small', href: `#/run/${id}/practice/${f.id}` }, 'Practise')));
   });
@@ -41,7 +43,8 @@ export function sectionPage(root, { store, id }) {
         h('a', { class: 'btn', href: `#/run/${id}/drill` }, 'Drill (10, timed)'),
         h('a', { class: 'btn', href: `#/run/${id}/exam` }, 'Exam (full replica)'),
         ...cfg.variants.map((v, i) => h('a', { class: 'btn', href: `#/run/${id}/exam/v${i}` }, v.label)),
-        h('a', { class: 'btn', href: `#/run/${id}/mistakes` }, `Mistakes (${due} due)`))),
+        h('a', { class: 'btn', href: `#/run/${id}/mistakes` }, `Mistakes (${due} due)`),
+        BOOK_BY_ID[id] && !BOOK_BY_ID[id].pending ? h('a', { class: 'btn', href: `#/study/book/${id}` }, 'Study this section') : null)),
     h('h2', {}, 'Question library'),
     h('div', { class: 'panel spread' },
       h('div', {}, h('div', {}, `${lib.length} fixed questions in ${nSets} exam-sized sets, plus unlimited fresh questions in Practice, Drill and Exam.`),

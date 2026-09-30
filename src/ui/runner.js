@@ -18,6 +18,7 @@ import { makeCountdown } from '../core/timer.js';
 import { SECTIONS } from '../../config/sections.js';
 import { SECTION_MODULES } from '../sections/index.js';
 import { readiness, runMeetsTarget } from '../core/readiness.js';
+import { lessonForFamily } from '../study/content/index.js';
 
 const VIEWS = { mcq: mcqView, rank: rankView, interval: intervalView, orderbook: orderbookView };
 const CALIBRATED = new Set(['bto', 'nl']);
@@ -125,7 +126,8 @@ export function runFeedbackSession(root, { sectionId, mode, family, count, store
     current.famLabel.textContent = ` · ${familyTitle(section, item.family)}`;
     const banner = feedbackBanner(item, result, response);
     mount(current.after, banner, solutionPanel(item, { stepwise: !result.correct }),
-      h('div', { class: 'row', style: { marginTop: '12px' } }, h('button', { class: 'btn primary', type: 'button', onclick: () => { idx++; show(); } }, idx + 1 >= limit ? 'Finish' : 'Next (Enter)')));
+      h('div', { class: 'row', style: { marginTop: '12px' } }, h('button', { class: 'btn primary', type: 'button', onclick: () => { idx++; show(); } }, idx + 1 >= limit ? 'Finish' : 'Next (Enter)'),
+        !result.correct && lessonForFamily(sectionId, item.family) ? h('a', { class: 'btn', href: `#/study/lesson/${lessonForFamily(sectionId, item.family)}` }, `Study: ${familyTitle(section, item.family)}`) : null));
     if (item.kind === 'interval') intervalCoach(item, banner.querySelector('.coach-slot'));
     current.controls.querySelectorAll('button').forEach((b) => { if (b.textContent !== 'End session') b.disabled = true; });
   }
@@ -146,8 +148,9 @@ export function runFeedbackSession(root, { sectionId, mode, family, count, store
         h('tbody', {}, [...byFam.entries()].map(([f, v]) => h('tr', {}, h('td', {}, familyTitle(section, f)), h('td', { class: 'num', style: { textAlign: 'right' } }, `${v.c}/${v.n}`))))) : null,
       h('div', { class: 'row', style: { marginTop: '16px' } },
         weakest && weakest[1].c < weakest[1].n ? h('a', { class: 'btn primary', href: `#/s/${sectionId}/learn/${weakest[0]}` }, `Learn: ${familyTitle(section, weakest[0])}`) : null,
+        weakest && weakest[1].c < weakest[1].n && lessonForFamily(sectionId, weakest[0]) ? h('a', { class: 'btn', href: `#/study/lesson/${lessonForFamily(sectionId, weakest[0])}` }, `Study: ${familyTitle(section, weakest[0])}`) : null,
         h('a', { class: 'btn', href: `#/s/${sectionId}` }, 'Back to section'))));
-    onDone?.({ n, correct });
+    onDone?.({ n, correct, clean: log.filter((x) => x.correct && !x.hints).length, family: fixedItems?.[0]?.family });
   }
 
   show();

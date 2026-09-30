@@ -177,3 +177,140 @@ details > summary { cursor: pointer; }
 .brand-sub { font-size: 13px; font-weight: 600; margin-top: 6px; }
 .brand-note { font-size: 11px; color: var(--text-2); margin-top: 2px; }
 svg.logo { display: block; }
+
+/* ---------- Study guide ---------- */
+.study-toc { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 13px; padding: 10px 0 14px; border-bottom: 1px solid var(--border); margin-bottom: 8px; }
+.study-toc a { color: var(--text-2); text-decoration: none; }
+.study-toc a:hover { color: var(--text); text-decoration: underline; }
+.study-body { max-width: 72ch; }
+.study-body > * + * { margin-top: 12px; }
+.study-section { margin-top: 32px; padding-top: 8px; scroll-margin-top: 12px; }
+.study-plan h2, .study-reflect h2 { margin-top: 0; }
+.study-list { margin: 0; padding-left: 20px; }
+.study-list li + li { margin-top: 4px; }
+.study-nav { margin-top: 32px; padding-top: 16px; border-top: 1px solid var(--border); }
+.check-label { font-size: 12px; color: var(--text-2); margin-bottom: 6px; font-weight: 560; }
+
+/* Inline maths */
+.frac { display: inline-flex; flex-direction: column; vertical-align: middle; text-align: center; font-family: var(--mono); font-size: 0.9em; line-height: 1.15; margin: 0 2px; }
+.frac-n { border-bottom: 1px solid currentColor; padding: 0 3px; }
+.frac-d { padding: 0 3px; }
+.formula { font-family: var(--mono); font-size: 15px; padding: 10px 14px; background: var(--surface-2); border-radius: var(--radius-sm); overflow-x: auto; }
+code { font-size: 0.92em; background: var(--surface-2); padding: 1px 4px; border-radius: 4px; }
+
+/* Callouts: left rule, tone colour on the label only */
+.callout { border-left: 3px solid var(--border); padding: 10px 14px; background: var(--surface); border-radius: 0 var(--radius-sm) var(--radius-sm) 0; border-top: 1px solid var(--border); border-right: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+.callout-label { font-size: 12px; font-weight: 600; color: var(--text-2); margin-bottom: 2px; }
+.callout-idea { border-left-color: var(--viz-1); } .callout-idea .callout-label { color: var(--viz-1); }
+.callout-trap { border-left-color: var(--wrong); } .callout-trap .callout-label { color: var(--wrong); }
+.callout-speed { border-left-color: var(--viz-2); } .callout-speed .callout-label { color: var(--viz-2); }
+.callout-rule { border-left-color: var(--text); background: var(--surface-2); } .callout-rule .callout-label { color: var(--text); }
+.callout-contrast, .callout-transfer { border-left-color: var(--viz-4); } .callout-contrast .callout-label, .callout-transfer .callout-label { color: var(--viz-4); }
+.callout-edge { border-left-color: var(--warn); } .callout-edge .callout-label { color: var(--warn); }
+
+/* Interactive blocks share one frame */
+.study-check, .study-challenge, .study-explain, .study-erroneous, .study-predict, .study-worked, .study-try, .study-traps, .study-recognize { border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 16px; background: var(--surface); }
+.study-check { background: var(--surface-2); }
+.check-q { margin: 0 0 8px; }
+.check-q + .check-q { margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--border); }
+.check-options { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0; }
+.check-option { height: auto; min-height: 32px; padding: 6px 10px; text-align: left; white-space: normal; }
+.check-option.is-correct { border-color: var(--correct); background: var(--correct-bg); }
+.check-option.is-wrong { border-color: var(--wrong); background: var(--wrong-bg); }
+.check-order { display: grid; gap: 6px; margin: 6px 0; }
+.check-feedback:empty { display: none; }
+.check-feedback .feedback { margin: 8px 0 0; }
+.study-input { min-height: 36px; padding: 0 10px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface); width: 180px; max-width: 100%; }
+input.study-input[type=number] { width: 120px; }
+.study-text { display: block; width: 100%; padding: 8px 10px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface); font: inherit; color: inherit; resize: vertical; margin: 6px 0; }
+.study-steps li { padding-bottom: 12px; }
+.step-pick { text-align: left; width: 100%; padding: 4px 2px; border-radius: 4px; }
+.step-pick:hover { background: var(--surface-2); }
+.steps li.is-correct { background: var(--correct-bg); }
+.steps li.is-wrong { background: var(--wrong-bg); }
+
+/* Figures */
+.study-figure { margin: 16px 0; overflow-x: auto; }
+.study-figure figcaption { font-size: 13px; color: var(--text-2); margin-top: 8px; max-width: 72ch; }
+.study-figure svg.diagram { display: block; max-width: 100%; height: auto; }
+.study-figure .visual { margin: 0; }
+.compare { overflow-x: auto; }
+.compare td, .compare th { font-size: 14px; }
+
+/* SVG diagram primitives */
+.dg-text { fill: var(--text); font: 13px var(--font); }
+.dg-small { font-size: 11px; }
+.dg-mono { font-family: var(--mono); }
+.dg-muted { fill: var(--text-2); }
+.dg-strong-text { font-weight: 650; }
+.dg-edge-label { fill: var(--text-2); }
+.dg-line { stroke: var(--text-2); stroke-width: 1.2; fill: none; }
+.dg-line.dg-strong { stroke: var(--text); stroke-width: 2.2; }
+.dg-line.dg-dash { stroke-dasharray: 4 4; }
+.dg-arrow { stroke: var(--text-2); stroke-width: 1.2; fill: none; }
+.dg-arrowhead { fill: var(--text-2); }
+.dg-box { fill: var(--surface); stroke: var(--border); stroke-width: 1; }
+.dg-flow-q { fill: var(--surface-2); }
+.dg-flow-a { fill: var(--surface); stroke: var(--text); }
+.dg-flow-note { fill: var(--surface); stroke-dasharray: 3 3; }
+.diagram a:hover .dg-box { stroke: var(--text); stroke-width: 2; }
+.dg-cell { fill: var(--surface); stroke: var(--border); }
+.dg-cell-on { fill: var(--viz-1); fill-opacity: 0.22; stroke: var(--viz-1); }
+.dg-dot { fill: var(--surface); stroke: var(--text-2); stroke-width: 1.2; }
+.dg-dot.dg-mark { fill: var(--text); stroke: var(--text); }
+.dg-dot.dg-target { fill: var(--correct); stroke: var(--correct); }
+.dg-path { stroke: var(--viz-1); stroke-width: 2; fill: none; stroke-linejoin: round; }
+.dg-barrier { fill: var(--wrong); fill-opacity: 0.18; stroke: var(--wrong); }
+.dg-curve { fill: none; stroke-width: 2; stroke-linejoin: round; }
+.dg-region { fill-opacity: 0.18; stroke-width: 1.2; }
+.dg-set { fill-opacity: 0.1; stroke-width: 1.5; }
+.dg-curve.dg-tone-1, .dg-region.dg-tone-1, .dg-set-1 { stroke: var(--viz-1); fill: var(--viz-1); }
+.dg-curve.dg-tone-2, .dg-region.dg-tone-2, .dg-set-2 { stroke: var(--viz-2); fill: var(--viz-2); }
+.dg-curve.dg-tone-3, .dg-region.dg-tone-3, .dg-set-3 { stroke: var(--viz-3); fill: var(--viz-3); }
+.dg-curve.dg-tone-4, .dg-region.dg-tone-4 { stroke: var(--viz-4); fill: var(--viz-4); }
+.dg-curve.dg-tone-5, .dg-region.dg-tone-5 { stroke: var(--viz-5); fill: var(--viz-5); }
+.dg-curve[class*=dg-tone] { fill: none; }
+.dg-tone-text-1 { fill: var(--viz-1); } .dg-tone-text-2 { fill: var(--viz-2); } .dg-tone-text-3 { fill: var(--viz-3); } .dg-tone-text-4 { fill: var(--viz-4); } .dg-tone-text-5 { fill: var(--viz-5); }
+
+/* HTML diagrams: ladder, strands, book, bundle, ledger */
+.dg-ladder-wrap { overflow-x: auto; }
+.dg-ladder { display: grid; gap: 4px 0; font-family: var(--mono); font-variant-numeric: tabular-nums; width: max-content; }
+.dg-ladder-cell { min-width: 44px; padding: 3px 6px; text-align: center; border: 1px solid var(--border); border-radius: 4px; background: var(--surface); font-size: 14px; }
+.dg-ladder-cell.dg-last-row { border-color: var(--text); font-weight: 650; }
+.dg-pred { border-style: dashed; border-color: var(--correct); color: var(--correct); }
+.dg-strands { display: grid; gap: 4px; font-family: var(--mono); overflow-x: auto; }
+.dg-strand-row { display: flex; gap: 4px; }
+.dg-strand-cell { min-width: 40px; padding: 3px 6px; text-align: center; border: 1px solid var(--border); border-radius: 4px; font-size: 14px; }
+.dg-strand-off { color: var(--border); border-color: transparent; }
+.dg-strand-1 { border-color: var(--viz-1); color: var(--viz-1); }
+.dg-strand-2 { border-color: var(--viz-2); color: var(--viz-2); }
+.dg-strand-3 { border-color: var(--viz-3); color: var(--viz-3); }
+.dg-strand-4 { border-color: var(--viz-4); color: var(--viz-4); }
+.dg-book, .dg-bundle, .dg-ledger { margin: 0; overflow-x: auto; }
+.dg-book table, .dg-bundle table, .dg-ledger table { width: auto; min-width: 60%; }
+.dg-book td, .dg-bundle td, .dg-ledger td { font-size: 14px; }
+.dg-top td { font-weight: 650; }
+.dg-bid { color: var(--viz-1); }
+.dg-ask { color: var(--wrong); }
+.dg-sum td { border-top: 2px solid var(--text-2); font-weight: 650; }
+.dg-open { color: var(--wrong); font-weight: 650; }
+.dg-caption-note { font-size: 13px; color: var(--text-2); margin-top: 6px; white-space: pre-wrap; }
+
+@media (max-width: 760px) {
+  .study-check, .study-challenge, .study-explain, .study-erroneous, .study-predict, .study-worked, .study-try, .study-traps, .study-recognize { padding: 12px; }
+  .study-input { width: 100%; }
+}
+
+/* Print: the lesson reads as a document; reveals print expanded, controls hidden. */
+@media print {
+  :root { --bg: #fff; --surface: #fff; --surface-2: #f4f4f4; --text: #000; --text-2: #444; --border: #ccc; }
+  .sidebar, .study-nav, .study-toc, .study-plan, .study-reflect, button, .btn, input, textarea { display: none !important; }
+  .app { display: block; }
+  .main { padding: 0; max-width: none; }
+  .panel, .study-check, .study-worked, .study-try { box-shadow: none; break-inside: avoid; }
+  .study-figure, .callout, .compare { break-inside: avoid; }
+  details { display: block; } details > summary { display: none; }
+  details:not([open]) > *:not(summary) { display: block !important; }
+  [hidden]:not(button):not(.btn) { display: block !important; }
+  a { text-decoration: none; }
+}

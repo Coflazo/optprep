@@ -12,6 +12,8 @@ import { setsPage, setRunPage } from './src/ui/pages/sets.js';
 import { runFeedbackSession, runExam } from './src/ui/runner.js';
 import { optiverLogo } from './src/ui/logo.js';
 import { createSync } from './src/ui/sync.js';
+import { studyHome, bookPage, lessonPage, cheatPage, drillPage, mixedPage } from './src/study/pages.js';
+import { dueLessons } from './src/study/progress.js';
 
 const sync = createSync();
 const store = makeStore(undefined, sync.hooks);
@@ -34,16 +36,25 @@ const ROUTES = [
   [/^#\/run\/(\w+)\/(practice|drill|mistakes)(?:\/([\w-]+))?$/, (m) => runFeedbackSession(view, { sectionId: m[1], mode: m[2], family: m[3], store })],
   [/^#\/zapn$/, () => zapnHub(view, { store })],
   [/^#\/zapn\/(\w+)(?:\/(practice|exam))?$/, (m) => zapnGame(view, { store, id: m[1], mode: m[2] || 'practice' })],
+  [/^#\/study$/, () => studyHome(view, { store })],
+  [/^#\/study\/book\/(\w+)$/, (m) => bookPage(view, { store, id: m[1] })],
+  [/^#\/study\/lesson\/(\w+\/[\w-]+)$/, (m) => lessonPage(view, { store, id: m[1] })],
+  [/^#\/study\/cheat\/(\w+)$/, (m) => cheatPage(view, { id: m[1] })],
+  [/^#\/study\/drill\/(\w+)$/, (m) => drillPage(view, { id: m[1] })],
+  [/^#\/study\/mixed\/(\w+)\/(\d+)$/, (m) => mixedPage(view, { store, id: m[1], chapter: +m[2] })],
   [/^#\/mock$/, () => mockPage(view, { store })],
   [/^#\/data$/, () => dataPage(view, { store })],
 ];
 
 function renderNav(hash) {
+  const due = dueLessons(store).length;
   const link = (href, label) => h('a', { href, 'aria-current': hash === href || (href !== '#/' && hash.startsWith(`${href}/`)) ? 'page' : null }, label);
   mount(nav,
     link('#/', 'Readiness'),
     h('div', { class: 'group' }, 'Portal tasks'),
     PORTAL_ORDER.map((id) => (id === 'zapn' ? link('#/zapn', 'Zap-N') : link(`#/s/${id}`, SECTIONS[id].title))),
+    h('div', { class: 'group' }, 'Study'),
+    link('#/study', ['Study guide', due ? h('span', { class: 'badge', 'aria-label': `${due} lessons due for review` }, String(due)) : null]),
     h('div', { class: 'group' }, 'Practice'),
     link('#/mock', 'Full mock'),
     link('#/data', 'Data and backup'));
@@ -70,5 +81,7 @@ function route() {
 }
 
 window.addEventListener('hashchange', route);
+// Printing a lesson opens every derivation step first, so the page prints as a complete document.
+window.addEventListener('beforeprint', () => view.querySelectorAll('[data-print-expand]:not([hidden])').forEach((b) => b.click()));
 sync.start(store).then((ok) => { if (ok && (location.hash || '#/') === '#/') route(); });
 route();
