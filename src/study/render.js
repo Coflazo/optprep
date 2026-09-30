@@ -38,7 +38,7 @@ export function renderBlock(b, ctx) {
     case 'compare': return h('div', { class: 'compare' }, h('table', {}, h('thead', {}, h('tr', {}, b.columns.map((c) => h('th', {}, T(c))))), h('tbody', {}, b.rows.map((r) => h('tr', {}, r.map((c) => h('td', {}, T(c))))))));
     case 'steps': return stepsBlock(b, ctx);
     case 'predict': return predictBlock(b);
-    case 'check': return checkBlock(b.questions, ctx, b.scope);
+    case 'check': return b.mastery ? masteryBlock(b, ctx) : checkBlock(b.questions, ctx, b.scope);
     case 'worked': return workedBlock(b, ctx);
     case 'traps': return trapsBlock(b, ctx);
     case 'tryit': return tryBlock(b, ctx);
@@ -100,25 +100,45 @@ function predictBlock(b) {
 export function checkBlock(questions, ctx, scope, onDone) {
   const rng = ctx.rng.fork(`check:${Math.floor(ctx.rng.next() * 1e9)}`);
   const box = h('div', { class: 'study-check' }, h('div', { class: 'check-label' }, `Check · ${questions.length} question${questions.length > 1 ? 's' : ''}`, scope ? h('span', { class: 'muted' }, ` · uses only: ${scope}`) : null));
-  let open = questions.length;
-  const finished = () => { open -= 1; if (open === 0) onDone?.(); };
+  let open = questions.length, clean = 0;
+  const finished = (first) => { clean += first.clean ? 1 : 0; open -= 1; if (open === 0) onDone?.({ n: questions.length, clean }); };
   questions.forEach((spec, qi) => box.append(questionView(resolveQuestion(spec, rng.fork(`q${qi}`)), finished)));
   return box;
 }
 
+// Mastery check for lessons without a question family (foundations): fresh generated
+// questions; all right at the first attempt without hints marks the lesson mastered.
+function masteryBlock(b, ctx) {
+  const box = h('div', {});
+  const status = h('p', { class: 'muted' }, `${b.questions.length} fresh questions. All right at the first attempt, without hints, masters the lesson.`);
+  const again = h('button', { class: 'btn', type: 'button', hidden: true, onclick: () => run() }, 'Three new questions');
+  const run = () => {
+    again.hidden = true;
+    box.replaceChildren(checkBlock(b.questions, ctx, b.scope, (r) => {
+      const pass = recordTry(ctx.store, ctx.lesson.id, r);
+      status.replaceChildren(h('span', { class: `badge ${pass ? 'ok' : 'no'}` }, pass ? 'Mastered' : 'Not yet'), ` ${r.clean} of ${r.n} right first time without hints. `, pass ? 'This lesson will come back for review.' : 'Re-read the unit behind the miss, then try new ones.');
+      again.hidden = false;
+      ctx.onProgress?.();
+    }));
+  };
+  run();
+  return h('div', { class: 'study-try' }, status, box, again);
+}
+
 function questionView(q, onAnswered) {
   const fb = h('div', { class: 'check-feedback' });
-  let answered = false;
+  let answered = false, firstResult = null;
   const done = (res, response) => {
     const first = !answered;
     answered = true;
+    if (first) firstResult = { clean: res.correct && used === 0 };
     fb.replaceChildren(h('div', { class: `feedback ${res.correct ? 'ok' : 'no'}` },
       h('strong', {}, res.correct ? 'Right. ' : 'Not quite. '),
       res.trap ? h('span', {}, 'That answer comes from: ', h('em', {}, T(res.trap)), '. ') : null,
       !res.correct ? h('span', {}, 'Answer: ', T(answerText(q)), '. ') : null,
       res.score != null ? h('span', {}, `Score ${res.score.toFixed(2)}. `) : null,
       h('div', { class: 'muted' }, T(q.explain))));
-    if (first) onAnswered?.();
+    if (first) onAnswered?.(firstResult);
     void response;
   };
   let control;

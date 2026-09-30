@@ -123,6 +123,7 @@ export function validateLesson(L) {
     if (count('diagram') < 1) e.push(`${L.id}: needs a diagram`);
     if (count('predict') < 1) e.push(`${L.id}: needs a predict`);
     if (!L.blocks.some((b) => b.type === 'callout' && b.tone === 'rule')) e.push(`${L.id}: needs a rule callout`);
+    if (L.kind === 'foundation' && !L.blocks.some((b) => (b.type === 'check' && b.mastery && b.questions.length === 3) || b.type === 'tryit')) e.push(`${L.id}: foundation lesson needs a mastery check (3 questions, mastery: true) or a tryit`);
   }
   return e;
 }

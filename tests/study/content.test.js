@@ -57,4 +57,14 @@ test('study coverage: every question family and every Zap-N game has a lesson', 
   }
   for (const g of GAMES) if (!lessons.some((l) => l.kind === 'game' && l.game === g.id)) missing.push(`zapn/${g.id}`);
   assert.deepEqual(missing, [], `${missing.length} lessons missing`);
+  // Every link in a recognition tree and every prerequisite points at a real lesson.
+  const ids = new Set(lessons.map((l) => l.id));
+  const dangling = [];
+  for (const b of BOOKS) for (const n of b.tree?.spec?.nodes || []) if (n.link && !ids.has(n.link)) dangling.push(`${b.id} tree -> ${n.link}`);
+  for (const l of lessons) for (const p of l.prerequisites || []) if (!ids.has(p)) dangling.push(`${l.id} needs ${p}`);
+  assert.deepEqual(dangling, []);
+  // Each family lesson is reachable from its book's recognition tree.
+  const unlinked = lessons.filter((l) => l.kind === 'family' && !BOOK_TREE_LINKS(l.book).has(l.id)).map((l) => l.id);
+  assert.deepEqual(unlinked, [], 'family lessons missing from their recognition tree');
 });
+const BOOK_TREE_LINKS = (id) => new Set((BOOKS.find((b) => b.id === id)?.tree?.spec?.nodes || []).map((n) => n.link).filter(Boolean));

@@ -17,6 +17,13 @@ It is an unofficial study tool. It is not made, endorsed or checked by Optiver, 
 - **Teaching built in:**
   - Learn mode runs purpose → anchor → derivation one move at a time → prediction before the reveal → compact rule → fresh test.
   - Every wrong multiple-choice option carries the false belief that produces it. A miss is answered with "your answer is what you get if you …", and then the solution unfolds step by step.
+- **Study guide.** A written course, separate from practice, with one lesson per question type (99 families and 9 games) plus probability foundations and assessment strategy. Each lesson:
+  - opens with a challenge to attempt before any teaching, then gives the picture (grid, tree, Venn, difference ladder, order book) before the algebra;
+  - derives the method one move at a time, and each move opens only after 1 to 3 questions that use nothing but that move;
+  - runs two worked examples generated live from the verified families (the second one faded), a prediction, named traps, a find-the-error solution, speed tricks, a one-line rule and a contrast table;
+  - counts as mastered after three fresh questions right at the first attempt without hints, then comes back for spaced review.
+
+  Each book has a method recognition tree, a printable cheat sheet, a recognition drill and interleaved mixed practice. Every diagram's numbers are checked by a validator in the test suite.
 - **Adaptive practice.** It picks weak families more often, missed families come back through spaced repetition, and a calibration panel says when skipping beats guessing under the −1 rule.
 - **Zap-N:** all nine reported games (Balloon, Skyscraper, Shapeshift, CodeCompare, Pincode, NumberBox, Figure It Out, The Switch, Stock Master). Each has a coach, and the optimisers score you against the best possible play.
 - **Readiness gate.** A section turns Ready after three full exams in a row at a target set above the reported pass lines. A started portal task cannot be reset, so open it only when its row says Ready.
@@ -26,7 +33,7 @@ It is an unofficial study tool. It is not made, endorsed or checked by Optiver, 
 ```bash
 cmake -S engine -B engine/build -G Ninja -DCMAKE_PREFIX_PATH=/usr/local && cmake --build engine/build
 ./run.sh                                   # http://127.0.0.1:8765 (Python backend if uv is present)
-npm test                                   # 392 JS tests (node --test)
+npm test                                   # JS tests (node --test)
 ctest --test-dir engine/build              # 34 C++ tests (GoogleTest)
 (cd backend && uv run pytest -q)           # 12 Python tests
 (cd backend && uv run python -m oa_backend.pipeline)   # verify every library question
@@ -67,6 +74,10 @@ src/core/              seeded RNG, exact fractions, combinatorics, Markov solver
                        item contract, store, spaced repetition, adaptive picking, readiness
 src/sections/<id>/     question families (generate + verify + lesson) and curated banks
 src/zapn/<game>/       engine (pure, tested), view, coach
+src/study/             Study guide: lesson schema and validators, micro-check grading, inline
+                       markup (text nodes only), block renderers, pages, progress
+src/study/diagrams/    one file per diagram type: render + an arithmetic validator
+src/study/content/     one folder per book, one module per lesson (pure data)
 src/ui/                shell, runner, item views, charts, pages
 tests/                 contract, verifier, volume and engine tests
 ```
