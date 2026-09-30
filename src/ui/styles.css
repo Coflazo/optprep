@@ -62,8 +62,14 @@ button, input, select { font: inherit; color: inherit; }
 .main { padding: 32px; max-width: 980px; width: 100%; }
 @media (max-width: 760px) {
   .app { grid-template-columns: 1fr; }
-  .sidebar { position: static; height: auto; border-right: 0; border-bottom: 1px solid var(--border); }
-  .main { padding: 20px 16px; }
+  .sidebar { position: static; height: auto; border-right: 0; border-bottom: 1px solid var(--border); padding: 10px 12px; }
+  /* Compact nav on phones: one wrapped row of links instead of a long stacked list. */
+  .sidebar .brand { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; padding: 2px 4px 8px; margin-bottom: 6px; }
+  .sidebar .group { display: none; }
+  .sidebar .brand-note { flex-basis: 100%; }
+  .sidebar nav { display: flex; flex-wrap: wrap; gap: 4px; }
+  .sidebar nav a { padding: 6px 8px; font-size: 14px; }
+  .main { padding: 16px; }
 }
 
 /* Surfaces */
