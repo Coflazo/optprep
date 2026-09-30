@@ -1,6 +1,7 @@
 // Expected waiting times: first six, two special faces, a repeat, two sixes in a row, k heads in a row.
 import { hittingTimes } from '../../../core/markov.js';
 import { mcqItem, agree, q } from '../lib.js';
+const par = (x) => (String(x).includes('/') ? `(${x})` : String(x));
 
 const ID = 'expected-waiting';
 const COINS = [[1, 2], [1, 3], [1, 4], [2, 5], [1, 5], [1, 10]];
@@ -131,8 +132,8 @@ function variant(kind, rng) {
     ],
     steps: [
       { say: 'The first flip shows some side; then wait for the other side.', why: 'After one flip, only the missing side matters.' },
-      { say: `If the first is a head (prob ${p}), the wait for a tail is 1/${r}; if a tail (prob ${r}), the wait for a head is 1/${p}.`, why: 'Geometric waits.' },
-      { say: `E = 1 + ${p}/${r} + ${r}/${p} = ${v} ≈ ${v.toNumber().toFixed(3)}.`, why: 'Condition on the first flip.' },
+      { say: `If the first is a head (prob ${p}), the wait for a tail is 1/${par(r)}; if a tail (prob ${r}), the wait for a head is 1/${par(p)}.`, why: 'Geometric waits.' },
+      { say: `E = 1 + ${par(p)}/${par(r)} + ${par(r)}/${par(p)} = ${v} ≈ ${v.toNumber().toFixed(3)}.`, why: 'Condition on the first flip.' },
     ],
   };
 }

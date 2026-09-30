@@ -1,6 +1,7 @@
 // Coupon collector: expected draws to see all n types, or k distinct faces of a die.
 import { hittingTimes } from '../../../core/markov.js';
 import { mcqItem, agree, q, harmonic } from '../lib.js';
+const singular = (u) => u.replace(/(x|ch|sh|ss)es$/, '$1').replace(/s$/, '');
 
 const ID = 'coupon-collector';
 const CTX = [
@@ -56,14 +57,14 @@ export default {
       value: v,
       text: c.text(n),
       distractors: [
-        { value: n, misconception: `Assumed each ${c.unit.replace(/s$/, '')} brings a new type. Duplicates become common near the end.` },
+        { value: n, misconception: `Assumed each ${singular(c.unit)} brings a new type. Duplicates become common near the end.` },
         { value: n * n, misconception: 'Squared the number of types; the true growth is n·ln n.' },
         { value: (n * (n + 1)) / 2, misconception: 'Added 1 + 2 + … + n. The stage waits are n/n, n/(n−1), …, n/1, not 1, 2, …, n.' },
         { value: n * Math.log(n), misconception: 'Used the approximation n·ln n and dropped the +0.577n term; for small n that is a big miss.' },
         { value: q(n).mul(harmonic(n - 1)), misconception: 'Stopped one stage early (n·H_(n−1)), forgetting the slowest final stage.' },
       ],
       steps: [
-        { say: `With i types collected, the next ${c.unit.replace(/s$/, '')} is new with probability (${n} − i)/${n}.`, why: 'Any missing type counts.' },
+        { say: `With i types collected, the next ${singular(c.unit)} is new with probability (${n} − i)/${n}.`, why: 'Any missing type counts.' },
         { say: `Expected wait per stage = ${n}/(${n} − i): ${parts.join(' + ')}.`, why: 'Geometric waits.' },
         { say: `Total = ${n}·H_${n} = ${v} ≈ ${v.toNumber().toFixed(2)}.`, why: 'Linearity over stages; H_n = 1 + 1/2 + … + 1/n.' },
       ],

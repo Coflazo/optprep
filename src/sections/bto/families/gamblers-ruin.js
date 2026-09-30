@@ -1,6 +1,7 @@
 // Gambler's ruin: fair win probability i/N, duration i(N − i), and the biased formula.
 import { hittingTimes, absorptionProbs } from '../../../core/markov.js';
 import { mcqItem, agree, q, qpow } from '../lib.js';
+const par = (x) => (String(x).includes('/') ? `(${x})` : String(x));
 
 const ID = 'gamblers-ruin';
 const BIASED = [[2, 5], [9, 20], [11, 20], [3, 5], [1, 3], [2, 3], [49, 100], [51, 100]];
@@ -84,7 +85,7 @@ export default {
       steps: [
         { say: `Let r = (1 − p)/p = ${r}.`, why: 'r compares the down-step and up-step probabilities.' },
         { say: 'P(hit N first from i) = (1 − r^i)/(1 − r^N).', why: 'r^x is constant in expectation along the walk (a martingale), so it plays the role wealth played in the fair case.' },
-        { say: `P = (1 − ${r}^${i})/(1 − ${r}^${N}) ≈ ${v.toNumber().toFixed(4)}.`, why: 'Substitute.' },
+        { say: `P = (1 − ${par(r)}^${i})/(1 − ${par(r)}^${N}) ≈ ${v.toNumber().toFixed(4)}.`, why: 'Substitute.' },
       ],
       rule: 'Biased ruin: P = (1 − r^i)/(1 − r^N), r = q/p. r → 1 recovers i/N.',
       anchor: 'The fair answer i/N, with one change: replace "wealth" by r^wealth, the quantity that stays fair when the game is not.',

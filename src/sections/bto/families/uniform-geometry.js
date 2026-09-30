@@ -1,5 +1,6 @@
 // Continuous uniform geometry: broken sticks, meeting times, sums and products of uniforms, points on circles.
 import { mcqItem, agreeMc, q } from '../lib.js';
+const par = (x) => (String(x).includes('/') ? `(${x})` : String(x));
 
 const ID = 'uniform-geometry';
 const TRIALS = 20000;
@@ -78,7 +79,7 @@ function build(kind, rng) {
         ],
         steps: [
           { say: `The event is the part of the unit square below the line x + y = ${s}.`, why: 'Uniform independent X, Y → uniform point in the square.' },
-          { say: sv <= 1 ? `That is a triangle with legs ${s}: area ${s}²/2.` : `The complement is a corner triangle with legs 2 − ${s}: area (2 − ${s})²/2.`, why: 'Geometry of the region.' },
+          { say: sv <= 1 ? `That is a triangle with legs ${s}: area ${par(s)}²/2.` : `The complement is a corner triangle with legs 2 − ${s}: area (2 − ${s})²/2.`, why: 'Geometry of the region.' },
           { say: `P = ${v} ≈ ${v.toNumber().toFixed(4)}.`, why: 'Probability = area.' },
         ],
         sim: (r) => r.next() + r.next() < sv,

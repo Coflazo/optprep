@@ -2,6 +2,7 @@
 import { nCr } from '../../../core/combinatorics.js';
 import { Q } from '../../../core/rational.js';
 import { mcqItem, agree, q } from '../lib.js';
+const plus = (a, b) => (b < 0 ? `${a} − ${-b}` : `${a} + ${b}`);
 
 const ID = 'random-walk-line';
 const pathsTo = (n, k) => ((n + k) % 2 !== 0 || Math.abs(k) > n ? 0n : nCr(n, (n + k) / 2)); // paths ending at k
@@ -40,8 +41,8 @@ export default {
         steps: [
           { say: `With u up-steps and ${n} − u down-steps, the position is 2u − ${n}.`, why: 'Each up adds 1, each down subtracts 1.' },
           (n + k) % 2 === 0
-            ? { say: `Position ${k} needs u = (${n} + ${k})/2 = ${(n + k) / 2} up-steps: C(${n}, ${(n + k) / 2}) = ${pathsTo(n, k)} paths.`, why: 'Choose which steps go up.' }
-            : { say: `Position ${k} would need u = (${n} + ${k})/2 = ${(n + k) / 2}, not a whole number.`, why: 'After n steps the position has the same parity as n.' },
+            ? { say: `Position ${k} needs u = (${plus(n, k)})/2 = ${(n + k) / 2} up-steps: C(${n}, ${(n + k) / 2}) = ${pathsTo(n, k)} paths.`, why: 'Choose which steps go up.' }
+            : { say: `Position ${k} would need u = (${plus(n, k)})/2 = ${(n + k) / 2}, not a whole number.`, why: 'After n steps the position has the same parity as n.' },
           { say: `P = ${v} ≈ ${v.toNumber().toFixed(4)}.`, why: `Divide by 2^${n} equally likely paths.` },
         ],
         rule: 'P(S_n = k) = C(n, (n + k)/2)/2^n if n + k is even, else 0.',
