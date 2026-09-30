@@ -42,7 +42,7 @@ export function render(spec) {
     const [x1, y1] = pos.get(ed.from), [x2, y2] = pos.get(ed.to);
     const a = [x1 + boxW / 2, y1 + boxH(byId.get(ed.from))], b = [x2 + boxW / 2, y2];
     parts.push(s('path', { d: `M ${a[0]} ${a[1]} C ${a[0]} ${a[1] + 30}, ${b[0]} ${b[1] - 30}, ${b[0]} ${b[1] - 2}`, class: 'dg-line', 'marker-end': 'url(#dg-arrow)', fill: 'none' }));
-    if (ed.label) parts.push(text((a[0] + b[0]) / 2, (a[1] + b[1]) / 2, ed.label, { class: 'dg-text dg-small dg-edge-label' }));
+    if (ed.label) parts.push(text((a[0] + b[0]) / 2, (a[1] + b[1]) / 2, ed.label, { class: 'dg-text dg-small dg-edge-label dg-halo' }));
   }
   for (const n of spec.nodes) {
     const [x, y] = pos.get(n.id); const lines = wrap(n.text, 26);

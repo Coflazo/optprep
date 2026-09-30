@@ -64,7 +64,7 @@ export function render(spec) {
     const x0 = n === spec.root ? n._x + 6 : n._x + labW(n);
     for (const c of n.children || []) {
       parts.push(line(x0, n._y, c._x - 6, c._y, hasMark(c) ? 'dg-line dg-strong' : 'dg-line'));
-      parts.push(text((x0 + c._x) / 2, (n._y + c._y) / 2 + (c._y > n._y ? 11 : -9), String(c.p), { class: 'dg-text dg-small dg-mono' }));
+      parts.push(text((x0 + c._x) / 2, (n._y + c._y) / 2 + (c._y > n._y ? 11 : -9), String(c.p), { class: 'dg-text dg-small dg-mono dg-halo' }));
       draw(c);
     }
     parts.push(s('circle', { cx: n._x, cy: n._y, r: 4, class: n.mark ? 'dg-dot dg-mark' : 'dg-dot' }));

@@ -314,3 +314,4 @@ input.study-input[type=number] { width: 120px; }
   [hidden]:not(button):not(.btn) { display: block !important; }
   a { text-decoration: none; }
 }
+.dg-halo { paint-order: stroke; stroke: var(--bg); stroke-width: 4px; stroke-linejoin: round; }
