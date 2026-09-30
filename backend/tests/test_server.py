@@ -17,9 +17,9 @@ def server(tmp_path):
     srv.shutdown()
 
 
-def call(url, method="GET", body=None):
+def call(url, method="GET", body=None, headers=None):
     data = json.dumps(body).encode() if body is not None else None
-    req = urllib.request.Request(url, data=data, method=method, headers={"Content-Type": "application/json"})
+    req = urllib.request.Request(url, data=data, method=method, headers={"Content-Type": "application/json", **(headers or {})})
     try:
         with urllib.request.urlopen(req) as r:
             return r.status, json.loads(r.read())
@@ -48,3 +48,21 @@ def test_serves_the_static_app(server):
     with urllib.request.urlopen(server + "/index.html") as r:
         assert b"OA Trainer" in r.read()
         assert r.headers["Cache-Control"] == "no-store"
+
+
+def test_other_origins_cannot_write_or_rebind(server):
+    # A cross-origin "simple" request (text/plain) must not reach the database.
+    status, _ = call(server + "/api/answers", "POST", [{"section": "bto", "family": "f", "correct": True}], {"Content-Type": "text/plain"})
+    assert status == 415
+    # DNS rebinding: a foreign Host header is refused for API and files alike.
+    assert call(server + "/api/state", headers={"Host": "evil.example"})[0] == 403
+
+
+def test_private_files_are_not_served(server):
+    for path in ("/.git/config", "/backend/data/progress.db", "/engine/CMakeLists.txt", "/%2egit/config"):
+        try:
+            with urllib.request.urlopen(server + path) as r:
+                status = r.status
+        except urllib.error.HTTPError as e:
+            status = e.code
+        assert status == 404, path

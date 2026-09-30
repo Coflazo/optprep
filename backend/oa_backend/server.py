@@ -27,6 +27,8 @@ DATA = REPO / "backend" / "data"
 MAX_BODY = 2_000_000
 BANK_NAME = re.compile(r"^[a-z0-9-]{1,40}$")
 SECTIONS = ["bto", "nl", "ll", "iv", "ob"]
+# Only the app itself is served: never dot-directories (.git) or backend/engine/tools/tests files.
+PRIVATE_TOP = {"backend", "engine", "tools", "tests", "node_modules", "screenshots"}
 
 
 def section_families(section: str, db: Database) -> list[str]:
@@ -65,6 +67,27 @@ def make_handler(db: Database, root: Path):
         def log_message(self, *args: Any) -> None:  # quiet
             pass
 
+        # Browsers let any website send requests to 127.0.0.1. Two checks keep other
+        # origins out: the Host header must name this server (defeats DNS rebinding),
+        # and writes must be JSON (a cross-origin JSON write needs a CORS preflight,
+        # which this server never grants).
+        def _host_ok(self) -> bool:
+            port = self.server.server_address[1]
+            return (self.headers.get("Host") or "") in {f"127.0.0.1:{port}", f"localhost:{port}"}
+
+        def _guard(self, write: bool = False) -> bool:
+            if not self._host_ok():
+                self._json(403, {"ok": False, "error": "forbidden host"})
+                return False
+            if write and (self.headers.get("Content-Type") or "").split(";")[0].strip() != "application/json":
+                self._json(415, {"ok": False, "error": "writes must be application/json"})
+                return False
+            return True
+
+        def _private(self, path: str) -> bool:
+            parts = [p for p in path.split("?", 1)[0].split("/") if p]
+            return any(p.startswith(".") or "%2e" in p.lower() for p in parts) or (bool(parts) and parts[0] in PRIVATE_TOP)
+
         def end_headers(self) -> None:
             self.send_header("Cache-Control", "no-store")
             super().end_headers()
@@ -83,9 +106,18 @@ def make_handler(db: Database, root: Path):
                 raise ValueError("body missing or too large")
             return json.loads(self.rfile.read(length))
 
+        def do_HEAD(self) -> None:  # noqa: N802
+            if not self._guard() or self._private(self.path):
+                return None if not self._host_ok() else self.send_error(404)
+            return super().do_HEAD()
+
         def do_GET(self) -> None:  # noqa: N802
+            if not self._guard():
+                return None
             path = self.path.split("?", 1)[0]
             if not path.startswith("/api/"):
+                if self._private(path):
+                    return self._json(404, {"ok": False, "error": "not found"})
                 return super().do_GET()
             try:
                 if path == "/api/health":
@@ -108,6 +140,8 @@ def make_handler(db: Database, root: Path):
                 return self._json(500, {"ok": False, "error": str(e)})
 
         def do_POST(self) -> None:  # noqa: N802
+            if not self._guard(write=True):
+                return None
             try:
                 body = self._body()
                 if self.path == "/api/answers":
@@ -121,6 +155,8 @@ def make_handler(db: Database, root: Path):
                 return self._json(400, {"ok": False, "error": str(e)})
 
         def do_PUT(self) -> None:  # noqa: N802
+            if not self._guard(write=True):
+                return None
             try:
                 if self.path != "/api/state":
                     return self._json(404, {"ok": False, "error": "unknown endpoint"})
