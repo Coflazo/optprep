@@ -74,12 +74,12 @@ button, input, select { font: inherit; color: inherit; }
 .stack > * + * { margin-top: 12px; }
 
 /* Buttons */
-.btn { display: inline-flex; align-items: center; gap: 6px; min-height: 36px; padding: 0 14px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface); cursor: pointer; transition: background-color 120ms ease, border-color 120ms ease; text-decoration: none; }
+.btn { display: inline-flex; align-items: center; gap: 6px; min-height: 40px; padding: 0 14px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface); cursor: pointer; transition: background-color 120ms ease, border-color 120ms ease; text-decoration: none; }
 .btn:hover { background: var(--surface-2); }
 .btn.primary { background: var(--accent); color: var(--accent-text); border-color: var(--accent); }
 .btn.primary:hover { opacity: 0.9; }
 .btn:disabled { opacity: 0.45; cursor: not-allowed; }
-.btn.small { min-height: 30px; padding: 0 10px; font-size: 13px; }
+.btn.small { min-height: 32px; padding: 0 10px; font-size: 13px; }
 
 /* Tables and lists */
 table { border-collapse: collapse; width: 100%; }
