@@ -9,9 +9,19 @@ namespace oa {
 
 namespace {
 
+bool flat_q(const Board& b, const std::vector<int>& q) {
+    for (std::size_t k = 0; k < b.products.size(); ++k) {
+        long long n = 0;
+        for (std::size_t i = 0; i < q.size(); ++i) n += static_cast<long long>(q[i]) * b.instruments[i].legs[k];
+        if (n != 0) return false;
+    }
+    return true;
+}
+
 struct Search {
     const Board& b;
     int max_units;
+    bool indecomposable = false;
     std::vector<int> net;
     std::vector<int> qty;  // signed: +buy, -sell, per instrument
     std::vector<int> suffix_leg;  // max L1 leg size over instruments i.. (flatness bound)
@@ -25,7 +35,7 @@ struct Search {
         long long imbalance = 0;
         for (const int x : net) imbalance += std::abs(x);
         if (i == b.instruments.size()) {
-            if (imbalance == 0 && used > 0 && cash > 1e-9) {
+            if (imbalance == 0 && used > 0 && cash > 1e-9 && !(indecomposable && decomposable(b, qty))) {
                 const bool better = !best.found || cash > best.profit + 1e-9 || (std::fabs(cash - best.profit) <= 1e-9 && used < best.units);
                 if (better) {
                     best.found = true; best.profit = cash; best.units = used; best.trades.clear();
@@ -56,12 +66,30 @@ struct Search {
 
 }  // namespace
 
-ObSolution solve_orderbook(const Board& board, int max_units) {
+bool decomposable(const Board& board, const std::vector<int>& q) {
+    // Enumerate every sub-position r with the same signs and |r_i| <= |q_i|, excluding 0 and q.
+    std::vector<std::size_t> idx;
+    long long total = 1;
+    for (std::size_t i = 0; i < q.size(); ++i) if (q[i] != 0) { idx.push_back(i); total *= std::abs(q[i]) + 1; }
+    std::vector<int> r(q.size(), 0);
+    for (long long code = 1; code < total - 1; ++code) {
+        long long c = code;
+        for (const auto i : idx) {
+            const int m = std::abs(q[i]) + 1;
+            r[i] = (q[i] > 0 ? 1 : -1) * static_cast<int>(c % m);
+            c /= m;
+        }
+        if (flat_q(board, r)) return true;
+    }
+    return false;
+}
+
+ObSolution solve_orderbook(const Board& board, int max_units, bool indecomposable) {
     for (const auto& ins : board.instruments) {
         if (ins.legs.size() != board.products.size()) throw std::invalid_argument("instrument " + ins.id + " legs length");
         if (!(ins.bid < ins.ask)) throw std::invalid_argument("instrument " + ins.id + " bid must be below ask");
     }
-    Search s{board, max_units, std::vector<int>(board.products.size(), 0), std::vector<int>(board.instruments.size(), 0), {}, 0, {}, {}};
+    Search s{board, max_units, indecomposable, std::vector<int>(board.products.size(), 0), std::vector<int>(board.instruments.size(), 0), {}, 0, {}, {}};
     const std::size_t n = board.instruments.size();
     s.suffix_leg.assign(n + 1, 0);
     s.suffix_max_bid.assign(n + 1, 0.0);

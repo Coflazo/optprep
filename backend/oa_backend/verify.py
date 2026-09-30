@@ -108,8 +108,9 @@ def check_sequence(engine: Engine, it: dict[str, Any]) -> tuple[list[str], list[
 
 
 def check_orderbook_engine(engine: Engine, it: dict[str, Any]) -> list[str]:
+    # Same objective as the JS solver: the most profitable single (indecomposable) package, at most 6 units.
     units = max(6, len((it.get("best") or {}).get("trades", [])))
-    r = engine.call({"cmd": "orderbook", "board": it["board"], "maxUnits": units})
+    r = engine.call({"cmd": "orderbook", "board": it["board"], "maxUnits": units, "indecomposable": True})
     if not r["found"]:
         return ["C++ solver finds no arbitrage on this board"]
     if abs(r["profit"] - it["best"]["profit"]) > 1e-6:
@@ -195,3 +196,38 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+
+
+def verify_zapn(export_file: Path) -> dict[str, Any]:
+    """Re-solve JS-generated Zap-N puzzles in C++ and compare."""
+    data = json.loads(export_file.read_text())
+    res: dict[str, Any] = {}
+    with Engine() as e:
+        bad = []
+        for i, L in enumerate(data["skyscraper"]):
+            to_str = lambda towers: ["".join(str(b) for b in t) for t in towers]  # noqa: E731
+            r = e.call({"cmd": "tower_solve", "caps": L["caps"], "start": to_str(L["start"]), "target": to_str(L["target"])})
+            if r["optimal"] != L["opt"]:
+                bad.append({"i": i, "js": L["opt"], "cpp": r["optimal"]})
+        res["skyscraper"] = {"checked": len(data["skyscraper"]), "mismatches": bad}
+        bad = []
+        for i, R in enumerate(data["numberbox"]):
+            s = e.call({"cmd": "numberbox", "numbers": R["nums"], "target": R["target"]})
+            v = e.call({"cmd": "numberbox_eval", "expression": R["solution"].replace("*", "×").replace("/", "÷")})
+            if not s["solvable"] or v["value"] != str(R["target"]):
+                bad.append({"i": i, "nums": R["nums"], "target": R["target"], "solution": R["solution"], "cppValue": v["value"]})
+        res["numberbox"] = {"checked": len(data["numberbox"]), "mismatches": bad}
+        bad = []
+        for F in data["figure"]:
+            r = e.call({"cmd": "figure", "values": F["values"]})
+            if abs(r["expected"] - F["expected"]) > 1e-9 or abs(r["expectedDp"] - F["expected"]) > 1e-9 or r["worstCase"] != F["worst"]:
+                bad.append({"values": F["values"], "js": F["expected"], "cpp": r["expected"], "dp": r["expectedDp"]})
+        res["figure"] = {"checked": len(data["figure"]), "mismatches": bad}
+        bad = []
+        for B in data["balloon"]:
+            r = e.call({"cmd": "balloon", "balloons": B["balloons"], "cents": B["centsPerPump"], "popMax": B["popMax"], "penalty": B["bankPenalty"]})
+            if abs(r["expectedCents"] - B["ev"]) > 1e-6 or r["optimalAtStart"] != B["firstTarget"]:
+                bad.append({"round": B, "cpp": r})
+        res["balloon"] = {"checked": len(data["balloon"]), "mismatches": bad}
+    res["ok"] = all(not v["mismatches"] for v in res.values() if isinstance(v, dict))
+    return res

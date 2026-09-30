@@ -42,7 +42,8 @@ const std::map<std::string, std::function<Json(const Json&)>>& handlers() {
         }},
         {"orderbook", [](const Json& r) {
             const Board b = board_from(r.at("board"));
-            const auto s = solve_orderbook(b, static_cast<int>(r.int_or("maxUnits", 6)));
+            const bool indec = r.has("indecomposable") && r.at("indecomposable").boolean();
+            const auto s = solve_orderbook(b, static_cast<int>(r.int_or("maxUnits", 6)), indec);
             Json::Array trades;
             for (const auto& t : s.trades) trades.emplace_back(Json::Object{{"id", Json(t.id)}, {"side", Json(t.buy ? "buy" : "sell")}, {"units", Json(t.units)}});
             return ok({{"found", Json(s.found)}, {"profit", Json(s.profit)}, {"units", Json(s.units)}, {"nodes", Json(static_cast<double>(s.nodes))}, {"trades", Json(std::move(trades))}});

@@ -76,3 +76,13 @@ TEST(Orderbook, BranchAndBoundMatchesExhaustiveSearchOnRandomBoards) {
         EXPECT_NEAR(s.found ? s.profit : 0.0, brute(b, 4), 1e-9) << "trial " << trial;
     }
 }
+
+TEST(Orderbook, IndecomposableModeReturnsOnePackage) {
+    // With six units the plain optimum repeats the arbitrage (+2); one package is +1.
+    const auto s = solve_orderbook(bundle_board(), 6, true);
+    ASSERT_TRUE(s.found);
+    EXPECT_DOUBLE_EQ(s.profit, 1.0);
+    EXPECT_EQ(s.units, 3);
+    EXPECT_TRUE(decomposable(bundle_board(), {2, 2, -2}));
+    EXPECT_FALSE(decomposable(bundle_board(), {1, 1, -1}));
+}

@@ -33,7 +33,10 @@ struct ObSolution {
     std::vector<Trade> trades;
 };
 
-[[nodiscard]] ObSolution solve_orderbook(const Board& board, int max_units);
+// indecomposable = true restricts answers to positions that do not split into two
+// smaller flat positions (one arbitrage package, not repeats or glued-together copies).
+[[nodiscard]] ObSolution solve_orderbook(const Board& board, int max_units, bool indecomposable = false);
+[[nodiscard]] bool decomposable(const Board& board, const std::vector<int>& signed_units);
 [[nodiscard]] double position_cash(const Board& board, const std::vector<Trade>& trades);
 [[nodiscard]] bool position_flat(const Board& board, const std::vector<Trade>& trades);
 
