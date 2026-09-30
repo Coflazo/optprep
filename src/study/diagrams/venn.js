@@ -28,6 +28,7 @@ export function render(spec) {
     ? { A: [118, 92], B: [262, 92], C: [190, 222], AB: [190, 82], AC: [150, 162], BC: [230, 162], ABC: [190, 135], none: [W - 30, H - 22] }
     : { A: [118, 115], B: [268, 115], AB: [192, 115], none: [W - 30, H - 22] };
   for (const [k, [x, y]] of Object.entries(pos)) parts.push(text(x, y, r[k], { class: 'dg-text dg-mono' }));
+  parts.push(text(pos.none[0] - 16, pos.none[1], 'neither', { 'text-anchor': 'end', class: 'dg-text dg-small dg-muted' }));
   if (spec.total != null) parts.push(text(24, H - 22, `total ${spec.total}`, { 'text-anchor': 'start', class: 'dg-text dg-small dg-muted' }));
   return svg(W, H, spec.label || `Venn diagram of ${spec.sets.join(', ')}`, ...parts);
 }

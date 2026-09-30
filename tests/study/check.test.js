@@ -20,3 +20,13 @@ test('generator questions resolve per seed', () => {
   assert.deepEqual(a, b);
   assert.deepEqual(validateQuestion(a), []);
 });
+
+test('number checks accept typed fractions', async () => {
+  const { gradeCheck, parseNumber } = await import('../../src/study/check.js');
+  assert.equal(parseNumber('1/4'), 0.25);
+  assert.equal(parseNumber(' -3 / 8 '), -0.375);
+  assert.equal(parseNumber('0,5'), 0.5);
+  assert.ok(Number.isNaN(parseNumber('')));
+  assert.ok(gradeCheck({ type: 'number', answer: 1 / 3 }, '1/3').correct);
+  assert.ok(!gradeCheck({ type: 'number', answer: 1 / 3 }, '1/4').correct);
+});

@@ -33,11 +33,18 @@ export function validateQuestion(x) {
 // Resolve a question spec (data or generator) into concrete data.
 export const resolveQuestion = (x, rng) => (typeof x?.make === 'function' ? x.make(rng) : x);
 
+// Typed answers: "0.25", "0,25", "-3", or a fraction "1/4" / "-3 / 8".
+export function parseNumber(str) {
+  const t = String(str).trim().replace(',', '.');
+  const m = t.match(/^(-?\d+(?:\.\d+)?)\s*\/\s*(\d+(?:\.\d+)?)$/);
+  return m ? Number(m[1]) / Number(m[2]) : t === '' ? NaN : Number(t);
+}
+
 export function gradeCheck(x, response) {
   switch (x.type) {
     case 'choice': return { correct: response === x.answer, trap: response !== x.answer ? x.traps?.[response] : undefined };
     case 'number': {
-      const v = typeof response === 'string' ? Number(response.replace(',', '.')) : response;
+      const v = typeof response === 'string' ? parseNumber(response) : response;
       const tol = x.tolerance ?? 1e-9 * Math.max(1, Math.abs(x.answer));
       return { correct: Number.isFinite(v) && Math.abs(v - x.answer) <= tol };
     }
