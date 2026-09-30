@@ -24,16 +24,45 @@ It is an unofficial study tool. It is not made, endorsed or checked by Optiver, 
 ## Run
 
 ```bash
-./run.sh            # serves on http://127.0.0.1:8765
-npm test            # node --test, no dependencies
+cmake -S engine -B engine/build -G Ninja -DCMAKE_PREFIX_PATH=/usr/local && cmake --build engine/build
+./run.sh                                   # http://127.0.0.1:8765 (Python backend if uv is present)
+npm test                                   # 392 JS tests (node --test)
+ctest --test-dir engine/build              # 34 C++ tests (GoogleTest)
+(cd backend && uv run pytest -q)           # 12 Python tests
+(cd backend && uv run python -m oa_backend.pipeline)   # verify every library question
 ```
 
-Node 22 and Python 3 are the only requirements. Progress is saved in the browser's localStorage. Use **Data and backup** to export or import it.
+Without the backend the app still runs from static files and keeps progress in the browser. With it, answers and exam runs go to SQLite, the home page shows an exam forecast, and the verification report is served at `/api/verification`.
+
+## How the pieces fit
+
+| Layer | Language | Job |
+|---|---|---|
+| App | JavaScript (no dependencies) | Question generators with their own verifiers, exam replicas, teaching, Zap-N games, instant feedback in the browser |
+| Engine (`engine/`) | C++20 | Heavy computation behind a JSON-lines CLI: parallel Monte Carlo (238M samples/s), orderbook branch and bound, NumberBox exhaustive search, Skyscraper BFS, Figure It Out and Balloon optimal play, NumberLogic rule search that flags ambiguous sequences |
+| Backend (`backend/`) | Python 3.13 | HTTP API on 127.0.0.1, SQLite progress, a logistic ability model with bootstrap exam forecasts, and the verification pipeline that re-checks every library question in a second language |
+
+## Verification results
+
+The pipeline exports the fixed library (2,500+ questions) and checks each one outside JavaScript:
+- **Orderbooks:** all 500 boards re-solved by an independent C++ branch and bound, with the same "single indecomposable package" objective; 0 disagreements.
+- **NumberLogic:** all 520 sequences searched by the C++ rule library; 0 are ambiguous (no wrong option is explained by an equally simple rule).
+- **Beat the Odds:** 184 questions re-simulated by C++ Monte Carlo within 4 standard errors.
+- **Intervals:** 152 truths recomputed exactly in Python from the drawn visuals (dot counts, path lengths, medians) or closed forms; 13 simulated in C++.
+- **Zap-N:** 300 Skyscraper optima, 300 NumberBox solutions, and every Figure It Out and Balloon optimum re-solved in C++. JS and C++ agree on every one.
+
+The first runs of these checks found real bugs, all now fixed:
+- a data race in a Monte Carlo sampler;
+- two wrong pruning bounds in the orderbook search (spread instruments can trade at negative prices);
+- a solver-objective mismatch between the JS and C++ orderbook solvers.
 
 ## Layout
 
 ```
 config/sections.js     exam formats and readiness targets (edit here if the real format differs)
+engine/                C++20 engine, GoogleTest suite, benchmarks
+backend/               Python server, SQLite, analytics, verification pipeline
+tools/                 Node exporters feeding the pipeline
 src/core/              seeded RNG, exact fractions, combinatorics, Markov solver, scoring,
                        item contract, store, spaced repetition, adaptive picking, readiness
 src/sections/<id>/     question families (generate + verify + lesson) and curated banks
