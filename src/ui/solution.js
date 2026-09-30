@@ -95,6 +95,6 @@ export async function intervalCoach(item, slot) {
     slot.append(h('div', { class: 'muted' },
       `Calibrated play: with the uncertainty a prepared candidate has here (${item.coach.note || item.coach.belief?.kind}), the best interval around the answer is `,
       h('span', { class: 'num' }, `[${fmtNum(lo)}, ${fmtNum(hi)}]`),
-      best.expectedScore != null ? ` for an expected score of ${best.expectedScore.toFixed(2)}.` : '.'));
+      (best.expectedScore ?? best.score) != null ? ` for an expected score of ${(best.expectedScore ?? best.score).toFixed(2)}.` : '.'));
   } catch { /* coach is optional */ }
 }

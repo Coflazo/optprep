@@ -1,3 +1,5 @@
+import { families } from './registry.js';
 import bank from './bank.js';
 
-export default { id: 'nl', families: [], bank };
+export { families };
+export default { id: 'nl', families, bank };
