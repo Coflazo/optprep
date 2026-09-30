@@ -2,3 +2,9 @@
 node_modules/
 *.log
 screenshots/
+engine/build/
+engine/build-san/
+__pycache__/
+.venv/
+.pytest_cache/
+backend/data/*.db
