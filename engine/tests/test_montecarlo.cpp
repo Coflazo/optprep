@@ -37,6 +37,18 @@ TEST(MonteCarlo, ClassicProbabilities) {
     EXPECT_TRUE(run("urn_count", R"({"counts":[26,26],"draws":2,"color":0,"k":2,"cmp":"eq"})").agrees(25.0 / 102));
 }
 
+TEST(MonteCarlo, ExtendedModels) {
+    EXPECT_TRUE(run("dice_extreme", R"({"dice":2,"sides":8})").agrees(5.8125));
+    EXPECT_TRUE(run("monty", R"({"doors":3,"opened":1,"switch":true})").agrees(2.0 / 3));
+    EXPECT_TRUE(run("monty", R"({"doors":3,"opened":1})").agrees(1.0 / 3));
+    EXPECT_TRUE(run("uniform_sum_le", R"({"n":2,"s":1.25})").agrees(0.71875));
+    EXPECT_TRUE(run("running_sum_hit", R"({"target":7})").agrees(0.25360439529035206));
+    EXPECT_TRUE(run("cards_same_suit", R"({"draws":2})").agrees(12.0 / 51));
+    EXPECT_TRUE(run("pattern_count", R"({"flips":5,"pattern":"HH"})").agrees(1.0));
+    EXPECT_TRUE(run("bayes_test", R"({"prev":0.5,"sens":0.9,"fpr":0.1})").agrees(0.9));
+    EXPECT_TRUE(run("dice_conditional", R"({"cond":"different","sums":[7]})").agrees(0.2));
+}
+
 TEST(MonteCarlo, DetectsAWrongAnswer) {
     EXPECT_FALSE(run("dice_event", R"({"sums":[7]})").agrees(5.0 / 36));
 }

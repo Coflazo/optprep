@@ -202,6 +202,79 @@ const std::map<std::string, Factory>& registry() {
             const int c = static_cast<int>(p.at("coins").integer()), b = static_cast<int>(p.at("boxes").integer()), t = static_cast<int>(p.at("threshold").integer());
             return [=](Rng& r) { std::vector<int> v(static_cast<std::size_t>(b), 0); for (int i = 0; i < c; ++i) ++v[r.below(static_cast<std::uint64_t>(b))]; return *std::max_element(v.begin(), v.end()) > t ? 1.0 : 0.0; };
         }},
+        // E[max] (or E[min]) of `dice` dice with `sides` sides
+        {"dice_extreme", [](const Json& p) -> Sampler {
+            const int n = static_cast<int>(p.at("dice").integer()), s = static_cast<int>(p.int_or("sides", 6));
+            const bool mn = p.has("min") && p.at("min").boolean();
+            return [=](Rng& r) { int e = mn ? s + 1 : 0; for (int i = 0; i < n; ++i) { const int x = r.die(s); e = mn ? std::min(e, x) : std::max(e, x); } return static_cast<double>(e); };
+        }},
+        // Monty Hall generalised: `doors`, host opens `opened` empty doors; P(win) staying or switching to a random closed door
+        {"monty", [](const Json& p) -> Sampler {
+            const int n = static_cast<int>(p.int_or("doors", 3)), m = static_cast<int>(p.int_or("opened", 1));
+            const bool sw = p.has("switch") && p.at("switch").boolean();
+            return [=](Rng& r) {
+                const int car = static_cast<int>(r.below(static_cast<std::uint64_t>(n)));
+                if (!sw) return car == 0 ? 1.0 : 0.0;  // pick door 0 and stay
+                // host opens m goat doors among 1..n-1; switch uniformly to one of the other closed doors
+                std::vector<int> others;
+                for (int d = 1; d < n; ++d) others.push_back(d);
+                std::vector<int> goats;
+                for (const int d : others) if (d != car) goats.push_back(d);
+                for (int i = 0; i < m; ++i) { const auto j = r.below(goats.size()); others.erase(std::find(others.begin(), others.end(), goats[j])); goats.erase(goats.begin() + static_cast<long>(j)); }
+                return others[r.below(others.size())] == car ? 1.0 : 0.0;
+            };
+        }},
+        // P(U1 + ... + Un <= s) for independent uniforms on [0, 1]
+        {"uniform_sum_le", [](const Json& p) -> Sampler {
+            const int n = static_cast<int>(p.int_or("n", 2)); const double s = p.at("s").num();
+            return [=](Rng& r) { double t = 0; for (int i = 0; i < n; ++i) t += r.uniform(); return t <= s ? 1.0 : 0.0; };
+        }},
+        // Roll a die repeatedly, adding faces: P(the running total ever equals `target`)
+        {"running_sum_hit", [](const Json& p) -> Sampler {
+            const int t = static_cast<int>(p.at("target").integer()), s = static_cast<int>(p.int_or("sides", 6));
+            return [=](Rng& r) { int x = 0; while (x < t) x += r.die(s); return x == t ? 1.0 : 0.0; };
+        }},
+        // Draw `draws` cards from a standard deck: P(all the same suit)
+        {"cards_same_suit", [](const Json& p) -> Sampler {
+            const int k = static_cast<int>(p.int_or("draws", 2));
+            return [=](Rng& r) {
+                std::vector<int> deck(52); for (int i = 0; i < 52; ++i) deck[static_cast<std::size_t>(i)] = i / 13;
+                for (int i = 0; i < k; ++i) std::swap(deck[static_cast<std::size_t>(i)], deck[static_cast<std::size_t>(i) + r.below(static_cast<std::uint64_t>(52 - i))]);
+                for (int i = 1; i < k; ++i) if (deck[static_cast<std::size_t>(i)] != deck[0]) return 0.0;
+                return 1.0;
+            };
+        }},
+        // E[number of (overlapping) occurrences of `pattern` in `flips` coin flips]
+        {"pattern_count", [](const Json& p) -> Sampler {
+            const int n = static_cast<int>(p.at("flips").integer()); const std::string pat = p.at("pattern").str(); const double q = p.num_or("p", 0.5);
+            return [=](Rng& r) { std::string s; for (int i = 0; i < n; ++i) s.push_back(r.chance(q) ? 'H' : 'T'); int c = 0; for (std::size_t i = 0; i + pat.size() <= s.size(); ++i) c += s.compare(i, pat.size(), pat) == 0 ? 1 : 0; return static_cast<double>(c); };
+        }},
+        // Diagnostic test: P(condition | positive) (or | negative), by rejection sampling
+        {"bayes_test", [](const Json& p) -> Sampler {
+            const double prev = p.at("prev").num(), sens = p.at("sens").num(), fpr = p.at("fpr").num();
+            const bool pos = !p.has("negative") || !p.at("negative").boolean();
+            return [=](Rng& r) {
+                while (true) {
+                    const bool d = r.chance(prev);
+                    const bool t = d ? r.chance(sens) : r.chance(fpr);
+                    if (t == pos) return d ? 1.0 : 0.0;
+                }
+            };
+        }},
+        // Two dice conditioned on "different" / "doubles" / "sumAtLeast": P(sum in `sums` | condition)
+        {"dice_conditional", [](const Json& p) -> Sampler {
+            const int s = static_cast<int>(p.int_or("sides", 6));
+            const std::string cond = p.at("cond").str();
+            const int ck = static_cast<int>(p.int_or("condK", 0));
+            auto sums = ints(p.at("sums"));
+            return [=](Rng& r) {
+                while (true) {
+                    const int a = r.die(s), b = r.die(s);
+                    const bool ok = cond == "different" ? a != b : cond == "doubles" ? a == b : cond == "sumAtLeast" ? a + b >= ck : true;
+                    if (ok) return std::find(sums.begin(), sums.end(), a + b) != sums.end() ? 1.0 : 0.0;
+                }
+            };
+        }},
         // E[number of throws of a fair die until the first `face`] (die-flavoured geometric)
         {"die_wait", [](const Json& p) -> Sampler {
             const int s = static_cast<int>(p.int_or("sides", 6)), f = static_cast<int>(p.int_or("face", 6));
