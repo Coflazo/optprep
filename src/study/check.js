@@ -35,7 +35,7 @@ export const resolveQuestion = (x, rng) => (typeof x?.make === 'function' ? x.ma
 
 // Typed answers: "0.25", "0,25", "-3", or a fraction "1/4" / "-3 / 8".
 export function parseNumber(str) {
-  const t = String(str).trim().replace(',', '.');
+  const t = String(str).trim().replace(',', '.').replace(/[\u2212\u2012\u2013]/g, '-');
   const m = t.match(/^(-?\d+(?:\.\d+)?)\s*\/\s*(\d+(?:\.\d+)?)$/);
   return m ? Number(m[1]) / Number(m[2]) : t === '' ? NaN : Number(t);
 }

@@ -30,3 +30,9 @@ test('number checks accept typed fractions', async () => {
   assert.ok(gradeCheck({ type: 'number', answer: 1 / 3 }, '1/3').correct);
   assert.ok(!gradeCheck({ type: 'number', answer: 1 / 3 }, '1/4').correct);
 });
+
+test('number checks accept the typographic minus sign', async () => {
+  const { parseNumber } = await import('../../src/study/check.js');
+  assert.equal(parseNumber('−3'), -3);
+  assert.equal(parseNumber('−3/4'), -0.75);
+});
