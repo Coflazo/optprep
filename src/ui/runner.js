@@ -115,7 +115,7 @@ export function runFeedbackSession(root, { sectionId, mode, family, count, store
     const ms = performance.now() - current.start;
     const confidence = opts.confidence ?? (CALIBRATED.has(sectionId) && !response.skip ? 0.9 : undefined);
     const correctNoHelp = result.correct && current.hints === 0;
-    store.recordAnswer(sectionId, item.family, { correct: correctNoHelp, ms, confidence: response.skip ? undefined : confidence });
+    store.recordAnswer(sectionId, item.family, { correct: correctNoHelp, ms, confidence: response.skip ? undefined : confidence, difficulty: item.difficulty, score: item.kind === 'interval' ? result.score : undefined });
     store.srs = srsRecord(store.srs, `${sectionId}:${item.family}`, correctNoHelp);
     log.push({ family: item.family, correct: result.correct, score: result.score, hints: current.hints, ms });
     body.view.reveal(result, response);
@@ -271,7 +271,7 @@ export function runExam(root, { sectionId, variant, store, seed = Date.now(), on
     const { score, max } = examScore(sectionId, results.map((r) => r.score));
     items.forEach((it, i) => {
       if (responses[i] && !responses[i].skip) {
-        store.recordAnswer(sectionId, it.family, { correct: results[i].correct, ms: 0 });
+        store.recordAnswer(sectionId, it.family, { correct: results[i].correct, ms: 0, difficulty: it.difficulty, score: it.kind === 'interval' ? results[i].score : undefined });
         store.srs = srsRecord(store.srs, `${sectionId}:${it.family}`, results[i].correct);
       }
     });

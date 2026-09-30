@@ -15,18 +15,22 @@ function defaultBackend() {
   return memoryBackend();
 }
 
-export function makeStore(backend = defaultBackend()) {
+// hooks: optional { answer(row), run(run), state(state) } used by the backend sync.
+export function makeStore(backend = defaultBackend(), hooks = {}) {
   let state = blank();
   try {
     const raw = backend.getItem(KEY);
     if (raw) { const parsed = JSON.parse(raw); if (parsed.version === VERSION) state = { ...blank(), ...parsed }; }
   } catch { /* unreadable storage: start fresh in memory */ }
-  const save = () => { try { backend.setItem(KEY, JSON.stringify(state)); } catch { /* keep in memory */ } };
+  const save = () => {
+    try { backend.setItem(KEY, JSON.stringify(state)); } catch { /* keep in memory */ }
+    hooks.state?.(state);
+  };
 
   return {
     get state() { return state; },
     save,
-    recordAnswer(section, family, { correct, ms = 0, confidence } = {}) {
+    recordAnswer(section, family, { correct, ms = 0, confidence, difficulty, score } = {}) {
       const k = `${section}:${family}`;
       const s = state.stats[k] || { n: 0, correct: 0, ms: 0 };
       s.n += 1; s.correct += correct ? 1 : 0; s.ms += ms;
@@ -36,10 +40,13 @@ export function makeStore(backend = defaultBackend()) {
         state.calibration.push({ section, confidence, correct: !!correct });
         if (state.calibration.length > 2000) state.calibration.splice(0, state.calibration.length - 2000);
       }
+      hooks.answer?.({ section, family, correct: !!correct, ms, confidence: confidence ?? null, difficulty: difficulty ?? null, score: score ?? null, at: Date.now() / 1000 });
       save();
     },
     recordRun(run) {
-      state.runs.push({ finishedAt: Date.now(), ...run });
+      const r = { finishedAt: Date.now(), ...run };
+      state.runs.push(r);
+      hooks.run?.(r);
       save();
     },
     runs(section, mode) {
@@ -64,6 +71,13 @@ export function makeStore(backend = defaultBackend()) {
     settings() { return state.settings; },
     setSetting(k, v) { state.settings[k] = v; save(); },
     exportJSON() { return JSON.stringify(state, null, 2); },
+    // Replace local state with a server snapshot (used once, when this browser has no progress).
+    adopt(snapshot) {
+      if (snapshot?.version !== VERSION) return false;
+      state = { ...blank(), ...snapshot };
+      try { backend.setItem(KEY, JSON.stringify(state)); } catch { /* memory only */ }
+      return true;
+    },
     importJSON(text) {
       const parsed = JSON.parse(text);
       if (parsed?.version !== VERSION || !Array.isArray(parsed.runs)) throw new Error('Not a trainer backup (wrong version or shape)');

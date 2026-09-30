@@ -11,8 +11,10 @@ import { dataPage } from './src/ui/pages/data.js';
 import { setsPage, setRunPage } from './src/ui/pages/sets.js';
 import { runFeedbackSession, runExam } from './src/ui/runner.js';
 import { optiverLogo } from './src/ui/logo.js';
+import { createSync } from './src/ui/sync.js';
 
-const store = makeStore();
+const sync = createSync();
+const store = makeStore(undefined, sync.hooks);
 const view = document.getElementById('view');
 const nav = document.getElementById('nav');
 let cleanup = null;
@@ -23,7 +25,7 @@ mount(document.querySelector('.sidebar .brand'),
   h('div', { class: 'brand-note' }, 'Unofficial practice, not affiliated with Optiver'));
 
 const ROUTES = [
-  [/^#?\/?$/, () => homePage(view, { store })],
+  [/^#?\/?$/, () => homePage(view, { store, sync })],
   [/^#\/s\/(\w+)$/, (m) => sectionPage(view, { store, id: m[1] })],
   [/^#\/s\/(\w+)\/sets$/, (m) => setsPage(view, { store, id: m[1] })],
   [/^#\/s\/(\w+)\/sets\/(\d+)\/(practice|timed)$/, (m) => setRunPage(view, { store, id: m[1], n: +m[2], mode: m[3] })],
@@ -68,4 +70,5 @@ function route() {
 }
 
 window.addEventListener('hashchange', route);
+sync.start(store).then((ok) => { if (ok && (location.hash || '#/') === '#/') route(); });
 route();

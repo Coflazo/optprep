@@ -26,7 +26,7 @@ export function zapnStatus(store) {
   return { ready, total: GAMES.length, built: games.length };
 }
 
-export function homePage(root, { store }) {
+export function homePage(root, { store, sync }) {
   const rows = PORTAL_ORDER.map((id) => {
     if (id === 'zapn') {
       const z = zapnStatus(store);
@@ -75,7 +75,45 @@ export function homePage(root, { store }) {
         h('td', { style: { textAlign: 'right' } }, h('a', { class: 'btn small', href: `#/s/${sec}/learn/${fam}` }, 'Learn'), ' ', h('a', { class: 'btn small', href: `#/run/${sec}/practice/${fam}` }, 'Practise')));
     }))))
       : h('p', { class: 'muted' }, 'Answer a few questions per family and the weakest ones show up here.'),
-    calibrationBlock(store));
+    calibrationBlock(store),
+    backendBlock(sync));
+}
+
+// Filled asynchronously from the Python backend when it is running.
+function backendBlock(sync) {
+  const box = h('div', {});
+  if (!sync?.online) return box;
+  const fmt = (x) => (Number.isInteger(x) ? String(x) : x.toFixed(1));
+  sync.analytics().then((a) => {
+    if (!a?.sections) return;
+    const rows = Object.entries(a.sections).filter(([, v]) => v.forecast).map(([id, v]) => {
+      const f = v.forecast;
+      return h('tr', {},
+        h('td', {}, SECTIONS[id].title),
+        h('td', { class: 'num', style: { textAlign: 'right' } }, `${fmt(f.expected)} / ${f.max}`),
+        h('td', { class: 'num', style: { textAlign: 'right' } }, `${fmt(f.interval[0])} to ${fmt(f.interval[1])}`),
+        h('td', { class: 'num', style: { textAlign: 'right' } }, `${Math.round(f.pMeetTarget * 100)}%`),
+        h('td', { class: 'muted' }, v.weakest?.length ? v.weakest.map((w) => w.family).join(', ') : ''));
+    });
+    box.append(h('h2', {}, 'Exam forecast'),
+      h('p', { class: 'muted' }, 'From your answers so far: an ability model per section, simulated over full exams (skipping any question you would get right less than half the time). The interval is 80%.'),
+      rows.length ? h('div', { class: 'panel' }, h('table', {},
+        h('thead', {}, h('tr', {}, h('th', {}, 'Section'), h('th', { style: { textAlign: 'right' } }, 'Expected'), h('th', { style: { textAlign: 'right' } }, '80% range'), h('th', { style: { textAlign: 'right' } }, 'P(target)'), h('th', {}, 'Weakest families'))),
+        h('tbody', {}, rows))) : h('p', { class: 'muted' }, 'Answer questions in any section and the forecast appears here.'));
+  });
+  sync.verification().then((r) => {
+    if (!r?.sections) return;
+    const lines = Object.entries(r.sections).map(([id, v]) => {
+      const st = v.stats || {};
+      const extra = [st.monte_carlo ? `${st.monte_carlo} re-simulated in C++` : null, st.orderbook_solved ? `${st.orderbook_solved} re-solved by branch and bound` : null,
+        st.sequence_checked ? `${st.sequence_checked} rule-searched for ambiguity` : null].filter(Boolean).join(', ');
+      return h('li', {}, `${SECTIONS[id]?.title || id}: ${st.items || 0} checked, ${st.failed || 0} failed${extra ? `; ${extra}` : ''}.`);
+    });
+    const z = r.zapn;
+    if (z) lines.push(h('li', {}, `Zap-N: ${Object.entries(z).filter(([, v]) => v?.checked).map(([k, v]) => `${k} ${v.checked}`).join(', ')} puzzles re-solved in C++, ${Object.values(z).filter((v) => v?.mismatches?.length).length} with mismatches.`));
+    box.append(h('h2', {}, 'Question verification'), h('div', { class: 'panel' }, h('ul', { class: 'plain' }, lines)));
+  });
+  return box;
 }
 
 // Under +1/−1 scoring, answering is worth it only when P(correct) > 0.5:
