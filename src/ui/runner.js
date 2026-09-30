@@ -42,7 +42,7 @@ function paintTimer(el, ms) {
 }
 
 // ---------------------------------------------------------------- feedback modes
-export function runFeedbackSession(root, { sectionId, mode, family, count, store, onDone, items: fixedItems, title }) {
+export function runFeedbackSession(root, { sectionId, mode, family, count, store, onDone, items: fixedItems, title, setNumber }) {
   const section = SECTION_MODULES[sectionId];
   const cfg = SECTIONS[sectionId];
   const rng = makeRng(`${sectionId}:${mode}:${Date.now()}`);
@@ -134,6 +134,7 @@ export function runFeedbackSession(root, { sectionId, mode, family, count, store
     for (const x of log) { const f = byFam.get(x.family) || { n: 0, c: 0 }; f.n++; f.c += x.correct ? 1 : 0; byFam.set(x.family, f); }
     const weakest = [...byFam.entries()].sort((a, b) => a[1].c / a[1].n - b[1].c / b[1].n)[0];
     if (mode === 'drill' && n) store.recordRun({ section: sectionId, mode: 'drill', score: log.reduce((s, x) => s + x.score, 0), max: n, items: log });
+    if (setNumber != null && n === limit) store.recordSet(sectionId, setNumber, { score: Math.round(log.reduce((s, x) => s + x.score, 0) * 100) / 100, max: n, mode: 'practice' });
     mount(root, h('div', { class: 'panel' },
       h('h2', { style: { marginTop: 0 } }, `${modeLabel(mode)} summary`),
       n ? h('p', {}, `${correct} of ${n} correct (${Math.round((100 * correct) / n)}%).`) : h('p', { class: 'muted' }, mode === 'mistakes' ? 'Nothing is due for review in this section right now.' : 'No questions answered.'),
@@ -165,11 +166,11 @@ function flash(el, msg) {
 }
 
 // ---------------------------------------------------------------- exam replica
-export function runExam(root, { sectionId, variant, store, seed = Date.now(), onDone, mock = false }) {
+export function runExam(root, { sectionId, variant, store, seed = Date.now(), onDone, mock = false, items: fixedItems, setNumber }) {
   const section = SECTION_MODULES[sectionId];
   const base = SECTIONS[sectionId];
   const exam = { ...base.exam, ...(variant || {}) };
-  const items = examItems(section, { count: exam.count, ramp: sectionId === 'nl', bankRatio: 0.2 }, seed);
+  const items = fixedItems || examItems(section, { count: exam.count, ramp: sectionId === 'nl', bankRatio: 0.2 }, seed);
   const responses = items.map(() => null);
   const obSolved = items.map(() => false);
   let idx = 0;
@@ -275,8 +276,11 @@ export function runExam(root, { sectionId, variant, store, seed = Date.now(), on
       }
     });
     const run = { section: sectionId, mode: 'exam', mock, variant: variant?.label || null, score, max, items: items.map((it, i) => ({ family: it.family, score: results[i].score })) };
-    const official = !variant; // only the full-length replica counts toward readiness
-    if (official) store.recordRun(run);
+    // Only fresh full-length replicas count toward readiness; numbered sets and
+    // short variants are practice (a set can be memorised on a second attempt).
+    const official = !variant && setNumber == null;
+    if (setNumber != null) store.recordSet(sectionId, setNumber, { score, max, mode: 'timed' });
+    else if (official) store.recordRun(run);
     else store.recordRun({ ...run, mode: 'exam-variant' });
     review(results, score, max, official);
     onDone?.({ score, max });
@@ -300,10 +304,10 @@ export function runExam(root, { sectionId, variant, store, seed = Date.now(), on
     mount(root, h('div', { class: 'panel' },
       h('h2', { style: { marginTop: 0 } }, `${base.title}: ${sectionId === 'iv' ? `${score.toFixed(2)} of ${max} (mean ${(score / max).toFixed(2)})` : `${score} of ${max}`}`),
       h('p', {}, h('span', { class: `badge ${meets ? 'ok' : 'no'}` }, meets ? 'Target met' : 'Below target'), ` Target: ${target.label}.`),
-      official ? h('p', { class: 'muted' }, ready.ready ? 'Ready: the last 3 exams all met the target. This section is safe to open.' : `Readiness streak ${ready.streak} of ${ready.needed}. The section turns ready after 3 exams in a row at target.`) : h('p', { class: 'muted' }, 'Short variant: good practice, but only the full-length exam counts toward readiness.'),
+      setNumber != null ? h('p', { class: 'muted' }, `Set ${setNumber} is fixed practice: it does not count toward readiness. Fresh full exams do.`) : official ? h('p', { class: 'muted' }, ready.ready ? 'Ready: the last 3 exams all met the target. This section is safe to open.' : `Readiness streak ${ready.streak} of ${ready.needed}. The section turns ready after 3 exams in a row at target.`) : h('p', { class: 'muted' }, 'Short variant: good practice, but only the full-length exam counts toward readiness.'),
       h('table', {}, h('thead', {}, h('tr', {}, h('th', {}, '#'), h('th', {}, 'Family'), h('th', {}, 'Result'), h('th', { style: { textAlign: 'right' } }, 'Points'), h('th', {}))), h('tbody', {}, rows.flat())),
       h('div', { class: 'row', style: { marginTop: '16px' } },
-        h('a', { class: 'btn primary', href: `#/s/${sectionId}` }, 'Back to section'),
+        h('a', { class: 'btn primary', href: setNumber != null ? `#/s/${sectionId}/sets` : `#/s/${sectionId}` }, setNumber != null ? 'Back to sets' : 'Back to section'),
         h('a', { class: 'btn', href: `#/run/${sectionId}/mistakes` }, 'Review mistakes'))));
   }
 

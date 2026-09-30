@@ -12,7 +12,8 @@ It is an unofficial study tool. It is not made, endorsed or checked by Optiver, 
   - Likelihood List: exact order only.
   - Intervals: lower ÷ upper when the truth is inside.
   - Orderbooks: 20 boards in 8 minutes, and a wrong submit costs time.
-- **Unlimited questions.** Every question family has a generator and an independent verifier (enumeration, exact rational arithmetic, Markov-chain solves or simulation). The test suite checks that each section produces at least 300 distinct verified questions, and that every curated item from the research banks is valid and sourced.
+- **Hundreds of fixed questions per section, plus unlimited fresh ones.** Each section has a numbered library of at least 500 distinct questions, split into exam-sized sets (Set 1, Set 2, …). You work through them in order, practising with feedback or timed under the real rules, and your progress per set is tracked. Practice, Drill and Exam draw fresh questions without limit.
+- **Checked answers.** Every question family has a generator and an independent verifier (enumeration, exact rational arithmetic, Markov-chain solves or simulation). The test suite checks that each section produces at least 300 distinct verified questions, and that every curated item from the research banks is valid and sourced.
 - **Teaching built in:**
   - Learn mode runs purpose → anchor → derivation one move at a time → prediction before the reveal → compact rule → fresh test.
   - Every wrong multiple-choice option carries the false belief that produces it. A miss is answered with "your answer is what you get if you …", and then the solution unfolds step by step.

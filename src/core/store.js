@@ -50,6 +50,14 @@ export function makeStore(backend = defaultBackend()) {
       save();
     },
     zapnRuns(game) { return state.zapn[game] || []; },
+    recordSet(section, n, result) {
+      state.sets = state.sets || {};
+      const sec = (state.sets[section] = state.sets[section] || {});
+      const prev = sec[n];
+      sec[n] = { ...result, at: Date.now(), best: Math.max(result.score, prev?.best ?? -Infinity), attempts: (prev?.attempts || 0) + 1 };
+      save();
+    },
+    sets(section) { return state.sets?.[section] || {}; },
     stats() { return state.stats; },
     get srs() { return state.srs; },
     set srs(v) { state.srs = v; save(); },

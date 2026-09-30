@@ -3,6 +3,7 @@ import { SECTIONS } from '../../../config/sections.js';
 import { SECTION_MODULES } from '../../sections/index.js';
 import { srsDue } from '../../core/srs.js';
 import { formatLine, sectionStatus } from './home.js';
+import { buildLibrary, librarySets, setCount } from '../../core/library.js';
 
 export function sectionPage(root, { store, id }) {
   const cfg = SECTIONS[id];
@@ -12,6 +13,9 @@ export function sectionPage(root, { store, id }) {
     return mount(root, h('h1', {}, cfg.title), h('p', { class: 'muted' }, cfg.blurb), h('div', { class: 'panel' }, 'This section is still being built.'));
   }
   const st = sectionStatus(store, id);
+  const lib = buildLibrary(mod, { size: setCount(cfg.exam.count) * cfg.exam.count });
+  const nSets = librarySets(lib, cfg.exam.count).length;
+  const setsDone = Object.keys(store.sets(id)).length;
   const due = srsDue(store.srs).filter((k) => k.startsWith(`${id}:`)).length;
   const stats = store.stats();
   const famRows = mod.families.map((f) => {
@@ -38,6 +42,11 @@ export function sectionPage(root, { store, id }) {
         h('a', { class: 'btn', href: `#/run/${id}/exam` }, 'Exam (full replica)'),
         ...cfg.variants.map((v, i) => h('a', { class: 'btn', href: `#/run/${id}/exam/v${i}` }, v.label)),
         h('a', { class: 'btn', href: `#/run/${id}/mistakes` }, `Mistakes (${due} due)`))),
+    h('h2', {}, 'Question library'),
+    h('div', { class: 'panel spread' },
+      h('div', {}, h('div', {}, `${lib.length} fixed questions in ${nSets} exam-sized sets, plus unlimited fresh questions in Practice, Drill and Exam.`),
+        h('div', { class: 'muted' }, `${setsDone} of ${nSets} sets done.`)),
+      h('a', { class: 'btn primary', href: `#/s/${id}/sets` }, 'Open sets')),
     h('h2', {}, 'Question families'),
     h('p', { class: 'muted' }, `${mod.families.length} families, ${mod.bank.length} curated questions from reported past tests. Practice picks weaker families more often.`),
     h('div', { class: 'panel' }, h('table', {},

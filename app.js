@@ -8,6 +8,7 @@ import { learnPage } from './src/ui/pages/learn.js';
 import { zapnHub, zapnGame } from './src/ui/pages/zapn.js';
 import { mockPage } from './src/ui/pages/mock.js';
 import { dataPage } from './src/ui/pages/data.js';
+import { setsPage, setRunPage } from './src/ui/pages/sets.js';
 import { runFeedbackSession, runExam } from './src/ui/runner.js';
 import { optiverLogo } from './src/ui/logo.js';
 
@@ -24,6 +25,8 @@ mount(document.querySelector('.sidebar .brand'),
 const ROUTES = [
   [/^#?\/?$/, () => homePage(view, { store })],
   [/^#\/s\/(\w+)$/, (m) => sectionPage(view, { store, id: m[1] })],
+  [/^#\/s\/(\w+)\/sets$/, (m) => setsPage(view, { store, id: m[1] })],
+  [/^#\/s\/(\w+)\/sets\/(\d+)\/(practice|timed)$/, (m) => setRunPage(view, { store, id: m[1], n: +m[2], mode: m[3] })],
   [/^#\/s\/(\w+)\/learn\/([\w-]+)$/, (m) => learnPage(view, { store, id: m[1], family: m[2] })],
   [/^#\/run\/(\w+)\/exam(?:\/v(\d+))?$/, (m) => runExam(view, { sectionId: m[1], store, variant: m[2] != null ? SECTIONS[m[1]].variants[+m[2]] : null })],
   [/^#\/run\/(\w+)\/(practice|drill|mistakes)(?:\/([\w-]+))?$/, (m) => runFeedbackSession(view, { sectionId: m[1], mode: m[2], family: m[3], store })],
