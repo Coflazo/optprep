@@ -4,6 +4,15 @@ const ds = (v) => String(v).split('').reduce((a, b) => a + +b, 0);
 const dp = (v) => String(v).split('').reduce((a, b) => a * +b, 1);
 const F = { sum: ds, prod: dp };
 const W = { sum: 'digit sum', prod: 'digit product' };
+// Starts (2 or 3 digits) whose first 7 terms (6 shown + the answer) contain no 0 digit.
+// Only 6 two-digit starts qualify, so 3-digit starts are included: 98 in total.
+const PROD_STARTS = [];
+for (let a = 10; a <= 999; a++) {
+  let v = a, ok = true;
+  for (let i = 0; i < 7 && ok; i++) { ok = !String(v).includes('0'); v += dp(v); }
+  if (ok) PROD_STARTS.push(a);
+}
+if (PROD_STARTS.length < 50) throw new Error(`digit-sum: only ${PROD_STARTS.length} product starts`);
 
 export default family({
   id: 'digit-sum',
@@ -11,7 +20,9 @@ export default family({
   skill: 'When gaps are small, irregular and track the digits, test "add the sum of the digits"',
   levels: [3, 4],
   show: 6,
-  params: (rng, d) => ({ a: rng.int(10, 99), f: d === 3 ? 'sum' : 'prod' }),
+  // Digit products: most starts reach a number containing 0 within a few terms
+  // (product 0, the sequence stalls), so draw only from PROD_STARTS.
+  params: (rng, d) => (d === 3 ? { a: rng.int(10, 99), f: 'sum' } : { a: rng.pick(PROD_STARTS), f: 'prod' }),
   accept: ({ f }, xs) => xs.every((v, i) => i === 0 || !v.eq(xs[i - 1])) && (f === 'sum' || xs.every((v) => !String(v.toNumber()).includes('0'))),
   terms: ({ a, f }, n) => { const out = [a]; while (out.length < n) out.push(out[out.length - 1] + F[f](out[out.length - 1])); return out.map((v) => q(v)); },
   rule: ({ f }) => `a(n) = a(n−1) + ${W[f]} of a(n−1)`,

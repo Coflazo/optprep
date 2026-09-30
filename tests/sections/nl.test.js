@@ -76,3 +76,9 @@ test('nl bank: every curated item has a unique rule-consistent answer', () => {
     assert.ok(section.families.some((f) => f.id === it.params.rule), `${it.id}: unknown rule ${it.params.rule}`);
   }
 });
+
+// Regression: the digit-product variant used to exhaust its 80 retries on ~0.3% of seeds.
+test('nl/digit-sum: difficulty 4 always generates', () => {
+  const f = section.families.find((x) => x.id === 'digit-sum');
+  for (let s = 0; s < 5000; s++) assert.doesNotThrow(() => f.generate(makeRng(`digit-product:${s}`), { difficulty: 4 }), `seed ${s}`);
+});
