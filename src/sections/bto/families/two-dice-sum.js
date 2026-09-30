@@ -67,6 +67,8 @@ export default {
         'List the sums that qualify, then count ordered pairs for each: the count peaks at 7.',
         `Favourable ordered pairs: ${count}.`,
       ],
+      // Structured inputs: the event is "sum of two fair six-sided dice lies in sums".
+      params: { family: 'two-dice-sum', dice: 2, sides: 6, sums: ev.sums },
     };
   },
 
