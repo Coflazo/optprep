@@ -315,3 +315,5 @@ input.study-input[type=number] { width: 120px; }
   a { text-decoration: none; }
 }
 .dg-halo { paint-order: stroke; stroke: var(--bg); stroke-width: 4px; stroke-linejoin: round; }
+.study-figure svg.dg-flowchart { min-width: min(var(--flow-min, 720px), 100%); }
+@media (max-width: 760px) { .study-figure svg.dg-flowchart { min-width: 640px; } }

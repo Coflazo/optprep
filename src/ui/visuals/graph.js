@@ -8,7 +8,7 @@ import { h as el, s } from '../dom.js';
 //   edges: [{ from: string, to: string, p: number, label?: string }],  // label e.g. '1/3'; from === to draws a self-loop
 // }
 const W = 520, H = 400, PAD = 64, R = 24;
-const fmtP = (p) => String(Number(p.toFixed(3)));
+const fmtP = (p) => (typeof p === 'number' ? String(Number(p.toFixed(3))) : String(p ?? ''));
 
 export default function graph(spec) {
   const pos = new Map(spec.nodes.map((n) => [n.id, [PAD + n.x * (W - 2 * PAD), PAD + (spec.title ? 16 : 0) + n.y * (H - 2 * PAD - (spec.title ? 16 : 0))]]));

@@ -19,35 +19,47 @@ export function validate(spec) {
   return e;
 }
 
-// Layered layout: depth = longest path from root; order within a layer by DFS discovery.
+// Left-to-right tidy layout: depth = longest path from root gives the column; leaves take
+// rows in DFS order and each parent is centred on its children, so wide trees grow downwards.
 export function render(spec) {
   const out = new Map(spec.nodes.map((n) => [n.id, []]));
   for (const ed of spec.edges) out.get(ed.from).push(ed);
-  const depth = new Map([[spec.root, 0]]);
-  const order = [];
-  const visit = (u) => { order.push(u); for (const ed of out.get(u)) { const d = depth.get(u) + 1; if (!depth.has(ed.to) || depth.get(ed.to) < d) depth.set(ed.to, d); if (!order.includes(ed.to)) visit(ed.to); } };
-  visit(spec.root);
-  for (let pass = 0; pass < spec.nodes.length; pass++) for (const ed of spec.edges) depth.set(ed.to, Math.max(depth.get(ed.to) ?? 0, (depth.get(ed.from) ?? 0) + 1));
-  const layers = [];
-  for (const id of order) (layers[depth.get(id)] ||= []).push(id);
-  const boxW = 190, gapX = 24, rowH = 110;
-  const W = Math.max(...layers.map((l) => l.length)) * (boxW + gapX) + gapX;
-  const H = layers.length * rowH + 20;
-  const pos = new Map();
-  layers.forEach((l, d) => { const total = l.length * (boxW + gapX) - gapX; l.forEach((id, i) => pos.set(id, [(W - total) / 2 + i * (boxW + gapX), 16 + d * rowH])); });
   const byId = new Map(spec.nodes.map((n) => [n.id, n]));
+  const depth = new Map([[spec.root, 0]]);
+  for (let pass = 0; pass < spec.nodes.length; pass++) for (const ed of spec.edges) if (depth.has(ed.from)) depth.set(ed.to, Math.max(depth.get(ed.to) ?? 0, depth.get(ed.from) + 1));
+  const boxW = 180, gapX = 110, gapY = 12, padX = 12, padY = 12;
+  const lines = (n) => wrap(n.text, 24);
+  const boxH = (n) => 14 + lines(n).length * 16;
+  const cy = new Map();
+  let nextY = padY;
+  const place = (u) => {
+    if (cy.has(u)) return;
+    cy.set(u, null);
+    const kids = out.get(u).map((ed) => ed.to).filter((v) => cy.get(v) === undefined);
+    kids.forEach(place);
+    const placed = kids.map((v) => cy.get(v)).filter((y) => y != null);
+    if (!placed.length) { const hh = boxH(byId.get(u)); cy.set(u, nextY + hh / 2); nextY += hh + gapY; }
+    else cy.set(u, (Math.min(...placed) + Math.max(...placed)) / 2);
+  };
+  place(spec.root);
+  const x = (id) => padX + depth.get(id) * (boxW + gapX);
+  const W = padX * 2 + (Math.max(...depth.values()) + 1) * (boxW + gapX) - gapX;
+  const H = nextY - gapY + padY;
   const parts = [s('defs', {}, s('marker', { id: 'dg-arrow', viewBox: '0 0 10 10', refX: 9, refY: 5, markerWidth: 7, markerHeight: 7, orient: 'auto-start-reverse' }, s('path', { d: 'M 0 0 L 10 5 L 0 10 z', class: 'dg-arrowhead' })))];
-  const boxH = (n) => 18 + wrap(n.text, 26).length * 16;
   for (const ed of spec.edges) {
-    const [x1, y1] = pos.get(ed.from), [x2, y2] = pos.get(ed.to);
-    const a = [x1 + boxW / 2, y1 + boxH(byId.get(ed.from))], b = [x2 + boxW / 2, y2];
-    parts.push(s('path', { d: `M ${a[0]} ${a[1]} C ${a[0]} ${a[1] + 30}, ${b[0]} ${b[1] - 30}, ${b[0]} ${b[1] - 2}`, class: 'dg-line', 'marker-end': 'url(#dg-arrow)', fill: 'none' }));
-    if (ed.label) parts.push(text((a[0] + b[0]) / 2, (a[1] + b[1]) / 2, ed.label, { class: 'dg-text dg-small dg-edge-label dg-halo' }));
+    const a = [x(ed.from) + boxW, cy.get(ed.from)], b = [x(ed.to), cy.get(ed.to)];
+    const mid = (a[0] + b[0]) / 2;
+    parts.push(s('path', { d: `M ${a[0]} ${a[1]} C ${mid} ${a[1]}, ${mid} ${b[1]}, ${b[0] - 2} ${b[1]}`, class: 'dg-line', 'marker-end': 'url(#dg-arrow)', fill: 'none' }));
+    if (ed.label) parts.push(text(b[0] - 8, b[1] - 9, ed.label, { 'text-anchor': 'end', class: 'dg-text dg-small dg-edge-label dg-halo' }));
   }
   for (const n of spec.nodes) {
-    const [x, y] = pos.get(n.id); const lines = wrap(n.text, 26);
-    const g = s('g', {}, rect(x, y, boxW, boxH(n), `dg-box dg-flow-${n.kind || 'q'}`, 6), ...lines.map((ln, i) => text(x + boxW / 2, y + 17 + i * 16, ln, { class: n.kind === 'a' ? 'dg-text dg-strong-text' : 'dg-text' })));
+    if (cy.get(n.id) == null) continue;
+    const top = cy.get(n.id) - boxH(n) / 2;
+    const g = s('g', {}, rect(x(n.id), top, boxW, boxH(n), `dg-box dg-flow-${n.kind || 'q'}`, 6),
+      ...lines(n).map((ln, i) => text(x(n.id) + boxW / 2, top + 15 + i * 16, ln, { class: n.kind === 'a' ? 'dg-text dg-strong-text' : 'dg-text' })));
     parts.push(n.link ? s('a', { href: `#/study/lesson/${n.link}` }, g) : g);
   }
-  return svg(W, H, spec.label || 'Decision tree', ...parts);
+  const el = svg(W, H, spec.label || 'Decision tree', ...parts);
+  el.setAttribute('class', 'diagram dg-flowchart');
+  return el;
 }
