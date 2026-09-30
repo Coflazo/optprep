@@ -76,14 +76,17 @@ export function runFeedbackSession(root, { sectionId, mode, family, count, store
     const hints = mode === 'drill' ? null : hintLadder(item, (n) => { current.hints = n; });
     const body = itemBody(item, { preview: mode !== 'drill' });
     const t = timerEl();
+    // The family name can give the method away (e.g. "cheap bundle: buy it, sell the parts"),
+    // so it is shown only after the answer is in, except when the learner chose the family.
+    const famLabel = h('span', {}, family || mode === 'learn' ? ` · ${familyTitle(section, item.family)}` : '');
     const head = h('div', { class: 'qhead' },
-      h('span', {}, `${title || cfg.title} · ${modeLabel(mode)} · ${familyTitle(section, item.family)}`),
+      h('span', {}, `${title || cfg.title} · ${modeLabel(mode)}`, famLabel),
       h('span', {}, Number.isFinite(limit) ? `${idx + 1} / ${limit}` : `#${idx + 1}`, mode === 'drill' ? ' · ' : '', mode === 'drill' ? t : ''));
     const controls = h('div', { class: 'row' }, submitBtn, unsureBtn, skipBtn, hints?.btn,
       h('span', { style: { flex: 1 } }), h('button', { class: 'btn', type: 'button', onclick: () => { idx = limit; summary(); } }, 'End session'));
     const after = h('div', {});
     mount(root, h('div', { class: 'panel' }, head, body.el, hints?.box, controls, after));
-    current.body = body; current.after = after; current.controls = controls;
+    current.body = body; current.after = after; current.controls = controls; current.famLabel = famLabel;
     if (item.kind === 'interval') body.view.focus?.();
 
     const onKey = (e) => {
@@ -119,6 +122,7 @@ export function runFeedbackSession(root, { sectionId, mode, family, count, store
     store.srs = srsRecord(store.srs, `${sectionId}:${item.family}`, correctNoHelp);
     log.push({ family: item.family, correct: result.correct, score: result.score, hints: current.hints, ms });
     body.view.reveal(result, response);
+    current.famLabel.textContent = ` · ${familyTitle(section, item.family)}`;
     const banner = feedbackBanner(item, result, response);
     mount(current.after, banner, solutionPanel(item, { stepwise: !result.correct }),
       h('div', { class: 'row', style: { marginTop: '12px' } }, h('button', { class: 'btn primary', type: 'button', onclick: () => { idx++; show(); } }, idx + 1 >= limit ? 'Finish' : 'Next (Enter)')));

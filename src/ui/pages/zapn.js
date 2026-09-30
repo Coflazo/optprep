@@ -42,7 +42,8 @@ export function zapnGame(root, { store, id, mode = 'practice' }) {
   const stage = h('div', {});
   const resultBox = h('div', {});
   let unmount = null;
-  const coach = h('details', { class: 'panel', open: mode === 'practice' },
+  // Coach opens by default only until the game has been played once, so the stage is visible first after that.
+  const coach = h('details', { class: 'panel', open: mode === 'practice' && !store.zapnRuns(id).length },
     h('summary', {}, h('strong', {}, 'How it works and how to play it well')),
     c.purpose ? h('p', {}, c.purpose) : null,
     g.spec ? h('p', { class: 'muted' }, g.spec) : null,
