@@ -9,6 +9,8 @@ const ways = (s) => (s < 2 || s > 12 ? 0 : 6 - Math.abs(s - 7));
 const frac = (n, d) => { const g = gcd(n, d); return `${n / g}/${d / g}`; };
 function gcd(a, b) { while (b) [a, b] = [b, a % b]; return a || 1; }
 const SUMS = [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
+const atLeast = (k) => SUMS.filter((s) => s >= k).reduce((a, s) => a + ways(s), 0);
+const threeWays = (t) => { let n = 0; for (let a = 1; a <= 6; a++) for (let b = 1; b <= 6; b++) for (let c = 1; c <= 6; c++) n += a + b + c === t ? 1 : 0; return n; };
 
 const gridFor = (pred) => ({
   rows: 6, cols: 6, rowTitle: 'first die', colTitle: 'second die',
@@ -114,6 +116,14 @@ export default {
       { make: (rng) => { const k = rng.int(3, 5); const n = SUMS.filter((s) => s <= k).reduce((a, s) => a + ways(s), 0); return { type: 'choice', q: `P(sum ≤ ${k}) equals which of these?`, options: [`P(sum ≥ ${14 - k})`, `P(sum ≥ ${13 - k})`, `P(sum ≤ ${k + 1})`], answer: 0, explain: `Mirror about 7: ≤ ${k} pairs with ≥ ${14 - k}; both are ${n} pairs.` }; } },
     ] },
 
+    { type: 'thinkaloud', problem: 'Two fair dice are thrown. What is the probability that the sum is at least 9?', lines: [
+      { t: 0, say: 'Two dice, a sum, a threshold: grid question. I count ordered pairs, never sums.' },
+      { t: 3, say: 'The threshold is near the top, so I use the partial sums from 12 down: 1, 3, 6, then 10 for "at least 9".' },
+      { t: 8, say: `${atLeast(9)} of 36, which is ${frac(atLeast(9), 36)}.` },
+      { t: 12, say: `Sanity check: 9 is above the middle (7), so the answer must be under 1/2. ${frac(atLeast(9), 36)} ≈ ${(atLeast(9) / 36).toFixed(2)}. Fine.` },
+      { t: 15, say: `Answer ${frac(atLeast(9), 36)}. That leaves ${90 - 15} of the 90 seconds.` },
+    ] },
+
     S('rule'),
     { type: 'callout', tone: 'rule', text: 'Two dice → 36 ordered pairs; ways(s) = 6 − |s − 7|; add the ways, divide by 36.' },
 
@@ -129,6 +139,14 @@ export default {
     { type: 'check', scope: 'the contrast table and edge cases', questions: [
       { type: 'choice', q: 'Two dice. P(sum is even)?', options: ['1/2', '6/11', '11/21', '5/9'], answer: 0, traps: { 1: '6 even sums out of 11 sums: equal-sums belief' }, explain: '18 of the 36 cells are even: 1/2 exactly.' },
       { type: 'number', q: 'Three dice: how many equally likely ordered outcomes?', answer: 216, explain: '6 × 6 × 6 = 216.' },
+    ] },
+
+    { type: 'variation', base: `Two fair dice. P(sum = 8) = ${frac(ways(8), 36)}.`, rows: [
+      { change: 'Ask for sum 6 instead of 8', effect: `No change: ${frac(ways(6), 36)}. 6 and 8 mirror each other around 7.` },
+      { change: 'Colour one die red and one blue', effect: 'No change. The count already treated the dice as different (ordered pairs); colour only makes that visible.' },
+      { change: 'Ask for "at least 8"', effect: `Add the counts from 8 up: ${[8, 9, 10, 11, 12].map(ways).join(' + ')} = ${atLeast(8)}, so ${frac(atLeast(8), 36)}.` },
+      { change: 'Ask for "one die shows 3 and the other 5"', effect: `A specific pair, not a sum: (3,5) and (5,3), so ${frac(2, 36)}.` },
+      { change: 'Throw three dice, sum 8', effect: `The grid becomes a 6 × 6 × 6 cube: ${threeWays(8)} of 216 triples, ${frac(threeWays(8), 216)}. The counting idea stays; the tent does not.` },
     ] },
 
     S('tryit'),

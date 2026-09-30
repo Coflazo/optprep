@@ -2,7 +2,7 @@ import { h, mount } from '../ui/dom.js';
 import { BOOKS, BOOK_BY_ID, LESSON_BY_ID } from './content/index.js';
 import { lessonsOf, wordCount } from './schema.js';
 import { renderLesson, renderBlock, familyOf } from './render.js';
-import { statusOf, dueLessons } from './progress.js';
+import { statusOf, dueLessons, weakUnits } from './progress.js';
 import { renderInline } from './markup.js';
 import { makeRng } from '../core/rng.js';
 import { renderVisual } from '../ui/visuals/index.js';
@@ -15,10 +15,14 @@ const minutes = (L) => L.minutes ?? Math.max(4, Math.round(wordCount(L) / 170 + 
 
 export function studyHome(root, { store }) {
   const due = dueLessons(store).filter((id) => LESSON_BY_ID[id]);
+  const weak = weakUnits(store).filter((u) => LESSON_BY_ID[u.id]);
   mount(root,
     h('h1', {}, 'Study guide'),
     h('p', { class: 'muted' }, 'Every question type, taught from first principles: a picture first, the derivation one move at a time with a check after each move, live worked examples, the traps, speed tricks, and a rule to keep. A lesson is mastered after three fresh questions in a row without hints, and it comes back for review.'),
     due.length ? h('div', { class: 'panel' }, h('h2', { style: { marginTop: 0 } }, `Due for review (${due.length})`), h('ul', { class: 'plain' }, due.slice(0, 10).map((id) => h('li', {}, h('a', { href: `#/study/lesson/${id}` }, LESSON_BY_ID[id].title))))) : null,
+    weak.length ? h('div', { class: 'panel' }, h('h2', { style: { marginTop: 0 } }, `Units to revisit (${weak.length})`),
+      h('p', { class: 'small-note muted' }, 'Units whose last first attempt was wrong. Each stays here until you get it right.'),
+      h('ul', { class: 'plain' }, weak.slice(0, 10).map((u) => h('li', {}, h('a', { href: `#/study/lesson/${u.id}` }, LESSON_BY_ID[u.id].title), h('span', { class: 'muted' }, `: ${u.unit}`))))) : null,
     h('div', { class: 'panel' }, h('table', {},
       h('thead', {}, h('tr', {}, h('th', {}, 'Book'), h('th', { style: { textAlign: 'right' } }, 'Lessons'), h('th', { style: { textAlign: 'right' } }, 'Mastered'), h('th', {}))),
       h('tbody', {}, BOOKS.map((b) => {

@@ -13,8 +13,8 @@ const good = {
     sections[4], { type: 'steps', steps: [{ say: 'a', why: 'b', checks: chk }, { say: 'c', why: 'd', checks: chk }] }, { type: 'explain', prompt: 'why?', model: 'because', points: ['p1', 'p2'] },
     sections[5], { type: 'worked', family: 'two-dice-sum', difficulty: 1 }, { type: 'worked', family: 'two-dice-sum', difficulty: 2, fade: 1 },
     sections[6], { type: 'predict', question: 'q?', answer: 'a' }, sections[7], { type: 'traps', family: 'two-dice-sum' }, { type: 'erroneous', problem: 'p', steps: ['a', 'b', 'c'], errorStep: 1, explain: 'e' }, check,
-    sections[8], { type: 'callout', tone: 'speed', text: 'fast' }, check, sections[9], { type: 'callout', tone: 'rule', text: 'rule' },
-    sections[10], { type: 'compare', columns: ['a', 'b'], rows: [['1', '2']] }, { type: 'callout', tone: 'transfer', text: 't' }, check, sections[11], { type: 'tryit', family: 'two-dice-sum' },
+    sections[8], { type: 'thinkaloud', problem: 'p', lines: [{ t: 0, say: 'see it' }, { t: 3, say: 'pick the method' }, { t: 9, say: 'check it' }] }, { type: 'callout', tone: 'speed', text: 'fast' }, check, sections[9], { type: 'callout', tone: 'rule', text: 'rule' },
+    sections[10], { type: 'compare', columns: ['a', 'b'], rows: [['1', '2']] }, { type: 'callout', tone: 'transfer', text: 't' }, check, { type: 'variation', base: 'b', rows: [{ change: 'c1', effect: 'e1' }, { change: 'c2', effect: 'e2' }] }, sections[11], { type: 'tryit', family: 'two-dice-sum' },
   ],
 };
 

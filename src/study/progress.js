@@ -47,3 +47,23 @@ export function recordReflection(store, id, data, now = Date.now()) {
   store.save();
   return st[id];
 }
+
+// Knowledge components: every check scope (a unit of teaching) is tracked separately, so a
+// lesson can be "read" while one of its units is still weak. A unit whose latest first
+// attempt was wrong comes back on the study home until it is answered right.
+export function recordUnit(store, id, unit, clean, now = Date.now()) {
+  if (!store || !unit) return;
+  const st = studyState(store);
+  const cur = st[id] || {};
+  const units = { ...(cur.units || {}) };
+  const u = units[unit] || { n: 0, clean: 0 };
+  units[unit] = { n: u.n + 1, clean: u.clean + (clean ? 1 : 0), last: clean, at: now };
+  st[id] = { ...cur, units };
+  store.save();
+}
+
+export function weakUnits(store) {
+  const out = [];
+  for (const [id, x] of Object.entries(studyState(store))) for (const [unit, u] of Object.entries(x.units || {})) if (u.last === false) out.push({ id, unit, ...u });
+  return out.sort((a, b) => b.at - a.at);
+}

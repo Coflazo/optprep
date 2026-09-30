@@ -31,3 +31,13 @@ test('interleave: no type twice in a row when avoidable', async () => {
     for (let i = 1; i < out.length; i++) assert.notEqual(out[i][0], out[i - 1][0], `seed ${s}: ${out}`);
   }
 });
+
+test('units: a missed unit is weak until its next first attempt is right', async () => {
+  const { recordUnit, weakUnits } = await import('../../src/study/progress.js');
+  const store = makeStore(memoryBackend());
+  recordUnit(store, 'bto/x', 'reading the grid', false, 1);
+  recordUnit(store, 'bto/x', 'the tent', true, 2);
+  assert.deepEqual(weakUnits(store).map((u) => u.unit), ['reading the grid']);
+  recordUnit(store, 'bto/x', 'reading the grid', true, 3);
+  assert.deepEqual(weakUnits(store), []);
+});

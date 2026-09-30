@@ -8,12 +8,12 @@ export const SECTION_TITLES = {
   derivation: 'Derivation, one move at a time', worked: 'Worked examples', predict: 'Predict before you look',
   traps: 'Traps', speed: 'Speed', rule: 'Rule', contrast: 'Contrast and edge cases', tryit: 'Try it',
 };
-export const BLOCK_TYPES = ['section', 'text', 'callout', 'diagram', 'steps', 'predict', 'worked', 'traps', 'compare', 'list', 'formula', 'tryit', 'recognize', 'check', 'challenge', 'explain', 'erroneous'];
+export const BLOCK_TYPES = ['section', 'text', 'callout', 'diagram', 'steps', 'predict', 'worked', 'traps', 'compare', 'list', 'formula', 'tryit', 'recognize', 'check', 'challenge', 'explain', 'erroneous', 'thinkaloud', 'variation'];
 // Sections that teach something get micro-checks; these do not (motivation, examples, summaries, the final test).
 export const CHECK_EXEMPT = ['why', 'worked', 'predict', 'rule', 'tryit'];
 export const CALLOUT_TONES = ['idea', 'trap', 'speed', 'rule', 'contrast', 'edge', 'transfer'];
 export const KINDS = ['family', 'game', 'foundation', 'strategy'];
-const TEACHING = ['text', 'diagram', 'callout', 'formula', 'list', 'compare'];
+const TEACHING = ['text', 'diagram', 'callout', 'formula', 'list', 'compare', 'thinkaloud'];
 
 const str = (x) => typeof x === 'string' && x.trim().length > 0;
 const strOrFn = (x) => str(x) || typeof x === 'function';
@@ -48,6 +48,16 @@ export function validateBlock(b, where = '') {
       if (!str(b.problem) || !Array.isArray(b.steps) || b.steps.length < 3 || !Number.isInteger(b.errorStep) || !b.steps[b.errorStep] || !str(b.explain)) at('needs problem, >= 3 steps, a valid errorStep and explain');
       break;
     case 'recognize': if (!Array.isArray(b.items) || !b.items.length) at('needs items'); break;
+    // think-aloud: an expert's inner monologue at exam pace, with the second each thought happens
+    case 'thinkaloud':
+      if (!str(b.problem) || !Array.isArray(b.lines) || b.lines.length < 3 || !b.lines.every((l) => Number.isFinite(l.t) && str(l.say))) at('needs problem and >= 3 lines of { t (seconds), say }');
+      else if (b.lines.some((l, i) => i && l.t < b.lines[i - 1].t)) at('line times must not go backwards');
+      else if (b.lines.some((l) => l.say.split(/\s+/).length > 40)) at('a think-aloud line is a thought, not a paragraph (max 40 words)');
+      break;
+    // variation theory: one feature of a base problem changes per row; predict the effect, then reveal it
+    case 'variation':
+      if (!str(b.base) || !Array.isArray(b.rows) || b.rows.length < 2 || !b.rows.every((r) => str(r.change) && str(r.effect))) at('needs base and >= 2 rows of { change, effect }');
+      break;
     default: break;
   }
   return e;

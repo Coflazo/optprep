@@ -317,3 +317,16 @@ input.study-input[type=number] { width: 120px; }
 .dg-halo { paint-order: stroke; stroke: var(--bg); stroke-width: 4px; stroke-linejoin: round; }
 .study-figure svg.dg-flowchart { min-width: min(var(--flow-min, 720px), 100%); }
 @media (max-width: 760px) { .study-figure svg.dg-flowchart { min-width: 640px; } }
+
+/* Study: progress, warm-up, think-aloud, variation, retry */
+.study-progress { position: sticky; top: 0; z-index: 2; background: var(--bg); padding: 8px 0; display: grid; gap: 4px; border-bottom: 1px solid var(--border); }
+.study-warmup { border: 1px dashed var(--border); border-radius: var(--radius); padding: 12px 14px; }
+.study-think, .study-variation { border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 16px; background: var(--surface); }
+.prompt-small { font-size: 15px; margin: 4px 0 10px; }
+.think-lines { list-style: none; padding: 0; margin: 10px 0 0; display: grid; gap: 6px; }
+.think-lines li { display: grid; grid-template-columns: 48px 1fr; gap: 8px; align-items: baseline; }
+.think-t { color: var(--text-2); font-size: 12px; text-align: right; }
+.study-variation table td:first-child { width: 45%; }
+.check-again { margin-top: 10px; padding-left: 12px; border-left: 2px solid var(--border); }
+.study-input.wide { width: 260px; }
+@media print { .study-progress { display: none; } .think-lines li[hidden] { display: grid !important; } }
