@@ -27,6 +27,9 @@ const d3 = (x) => (Math.round(x.toNumber() * 1000) / 1000).toFixed(3);
 const d4 = (x) => (Math.round(x.toNumber() * 10000) / 10000).toFixed(4);
 const words = ['', 'one', 'two', 'three', 'four', 'five', 'six'];
 const KS = [1, 2, 3, 4, 5, 6];
+const SAME3 = Q.of(12, 51).mul(Q.of(11, 50)); // three cards, same suit
+// Chain over a pool of n items with g good: all k good.
+const poolAll = (g, n, k) => { let p = Q.of(1); for (let i = 0; i < k; i++) p = p.mul(Q.of(g - i, n - i)); return p; };
 
 export default {
   id: 'bto/card-draws',
@@ -44,7 +47,11 @@ export default {
   ],
   blocks: [
     S('recognise'),
-    { type: 'challenge', q: 'Before any teaching: two cards are dealt from a shuffled deck. What is the probability that both are aces? Try two different approaches.', answer: `4/52 × 3/51 = ${TWO_ACES}`, explain: `Chain: the first is an ace with 4/52, then 3 aces remain among 51. Counting: C(4,2) = 6 ace pairs out of C(52,2) = 1326 pairs. If you got 1/169 you put the first card back; if you got 2/221 you doubled for the orders, which the chain already includes.` },
+    { type: 'challenge', q: 'Before any teaching: two cards are dealt from a shuffled deck. What is the probability that both are aces? Try two different approaches.', answer: `4/52 × 3/51 = ${TWO_ACES}`, explain: `Chain: the first is an ace with 4/52, then 3 aces remain among 51. Counting: C(4,2) = 6 ace pairs out of C(52,2) = 1326 pairs. If you got 1/169 you put the first card back; if you got 2/221 you doubled for the orders, which the chain already includes.`, attempts: [
+      { id: 'replace', label: 'Same 4/52 for both cards', approach: '(4/52)² = 1/169.', breaksAt: 'The first ace is gone: only 3 aces remain, among 51 cards.' },
+      { id: 'free-first', label: 'First card free', approach: 'The first card only sets the target, so 1 × 3/51.', breaksAt: '"Both aces" names the target, so card 1 must be an ace too and is charged 4/52.' },
+      { id: 'double', label: 'Double for the two orders', approach: `4/52 × 3/51, then × 2 for the two orders: ${TWO_ACES.mul(Q.of(2))}.`, breaksAt: 'The chain already covers every order: "an ace, then another ace" never says which ace comes first.' },
+    ] },
     { type: 'text', text: 'Several cards are dealt from one shuffled deck, so they are drawn **without replacement**, and the question asks about the hand: both aces, a pair, same suit or colour, all red, at least one ace or heart, no two of the same rank, a flush.' },
     { type: 'list', items: ['"Two cards are dealt. Probability both are aces?"', '"Two cards: probability they have the same rank?"', '"Five cards: probability of at least one ace?"', '"Five cards: probability all five are the same suit?"'] },
     { type: 'text', text: 'Not this lesson: one card at a position (bto/card-symmetry) and balls of two colours (bto/urn-draws, same maths with simpler groups). Here the hand has several cards and both counts shrink with every draw.' },
@@ -87,21 +94,21 @@ export default {
 
     S('derivation'),
     { type: 'steps', steps: [
-      { say: 'Chain rule: P(card 1 good and card 2 good) = P(card 1 good) × P(card 2 good | card 1 good). Each factor is (good left)/(cards left).', why: 'After a card is dealt, the remaining cards are a uniform deck of 51, so the conditional chance is a plain fraction of what is left.',
+      { answers: 'replace', say: 'Chain rule: P(card 1 good and card 2 good) = P(card 1 good) × P(card 2 good | card 1 good). Each factor is (good left)/(cards left).', why: 'After a card is dealt, the remaining cards are a uniform deck of 51, so the conditional chance is a plain fraction of what is left.',
         checks: [
           { make: (rng) => { const g = rng.pick([[4, 'aces'], [13, 'hearts'], [12, 'face cards']]); return mc(rng, `Two cards. P(both are ${g[1]})?`, allFrom(g[0], 2).toString(), [[qpow(Q.of(g[0], 52), 2).toString(), 'kept the first card in the deck'], [Q.of(g[0], 52).mul(Q.of(g[0] - 1, 52)).toString(), 'lowered the good count but left the deck at 52'], [Q.of(g[0], 52).mul(Q.of(g[0], 51)).toString(), 'lowered the deck but not the good count']], `${chainText(g[0], 2)} = ${allFrom(g[0], 2)}.`); } },
         ] },
-      { say: 'If the event names no target, the first card only sets one, so its factor is 1: same suit = 1 × 12/51.', why: 'Every first card is fine; the question is only whether later cards match it.',
+      { answers: 'free-first', say: 'If the event names no target, the first card only sets one, so its factor is 1: same suit = 1 × 12/51.', why: 'Every first card is fine; the question is only whether later cards match it.',
         checks: [
           { type: 'choice', q: 'Three cards. P(all the same suit)?', options: [Q.of(12, 51).mul(Q.of(11, 50)).toString(), Q.of(13, 52).mul(Q.of(12, 51)).mul(Q.of(11, 50)).toString(), qpow(Q.of(1, 4), 2).toString(), Q.of(12, 51).toString()], answer: 0, traps: { 1: 'charged the first card 13/52: that is "all hearts"', 2: 'used 1/4 for each later card, as if with replacement', 3: 'only checked the second card' }, explain: `1 × 12/51 × 11/50 = ${Q.of(12, 51).mul(Q.of(11, 50))}.` },
         ] },
-      { say: 'All k cards from a group of g: g/52 × (g − 1)/51 × … (k factors). The same value as C(g, k)/C(52, k), counting hands.', why: 'The chain counts ordered deals; dividing ordered counts by k! on top and bottom gives the hand count, so the two routes agree.',
+      { answers: 'double', say: 'All k cards from a group of g: g/52 × (g − 1)/51 × … (k factors). The same value as C(g, k)/C(52, k), counting hands.', why: 'The chain counts ordered deals; dividing ordered counts by k! on top and bottom gives the hand count, so the two routes agree.',
         checks: [
           { make: (rng) => { const k = rng.int(2, 4); return { type: 'number', q: `${words[k]} cards are dealt. P(all are hearts)? Give 4 decimals.`.replace(/^./, (c) => c.toUpperCase()), answer: Math.round(allFrom(13, k).toNumber() * 10000) / 10000, tolerance: 0.00015, hints: ['Start at 13/52.', `Lower both counts each card: ${chainText(13, k)}.`], explain: `${chainText(13, k)} = ${allFrom(13, k)} ≈ ${d4(allFrom(13, k))}.` }; } },
         ] },
       { say: 'At least one: 1 − P(none), where "none" is a chain over the non-good cards: at least one ace in k cards = 1 − 48/52 × 47/51 × …', why: 'The at-least-one rule, with the shrinking product in place of (48/52)^k.',
         checks: [
-          { make: (rng) => { const k = rng.int(2, 5); return mc(rng, `${words[k]} cards are dealt. P(at least one ace)?`.replace(/^./, (c) => c.toUpperCase()), `1 − ${chainText(48, k)}`, [[`${k} × 4/52`, 'added 4/52 per card: hands with two aces counted twice'], [`1 − (48/52)^${k}`, 'used 48/52 for every card, as if dealt with replacement'], [chainText(48, k), 'answered P(no ace)']], `1 − ${allFrom(48, k)} ≈ ${d3(atLeastOne(4, k))}.`); } },
+          { make: (rng) => { const k = rng.int(2, 5); return mc(rng, `${words[k]} cards are dealt. P(at least one ace)?`.replace(/^./, (c) => c.toUpperCase()), `1 − ${chainText(48, k)}`, [[Array(k).fill('4/52').join(' + '), 'added 4/52 per card: hands with two aces counted twice'], [`1 − ${Array(k).fill('48/52').join(' × ')}`, 'used 48/52 for every card, as if dealt with replacement'], [chainText(48, k), 'answered P(no ace)']], `1 − ${allFrom(48, k)} ≈ ${d3(atLeastOne(4, k))}.`); } },
         ] },
       { say: 'No two cards share a rank: each new card must avoid every rank used so far, 4 cards fewer each time: 52/52 × 48/51 × 44/50 × …', why: 'The die-repeats "all different" walk, with 4 cards per rank and a deck that shrinks by one.',
         checks: [
@@ -115,8 +122,16 @@ export default {
     { type: 'explain', prompt: 'In your own words: why is P(both aces) = 4/52 × 3/51 not doubled "for the two orders", while P(one ace and one king) needs both orders?', model: 'The chain for "both aces" already covers every order of two aces: whichever ace comes first, the second factor counts all the remaining aces. For one ace and one king, the chain 4/52 × 4/51 describes only "ace then king"; "king then ace" is a different path with the same value, so it must be added.', points: ['a chain over one group already covers all orders within that group', 'mixed hands have several orders, one path each', 'add the paths (or count hands) when the cards come from different groups'] },
 
     S('worked'),
-    { type: 'worked', family: 'card-draws', section: 'bto', difficulty: 1, seed: 'c', intro: 'A two-card hand. Try it before opening the solution.' },
+    { type: 'worked', family: 'card-draws', section: 'bto', difficulty: 1, seed: 'c', explainAt: [1], intro: 'A two-card hand. Try it before opening the solution.' },
     { type: 'worked', family: 'card-draws', section: 'bto', difficulty: 2, seed: 'c', fade: 1, intro: 'At least one in a bigger hand. The first steps are given; the last one and the answer are yours.' },
+
+    { type: 'thinkaloud', problem: 'Three cards are dealt from a shuffled deck. What is the probability that all three are the same suit?', lines: [
+      { t: 0, say: 'Several cards from one deck: without replacement, so both counts drop each card.' },
+      { t: 3, say: `Same suit: ${chainText(13, 3)} = ${allFrom(13, 3)}.`, slip: true },
+      { t: 8, say: 'Wait, no suit is named. That was "all hearts". Card 1 only sets the target, so its factor is 1.' },
+      { t: 12, say: `1 × 12/51 × 11/50 = ${SAME3}.` },
+      { t: 16, say: `Check: it should be four times "all hearts", one per suit: 4 × ${allFrom(13, 3)} = ${allFrom(13, 3).mul(Q.of(4))}. Matches. Answer ${SAME3}.` },
+    ] },
 
     S('predict'),
     { type: 'predict', question: 'Two cards. Is P(same colour) above, below or equal to 1/2?', answer: `Below: ${fr(25, 51)} ≈ ${d3(Q.of(25, 51))}.`, explain: 'The first card removes one card of its own colour, so the second is slightly more likely to differ.' },
@@ -134,8 +149,8 @@ export default {
       `P = 2 × 4/52 × 3/51 = ${TWO_ACES.mul(Q.of(2))}.`,
     ], errorStep: 2, explain: `4/52 × 3/51 already includes every order: "an ace, then another ace" does not say which ace. Doubling counts each pair twice. Correct: ${TWO_ACES}.` },
     { type: 'check', scope: 'the named traps', questions: [
-      { type: 'choice', q: 'A candidate answers P(both aces) = 1/169. Which belief?', options: ['The first card went back in the deck', 'Doubled for orders', 'A free first card'], answer: 0, explain: `(4/52)² = 1/169. Without replacement: ${TWO_ACES}.` },
-      { type: 'choice', q: 'Another answers P(pair) = 1/221. Which belief?', options: ['Required a specific pair such as two aces', 'Put the first card back', 'Counted same suit'], answer: 0, explain: '1/221 is two aces. Any rank works: 3/51 = 1/17.' },
+      { type: 'choice', q: 'A candidate answers P(both aces) = 1/169. Which belief?', options: ['The first card went back in the deck', 'Doubled the chain for the two orders', 'Treated the first card as free (factor 1)'], answer: 0, explain: `(4/52)² = 1/169. Without replacement: ${TWO_ACES}.` },
+      { type: 'choice', q: 'Another answers P(pair) = 1/221. Which belief?', options: ['Required a specific pair such as two aces', 'Put the first card back in the deck', 'Counted the chance of the same suit'], answer: 0, explain: '1/221 is two aces. Any rank works: 3/51 = 1/17.' },
     ] },
 
     S('speed'),
@@ -162,6 +177,19 @@ export default {
       { type: 'number', q: 'Fewest cards you must deal to be certain two share a rank?', answer: 14, explain: '13 ranks: 13 cards can all differ, the 14th must repeat one.' },
       { type: 'choice', q: 'Two cards. P(one ace and one king, in either order)?', options: [Q.of(2).mul(Q.of(4, 52)).mul(Q.of(4, 51)).toString(), Q.of(4, 52).mul(Q.of(4, 51)).toString(), Q.of(4, 52).mul(Q.of(3, 51)).toString()], answer: 0, traps: { 1: 'counted only ace-then-king: mixed hands have two orders', 2: 'used the both-aces chain' }, explain: `Two paths, each 4/52 × 4/51: ${Q.of(2).mul(Q.of(4, 52)).mul(Q.of(4, 51))}.` },
     ] },
+
+    { type: 'variation', base: `Two cards are dealt. P(same rank) = 1 × 3/51 = ${fr(3, 51)}.`, rows: [
+      { change: 'Deal the two cards one at a time instead of together', effect: 'No change. Dealing together or in turn gives the same uniform pair of different cards.', same: true },
+      { change: 'Ask for the same suit', effect: `Card 1 is still free; 12 of its suit remain: ${fr(12, 51)}.` },
+      { change: 'Ask for two aces', effect: `The target is named, so card 1 is charged too: 4/52 × 3/51 = ${TWO_ACES}.` },
+      { change: 'Put the first card back before the second draw', effect: `The counts no longer drop: 1 × 4/52 = ${fr(4, 52)}.` },
+      { change: 'Put the first card back and ask for two aces', effect: `Naming aces charges card 1, replacement keeps both counts at 4/52: (4/52)² = ${qpow(Q.of(4, 52), 2)}. The two changes act on different factors and simply multiply.`, fusion: true },
+    ] },
+    { type: 'transfer',
+      near: { make: (rng) => { const n = rng.pick([10, 12, 15]); const d = rng.int(3, 5); return mc(rng, `A box holds ${n} bulbs, ${d} of them faulty. Two bulbs are taken out without replacement. P(both are faulty)?`, poolAll(d, n, 2).toString(), [[qpow(Q.of(d, n), 2).toString(), 'put the first bulb back'], [Q.of(d, n).mul(Q.of(d - 1, n)).toString(), 'lowered the faulty count but not the total'], [poolAll(d, n, 2).mul(Q.of(2)).toString(), 'doubled for the two orders']], `${d}/${n} × ${d - 1}/${n - 1} = ${poolAll(d, n, 2)}.`); } },
+      far: { type: 'choice', q: 'An index has 10 stocks, 4 of them tech. A trader picks 3 different stocks at random. P(at least one tech stock)?', options: [Q.of(1).sub(poolAll(6, 10, 3)).toString(), Q.of(1).sub(qpow(Q.of(6, 10), 3)).toString(), poolAll(6, 10, 3).toString(), poolAll(4, 10, 3).toString()], answer: 0, traps: { 1: 'used 6/10 for every pick, as if stocks could repeat', 2: 'answered "no tech stock"', 3: 'answered "all three are tech"' }, explain: `1 − 6/10 × 5/9 × 4/8 = ${Q.of(1).sub(poolAll(6, 10, 3))}.` },
+      principle: { type: 'choice', q: 'Which idea carried over from cards to bulbs and stocks?', options: ['After each pick, lower both the good count and the total', 'Each pick has the same chance as the first pick', 'Multiply by the number of orders of the picks', 'The first pick is always free, with factor 1'], answer: 0, traps: { 1: 'that is drawing with replacement', 2: 'a chain over one group already covers every order', 3: 'only when the event names no target' }, explain: 'Without replacement, every pick changes what is left: (good left)/(items left), multiplied along the picks.' },
+    },
 
     S('tryit'),
     { type: 'tryit', family: 'card-draws', section: 'bto', count: 3 },

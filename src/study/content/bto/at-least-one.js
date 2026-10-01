@@ -25,6 +25,10 @@ const FR = [[1, 2], [1, 3], [1, 4], [2, 5], [1, 5], [3, 10], [1, 6], [3, 5]];
 const fq = ([a, b]) => Q.of(a, b);
 const exactly1 = (n) => Q.of(n).mul(Q.of(1, 6)).mul(qpow(Q.of(5, 6), n - 1));
 const NS = Array.from({ length: 13 }, (_, n) => n);
+const TA = [Q.of(1, 2), Q.of(1, 4), Q.of(1, 5)]; // think-aloud trades
+const TA_SUM = TA.reduce((a, p) => a.add(p), Q.of(0));
+const TA_NONE = TA.reduce((a, p) => a.mul(Q.of(1).sub(p)), Q.of(1));
+const LINE_FAIL = Q.of(1, 10); // far transfer: data lines
 
 export default {
   id: 'bto/at-least-one',
@@ -42,7 +46,11 @@ export default {
   ],
   blocks: [
     S('recognise'),
-    { type: 'challenge', q: 'Before any teaching: you throw a fair die 4 times. What is the probability of at least one six? Try two approaches and compare them.', answer: `1 − (5/6)⁴ = ${some6(4)} ≈ ${d3(some6(4))}`, explain: `If one approach gave 4 × 1/6 = ${d3(4 / 6)}, it counted every outcome with two sixes twice. With 7 throws that approach would even pass 1. The lesson shows the one product that always works.` },
+    { type: 'challenge', q: 'Before any teaching: you throw a fair die 4 times. What is the probability of at least one six? Try two approaches and compare them.', answer: `1 − (5/6)⁴ = ${some6(4)} ≈ ${d3(some6(4))}`, explain: `If one approach gave 4 × 1/6 = ${d3(4 / 6)}, it counted every outcome with two sixes twice. With 7 throws that approach would even pass 1. The lesson shows the one product that always works.`, attempts: [
+      { id: 'add', label: 'Add 1/6 for each throw', approach: `Added 1/6 four times: 4/6 ≈ ${d3(4 / 6)}.`, breaksAt: 'An outcome with two sixes is counted once per six. With 7 throws the total would pass 1.' },
+      { id: 'miss-product', label: 'One minus (1/6)⁴', approach: `Took 1 − (1/6)⁴ = ${Q.of(1).sub(qpow(Q.of(1, 6), 4))}.`, breaksAt: '(1/6)⁴ is "a six every time". The opposite of "at least one six" is "no six", (5/6)⁴.' },
+      { id: 'exactly', label: 'One six, three misses', approach: `Put one six among four throws: 4 × 1/6 × (5/6)³ = ${exactly1(4)}.`, breaksAt: 'That is exactly one six. Outcomes with two, three or four sixes are dropped.' },
+    ] },
     { type: 'text', text: 'Several independent tries, each with some chance of success, and the question asks whether **at least one** succeeds. The wording varies: "at least one", "one or more", "any of them", "not all of them fail", "the alarm goes off at some point".' },
     { type: 'list', items: ['"You throw a die four times. What is the probability of at least one six?"', '"Three independent trades succeed with probabilities 1/2, 1/3, 1/4. Chance that at least one succeeds?"', '"A pair of dice is thrown 24 times. Probability of at least one double six?"', '"You buy 20 tickets, each winning with probability 1/20. Chance of at least one win?"'] },
     { type: 'text', text: 'Not this lesson: "exactly one" (a different count), "the first six on throw k" (bto/first-success) and draws without replacement (bto/card-draws), where the product shrinks differently.' },
@@ -88,15 +96,15 @@ export default {
 
     S('derivation'),
     { type: 'steps', steps: [
-      { say: 'Name the complement of "at least one success": **no success at all**, every try fails.', why: '"At least one" is a union of overlapping cases (one, two, three successes…). Its opposite is a single pattern.',
+      { answers: 'add', say: 'Name the complement of "at least one success": **no success at all**, every try fails.', why: '"At least one" is a union of overlapping cases (one, two, three successes…). Its opposite is a single pattern.',
         checks: [
           { type: 'choice', q: 'Five coin flips. The complement of "at least one head" is:', options: ['all five tails', 'at least one tail', 'exactly one tail', 'all five heads'], answer: 0, traps: { 1: 'HHHHT has a tail and a head: not a complement', 2: 'the complement must include every outcome with no head', 3: 'all heads is a case of "at least one head"' }, explain: 'Every outcome with no head is all tails.' },
         ] },
-      { say: 'P(no success) = (1 − p₁)(1 − p₂)…(1 − pₙ).', why: 'Independent failures happen together with the product of their chances.',
+      { answers: 'miss-product', say: 'P(no success) = (1 − p₁)(1 − p₂)…(1 − pₙ).', why: 'Independent failures happen together with the product of their chances.',
         checks: [
           { make: (rng) => { const ps = rng.shuffle(FR).slice(0, 3); const none = ps.reduce((a, p) => a.mul(Q.of(1).sub(fq(p))), Q.of(1)); return mc(rng, `Three independent trades succeed with ${ps.map(([a, b]) => `${a}/${b}`).join(', ')}. P(all three fail)?`, none.toString(), [[ps.reduce((a, p) => a.mul(fq(p)), Q.of(1)).toString(), 'multiplied the success chances: that is "all succeed"'], ...(() => { const d = Q.of(1).sub(ps.reduce((a, p) => a.add(fq(p)), Q.of(0))); return d.cmp(0) >= 0 ? [[d.toString(), 'subtracted the sum of the successes, as if they were disjoint']] : []; })(), [Q.of(1).sub(none).toString(), 'answered "at least one succeeds", the complement']], `${ps.map(([a, b]) => `(1 − ${a}/${b})`).join(' × ')} = ${none}.`); } },
         ] },
-      { say: 'P(at least one) = 1 − (1 − p₁)(1 − p₂)…(1 − pₙ). With equal chances p: 1 − (1 − p)^n.', why: 'The event and its complement cover everything, so their chances add to 1.',
+      { answers: 'exactly', say: 'P(at least one) = 1 − (1 − p₁)(1 − p₂)…(1 − pₙ). With equal chances p: 1 − (1 − p)^n.', why: 'The event and its complement cover everything, so their chances add to 1. One minus "all fail" keeps every outcome with one, two or more successes.',
         checks: [
           { make: (rng) => { const n = rng.int(3, 6); return { type: 'number', q: `A die is thrown ${n} times. P(at least one six), to 3 decimals?`, answer: Math.round(oneIn(1 / 6, n) * 1000) / 1000, tolerance: 0.0015, hints: ['Complement first: no six at all.', `(5/6)^${n} ≈ ${d3((5 / 6) ** n)}.`], explain: `1 − (5/6)^${n} ≈ ${d3(oneIn(1 / 6, n))}.` }; } },
         ] },
@@ -112,8 +120,16 @@ export default {
     { type: 'explain', prompt: 'In your own words: why does adding the per-try chances give too much, and when would adding be correct?', model: 'Adding counts an outcome once for every try that succeeds in it, so outcomes with two or more successes are counted several times. The complement counts each outcome once. Adding is correct only for disjoint events, where at most one can happen.', points: ['adding counts multi-success outcomes more than once', 'the complement "all fail" is a single product', 'adding is right only for events that cannot happen together'] },
 
     S('worked'),
-    { type: 'worked', family: 'at-least-one', section: 'bto', difficulty: 1, seed: 'b', intro: 'Sixes in a few throws. Try it before opening the solution.' },
+    { type: 'worked', family: 'at-least-one', section: 'bto', difficulty: 1, seed: 'b', explainAt: [0], intro: 'Sixes in a few throws. Try it before opening the solution.' },
     { type: 'worked', family: 'at-least-one', section: 'bto', difficulty: 2, seed: 'b', fade: 1, intro: 'Unequal chances. The first steps are given; the last one and the answer are yours.' },
+
+    { type: 'thinkaloud', problem: `Three independent trades succeed with probabilities ${TA.join(', ')}. What is the probability that at least one succeeds?`, lines: [
+      { t: 0, say: '"At least one succeeds": complement territory. Unequal chances do not change the method.' },
+      { t: 3, say: `Quick version: ${TA.join(' + ')} = ${TA_SUM}.`, slip: true },
+      { t: 6, say: 'No: that adds overlapping chances, so it is only an upper bound. Complement: all three fail.' },
+      { t: 10, say: `Fail chances ${TA.map((p) => Q.of(1).sub(p)).join(', ')}; their product is ${TA_NONE}.` },
+      { t: 14, say: `P = 1 − ${TA_NONE} = ${Q.of(1).sub(TA_NONE)}. Below the adding bound ${TA_SUM}, as it must be. Answer ${Q.of(1).sub(TA_NONE)}.` },
+    ] },
 
     S('predict'),
     { type: 'predict', question: 'The classic gamble: bet A pays if at least one six appears in 4 throws of a die; bet B pays if at least one double six appears in 24 throws of two dice. Which is above 1/2?', answer: `Only A: ${d3(oneIn(1 / 6, 4))} against ${d3(oneIn(1 / 36, 24))}.`, explain: 'Adding says both are 4/6 = 24/36, which is exactly the error that made the bets look equal.' },
@@ -131,7 +147,7 @@ export default {
       'So P = 75/216.',
     ], errorStep: 1, explain: `"One throw is a six and the others are not" is **exactly** one six. It drops outcomes with two or three sixes. Correct: 1 − (5/6)³ = ${some6(3)}.` },
     { type: 'check', scope: 'the named traps', questions: [
-      { type: 'choice', q: `Five throws. A candidate answers ${exactly1(5)}. Which belief produced it?`, options: ['"At least one" read as "exactly one"', 'Adding the chances', 'Taking the complement twice'], answer: 0, explain: `5 × 1/6 × (5/6)⁴ = ${exactly1(5)} is exactly one six. Correct: ${some6(5)}.` },
+      { type: 'choice', q: `Five throws. A candidate answers ${exactly1(5)}. Which belief produced it?`, options: ['"At least one" read as "exactly one"', 'Adding the five chances of 1/6', 'Taking the complement twice over'], answer: 0, explain: `5 × 1/6 × (5/6)⁴ = ${exactly1(5)} is exactly one six. Correct: ${some6(5)}.` },
       { type: 'choice', q: 'Another answers 5/6 for the same question. Which belief?', options: ['Adding 1/6 five times', '"Exactly one"', 'Using the complement'], answer: 0, explain: `5 × 1/6. Truth: 1 − (5/6)⁵ ≈ ${d3(oneIn(1 / 6, 5))}.` },
     ] },
 
@@ -159,6 +175,19 @@ export default {
       { type: 'choice', q: 'Three independent alarms each ring with 1/2. P(exactly one rings)?', options: ['3/8', '7/8', '1/8', '3/2'], answer: 0, traps: { 1: 'that is "at least one"', 2: 'that is "all" or "none"', 3: 'added the chances' }, explain: '3 × 1/2 × (1/2)² = 3/8.' },
       { type: 'choice', q: 'Four independent tries with chances 1/3, 1/2, 1, 1/4. P(at least one success)?', options: ['1', `${Q.of(1, 3).add(Q.of(1, 2)).add(Q.of(1, 4)).add(Q.of(1))}`, '1/24'], answer: 0, traps: { 1: 'added the chances', 2: 'multiplied them: that is "all succeed"' }, explain: 'The third try always succeeds, so P(none) has a factor 0.' },
     ] },
+
+    { type: 'variation', base: `A die is thrown 4 times. P(at least one six) = 1 − (5/6)⁴ = ${some6(4)}.`, rows: [
+      { change: 'Throw four dice at once instead of one die four times', effect: 'No change. Four dice at once are four independent tries with the same 1/6 each.', same: true },
+      { change: 'Ask for at least one 1 instead of at least one six', effect: 'No change. Any single named face has chance 1/6 per throw; only the per-try chance matters.', same: true },
+      { change: 'Ask for "exactly one six"', effect: `A different event: 4 × 1/6 × (5/6)³ = ${exactly1(4)}. The complement trick does not apply; outcomes with two or more sixes now fail.` },
+      { change: 'Throw six times', effect: `One product with a bigger exponent: 1 − (5/6)⁶ ≈ ${d3(oneIn(1 / 6, 6))}. Still below 1, where adding would claim certainty.` },
+      { change: 'Throw a pair of dice 24 times and ask for a double six', effect: `The per-try chance drops to 1/36 and the tries rise to 24: adding says these cancel (24/36 = 4/6), but the product gives ${d3(oneIn(1 / 36, 24))}, just under 1/2, against ${d3(oneIn(1 / 6, 4))}. Rarer per try is not undone by more tries.`, fusion: true },
+    ] },
+    { type: 'transfer',
+      near: { make: (rng) => { const p = rng.pick([Q.of(1, 3), Q.of(1, 4), Q.of(1, 5)]); const n = rng.int(2, 4); const miss = Q.of(1).sub(p); return mc(rng, `A trader sends ${n} independent quotes; each is hit with probability ${p}. P(at least one quote is hit)?`, Q.of(1).sub(qpow(miss, n)).toString(), [[Q.of(n).mul(p).toString(), 'added the chances; two quotes can both be hit'], [qpow(miss, n).toString(), 'answered "none is hit"'], [qpow(p, n).toString(), 'computed "every quote is hit"']], `Complement: 1 − (${miss})^${n} = ${Q.of(1).sub(qpow(miss, n))}.`); } },
+      far: { type: 'choice', q: `A trading system has 3 independent data lines and stays connected if any line works. Each line fails on a given day with probability ${LINE_FAIL}. P(the system stays connected)?`, options: [Q.of(1).sub(qpow(LINE_FAIL, 3)).toString(), qpow(Q.of(1).sub(LINE_FAIL), 3).toString(), qpow(LINE_FAIL, 3).toString(), Q.of(3).mul(Q.of(1).sub(LINE_FAIL)).mul(qpow(LINE_FAIL, 2)).toString()], answer: 0, traps: { 1: 'required all three lines to work', 2: 'answered "all three fail"', 3: 'counted exactly one working line' }, explain: `Connected = at least one line works = 1 − P(all fail) = 1 − (${LINE_FAIL})³ = ${Q.of(1).sub(qpow(LINE_FAIL, 3))}.` },
+      principle: { type: 'choice', q: 'Which idea carried over from dice to quotes and data lines?', options: ['"At least one" is one minus the product of the failures', 'Add the chances of the separate successes', '"At least one" is the same event as "exactly one"', 'Multiply the chances of the separate successes'], answer: 0, traps: { 1: 'adding counts multi-success outcomes more than once', 2: 'at least one also includes two, three, … successes', 3: 'that is "all succeed"' }, explain: 'The opposite of "at least one works" is "all fail", a single product of the failure chances.' },
+    },
 
     S('tryit'),
     { type: 'tryit', family: 'at-least-one', section: 'bto', count: 3 },

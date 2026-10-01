@@ -24,6 +24,7 @@ const d3 = (x) => (Math.round(x.toNumber() * 1000) / 1000).toFixed(3);
 const ord = (k) => `${k}${k === 1 ? 'st' : k === 2 ? 'nd' : k === 3 ? 'rd' : 'th'}`;
 const COINS = [[1, 3], [2, 5], [3, 4], [1, 4], [3, 5]].map(([a, b]) => Q.of(a, b));
 const KS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+const LINK = Q.of(4, 5); // far transfer: a connection attempt succeeds
 
 export default {
   id: 'bto/first-success',
@@ -41,7 +42,11 @@ export default {
   ],
   blocks: [
     S('recognise'),
-    { type: 'challenge', q: 'Before any teaching: you throw a fair die repeatedly. What is the probability that the first six appears on the 3rd throw? Try two approaches.', answer: `(5/6)² × 1/6 = ${onK(SIX, 3)}`, explain: `Throws 1 and 2 must miss, throw 3 must hit. If you got 1/6 you ignored the misses; if you got ${within(SIX, 3)} you computed "a six somewhere in the first 3 throws". The lesson separates the three.` },
+    { type: 'challenge', q: 'Before any teaching: you throw a fair die repeatedly. What is the probability that the first six appears on the 3rd throw? Try two approaches.', answer: `(5/6)² × 1/6 = ${onK(SIX, 3)}`, explain: `Throws 1 and 2 must miss, throw 3 must hit. If you got 1/6 you ignored the misses; if you got ${within(SIX, 3)} you computed "a six somewhere in the first 3 throws". The lesson separates the three.`, attempts: [
+      { id: 'ignore-misses', label: 'Just 1/6 for throw 3', approach: 'Every throw has a 1/6 chance of a six, so answered 1/6.', breaksAt: '1/6 is "a six on throw 3", first or not. "First" also needs throws 1 and 2 to miss.' },
+      { id: 'no-hit', label: 'Two misses, then stop', approach: `Multiplied the two misses: (5/6)² = ${qpow(Q.of(5, 6), 2)}.`, breaksAt: 'The six on throw 3 is part of the path too: it needs its own factor of 1/6.' },
+      { id: 'within', label: 'A six within three throws', approach: `Took 1 − (5/6)³ = ${within(SIX, 3)}.`, breaksAt: 'That also counts a six on throw 1 or 2. "First six on throw 3" is a single path.' },
+    ] },
     { type: 'text', text: 'Something is repeated until it first succeeds: a die until a six, a coin until a head, two players taking turns until one wins. The question fixes **when** the first success happens ("on the 4th throw"), bounds it ("more than 5 throws needed"), or asks **who** gets it first.' },
     { type: 'list', items: ['"A die is thrown repeatedly. What is the probability that the first six appears on the third throw?"', '"What is the chance you need more than 4 throws to get a six?"', '"Two players take turns throwing a die; the first to throw a six wins. What is the chance the starter wins?"', '"You throw a die until the first six. Probability it comes on an even-numbered throw?"'] },
     { type: 'text', text: 'Not this lesson: "at least one six in 4 throws" with no mention of which throw (bto/at-least-one), and the **expected** number of throws (bto/expected-waiting).' },
@@ -85,11 +90,11 @@ export default {
 
     S('derivation'),
     { type: 'steps', steps: [
-      { say: '"The first success is on trial k" forces the path: fail, fail, …, fail (k − 1 times), then succeed.', why: '"First" forbids any earlier success, so every earlier trial is a forced miss. There is exactly one pattern.',
+      { answers: 'ignore-misses', say: '"The first success is on trial k" forces the path: fail, fail, …, fail (k − 1 times), then succeed.', why: '"First" forbids any earlier success, so every earlier trial is a forced miss. There is exactly one pattern.',
         checks: [
           { type: 'choice', q: 'The first head is on flip 4. Which pattern is forced?', options: ['T, T, T, H', 'any three flips then H', 'H on flip 4, the rest anything', 'T, T, T, T, H'], answer: 0, traps: { 1: 'an earlier head would make flip 4 not the first', 2: 'same slip: earlier flips must be tails', 3: 'one tail too many: that is flip 5' }, explain: 'Three tails, then the head.' },
         ] },
-      { say: 'Multiply along the path: P(first success on k) = (1 − p)^{k−1} × p.', why: 'The trials are independent, so the chance of one fixed pattern is the product of its factors.',
+      { answers: 'no-hit', say: 'Multiply along the path: P(first success on k) = (1 − p)^{k−1} × p.', why: 'The trials are independent, so the chance of one fixed pattern is the product of its factors.',
         checks: [
           { make: (rng) => { const p = rng.pick(COINS); const k = rng.int(2, 4); return mc(rng, `A coin shows heads with ${p}. P(first head on flip ${k})?`, onK(p, k).toString(), [[p.toString(), 'ignored the earlier tails'], [qpow(Q.of(1).sub(p), k - 1).toString(), 'forgot the factor for the head'], [onK(p, k + 1).toString(), 'one tail too many'], [qpow(p, k).toString(), 'multiplied the head chance every flip']], `(${Q.of(1).sub(p)})^${k - 1} × ${p} = ${onK(p, k)}.`); } },
         ] },
@@ -97,7 +102,7 @@ export default {
         checks: [
           { make: (rng) => { const k = rng.int(2, 6); return mc(rng, `A die is thrown until a six. P(more than ${k} throws are needed)?`, moreThan(SIX, k).toString(), [[moreThan(SIX, k - 1).toString(), `used ${k - 1} misses: a six on throw ${k} means exactly ${k} throws, not more`], [within(SIX, k).toString(), 'answered the complement'], [onK(SIX, k + 1).toString(), `required the six exactly on throw ${k + 1}`]], `Throws 1 to ${k} all miss: (5/6)^${k} = ${moreThan(SIX, k)}.`); } },
         ] },
-      { say: '"Within k trials" (at most k needed) is the complement: 1 − (1 − p)^k.', why: 'Either the first k trials contain a success or they do not; this is the at-least-one rule.',
+      { answers: 'within', say: '"Within k trials" (at most k needed) is the complement: 1 − (1 − p)^k.', why: 'Either the first k trials contain a success or they do not; this is the at-least-one rule.',
         checks: [
           { make: (rng) => { const k = rng.int(2, 5); return { type: 'number', q: `A die is thrown until a six. P(at most ${k} throws are needed), to 3 decimals?`, answer: Math.round(within(SIX, k).toNumber() * 1000) / 1000, tolerance: 0.0015, hints: [`Complement: more than ${k} throws.`, `(5/6)^${k} ≈ ${d3(moreThan(SIX, k))}.`], explain: `1 − (5/6)^${k} ≈ ${d3(within(SIX, k))}.` }; } },
         ] },
@@ -113,8 +118,16 @@ export default {
     { type: 'explain', prompt: 'In your own words: why can you ignore rounds where both players miss when finding who wins a turn-taking race?', model: 'A round of two misses puts the game back exactly where it started, so whatever happens next is a copy of the original game. The winner is decided in the first round that has a six, and in any such round the starter wins with p and the second player with (1 − p)p. The ratio of those two decides the game.', points: ['two misses reset the game to the same state', 'the winner is decided in the first deciding round', 'P(starter) = p / (p + (1 − p)p) = 1/(2 − p)'] },
 
     S('worked'),
-    { type: 'worked', family: 'first-success', section: 'bto', difficulty: 1, seed: 'd', intro: 'The first six at a fixed throw. Try it before opening the solution.' },
+    { type: 'worked', family: 'first-success', section: 'bto', difficulty: 1, seed: 'd', explainAt: [0], intro: 'The first six at a fixed throw. Try it before opening the solution.' },
     { type: 'worked', family: 'first-success', section: 'bto', difficulty: 2, seed: 'b', fade: 1, intro: 'An odd-or-even race. The first steps are given; the last one and the answer are yours.' },
+
+    { type: 'thinkaloud', problem: 'A die is thrown until the first six. What is the probability that more than 4 throws are needed?', lines: [
+      { t: 0, say: 'Waiting for a six, and "more than 4": a block of misses with no hit factor.' },
+      { t: 3, say: 'More than 4 means the six comes on throw 5 or later, so throws 1 to 5 all miss: (5/6)⁵.', slip: true },
+      { t: 7, say: 'Boundary test: a six on throw 5 means exactly 5 throws, which is more than 4. So only throws 1 to 4 must miss.' },
+      { t: 11, say: `(5/6)⁴ = ${moreThan(SIX, 4)} ≈ ${d3(moreThan(SIX, 4))}.` },
+      { t: 15, say: `Check: a six within 4 throws is ${d3(within(SIX, 4))}, just over half, so "none in 4" must be just under half. It is. Answer ${moreThan(SIX, 4)}.` },
+    ] },
 
     S('predict'),
     { type: 'predict', question: 'Without computing: is the first six more likely on throw 1 or on throw 2? And is it more likely on throw 1 than on all even throws together?', answer: `Throw 1 beats throw 2: 1/6 against ${onK(SIX, 2)}. But all even throws together give ${Q.of(1).sub(starter(SIX))} ≈ ${d3(Q.of(1).sub(starter(SIX)))}, much more than 1/6.`, explain: 'Each single later throw is less likely, but there are infinitely many of them.' },
@@ -132,8 +145,8 @@ export default {
       `P = ${moreThan(SIX, 4)} ≈ ${d3(moreThan(SIX, 4))}.`,
     ], errorStep: 1, explain: `A six on throw 4 is allowed ("4 or later"). Only throws 1 to 3 must miss: (5/6)³ = ${moreThan(SIX, 3)} ≈ ${d3(moreThan(SIX, 3))}.` },
     { type: 'check', scope: 'the named traps', questions: [
-      { type: 'choice', q: `A candidate answers P(first six on throw 4) = ${qpow(Q.of(5, 6), 3)}. Which belief?`, options: ['Forgot the final 1/6 for the six itself', 'One miss too many', '"Within 4" instead of "on 4"'], answer: 0, explain: `${qpow(Q.of(5, 6), 3)} is three misses only. Correct: ${onK(SIX, 4)}.` },
-      { type: 'choice', q: `Another answers ${within(SIX, 4)} for the same question. Which belief?`, options: ['"A six within 4 throws" instead of "the first six on throw 4"', 'Forgot the final 1/6', 'The race formula'], answer: 0, explain: `1 − (5/6)⁴ counts a six on any of the first 4 throws.` },
+      { type: 'choice', q: `A candidate answers P(first six on throw 4) = ${qpow(Q.of(5, 6), 3)}. Which belief?`, options: ['Forgot the final 1/6 for the six itself', 'Used one miss too many before the six', 'Answered "within 4" instead of "on 4"'], answer: 0, explain: `${qpow(Q.of(5, 6), 3)} is three misses only. Correct: ${onK(SIX, 4)}.` },
+      { type: 'choice', q: `Another answers ${within(SIX, 4)} for the same question. Which belief?`, options: ['Read "first six on 4" as "a six within 4"', 'Forgot the final 1/6 for the six itself', 'Used the race formula 1/(2 − p) here'], answer: 0, explain: `1 − (5/6)⁴ counts a six on any of the first 4 throws.` },
     ] },
 
     S('speed'),
@@ -158,6 +171,19 @@ export default {
     { type: 'check', scope: 'the contrast table and edge cases', questions: [
       { type: 'choice', q: 'A die. Which is largest?', options: ['more than 3 throws needed', 'a six within 3 throws', 'first six on throw 3', 'a six on throw 3'], answer: 0, traps: { 1: `three throws are not enough to make a six likely: ${d3(within(SIX, 3))} against ${d3(moreThan(SIX, 3))}`, 2: 'one fixed path: the smallest of these', 3: 'one throw, 1/6' }, explain: `Within 3: ${d3(within(SIX, 3))}; more than 3: ${d3(moreThan(SIX, 3))}; on throw 3: ${d3(onK(SIX, 3))}; six on throw 3: ${d3(SIX)}.` },
     ] },
+
+    { type: 'variation', base: `A die is thrown until the first six. P(first six on throw 3) = (5/6)² × 1/6 = ${onK(SIX, 3)}.`, rows: [
+      { change: 'Wait for the first 1 instead of the first six', effect: 'No change. Any named face has chance 1/6; the path is still miss, miss, hit.', same: true },
+      { change: 'Ask for "more than 3 throws needed"', effect: `Three misses and no hit factor: (5/6)³ = ${moreThan(SIX, 3)}.` },
+      { change: 'Ask for "a six within 3 throws"', effect: `The complement of the row above: 1 − (5/6)³ = ${within(SIX, 3)}. Many paths, not one.` },
+      { change: 'Flip a fair coin and wait for the first head on flip 3', effect: `Same path, new p: (1/2)² × 1/2 = ${onK(Q.of(1, 2), 3)}.` },
+      { change: 'Fair coin and "more than 3 flips needed", both at once', effect: `"More than 3" drops the hit factor but adds a third miss, and with p = 1/2 a miss and a hit cost the same: (1/2)³ = ${moreThan(Q.of(1, 2), 3)}, equal to "first head on flip 3". With a die the two differ (${moreThan(SIX, 3)} against ${onK(SIX, 3)}).`, fusion: true },
+    ] },
+    { type: 'transfer',
+      near: { make: (rng) => { const p = rng.pick([Q.of(1, 3), Q.of(1, 4), Q.of(2, 5)]); const k = rng.int(2, 4); return mc(rng, `An order is re-sent until it fills; each attempt fills with probability ${p}, independently. P(the first fill is on attempt ${k})?`, onK(p, k).toString(), [[p.toString(), 'ignored the failed attempts before it'], [qpow(Q.of(1).sub(p), k - 1).toString(), 'forgot the factor for the fill'], [within(p, k).toString(), `computed "filled within ${k} attempts"`]], `(${Q.of(1).sub(p)})^${k - 1} × ${p} = ${onK(p, k)}.`); } },
+      far: { type: 'choice', q: `A trading gateway retries a dropped connection once a second; each attempt succeeds with probability ${LINK}, independently. P(it is still disconnected after 3 attempts)?`, options: [moreThan(LINK, 3).toString(), onK(LINK, 3).toString(), moreThan(LINK, 2).toString(), within(LINK, 3).toString()], answer: 0, traps: { 1: 'computed "connects exactly on attempt 3"', 2: 'used 2 failures: after 3 attempts all 3 must have failed', 3: 'answered "connected within 3 attempts"' }, explain: `Still down after 3 attempts = the first 3 all fail: (${Q.of(1).sub(LINK)})³ = ${moreThan(LINK, 3)}.` },
+      principle: { type: 'choice', q: 'Which idea carried over from dice to orders and connections?', options: ['Every trial before the first success is a forced miss', 'Each trial has the same chance, so position is irrelevant', 'Waiting k trials always means k − 1 misses', 'Add the success chances of the trials up to k'], answer: 0, traps: { 1: 'the position fixes how many misses come first', 2: '"more than k" needs k misses; only "first on k" has k − 1', 3: 'adding overlapping chances does not give a first-success event' }, explain: 'Write the forced path: the misses that must come first, then (if the question fixes it) the one hit. Multiply along it.' },
+    },
 
     S('tryit'),
     { type: 'tryit', family: 'first-success', section: 'bto', count: 3 },

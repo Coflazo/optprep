@@ -18,6 +18,19 @@ const NS = [1, 2, 3, 4, 5, 6, 8, 10];
 const ONE2 = 36 - 25, NAIVE2 = 6 + 6; // two dice: pairs with at least one six; the double-counted sum
 const NP4 = q(4).mul(q(1, 6)).toString(), TOP = [12, 11, 10, 9, 8].map(sumGe);
 
+// Think-aloud: one six in 3 throws, the higher of two dice exactly 5, at least 2 sixes with 12 dice.
+const TA3 = atLeastOne(3), MAX5 = q(9, 36);
+// Variation: 25 tries for (b); sum at least 7 for (c); (a) as at least two sixes in 8 throws.
+const DBL25 = atLeastOne(25, q(1, 36)), GE7 = q(sumGe(7), 36), TWO8 = binGe(8, 2);
+if (!(NP[1].cmp(TA3) > 0 && TA3.cmp(MAX5) > 0 && TA3.cmp(q(1, 2)) < 0 && DBL25.cmp(q(1, 2)) > 0 && DBL25.cmp(DM.four) < 0 && GE7.cmp(DM.four) > 0 && TWO8.cmp(DM.dbl) < 0 && TWO8.cmp(DM.ge10) > 0)) throw new Error('dice-events: prose orders no longer hold');
+
+// Transfer: near = an eight-sided die; far = errors in a batch of trades.
+const d8ways = (s) => { let w = 0; for (let a = 1; a <= 8; a++) for (let b = 1; b <= 8; b++) if (a + b >= s) w++; return w; };
+const nearT = (rng) => again(() => { const n = rng.int(2, 6), t = rng.int(10, 15);
+  return rank(rng, 'A fair eight-sided die (faces 1 to 8). Rank from most to least likely.', [[`At least one 8 in ${n} rolls.`, 1 - (7 / 8) ** n], [`The sum of two rolls is at least ${t}.`, d8ways(t) / 64], ['Two rolls show the same face.', 1 / 8]], `1 − (7/8)^${n} = ${dp(1 - (7 / 8) ** n)}; ${d8ways(t)} of 64 pairs; 8 of 64 doubles.`, { gap: 0.02 }); });
+const farT = (rng) => { const n = rng.pick([10, 20, 30, 50]), p = rng.pick([0.01, 0.02, 0.05]);
+  return { type: 'number', q: `Each trade in a batch of ${n} has a ${p * 100}% chance of a booking error, independently. P(at least one error in the batch)? (3 decimals)`, answer: 1 - (1 - p) ** n, tolerance: 0.0015, hints: ['Complement: every trade is clean.', `1 − ${1 - p}^${n}.`], explain: `1 − ${1 - p}^${n} = ${dp(1 - (1 - p) ** n)}; n × p would say ${dp(n * p, 2)}.` }; };
+
 // Statement pool for the ranking checks.
 const POOL = {
   sixInN: (r) => { const n = r.int(2, 6); return [`At least one six in ${n} throws.`, atLeastOne(n).toNumber()]; },
@@ -46,7 +59,12 @@ export default {
   ],
   blocks: [
     S('recognise'),
-    { type: 'challenge', q: 'Before any teaching: rank from most to least likely. (a) At least one six in 4 throws of a die. (b) At least one double six in 24 throws of a pair of dice. (c) The sum of two dice is at least 10. Two approaches, then an order.', answer: DMO.map(([t, p]) => `${t} ≈ ${dp(p)}`).join(' > '), explain: `4 × 1/6 and 24 × 1/36 are both ${NP4}, so the "rate × tries" reasoning calls (a) and (b) equal. The complement separates them: 1 − (5/6)^4 ≈ ${dp(DM.four)} against 1 − (35/36)^24 ≈ ${dp(DM.dbl)}. That is the Chevalier de Méré's problem from 1654.` },
+    { type: 'challenge', q: 'Before any teaching: rank from most to least likely. (a) At least one six in 4 throws of a die. (b) At least one double six in 24 throws of a pair of dice. (c) The sum of two dice is at least 10. Two approaches, then an order.', answer: DMO.map(([t, p]) => `${t} ≈ ${dp(p)}`).join(' > '), explain: `4 × 1/6 and 24 × 1/36 are both ${NP4}, so the "rate × tries" reasoning calls (a) and (b) equal. The complement separates them: 1 − (5/6)^4 ≈ ${dp(DM.four)} against 1 − (35/36)^24 ≈ ${dp(DM.dbl)}. That is the Chevalier de Méré's problem from 1654.`,
+      attempts: [
+        { id: 'grid', label: 'List the outcomes', approach: 'You tried to list every outcome of 4 throws, or of 24 throws of a pair.', breaksAt: 'Far too many outcomes: pick the tool from the wording instead, here the complement.' },
+        { id: 'np', label: 'Multiply tries by the chance', approach: `You priced (a) and (b) as 4 × 1/6 and 24 × 1/36, both ${NP4}, and called them a tie.`, breaksAt: 'n × p adds the chances of each try and counts runs with several successes more than once.' },
+        { id: 'moretries', label: 'More tries must win', approach: 'You put (b) first because 24 throws give far more chances than 4.', breaksAt: 'Each of those 24 tries is six times rarer; only the exact complements compare them.' },
+      ] },
     { type: 'text', text: 'There is **no picture**: three statements about fair dice, each from a different experiment (a few throws of one die, a pair of dice, several dice at once, throwing until a six). You rank them by putting a number, or a tight estimate, on each.' },
     { type: 'list', items: ['"At least one six in n throws" or "no six in n throws"', '"The sum of two dice is at least t", "two dice show the same face", "the higher die is exactly k"', '"At least k sixes when 6k dice are thrown", "the first six comes on throw k", "n dice all show different faces"'] },
     { type: 'text', text: 'Not this lesson: a table or chart of past rolls (count rows instead) and coin strings (patterns inside a sequence).' },
@@ -83,11 +101,11 @@ export default {
     S('derivation'),
     { type: 'text', text: 'Four moves: choose the tool, then the two classic corrections, then the product rules for sequences. With them, every statement in the pool gets a number in under 15 seconds.' },
     { type: 'steps', steps: [
-      { say: 'Choose the tool from the wording: a two-dice property → count cells of 36; "at least one" → complement; "first six on throw k", "all different" → a product; "at least k of n" → binomial tail.', why: 'Only the order is scored, so the fastest correct number per statement is all you need.',
+      { answers: 'grid', say: 'Choose the tool from the wording: a two-dice property → count cells of 36; "at least one" → complement; "first six on throw k", "all different" → a product; "at least k of n" → binomial tail.', why: 'Only the order is scored, so the fastest correct number per statement is all you need.',
         checks: [mc(null, '"Three dice all show different faces." Fastest tool?', 'a product: 6/6 × 5/6 × 4/6', [['the complement of "at least one six"', 'faces being different has nothing to do with sixes'], ['the two-dice grid', 'there are three dice'], ['a binomial tail', 'there is no count of successes here']], 'Each new die must avoid the faces already shown.', { at: 1 })] },
-      { say: '"At least one in n" = 1 − (1 − p)^n. Never n × p: that adds the chances and counts outcomes with two or more successes several times.', why: 'The complement "none in n" is one product, which is exact.',
+      { answers: 'np', say: '"At least one in n" = 1 − (1 − p)^n. Never n × p: that adds the chances and counts outcomes with two or more successes several times.', why: 'The complement "none in n" is one product, which is exact.',
         checks: [{ make: (rng) => { const n = rng.pick([12, 18, 24, 30, 36]); return { type: 'number', q: `P(at least one double six in ${n} throws of two dice)? (3 decimals)`, answer: atLeastOne(n, q(1, 36)).toNumber(), tolerance: 0.0015, hints: ['A double six has chance 1/36 per throw.', `1 − (35/36)^${n}.`], explain: `1 − (35/36)^${n} = ${dp(atLeastOne(n, q(1, 36)))}; n × p would give ${dp(n / 36)}.` }; } }] },
-      { say: 'Equal n × p does not mean equal chances: rarer events tried more often fall further short of n × p. So 4 tries at 1/6 beats 24 tries at 1/36.', why: 'The overshoot of n × p comes from multiple successes, which are more common when each try succeeds more often; the exact complement removes it.',
+      { answers: 'moretries', say: 'Equal n × p does not mean equal chances: rarer events tried more often fall further short of n × p. So 4 tries at 1/6 beats 24 tries at 1/36.', why: 'The overshoot of n × p comes from multiple successes, which are more common when each try succeeds more often; the exact complement removes it.',
         checks: [{ hinge: true, make: (rng) => { const [n1, n2] = rng.pick([[2, 12], [3, 18], [4, 24], [5, 30]]); return mc(rng, `Which is more likely: at least one six in ${n1} throws, or at least one double six in ${n2} throws of two dice?`, `one six in ${n1} throws`, [[`one double six in ${n2} throws`, 'assumed more tries always win'], ['they are equal', `used n × p: ${n1}/6 = ${n2}/36`]], `1 − (5/6)^${n1} = ${dp(atLeastOne(n1))} against 1 − (35/36)^${n2} = ${dp(atLeastOne(n2, q(1, 36)))}.`); } }] },
       { say: '"At least k sixes with 6k dice" falls as k grows: the target is the mean, and with more dice the chance of landing below the mean grows towards 1/2.', why: 'The count spreads out like √n, so falling a little short of the mean becomes common.',
         checks: [{ make: (rng) => { const k = rng.int(1, 3); return mc(rng, `Compare "at least ${k} six${k > 1 ? 'es' : ''} with ${6 * k} dice" and "at least ${k + 1} sixes with ${6 * k + 6} dice".`, `the first is more likely`, [['the second is more likely', 'assumed more dice make the target easier'], ['they are equal', 'matched the expected counts and stopped']], `${dp(NP[k - 1])} against ${dp(NP[k])}.`); } }] },
@@ -95,7 +113,7 @@ export default {
     { type: 'explain', prompt: 'Explain why "at least one six in 4 throws" and "at least one double six in 24 throws" differ although 4 × 1/6 = 24 × 1/36.', model: 'Multiplying tries by the chance adds up the chances of each try, which counts the outcomes with several successes more than once, so it overstates "at least one". The exact route is the complement: none in 4 is (5/6)^4 and none in 24 is (35/36)^24. The second is larger, so "at least one double six in 24" is less likely: about 0.491 against 0.518.', points: ['n × p overcounts outcomes with several successes', 'Use 1 − (1 − p)^n', 'The two complements differ, so the two chances differ'] },
 
     S('worked'),
-    { type: 'worked', section: 'll', family: 'dice-events', difficulty: 1, seed: 'a', intro: 'One throw of two dice and a few throws of one die. Put a number on each statement. Try it first.' },
+    { type: 'worked', section: 'll', family: 'dice-events', difficulty: 1, seed: 'a', explainAt: [0, 1], intro: 'One throw of two dice and a few throws of one die. Put a number on each statement. Try it first.' },
     { type: 'worked', section: 'll', family: 'dice-events', difficulty: 3, seed: 'b', fade: 1, intro: 'Newton-Pepys style statements. The numbers are worked out for you; the ordering is yours.' },
 
     S('predict'),
@@ -116,7 +134,7 @@ export default {
       'So (a) and (b) tie, both far above (c).',
     ], errorStep: 1, explain: `n × p is not a probability of "at least one". Step 2 should be 1 − (5/6)^4 = ${dp(DM.four)} (and step 3 then 1 − (35/36)^24 = ${dp(DM.dbl)}), which breaks the tie.` },
     { type: 'check', scope: 'the named traps', questions: [
-      mc(null, 'A candidate answers P(at least one six in 8 throws) = 8/6. What went wrong?', 'Added the chances instead of using the complement', [['Used the wrong die', 'the per-throw chance 1/6 is right'], ['Counted ordered pairs', 'no pairs are involved'], ['Applied Newton-Pepys', 'that is about several sixes, not at least one']], `A probability cannot pass 1; 1 − (5/6)^8 = ${dp(atLeastOne(8))}.`, { at: 0 }),
+      mc(null, 'A candidate answers P(at least one six in 8 throws) = 8/6. What went wrong?', 'Added the chances instead of using the complement', [['Used the wrong chance of a six for a single throw', 'the per-throw chance 1/6 is right'], ['Counted ordered pairs of throws instead of single throws', 'no pairs are involved'], ['Applied the Newton-Pepys scaling to the number of throws', 'that is about several sixes, not at least one']], `A probability cannot pass 1; 1 − (5/6)^8 = ${dp(atLeastOne(8))}.`, { at: 0 }),
     ] },
 
     S('speed'),
@@ -125,6 +143,18 @@ export default {
     { type: 'callout', tone: 'speed', text: `Two dice: sums by 6 − |s − 7|, "at least t" from the top as ${TOP.join(', ')}; doubles 6/36; maximum exactly k is (2k − 1)/36. Budget: ${LL.exam.perItemSeconds} seconds, but most triples take 20.` },
     { type: 'check', scope: 'the recall table', questions: [
       { make: (rng) => again(() => { const keys = rng.shuffle(Object.keys(POOL)).slice(0, 3); return rank(rng, 'Rank from most to least likely (fair dice).', keys.map((k) => POOL[k](rng)), 'Price each with its tool; the table and the two-dice counts do most of the work.', { gap: 0.02 }); }) },
+    ] },
+
+    { type: 'thinkaloud', problem: 'Rank from most to least likely: (a) at least one six in 3 throws of a die, (b) the higher of two dice is exactly 5, (c) at least 2 sixes when 12 dice are thrown.', lines: [
+      { t: 0, say: 'Three dice statements, no picture: one tool each.' },
+      { t: 4, say: `(b) is a grid count: maximum exactly 5 is 2 × 5 − 1 = 9 cells of 36, ${dp(MAX5, 2)}.` },
+      { t: 10, say: '(a): 3 throws at 1/6 each, so 3 × 1/6 = 1/2.', slip: true },
+      { t: 15, say: `No: n × p counts runs with two sixes twice. Complement: 1 − (5/6)^3 = ${TA3} ≈ ${dp(TA3, 2)}, under 1/2.` },
+      { t: 24, say: `(c) is Newton-Pepys: just below one six in 6 dice (${dp(NP[0], 2)}), about ${dp(NP[1], 2)}.` },
+      { t: 30, say: `Order (c) > (a) > (b), with ${LL.exam.perItemSeconds - 30} seconds left.` },
+    ] },
+    { type: 'check', scope: 'the think-aloud routine on fresh statements', questions: [
+      { make: (rng) => again(() => { const keys = rng.shuffle(Object.keys(POOL)).slice(0, 2), k = rng.int(1, 4); return rank(rng, 'Rank from most to least likely (fair dice).', [...keys.map((x) => POOL[x](rng)), [`At least ${k} six${k > 1 ? 'es' : ''} when ${6 * k} dice are thrown.`, NP[k - 1].toNumber()]], `Newton-Pepys values: ${NP.map((x) => dp(x, 2)).join(', ')} for k = 1 to 4; the others by their tools.`, { gap: 0.02 }); }) },
     ] },
 
     S('rule'),
@@ -144,6 +174,22 @@ export default {
     { type: 'check', scope: 'the contrast table and edge cases', questions: [
       { make: (rng) => { const k = rng.int(1, 4); const v = pw(q(5, 6), k - 1).mul(q(1, 6)); return { type: 'number', q: `P(the first six comes on throw ${k})? (3 decimals)`, answer: v.toNumber(), tolerance: 0.0015, hints: [`${k - 1} misses, then a six.`], explain: `(5/6)^${k - 1} × 1/6 = ${dp(v)}.` }; } },
     ] },
+
+    { type: 'variation', base: `The challenge: (a) one six in 4 throws ≈ ${dp(DM.four)}, (b) a double six in 24 throws ≈ ${dp(DM.dbl)}, (c) sum at least 10 ≈ ${dp(DM.ge10)}. Order (a) > (b) > (c).`, rows: [
+      { same: true, change: '(a) uses 4 dice thrown at once instead of one die thrown 4 times', effect: 'No change. The dice are independent either way, so "no six" is still (5/6)^4.' },
+      { change: 'Give (b) 25 throws instead of 24', effect: `1 − (35/36)^25 ≈ ${dp(DBL25)}: (b) now passes 1/2 but still trails (a). The order holds.` },
+      { change: 'Change (c) to "the sum is at least 7"', effect: `${sumGe(7)} of 36 pairs, ${dp(GE7)}: (c) jumps from last to first.` },
+      { fusion: true, change: 'Make (a) "at least two sixes in 8 throws"', effect: `More throws push (a) up, the doubled target pulls it down harder: ${dp(TWO8)}. Together (a) drops below (b): the order becomes (b) > (a) > (c).` },
+    ] },
+    { type: 'transfer',
+      near: { make: nearT },
+      far: { make: farT },
+      principle: mc(null, 'Which idea carried over from the dice to the trading errors?', '"At least one" is 1 minus the chance that every try misses', [
+        ['Multiply the number of tries by the chance of one success', 'n × p counts runs with several successes more than once'],
+        ['More tries with the same n × p always give a higher chance', 'equal n × p does not mean equal chances'],
+        ['Scaling up the tries and the target keeps the chance fixed', 'Newton-Pepys: the chance falls'],
+      ], 'A clean batch is one product, (1 − p)^n, exactly like "no six in n throws".'),
+    },
 
     S('tryit'),
     { type: 'tryit', section: 'll', family: 'dice-events', count: 3 },

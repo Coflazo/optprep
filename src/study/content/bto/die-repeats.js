@@ -41,7 +41,11 @@ export default {
   ],
   blocks: [
     S('recognise'),
-    { type: 'challenge', q: 'Before any teaching: you throw one fair die three times. What is the probability that all three throws show different faces? Find two different ways to get there.', answer: `${falling(6, 3)}/216 = ${allDiff(6, 3)}`, explain: `Counting: ${chain(6, 3).replace(/\/6/g, '')} = ${falling(6, 3)} sequences of 216. Walking: ${chain(6, 3)} = ${allDiff(6, 3)}. If you got ${noAdj(6, 3)} you only kept neighbours apart; if you got ${Q.of(1).sub(allSame(6, 3))} you took the complement of "all the same". The lesson names both beliefs.` },
+    { type: 'challenge', q: 'Before any teaching: you throw one fair die three times. What is the probability that all three throws show different faces? Find two different ways to get there.', answer: `${falling(6, 3)}/216 = ${allDiff(6, 3)}`, explain: `Counting: ${chain(6, 3).replace(/\/6/g, '')} = ${falling(6, 3)} sequences of 216. Walking: ${chain(6, 3)} = ${allDiff(6, 3)}. If you got ${noAdj(6, 3)} you only kept neighbours apart; if you got ${Q.of(1).sub(allSame(6, 3))} you took the complement of "all the same". The lesson names both beliefs.`, attempts: [
+      { id: 'first-factor', label: 'A "new" factor for every throw', approach: `Wrote 5/6 × 4/6 × 3/6, one "new face" factor per throw, and got ${Q.of(5 * 4 * 3, 216)}.`, breaksAt: 'The first throw has nothing to clash with, so its factor is 6/6. Every factor after it was shifted one step too far.' },
+      { id: 'neighbours', label: 'Throw 3 avoids only throw 2', approach: `Took 5/6 for throw 2 and 5/6 again for throw 3: ${noAdj(6, 3)}.`, breaksAt: 'Throw 3 must also avoid throw 1. That answer lets 2, 5, 2 count as all different.' },
+      { id: 'not-same', label: 'One minus "all the same"', approach: `Took 1 − P(all the same) = ${Q.of(1).sub(allSame(6, 3))}.`, breaksAt: 'Most sequences are neither all the same nor all different, like 3, 3, 5. They land on the wrong side.' },
+    ] },
     { type: 'text', text: 'One die (sometimes a 4-, 8-, 10- or 12-sided die) is thrown several times, and the question is whether the throws **agree or differ**: all different, all the same, no two consecutive throws equal, or at least two throws equal.' },
     { type: 'list', items: ['"A die is thrown four times. What is the chance all four numbers are different?"', '"You roll a 10-sided die three times. Probability that no two consecutive rolls match?"', '"A die is rolled three times. What is the chance at least two rolls are the same?"'] },
     { type: 'text', text: 'Not this lesson: questions that name a face ("at least one six": bto/at-least-one) or add the faces (bto/three-dice). Here no face is special; only agreement matters.' },
@@ -78,16 +82,16 @@ export default {
     ] },
     { type: 'diagram', diagram: 'bar', spec: { title: 'Six-sided die: probability after n throws', xLabel: 'throws n', yLabel: 'probability', categories: N.map(String), series: [{ name: 'no equal neighbours', values: N.map((n) => Math.round(noAdj(6, n).toNumber() * 1000) / 1000) }, { name: 'all different', values: N.map((n) => Math.round(allDiff(6, n).toNumber() * 1000) / 1000) }], valueLabels: true }, caption: `The two rows agree for n = 1 and n = 2, then split fast: at n = 6, all different has ${dec(allDiff(6, 6))} left while no equal neighbours still has ${dec(noAdj(6, 6))}.` },
     { type: 'check', scope: 'how the two events split', questions: [
-      { make: (rng) => { const n = rng.int(3, 5); return mc(rng, `A die is thrown ${n} times. Which is larger?`, 'P(no equal neighbours)', [['P(all different)', '"all different" forbids every used face, so it is the stricter event'], ['They are equal', `they only agree for 2 throws or fewer; from 3 throws on, 1, 2, 1 is allowed by one and not the other`]], `All different implies no equal neighbours, never the reverse: ${dec(noAdj(6, n))} against ${dec(allDiff(6, n))}.`); } },
+      { make: (rng) => { const n = rng.int(3, 5); return mc(rng, `A die is thrown ${n} times. Which is larger?`, 'P(no equal neighbours)', [['P(all throws different)', '"all different" forbids every used face, so it is the stricter event'], ['Equal: the two events match', `they only agree for 2 throws or fewer; from 3 throws on, 1, 2, 1 is allowed by one and not the other`]], `All different implies no equal neighbours, never the reverse: ${dec(noAdj(6, n))} against ${dec(allDiff(6, n))}.`); } },
     ] },
 
     S('derivation'),
     { type: 'steps', steps: [
-      { say: 'Walk the throws in order. For each throw write (faces allowed, given the earlier throws) / k, then multiply the fractions.', why: 'Independent throws: the chance a throw lands in its allowed set is allowed/k whatever happened before, and the chain rule multiplies these.',
+      { answers: 'first-factor', say: 'Walk the throws in order. For each throw write (faces allowed, given the earlier throws) / k, then multiply the fractions. Throw 1 has no earlier throws, so its factor is k/k.', why: 'Independent throws: the chance a throw lands in its allowed set is allowed/k whatever happened before, and the chain rule multiplies these.',
         checks: [
-          { type: 'choice', q: 'Why may you multiply 5/6 by 4/6 for "all three throws differ"?', options: ['4/6 is the chance throw 3 is new given throws 1 and 2 differ', 'The throws are dependent', 'Because 5/6 and 4/6 are disjoint events'], answer: 0, traps: { 1: 'the throws are independent; only the allowed set depends on the past', 2: 'disjoint events add, they do not multiply' }, explain: 'Each factor is a conditional probability; the chain rule multiplies them.' },
+          { type: 'choice', q: 'Why may you multiply 5/6 by 4/6 for "all three throws differ"?', options: ['4/6 is P(throw 3 is new, given throws 1 and 2 differ)', 'The throws are dependent, so their chances multiply', '5/6 and 4/6 are disjoint events, so they multiply'], answer: 0, traps: { 1: 'the throws are independent; only the allowed set depends on the past', 2: 'disjoint events add, they do not multiply' }, explain: 'Each factor is a conditional probability; the chain rule multiplies them.' },
         ] },
-      { say: 'All different: each throw loses one more allowed face, so k/k × (k − 1)/k × (k − 2)/k … for n throws.', why: 'Every face already used is forbidden, and after i throws there are i of them.',
+      { answers: 'neighbours', say: 'All different: each throw loses one more allowed face, so k/k × (k − 1)/k × (k − 2)/k … for n throws.', why: 'Every face already used is forbidden, and after i throws there are i of them.',
         checks: [
           { make: (rng) => { const k = rng.pick([4, 8, 10, 12]); const n = 3; return mc(rng, `A fair ${k}-sided die is thrown three times. P(all three different)?`, allDiff(k, n).toString(), [[noAdj(k, n).toString(), 'only kept neighbouring throws apart; throw 3 must also avoid throw 1'], [Q.of(1).sub(allSame(k, n)).toString(), 'took the complement of "all the same"'], [Q.of(falling(k, n), 6 * k ** n).toString(), 'counted sets of faces, dividing out the 3! orders'], [Q.of((k - 1) ** 3, k ** 3).toString(), 'gave the first throw a factor too']], `${chain(k, n)} = ${allDiff(k, n)}.`); } },
         ] },
@@ -99,7 +103,7 @@ export default {
         checks: [
           { make: (rng) => { const n = rng.int(3, 5); return { type: 'number', q: `A die is thrown ${n} times. How many of the 6^${n} sequences have no two consecutive throws equal?`, answer: 6 * 5 ** (n - 1), hints: ['How many faces may throw 1 show?', 'Each later throw must avoid one face only.'], explain: `6 × 5^${n - 1} = ${6 * 5 ** (n - 1)}.` }; } },
         ] },
-      { say: 'At least two throws the same: take the complement of "all different": 1 − k(k − 1)…/k^n.', why: '"Some repeat" is many overlapping cases (throws 1 and 2 match, or 1 and 3, …). Its opposite is one clean product.',
+      { answers: 'not-same', say: 'At least two throws the same: take the complement of "all different": 1 − k(k − 1)…/k^n.', why: '"Some repeat" is many overlapping cases (throws 1 and 2 match, or 1 and 3, …). Its opposite is one clean product.',
         checks: [
           { make: (rng) => { const n = rng.int(3, 4); return mc(rng, `A die is thrown ${n} times. P(at least two throws show the same face)?`, repeat(6, n).toString(), [[Q.of(1).sub(noAdj(6, n)).toString(), 'only looked for matching neighbours; throw 1 can match throw 3'], [Q.of(n * (n - 1) / 2, 6).toString(), 'added 1/6 for each pair of throws; the pair events overlap'], [allSame(6, n).toString(), 'answered "all the same", a much stronger event'], [allDiff(6, n).toString(), 'answered "all different", the complement']], `1 − ${allDiff(6, n)} = ${repeat(6, n)}.`); } },
         ] },
@@ -111,8 +115,16 @@ export default {
     { type: 'explain', prompt: 'In your own words: why is "all the same" not the complement of "all different"? Give a sequence that shows it.', model: 'The complement of "all different" is "at least two match". A sequence like 3, 3, 5 has a match, so it is not all different, but it is not all the same either. So 1 − P(all the same) counts far too much as "all different".', points: ['complement of "all different" is "at least two match"', 'a counterexample such as 3, 3, 5 is neither', 'use 1 − P(all different) for "some repeat"'] },
 
     S('worked'),
-    { type: 'worked', family: 'die-repeats', section: 'bto', difficulty: 1, seed: 'b', intro: 'A six-sided die, "all different" or "all the same". Try it before opening the solution.' },
+    { type: 'worked', family: 'die-repeats', section: 'bto', difficulty: 1, seed: 'b', explainAt: [1], intro: 'A six-sided die, "all different" or "all the same". Try it before opening the solution.' },
     { type: 'worked', family: 'die-repeats', section: 'bto', difficulty: 2, seed: 'c', fade: 1, intro: 'A die with a different number of sides. The first steps are given; the last one and the answer are yours.' },
+
+    { type: 'thinkaloud', problem: 'A die is thrown four times. What is the probability that at least two throws show the same face?', lines: [
+      { t: 0, say: 'Four throws, "at least two the same", no face named: an agreement question. "Some repeat" has many overlapping cases, so I take the complement.' },
+      { t: 5, say: `The opposite is "no throw repeats the one before it": (5/6)^3 = ${noAdj(6, 4)}.`, slip: true },
+      { t: 9, say: 'Wait, 2, 5, 2, 4 has a repeat and no equal neighbours. The opposite of "some repeat" is "all different": 6/6 × 5/6 × 4/6 × 3/6.' },
+      { t: 14, say: `That is ${allDiff(6, 4)}, so P = 1 − ${allDiff(6, 4)} = ${repeat(6, 4)} ≈ ${dec(repeat(6, 4))}.` },
+      { t: 18, say: `Check: only six faces for four throws, so a repeat should be likely, and ${dec(repeat(6, 4))} is. Answer ${repeat(6, 4)}, ${SECTIONS.bto.exam.perItemSeconds - 18} seconds to spare.` },
+    ] },
 
     S('predict'),
     { type: 'predict', question: 'Four throws of a die. Which is bigger, P(no equal neighbours) or P(all different), and roughly by what factor?', answer: `No equal neighbours: ${noAdj(6, 4)} ≈ ${dec(noAdj(6, 4))} against ${allDiff(6, 4)} ≈ ${dec(allDiff(6, 4))}, about ${Math.round(noAdj(6, 4).toNumber() / allDiff(6, 4).toNumber() * 10) / 10} times.`, explain: 'One forbids one face per throw, the other forbids every used face.' },
@@ -139,7 +151,7 @@ export default {
     { type: 'callout', tone: 'speed', text: 'Sanity check for free: all different ≤ no equal neighbours, and all the same ≤ some repeat. If your numbers break either inequality, a factor is wrong. And n throws of a k-sided die with n > k can never be all different.' },
     { type: 'callout', tone: 'speed', text: `Time budget: ${SECTIONS.bto.exam.perItemSeconds} seconds a question. Writing the row of fractions takes 10; the product and a match to the closest option takes 20 more.` },
     { type: 'check', scope: 'the memorised values and the sanity inequality', questions: [
-      { type: 'choice', q: 'Four throws of a die. A candidate reports P(all different) = 0.6 and P(no equal neighbours) = 0.58. What do you conclude?', options: ['At least one is wrong: all different cannot exceed no equal neighbours', 'Both are plausible', 'Only the second is wrong: it must be below 0.5'], answer: 0, traps: { 1: 'all different is a special case of no equal neighbours, so it is never larger', 2: `no equal neighbours is ${dec(noAdj(6, 4))} for four throws, so 0.58 is right` }, explain: `Truth: ${dec(allDiff(6, 4))} and ${dec(noAdj(6, 4))}. The first number is the broken one.` },
+      { type: 'choice', q: 'Four throws of a die. A candidate reports P(all different) = 0.6 and P(no equal neighbours) = 0.58. What do you conclude?', options: ['At least one is wrong: all different ≤ no equal neighbours', 'Both are plausible: the events are close for four throws', 'Only the second is wrong: it must be below one half'], answer: 0, traps: { 1: 'all different is a special case of no equal neighbours, so it is never larger', 2: `no equal neighbours is ${dec(noAdj(6, 4))} for four throws, so 0.58 is right` }, explain: `Truth: ${dec(allDiff(6, 4))} and ${dec(noAdj(6, 4))}. The first number is the broken one.` },
       { make: (rng) => { const k = rng.pick([4, 5]); const n = k + 1; return mc(rng, `A fair ${k}-sided die is thrown ${n} times. P(all different)?`, '0', [[allDiff(k + 1, n).toString(), `pretended the die has ${n} sides`], [Q.of(k - 1, k).toString(), 'used a single throw'], [noAdj(k, n).toString(), 'computed no equal neighbours']], `${n} throws but only ${k} faces: a repeat is certain, so P = 0.`); } },
     ] },
 
@@ -159,6 +171,19 @@ export default {
       { type: 'choice', q: 'A die is thrown n ≥ 3 times. Which statement is always true?', options: ['P(all different) < P(no equal neighbours)', 'P(all different) = 1 − P(all the same)', 'P(some repeat) = 1 − P(no equal neighbours)'], answer: 0, traps: { 1: '"not all the same" also contains sequences like 1, 1, 4', 2: 'a repeat can skip a throw, as in 2, 5, 2, which has no equal neighbours' }, explain: `From three throws on, 2, 5, 2 has no equal neighbours but is not all different, so the inequality is strict: for 3 throws ${allDiff(6, 3)} < ${noAdj(6, 3)}.` },
       { make: (rng) => { const days = 365; const n = rng.int(3, 5); const p = allDiff(days, n); return mc(rng, `${n} people, birthdays uniform over 365 days. P(all birthdays different) as a walk?`, `${chain(days, n)}`, [[['365/365', ...Array.from({ length: n - 1 }, () => '364/365')].join(' × '), 'kept only neighbours apart'], [`1 − ${Q.of(1, days ** (n - 1))}`, 'took the complement of "all the same"']], `Each new person avoids every birthday already used: ${chain(days, n)} ≈ ${dec(p)}.`); } },
     ] },
+
+    { type: 'variation', base: `A die is thrown three times. P(all different) = ${allDiff(6, 3)}.`, rows: [
+      { change: 'Throw three dice at once instead of one die three times', effect: 'No change. Three dice at once are three independent throws; label them first, second, third and the walk is identical.', same: true },
+      { change: 'Ask for "no two consecutive throws equal"', effect: `Throw 3 now avoids only throw 2: 5/6 × 5/6 = ${noAdj(6, 3)}, larger, because 2, 5, 2 now counts.` },
+      { change: 'Use a 10-sided die', effect: `The factors shrink more slowly: ${chain(10, 3)} = ${allDiff(10, 3)}. More faces make clashes rarer.` },
+      { change: 'Throw four times', effect: `One more factor, 3/6: ${allDiff(6, 4)}.` },
+      { change: 'Four throws and ask for "at least two the same"', effect: `The extra throw adds the factor 3/6 to "all different" (${allDiff(6, 4)}); the complement then flips it: 1 − ${allDiff(6, 4)} = ${repeat(6, 4)}. Walk first, complement last.`, fusion: true },
+    ] },
+    { type: 'transfer',
+      near: { make: (rng) => { const n = rng.int(3, 4); return mc(rng, `A random generator prints ${n} digits, each uniform on 0 to 9 and independent. P(all ${n} digits differ)?`, allDiff(10, n).toString(), [[noAdj(10, n).toString(), 'only kept neighbouring digits apart'], [Q.of(1).sub(allSame(10, n)).toString(), 'took the complement of "all the same"'], [Q.of(falling(9, n), 10 ** n).toString(), 'gave the first digit a factor too']], `A 10-sided die thrown ${n} times: ${chain(10, n)} = ${allDiff(10, n)}.`); } },
+      far: { type: 'choice', q: 'A desk sends 4 orders. Each is routed to one of 5 exchanges, uniformly and independently. P(no exchange receives two of the orders)?', options: [allDiff(5, 4).toString(), noAdj(5, 4).toString(), Q.of(1).sub(allSame(5, 4)).toString(), repeat(5, 4).toString()], answer: 0, traps: { 1: 'only kept consecutive orders apart; order 3 may not reuse the exchange of order 1', 2: 'took the complement of "all orders at one exchange"', 3: 'answered "some exchange gets two", the complement' }, explain: `Exchanges are faces of a 5-sided die, orders are throws: ${chain(5, 4)} = ${allDiff(5, 4)}.` },
+      principle: { type: 'choice', q: 'Which idea carried over from dice to digits and exchanges?', options: ['Each new pick avoids every earlier pick: shrinking factors', 'Each new pick avoids only the pick just before it', '"Not all the same" is the same event as "all different"', 'Every pick, the first included, gets a "new" factor'], answer: 0, traps: { 1: 'that is "no equal neighbours", a weaker event', 2: 'most outcomes are neither, like 3, 3, 5', 3: 'the first pick has nothing to clash with: factor k/k' }, explain: 'Walk the picks; each one may use only the faces (digits, exchanges) not used yet, so the allowed fraction shrinks by one each time.' },
+    },
 
     S('tryit'),
     { type: 'tryit', family: 'die-repeats', section: 'bto', count: 3 },

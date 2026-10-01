@@ -3,7 +3,7 @@
 // Arrow counts are not probabilities: the reported trap lists nodes by incoming arrows and the true
 // order is the reverse. Stationary distributions are solved exactly here with fractions.
 import { Q } from '../../../core/rational.js';
-import { S, LL, dp, mc, again } from './compare-without-computing.js';
+import { S, LL, dp, mc, rank, again } from './compare-without-computing.js';
 
 const q = (n, d = 1) => Q.of(n, d);
 const L = ['A', 'B', 'C', 'D'];
@@ -51,6 +51,17 @@ function chain3(rng) {
     if ([0, 1, 2].every(reach)) return P;
   }
 }
+// Variation: redirect C → A to C → B; start at C and stop after 2 steps.
+const PR = mat(3, [[0, 1, 1, 2], [0, 2, 1, 2], [1, 0, 1, 3], [1, 2, 2, 3], [2, 1, 1, 1]]), PIR = stationaryQ(PR), TWO_C = two(P3, 2);
+if (!(PI3[0].cmp(PI3[2]) > 0 && PI3[2].cmp(PI3[1]) > 0 && PIR[1].cmp(PIR[2]) > 0 && PIR[2].cmp(PIR[0]) > 0 && TWO_A[1].isZero() && TWO_C[0].isZero())) throw new Error('markov-graph: prose orders no longer hold');
+
+// Transfer: near = a three-state position chain with new names; far = two-state weather.
+const POS = ['Long', 'Flat', 'Short'];
+const nearT = (rng) => again(() => { const P = chain3(rng), pi = stationaryQ(P).map((x) => x.toNumber()), say = P.map((row, i) => row.map((p, j) => (p.isZero() ? null : `${POS[i]}→${POS[j]} ${p}`)).filter(Boolean).join(', ')).join('; ');
+  return rank(rng, `Each day a trader's position moves between Long, Flat and Short with these probabilities: ${say}. On a random day far in the future, rank from most to least likely.`, POS.map((n, i) => [`The position is ${n}.`, pi[i]]), `Balance: ${pi.map((v, i) => `${POS[i]} ≈ ${dp(v, 3)}`).join(', ')}.`, { gap: 0.02 }); });
+const farT = (rng) => { const p = rng.pick([[1, 4], [1, 5], [1, 3], [2, 5]]), r = rng.pick([[1, 2], [2, 3], [3, 5], [1, 3]]); const sr = p[0] / p[1], rs = r[0] / r[1];
+  return { type: 'number', q: `A sunny day turns rainy the next day with probability ${p[0]}/${p[1]}; a rainy day turns sunny with ${r[0]}/${r[1]} (otherwise the weather stays). In the long run, what fraction of days are sunny? (3 decimals)`, answer: rs / (sr + rs), tolerance: 0.0015, hints: ['Flow sunny → rainy equals flow rainy → sunny.', `π_S × ${p[0]}/${p[1]} = π_R × ${r[0]}/${r[1]}, and π_S + π_R = 1.`], explain: `π_S = ${r[0]}/${r[1]} ÷ (${p[0]}/${p[1]} + ${r[0]}/${r[1]}) = ${dp(rs / (sr + rs), 3)}.` }; };
+
 const sayP = (P) => P.map((row, i) => row.map((p, j) => (p.isZero() ? null : `${L[i]}→${L[j]} ${p}`)).filter(Boolean).join(', ')).join('; ');
 
 export default {
@@ -69,7 +80,12 @@ export default {
   ],
   blocks: [
     S('recognise'),
-    { type: 'challenge', q: `Before any teaching: a signal moves every second along an outgoing arrow with the probability shown: ${sayP(PT)}. After a very long time it is observed at a random moment. Rank: at A (${INT[0]} incoming arrows), at B (${INT[1]}), at C (${INT[2]}).`, answer: [2, 1, 0].map((i) => `${L[i]} ${PIT[i]} ≈ ${dp(PIT[i].toNumber(), 3)}`).join(' > '), explain: `The order is the exact reverse of the arrow counts. D sends ${PT[3][2]} of its probability to C every step, and D is fed by everyone; A only receives thin arrows. If you ranked by arrows, you counted roads instead of traffic.` },
+    { type: 'challenge', q: `Before any teaching: a signal moves every second along an outgoing arrow with the probability shown: ${sayP(PT)}. After a very long time it is observed at a random moment. Rank: at A (${INT[0]} incoming arrows), at B (${INT[1]}), at C (${INT[2]}).`, answer: [2, 1, 0].map((i) => `${L[i]} ${PIT[i]} ≈ ${dp(PIT[i].toNumber(), 3)}`).join(' > '), explain: `The order is the exact reverse of the arrow counts. D sends ${PT[3][2]} of its probability to C every step, and D is fed by everyone; A only receives thin arrows. If you ranked by arrows, you counted roads instead of traffic.`,
+      attempts: [
+        { id: 'start', label: 'Trace it from a start', approach: 'You followed a few steps from one node and ranked by where the signal went first.', breaksAt: 'After a long time the start is forgotten: the long run is the distribution that one more step leaves unchanged.' },
+        { id: 'outgoing', label: 'Balance the arrows out', approach: 'You wrote each node\'s equation from the arrows leaving it.', breaksAt: 'Being at j next means arriving at j, so the balance for j uses the arrows entering j.' },
+        { id: 'arrows', label: 'Count incoming arrows', approach: `You ranked A first because ${INT[0]} arrows point into it.`, breaksAt: 'An arrow is a road, not traffic: its flow is how often its source is visited times its label.' },
+      ] },
     { type: 'text', text: 'The prompt is a **directed graph**: nodes joined by arrows, each arrow labelled with a probability, and the arrows leaving any node add to 1. Something (a signal, a customer, a price state) moves one arrow per step. Statements ask where it is after a fixed number of steps from a known start, or where it is at a random moment after running for a very long time.' },
     { type: 'text', text: 'Not this lesson: "until" questions with an absorbing end (first-step analysis in the foundations) and a single conditional probability. Here the process never stops.' },
     { type: 'check', scope: 'the recognition cues above', questions: [
@@ -99,27 +115,27 @@ export default {
     { type: 'text', text: 'The trap chain from the challenge. Count arrows into A, B and C, then compare with the long-run fractions in the caption.' },
     { type: 'diagram', diagram: 'graph', spec: { markov: true, nodes: nodes(LAY4), edges: edgesOf(PT) }, caption: `Incoming arrows: A ${INT[0]}, B ${INT[1]}, C ${INT[2]}. Long run: A ${PIT[0]} (${dp(PIT[0].toNumber(), 3)}), B ${PIT[1]} (${dp(PIT[1].toNumber(), 3)}), C ${PIT[2]} (${dp(PIT[2].toNumber(), 3)}), D ${PIT[3]}. The heavy flow is D → C.` },
     { type: 'check', scope: 'arrows against flow', questions: [
-      mc(null, 'In the trap chain, why does C beat A in the long run despite fewer incoming arrows?', `D, which is visited often, sends ${PT[3][2]} of its probability straight to C`, [['C has a self-loop that traps the signal', 'C has no self-loop: read the arrows leaving C'], ['Arrows into A are one-way', 'every arrow is one-way; direction is not the difference'], ['A has more outgoing arrows', 'outgoing arrows always carry exactly 1 in total, however many there are']], 'What matters is how much probability flows along an arrow, weighted by how often its source is visited.', { at: 0 }),
+      mc(null, 'In the trap chain, why does C beat A in the long run despite fewer incoming arrows?', `D is visited often and sends ${PT[3][2]} of it straight to C`, [['C has a self-loop that keeps the signal there for many steps', 'C has no self-loop: read the arrows leaving C'], ['The arrows into A point the wrong way for the signal to arrive', 'every arrow is one-way; direction is not the difference'], ['A has more outgoing arrows, so the signal leaves A faster', 'outgoing arrows always carry exactly 1 in total, however many there are']], 'What matters is how much probability flows along an arrow, weighted by how often its source is visited.', { at: 0 }),
     ] },
 
     S('derivation'),
     { type: 'text', text: 'Two-step statements need only the tree. Long-run statements need the idea that the distribution stops changing; four moves turn that idea into numbers.' },
     { type: 'steps', steps: [
-      { say: 'Long run means the chance of being at each node no longer changes from one step to the next. Call those chances π_A, π_B, π_C.', why: 'Run the chain long enough and the start is forgotten; one more step must leave the distribution as it is.',
+      { answers: 'start', say: 'Long run means the chance of being at each node no longer changes from one step to the next. Call those chances π_A, π_B, π_C.', why: 'Run the chain long enough and the start is forgotten; one more step must leave the distribution as it is.',
         checks: [mc(null, 'After a very long time, what do the long-run chances π_A + π_B + π_C add to?', '1', [['the number of nodes', 'they are probabilities of being somewhere'], ['it depends on the start', 'the long run forgets the start'], ['the number of arrows', 'arrows carry probability, they are not probabilities of location']], 'The signal is always at exactly one node.', { at: 0 })] },
-      { say: 'Balance: the chance of being at node j after one more step is the flow into j, so π_j = Σ_i π_i × P(i → j).', why: 'To be at j next, you were at some i and took the arrow i → j. Unchanged means that total equals π_j.',
+      { answers: 'outgoing', say: 'Balance: the chance of being at node j after one more step is the flow into j, so π_j = Σ_i π_i × P(i → j).', why: 'To be at j next, you were at some i and took the arrow i → j. Unchanged means that total equals π_j.',
         checks: [mc(null, 'In the three-node chain, which is the balance equation for B?', 'π_B = ½ π_A', [['π_B = ⅓ π_A + ⅔ π_C', 'used the arrows leaving B instead of those entering it'], ['π_B = ½', 'read one arrow label as the long-run chance'], ['π_B = π_A + π_C', 'added whole chances without the arrow probabilities']], 'The only arrow into B is A → B with ½.', { at: 0 })] },
       { say: 'Two nodes shortcut: flow across the split balances, π_A × P(A → B) = π_B × P(B → A), so π_A / π_B = P(B → A) / P(A → B).', why: 'In the long run, as much probability crosses from A to B each step as crosses back.',
         checks: [{ make: (rng) => { const p = rng.pick([[1, 2], [1, 3], [1, 4], [2, 3], [3, 4]]), r = rng.pick([[1, 2], [1, 3], [1, 5], [2, 5], [1, 6]]); const pv = p[0] / p[1], rv = r[0] / r[1]; return { type: 'number', q: `Two nodes: A → B with ${p[0]}/${p[1]} (else stay), B → A with ${r[0]}/${r[1]} (else stay). Long-run π_A? (3 decimals)`, answer: rv / (pv + rv), tolerance: 0.0015, hints: ['π_A × P(A→B) = π_B × P(B→A).', 'π_A / π_B = P(B→A) / P(A→B); then normalise.'], explain: `π_A = ${r[0]}/${r[1]} ÷ (${p[0]}/${p[1]} + ${r[0]}/${r[1]}) = ${dp(rv / (pv + rv), 3)}.` }; } }] },
       { say: `Three nodes: express every π through one node, then normalise. In the picture chain, π_B = ${P3[0][1]} π_A and π_C = ${P3[0][2]} π_A + ${P3[1][2]} π_B = ${KC} π_A, so π_A = 1 / (1 + ${P3[0][1]} + ${KC}) = ${PI3[0]}.`, why: 'Each balance equation gives one node in terms of others; the sum-to-1 condition fixes the scale.',
         checks: [{ type: 'number', q: 'In the three-node chain, what is π_C? (3 decimals)', answer: PI3[2].toNumber(), tolerance: 0.0015, hints: [`π_C = ${KC} π_A and π_A = ${PI3[0]}.`], explain: `${KC} × ${PI3[0]} = ${PI3[2]} ≈ ${dp(PI3[2].toNumber(), 3)}.` }] },
-      { say: 'Rank by the π values, never by arrow counts. A single high-probability arrow out of a busy node can outweigh several thin arrows.', why: 'The flow along i → j is π_i × P(i → j): both how often you are at i and how likely the arrow is.',
+      { answers: 'arrows', say: 'Rank by the π values, never by arrow counts. A single high-probability arrow out of a busy node can outweigh several thin arrows.', why: 'The flow along i → j is π_i × P(i → j): both how often you are at i and how likely the arrow is.',
         checks: [{ hinge: true, make: (rng) => again(() => { const P = chain3(rng); const pi = stationaryQ(P).map((x) => x.toNumber()); const deg = indeg(P); const top = pi.indexOf(Math.max(...pi)); if (pi.filter((v) => Math.abs(v - pi[top]) < 0.02).length > 1) return null; const most = deg.indexOf(Math.max(...deg)); const wrongs = [0, 1, 2].filter((i) => i !== top).map((i) => [L[i], i === most ? 'counted incoming arrows instead of solving the balance equations' : 'picked a node without weighing each arrow by how often its source is visited']); return mc(rng, `Chain: ${sayP(P)}. Which node is visited most in the long run?`, L[top], wrongs, `Long run: ${pi.map((v, i) => `π_${L[i]} ≈ ${dp(v, 3)}`).join(', ')}.`, { hints: ['Write flow in = flow out for each node.', 'Express two nodes through the third, then normalise.'] }); }) }] },
     ] },
     { type: 'explain', prompt: 'Explain why the node with the most incoming arrows need not be the one visited most often.', model: 'An arrow is a road, not traffic. The long-run flow along an arrow is how often its source is visited times the arrow\'s probability. Three arrows of probability 1/8 from rarely visited nodes carry less than one arrow of probability 4/5 from a busy node, so the busy node\'s target gets more visits.', points: ['Flow along i → j = π_i × P(i → j)', 'Arrow counts ignore both factors', 'Balance equations weigh every arrow correctly'] },
 
     S('worked'),
-    { type: 'worked', section: 'll', family: 'markov-graph', difficulty: 3, seed: 'a', intro: 'Where is the signal after exactly two steps? List the paths. Try it first.' },
+    { type: 'worked', section: 'll', family: 'markov-graph', difficulty: 3, seed: 'a', explainAt: [0, 1], intro: 'Where is the signal after exactly two steps? List the paths. Try it first.' },
     { type: 'worked', section: 'll', family: 'markov-graph', difficulty: 5, seed: 'b', fade: 1, intro: 'The trap version: statements listed by incoming arrows. The balance solution is given; the ordering is yours.' },
 
     S('predict'),
@@ -140,7 +156,7 @@ export default {
       'So a return to A within two steps is unlikely.',
     ], errorStep: 2, explain: `A→B→A and A→C→A are alternative paths, so their products add: ${P3[0][1]} × ${P3[1][0]} + ${P3[0][2]} × ${P3[2][0]} = ${TWO_A[0]}. Multiply along a path, add across paths.` },
     { type: 'check', scope: 'the named traps', questions: [
-      mc(null, 'A candidate writes the balance equation for C in the three-node chain as π_C = 1 × π_C. Which belief?', 'Used the arrow leaving C instead of the arrows entering it', [['Counted arrows', 'no counting happened: a single label was used'], ['Forgot to normalise', 'normalising comes after the balance equations are right'], ['Used a two-step path', 'this is a one-step balance']], 'Into C: ½ from A and ⅔ from B: π_C = ½ π_A + ⅔ π_B.', { at: 0 }),
+      mc(null, 'A candidate writes the balance equation for C in the three-node chain as π_C = 1 × π_C. Which belief?', 'Used the arrow leaving C instead of the arrows entering it', [['Counted the arrows into C instead of weighing them', 'no counting happened: a single label was used'], ['Forgot to normalise the chances so they add to 1', 'normalising comes after the balance equations are right'], ['Followed a two-step path back to C instead of one step', 'this is a one-step balance']], 'Into C: ½ from A and ⅔ from B: π_C = ½ π_A + ⅔ π_B.', { at: 0 }),
     ] },
 
     S('speed'),
@@ -148,6 +164,18 @@ export default {
     { type: 'callout', tone: 'speed', text: `Self-loops do not move probability, so leave them out of every cut equation. Budget: ${LL.exam.perItemSeconds} seconds; a three-node balance is two substitutions and one normalisation.` },
     { type: 'check', scope: 'the cut shortcut', questions: [
       { make: (rng) => { const p = rng.pick([[1, 2], [1, 3], [1, 4], [3, 4]]), r = rng.pick([[1, 2], [2, 3], [1, 5], [3, 5]]); const pv = p[0] / p[1], rv = r[0] / r[1]; const ans = rv > pv ? 'A' : rv < pv ? 'B' : 'equal'; return mc(rng, `Two nodes: A leaves to B with ${p[0]}/${p[1]}, B leaves to A with ${r[0]}/${r[1]} (otherwise each stays). Which is visited more?`, ans === 'equal' ? 'They are equal' : ans, [['A', 'reversed the cut ratio: the node that is harder to leave is visited more'], ['B', 'reversed the cut ratio: the node that is harder to leave is visited more'], ['They are equal', 'two nodes are equal only when the leaving probabilities match']].filter(([v]) => v !== (ans === 'equal' ? 'They are equal' : ans)), `π_A/π_B = P(B→A)/P(A→B) = ${dp(rv / pv, 3)}.`); } },
+    ] },
+
+    { type: 'thinkaloud', problem: 'The three-node picture chain (A → B ½, A → C ½, B → A ⅓, B → C ⅔, C → A 1). Observed at a random moment after a long time, rank: at A, at B, at C.', lines: [
+      { t: 0, say: 'Long run at a random moment: balance equations, not arrow counts.' },
+      { t: 5, say: `Into B: only A → B with ${P3[0][1]}. So π_B = ${P3[0][1]} π_A.` },
+      { t: 12, say: 'Into A: C sends everything there, so π_A = π_C.', slip: true },
+      { t: 18, say: `Wait, B → A with ${P3[1][0]} enters A too. Easier to balance C: π_C = ${P3[0][2]} π_A + ${P3[1][2]} π_B = ${KC} π_A.` },
+      { t: 28, say: `Normalise: π_A (1 + ${P3[0][1]} + ${KC}) = 1, so π_A = ${PI3[0]}, π_C = ${PI3[2]}, π_B = ${PI3[1]}.` },
+      { t: 34, say: `They add to 1. Order A > C > B, with ${LL.exam.perItemSeconds - 34} seconds left.` },
+    ] },
+    { type: 'check', scope: 'the think-aloud routine on a fresh chain', questions: [
+      { make: (rng) => again(() => { const P = chain3(rng), pi = stationaryQ(P).map((x) => x.toNumber()); return rank(rng, `Chain: ${sayP(P)}. Observed at a random moment after a long time, rank from most to least likely.`, L.slice(0, 3).map((n, i) => [`The signal is at ${n}.`, pi[i]]), `Balance: ${pi.map((v, i) => `π_${L[i]} ≈ ${dp(v, 3)}`).join(', ')}.`, { gap: 0.02, hints: ['Write flow in = flow out for the node with the fewest incoming arrows.', 'Express the others through one node, then normalise.'] }); }) },
     ] },
 
     S('rule'),
@@ -165,6 +193,22 @@ export default {
     { type: 'check', scope: 'the contrast table and edge cases', questions: [
       mc(null, 'A goes to B with probability 1 and B goes to A with probability 1. Starting at A, where is the signal after exactly 4 steps?', 'at A', [['at B', 'counted an odd number of moves'], ['at A or B, half each', 'used the long-run fractions for a fixed step count'], ['it cannot be known', 'the moves are certain, so the position is too']], 'Each pair of steps returns to A.', { at: 0 }),
     ] },
+
+    { type: 'variation', base: `The three-node picture chain, long run: A ${PI3[0]}, C ${PI3[2]}, B ${PI3[1]}. Order A > C > B.`, rows: [
+      { same: true, change: 'Start the signal at C instead of A', effect: 'No change. The long run forgets the start: the balance equations never mention it.' },
+      { change: 'Ask where it is after exactly 2 steps from A', effect: `Now the start matters: A ${TWO_A[0]}, C ${TWO_A[2]}, B ${TWO_A[1]} (no two-step path from A ends at B). Same order, different method and numbers.` },
+      { change: 'Redirect the arrow C → A to C → B (still probability 1)', effect: `One arrow changes where C's traffic goes: B ${PIR[1]}, C ${PIR[2]}, A ${PIR[0]}. The order reverses to B > C > A.` },
+      { fusion: true, change: 'Start at C, and ask where it is after exactly 2 steps', effect: `Alone, the new start changes nothing in the long run. With a fixed step count it matters: C → A is forced, then A splits, so B ${TWO_C[1]}, C ${TWO_C[2]}, A ${TWO_C[0]}.` },
+    ] },
+    { type: 'transfer',
+      near: { make: nearT },
+      far: { make: farT },
+      principle: mc(null, 'Which idea carried over from the signal graph to the weather?', 'In the long run the flow each way across a split is equal', [
+        ['Each state is equally likely in the long run, whatever the arrows', 'the shares follow the flows, not the number of states'],
+        ['The long-run share depends on the state you start in', 'the long run forgets the start'],
+        ['The state with more ways to arrive is the most common one', 'count traffic, not roads: weigh each arrow by its source'],
+      ], 'Sunny-to-rainy flow equals rainy-to-sunny flow, exactly as π_A P(A → B) = π_B P(B → A) for two nodes.'),
+    },
 
     S('tryit'),
     { type: 'tryit', section: 'll', family: 'markov-graph', count: 3 },

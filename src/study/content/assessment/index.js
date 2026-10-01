@@ -50,7 +50,7 @@ const minusOne = {
     { type: 'text', text: 'A blind guess among 5 options has p = 1/5, expected score 2/5 − 1 = −0.6: never guess blind. Each option you rule out raises p. With k options left, p = 1/k.' },
     { type: 'compare', columns: ['Options left', 'p', 'Expected score', 'Decision'], rows: [5, 4, 3, 2, 1].map((k) => [String(k), `1/${k}`, fmt(2 / k - 1), 2 / k - 1 > 1e-9 ? 'answer' : Math.abs(2 / k - 1) < 1e-9 ? 'either (worth 0)' : 'skip']) },
     { type: 'check', scope: 'p = 1/k after elimination', questions: [
-      { type: 'choice', q: 'You have ruled out 3 of the 5 options for certain. Guess or skip?', options: ['Either: the expected score is 0', 'Guess: +0.5', 'Skip: −0.2'], answer: 0, explain: 'Two options left: p = 1/2, 2p − 1 = 0.' },
+      { type: 'choice', q: 'You have ruled out 3 of the 5 options for certain. Guess or skip?', options: ['Either: guessing is worth 0', 'Guess: guessing is worth +0.5', 'Skip: guessing is worth −0.2'], answer: 0, traps: { 1: 'p = 1/2 gives 2p − 1 = 0, not +0.5', 2: 'used p = 2/5; with two options left p = 1/2' }, explain: 'Two options left: p = 1/2, 2p − 1 = 0.' },
       { type: 'number', q: 'Expected score of guessing uniformly among 4 remaining options?', answer: -0.5, tolerance: 1e-9, explain: 'p = 1/4, 2 × 1/4 − 1 = −0.5.' },
     ] },
     sec('rule', 'Rule'),
@@ -76,7 +76,7 @@ const pacing = {
     { type: 'text', text: 'NumberLogic ramps in difficulty, so an even pace is wrong: aim to be past question 13 with more than half the time left. Orderbooks gives about 24 seconds a board; if a board has not clicked in 40 seconds, skip it.' },
     { type: 'diagram', diagram: 'numberline', spec: { min: 0, max: 25, step: 5, marks: [{ x: 10, label: 'Q13 by 10 min' }, { x: 20, label: 'Q22 by 20 min' }] }, caption: 'NumberLogic checkpoints (minutes): bank time on the easy first half.' },
     { type: 'check', scope: 'the NumberLogic checkpoints', questions: [
-      { make: (rng) => { const q = rng.int(9, 16); const ahead = q >= 13; return { type: 'choice', q: `NumberLogic, 10 minutes gone, you are starting question ${q}. Against the checkpoint plan, are you ahead or behind?`, options: ['Ahead or on plan', 'Behind'], answer: ahead ? 0 : 1, explain: 'The plan is question 13 by 10 minutes.' }; } },
+      { make: (rng) => { const q = rng.int(9, 16); return { type: 'choice', stable: true, q: `NumberLogic, 10 minutes gone, you are starting question ${q}. Against the checkpoint plan, where are you?`, options: ['Ahead of plan', 'On plan', 'Behind plan'], answer: q > 13 ? 0 : q === 13 ? 1 : 2, explain: 'The plan is question 13 by 10 minutes.' }; } },
     ] },
     sec('rule', 'Rule'),
     { type: 'callout', tone: 'rule', text: 'Per-question clocks: use them, they do not carry over. Single clocks: bank time on easy items; skip anything stuck past about twice the average.' },
@@ -94,12 +94,15 @@ const closest = {
     { type: 'text', text: 'Beat the Odds asks for the option **closest** to the true value, and options are usually spread out. You rarely need the exact number: a lower and an upper bound that contain only one option are enough.' },
     { type: 'diagram', diagram: 'numberline', spec: { min: 0, max: 1, step: 0.1, marks: [{ x: 0.12, label: 'A' }, { x: 0.3, label: 'B' }, { x: 0.52, label: 'C' }, { x: 0.7, label: 'D' }, { x: 0.9, label: 'E' }], barriers: [0.4, 0.6] }, caption: 'If you know the answer is between 0.4 and 0.6, only C survives. No exact computation needed.' },
     { type: 'check', scope: 'bracketing', questions: [
-      { make: (rng) => { const lo = rng.pick([0.2, 0.3, 0.4]); const opts = [lo - 0.12, lo + 0.07, lo + 0.25, lo + 0.4].map((x) => Math.round(x * 100) / 100); return { type: 'choice', q: `You know the answer lies between ${lo} and ${Math.round((lo + 0.15) * 100) / 100}. Options: ${opts.join(', ')}. Which do you pick?`, options: opts.map(String), answer: 1, explain: `Only ${opts[1]} is inside the bracket.` }; } },
+      // The inside option's rank varies (0 to 2 options below the bracket), so sorted order gives nothing away.
+      { make: (rng) => { const r2 = (x) => Math.round(x * 100) / 100, lo = rng.pick([0.2, 0.3, 0.4]), hi = r2(lo + 0.15), k = rng.int(0, 2);
+        const inside = r2(lo + 0.07), opts = [...[lo - 0.17, lo - 0.09].slice(2 - k), inside, ...[hi + 0.1, hi + 0.25, hi + 0.4].slice(0, 3 - k)].map(r2);
+        return { type: 'choice', q: `You know the answer lies between ${lo} and ${hi}. Options: ${opts.join(', ')}. Which do you pick?`, options: opts.map(String), answer: opts.indexOf(inside), explain: `Only ${inside} is inside the bracket.` }; } },
     ] },
     sec('sanity', 'Sanity checks that eliminate'),
     { type: 'list', items: ['A probability above 1 or below 0 is impossible.', 'Complement check: if the event is "at least one", the answer is usually large; "all of them" is usually small.', 'Symmetry: if two outcomes are interchangeable, their probabilities are equal.'] },
     { type: 'check', scope: 'the three sanity checks', questions: [
-      { type: 'choice', q: 'Five fair coins. P(at least one head)? Options: 0.03, 0.16, 0.5, 0.84, 0.97.', options: ['0.97', '0.03', '0.5', '0.84'], answer: 0, traps: { 1: 'that is P(no heads) = 1/32, the complement' }, explain: '"At least one" of five: 1 − 1/32 ≈ 0.969.' },
+      { type: 'choice', q: 'Five fair coins are tossed. Which option is closest to P(at least one head)?', options: ['0.97', '0.03', '0.16', '0.5', '0.84'], answer: 0, traps: { 1: 'that is P(no heads) = 1/32, the complement', 2: 'that is about P(exactly one head), 5/32', 3: 'a coin-flip guess: "at least one" of five is large', 4: 'removed "exactly one head" instead of "no heads"' }, explain: '"At least one" of five: 1 − 1/32 ≈ 0.969.' },
     ] },
     sec('rule', 'Rule'),
     { type: 'callout', tone: 'rule', text: 'Bracket first: two quick bounds that leave one option beat an exact computation that runs out of time.' },
@@ -140,7 +143,7 @@ const training = {
       { id: 'ready', text: 'Ready: 3 exams in a row at target → open the portal task', kind: 'a' },
     ], edges: [{ from: 'study', to: 'try' }, { from: 'try', to: 'practice', label: 'mastered' }, { from: 'practice', to: 'drill' }, { from: 'drill', to: 'exam' }, { from: 'exam', to: 'ready', label: '3 at target' }] }, caption: 'Misses send you back up the loop: each miss links to the lesson for that type.' },
     { type: 'check', scope: 'the training loop', questions: [
-      { type: 'choice', q: 'When does a section count as Ready?', options: ['After 3 full exams in a row at target', 'After mastering every lesson', 'After one exam above target', 'After 100 practice questions'], answer: 0, explain: 'Only full-length exams count, and the last three must all meet the target.' },
+      { type: 'choice', q: 'When does a section count as Ready?', options: ['After 3 full exams in a row at target', 'After mastering every lesson in its book', 'After one full exam above the target', 'After 100 practice questions answered'], answer: 0, traps: { 1: 'lessons prepare you; only full exams count toward Ready', 2: 'one exam can be luck: the last three must all meet the target', 3: 'practice volume is not scored; only full exams count' }, explain: 'Only full-length exams count, and the last three must all meet the target.' },
     ] },
     sec('rule', 'Rule'),
     { type: 'callout', tone: 'rule', text: 'Study → try it → practice → drill → exam; a started portal task cannot be reset, so the Ready gate decides when to open it.' },
@@ -170,7 +173,7 @@ const howToStudy = {
       { label: 'reviews at 1, 3, 7, 16 days', points: [[0, 1], [1, 0.8], [3, 0.85], [7, 0.88], [16, 0.9], [30, 0.86]] },
     ] }, caption: 'Illustrative shape of forgetting (not measured data): each review resets the curve higher and flatter. Mastered lessons come back on this schedule.' },
     { type: 'check', scope: 'the methods table', questions: [
-      { type: 'choice', q: 'You reread a lesson three times and it feels easy. Which method does the guide use instead, and why?', options: ['Retrieval checks: recalling strengthens memory; rereading only feels fluent', 'Rereading until it feels easy is the most reliable', 'Highlighting the key sentences'], answer: 0, traps: { 1: 'fluency while reading is not the same as being able to recall', 2: 'highlighting is passive: nothing is retrieved' }, explain: 'Recall is the test the exam gives you, so recall is what the guide trains.' },
+      { type: 'choice', q: 'You reread a lesson three times and it feels easy. Which method does the guide use instead, and why?', options: ['Retrieval checks: recalling, not rereading, builds memory', 'Rereading until it feels easy, since fluency means mastery', 'Highlighting key sentences, so the rereads are faster'], answer: 0, traps: { 1: 'fluency while reading is not the same as being able to recall', 2: 'highlighting is passive: nothing is retrieved' }, explain: 'Recall is the test the exam gives you, so recall is what the guide trains.' },
     ] },
     sec('rule', 'Rule'),
     { type: 'callout', tone: 'rule', text: 'Try first, check every step, explain it, find the error, then prove it alone; come back when it is due.' },

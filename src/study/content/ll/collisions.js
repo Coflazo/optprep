@@ -12,6 +12,18 @@ const firstHalf = (f) => { let n = 1; while (f(n) < 0.5) n += 1; return n; };
 const N23 = firstHalf((n) => anyPair(n, 365)), NYOU = firstHalf((n) => matchYou(n));
 const CH = [['(a) 23 people, two share a birthday', anyPair(23, 365)], ['(b) 100 others, someone shares yours', matchYou(100)], ['(c) 5 people, two share a birth month', anyPair(5, 12)]].sort((a, b) => b[1] - a[1]);
 
+// Think-aloud: 4 dice repeat a face, two of 15 share a birthday, someone of 50 shares yours.
+const TD4 = anyPair(4, 6), T15 = anyPair(15, 365), T50 = matchYou(50);
+// Variation: (b) as a collision; (c) as a fixed month; (a) doubled to 46 and turned into a fixed target.
+const B100 = anyPair(100, 365), C5 = matchYou(5, 12), A46 = anyPair(46, 365), Y23 = matchYou(23), Y46 = matchYou(46);
+if (!(TD4 > T15 && T15 > T50 && B100 > anyPair(5, 12) && C5 < anyPair(23, 365) && C5 > matchYou(100) && Y46 < matchYou(100) && A46 > 0.9 && Y23 < Y46)) throw new Error('collisions: prose orders no longer hold');
+
+// Transfer: near = random account codes; far = random request IDs (estimate by pairs).
+const nearT = (rng) => again(() => { const n = rng.pick([20, 30, 40, 50]), m = rng.pick([100, 200, 500]), k = rng.int(3, 5);
+  return rank(rng, 'Accounts get random 3-digit codes (000 to 999), each equally likely and independent. Rank from most to least likely.', [[`Among ${n} accounts, two share a code.`, anyPair(n, 1000)], [`Among ${m} accounts, one has the code 777.`, matchYou(m, 1000)], [`Among ${k} people, two share a birth month.`, anyPair(k, 12)]], `Pairs: ${pairs(n)} among ${n} accounts. Fixed target: ${m} chances at 1/1000. Months: ${pairs(k)} pairs at 1/12.`, { gap: 0.02 }); });
+const farT = (rng) => { const n = rng.pick([100, 200, 300, 400]), d = 2 ** 16;
+  return { type: 'number', q: `A service gives each of ${n} requests a random 16-bit ID (${d} equally likely values). Estimate P(two requests share an ID). (2 decimals)`, answer: anyPair(n, d), tolerance: 0.02, hints: [`pairs = ${n} × ${n - 1}/2 = ${pairs(n)}.`, `1 − e^(−pairs/${d}).`], explain: `${pairs(n)} pairs, pairs/d = ${dp(pairs(n) / d)}, so ≈ ${dp(approx(n, d), 2)} (exact ${dp(anyPair(n, d))}).` }; };
+
 // Pool for the ranking checks.
 const POOL = {
   bday: (r) => { const n = r.pick([10, 15, 20, 23, 30, 40, 50]); return [`Among ${n} people, two share a birthday.`, anyPair(n, 365)]; },
@@ -38,7 +50,12 @@ export default {
   ],
   blocks: [
     S('recognise'),
-    { type: 'challenge', q: 'Before any teaching: all birthdays (and birth months) are equally likely and independent. Rank: (a) among 23 people, two share a birthday, (b) among 100 other people, someone shares your birthday, (c) among 5 people, two share a birth month.', answer: CH.map(([t, p]) => `${t} ≈ ${dp(p)}`).join(' > '), explain: `(a) looks tiny next to (b): 23 people against 100. But (a) is about any of the ${pairs(23)} pairs matching, while (b) is 100 separate chances at one fixed day. (c) has only 12 values, so ${pairs(5)} pairs already collide more often than not.` },
+    { type: 'challenge', q: 'Before any teaching: all birthdays (and birth months) are equally likely and independent. Rank: (a) among 23 people, two share a birthday, (b) among 100 other people, someone shares your birthday, (c) among 5 people, two share a birth month.', answer: CH.map(([t, p]) => `${t} ≈ ${dp(p)}`).join(' > '), explain: `(a) looks tiny next to (b): 23 people against 100. But (a) is about any of the ${pairs(23)} pairs matching, while (b) is 100 separate chances at one fixed day. (c) has only 12 values, so ${pairs(5)} pairs already collide more often than not.`,
+      attempts: [
+        { id: 'divide', label: 'Divide people by values', approach: 'You priced (a) at 23/365 and (c) at 5/12.', breaksAt: 'Each new person must avoid every value already taken: a shrinking product, then 1 minus it.' },
+        { id: 'people', label: 'Count the people', approach: 'You put (b) first: 100 people beat 23 people.', breaksAt: `"Two of 23 share" can happen in any of ${pairs(23)} pairs; (b) has only 100 chances at one fixed day.` },
+        { id: 'pairsfixed', label: 'Count pairs for (b) too', approach: 'You priced (b) from the pairs among all 101 people, as if any two could match.', breaksAt: 'Only matches with your one birthday count: 100 chances, 1 − (364/365)^100.' },
+      ] },
     { type: 'text', text: 'There is **no picture**: statements about people (or dice, or PINs) each taking one of d equally likely values, independently. Two shapes appear: **some two** of them match (a collision among themselves), or **someone** matches one fixed value (yours). A third, "all different", is the complement of the first.' },
     { type: 'text', text: 'Not this lesson: dice sums or card hands. Here only the pattern of repeats matters: how many values, how many draws, and whether the target is fixed.' },
     { type: 'check', scope: 'the recognition cues above', questions: [
@@ -74,11 +91,11 @@ export default {
     S('derivation'),
     { type: 'text', text: 'Four moves: the exact product, the pair estimate that ranks without a calculator, the fixed-target formula, and the pigeonhole bound. The estimate is the move that saves time; the exact product is the move that settles a close call.' },
     { type: 'steps', steps: [
-      { say: 'All different: person i must avoid the i − 1 values already taken, so P(all different) = Π (d − i)/d for i = 0 to n − 1. Some two match = 1 minus that.', why: 'Each new person has d − i free values out of d, independently of how the earlier ones were placed.',
+      { answers: 'divide', say: 'All different: person i must avoid the i − 1 values already taken, so P(all different) = Π (d − i)/d for i = 0 to n − 1. Some two match = 1 minus that.', why: 'Each new person has d − i free values out of d, independently of how the earlier ones were placed.',
         checks: [{ make: (rng) => { const n = rng.pick([5, 10, 20]); return { type: 'number', q: `${n} people pick random 2-digit PINs (100 values). P(two pick the same)? (3 decimals)`, answer: anyPair(n, 100), tolerance: 0.0015, hints: ['All different: 100/100 × 99/100 × …', 'Then 1 minus it.'], explain: `1 − Π(100 − i)/100 = ${dp(anyPair(n, 100))}.` }; } }] },
-      { say: 'Estimate: each of the n(n − 1)/2 pairs matches with chance 1/d, and pairs are nearly independent, so P(some match) ≈ 1 − e^(−pairs/d).', why: 'With many rare chances, "no match at all" is close to e^(−expected matches), and expected matches = pairs/d.',
+      { answers: 'people', say: 'Estimate: each of the n(n − 1)/2 pairs matches with chance 1/d, and pairs are nearly independent, so P(some match) ≈ 1 − e^(−pairs/d).', why: 'With many rare chances, "no match at all" is close to e^(−expected matches), and expected matches = pairs/d.',
         checks: [{ make: (rng) => { const n = rng.pick([10, 20, 23, 30, 40]); return { type: 'number', q: `Estimate P(two of ${n} people share a birthday) with 1 − e^(−pairs/365). (2 decimals)`, answer: approx(n, 365), tolerance: 0.02, hints: [`pairs = ${n} × ${n - 1}/2.`, 'e^(−x) ≈ 1 − x + x²/2 for small x, or recall e^(−0.7) ≈ 0.5.'], explain: `pairs = ${pairs(n)}, pairs/365 = ${dp(pairs(n) / 365)}, so ≈ ${dp(approx(n, 365), 2)} (exact ${dp(anyPair(n, 365))}).` }; } }] },
-      { say: 'Fixed target (your birthday): each of the n others matches with 1/d, independently, so P = 1 − (1 − 1/d)^n ≈ n/d while n is small next to d.', why: 'Only n chances, one per person: the n² of the pair count never enters.',
+      { answers: 'pairsfixed', say: 'Fixed target (your birthday): each of the n others matches with 1/d, independently, so P = 1 − (1 − 1/d)^n ≈ n/d while n is small next to d.', why: 'Only n chances, one per person: the n² of the pair count never enters.',
         checks: [{ make: (rng) => { const n = rng.pick([20, 50, 100, 150, 250]); return { type: 'number', q: `P(someone among ${n} others shares your birthday)? (3 decimals)`, answer: matchYou(n), tolerance: 0.0015, hints: ['Complement: nobody matches.', `1 − (364/365)^${n}.`], explain: `1 − (364/365)^${n} = ${dp(matchYou(n))}; n/d would say ${dp(n / 365)}.` }; } }] },
       { say: 'Pigeonhole: with more people than values (n > d), two must match: probability 1.', why: 'You cannot place n items into d boxes without doubling up when n > d.',
         checks: [{ hinge: true, make: (rng) => { const n = rng.int(8, 12); return mc(rng, `${n} people. P(at least two were born on the same weekday)?`, '1', [[dp(anyPair(Math.min(n, 7), 7)), 'used the product for 7 people; with more than 7 it is forced'], [dp(1 - (6 / 7) ** n), 'used the fixed-target formula: that is "someone matches a given weekday"'], [dp(pairs(n) / 7), 'used pairs/d as a probability; it is an expected count, not a chance']].filter(([v]) => v !== '1'), `${n} people, 7 weekdays: pigeonhole forces a repeat.`); } }] },
@@ -86,7 +103,7 @@ export default {
     { type: 'explain', prompt: 'Explain why 23 people are enough for a better-than-even chance of a shared birthday, while you need about 253 others to have an even chance of someone sharing yours.', model: `A shared birthday among 23 people can happen in any of their ${pairs(23)} pairs, and each pair matches with chance 1/365, so there are many chances. Matching your birthday only counts the pairs that include you: one chance per other person. To get the same number of chances you need about as many other people as the 23-person room has pairs: ${NYOU} against ${pairs(23)}.`, points: ['"Some two share" counts pairs: n(n − 1)/2', '"Someone shares yours" counts people: n', 'Equal chances need people ≈ pairs'] },
 
     S('worked'),
-    { type: 'worked', section: 'll', family: 'collisions', difficulty: 2, seed: 'a', intro: 'Small value sets: months, dice, weekdays, PINs. Products and complements. Try it first.' },
+    { type: 'worked', section: 'll', family: 'collisions', difficulty: 2, seed: 'a', explainAt: [0, 2], intro: 'Small value sets: months, dice, weekdays, PINs. Products and complements. Try it first.' },
     { type: 'worked', section: 'll', family: 'collisions', difficulty: 3, seed: 'b', fade: 1, intro: 'Birthdays against your birthday. The values are given; the ordering is yours.' },
 
     S('predict'),
@@ -107,7 +124,7 @@ export default {
       'So "100 others" ranks first.',
     ], errorStep: 0, explain: `Step 1 counts the chances of one person, not of all ${pairs(23)} pairs. The collision is 1 − Π(365 − i)/365 = ${dp(anyPair(23, 365))}, which beats ${dp(matchYou(100))}.` },
     { type: 'check', scope: 'the named traps', questions: [
-      mc(null, `A candidate estimates P(two of 40 people share a birthday) as ${pairs(40)}/365 and caps it at 1. Which belief?`, 'The expected number of matching pairs is a probability', [['Counted people instead of pairs', `the ${pairs(40)} is the pair count, which is right`], ['Used the fixed-target formula', 'that would give 1 − (364/365)^40'], ['Applied pigeonhole', '40 people is far below 365 values']], `${pairs(40)}/365 is the expected number of matching pairs; the probability is 1 − Π = ${dp(anyPair(40, 365))}.`, { at: 0 }),
+      mc(null, `A candidate estimates P(two of 40 people share a birthday) as ${pairs(40)}/365 and caps it at 1. Which belief?`, 'The expected number of matching pairs is a probability', [['Counted the people in the room instead of the pairs', `the ${pairs(40)} is the pair count, which is right`], ['Used the fixed-target formula for one given birthday', 'that would give 1 − (364/365)^40'], ['Applied pigeonhole as if the room held more than 365', '40 people is far below 365 values']], `${pairs(40)}/365 is the expected number of matching pairs; the probability is 1 − Π = ${dp(anyPair(40, 365))}.`, { at: 0 }),
     ] },
 
     S('speed'),
@@ -115,6 +132,18 @@ export default {
     { type: 'callout', tone: 'speed', text: `Ask one question per statement: pairs or a fixed target? Then pairs/d (collision) or n/d (fixed target) tells you the size at a glance. Budget: ${LL.exam.perItemSeconds} seconds; the ranking rarely needs more than those estimates.` },
     { type: 'check', scope: 'pairs or a fixed target', questions: [
       { make: (rng) => again(() => { const keys = rng.shuffle(Object.keys(POOL)).slice(0, 3); return rank(rng, 'All values equally likely and independent. Rank from most to least likely.', keys.map((k) => POOL[k](rng)), 'Pairs for "two share", people for a fixed target, a product for "all different".', { gap: 0.02 }); }) },
+    ] },
+
+    { type: 'thinkaloud', problem: 'Rank: (a) among 15 people, two share a birthday, (b) some face repeats when 4 dice are thrown, (c) among 50 other people, someone shares your birthday.', lines: [
+      { t: 0, say: 'Collisions: for each statement, pairs or a fixed target?' },
+      { t: 5, say: `(b) 4 dice, 6 faces: 1 − 6 × 5 × 4 × 3 / 1296 = ${dp(TD4, 2)}. Small d collides fast.` },
+      { t: 13, say: '(c) has 50 people and (a) only 15, so (c) goes above (a).', slip: true },
+      { t: 18, say: `No: (a) is "some two share", so I count pairs: ${pairs(15)}. (c) is a fixed target: 50 chances.` },
+      { t: 25, say: `(a) ≈ 1 − e^(−${pairs(15)}/365) ≈ ${dp(approx(15, 365), 2)}; (c) = 1 − (364/365)^50 ≈ ${dp(T50, 2)}.` },
+      { t: 31, say: `Order (b) > (a) > (c), with ${LL.exam.perItemSeconds - 31} seconds left.` },
+    ] },
+    { type: 'check', scope: 'the think-aloud routine on fresh statements', questions: [
+      { make: (rng) => again(() => rank(rng, 'All values equally likely and independent. Rank from most to least likely.', [POOL.bday(rng), POOL.you(rng), POOL[rng.pick(['dice', 'month', 'pin'])](rng)], 'Pairs for "two share", people for a fixed target.', { gap: 0.02 })) },
     ] },
 
     S('rule'),
@@ -133,6 +162,22 @@ export default {
     { type: 'check', scope: 'the contrast table and edge cases', questions: [
       mc(null, 'P(two given people share a birthday)?', '1/365', [['2/365', 'counted each person as a separate chance, but there is one pair'], ['1/365^2', 'required both to match one fixed day'], ['364/365', 'answered the complement']], 'Whatever the first birthday is, the second matches it with 1/365.', { at: 0 }),
     ] },
+
+    { type: 'variation', base: `The challenge: (c) 5 people share a month ≈ ${dp(anyPair(5, 12))} > (a) 23 people share a birthday ≈ ${dp(anyPair(23, 365))} > (b) someone of 100 shares yours ≈ ${dp(matchYou(100))}.`, rows: [
+      { same: true, change: 'Reword (a) as "not all 23 birthdays are different"', effect: 'No change. It is the same event: "some two share" is exactly the complement of "all different".' },
+      { change: 'Change (b) to "two of the 100 share a birthday"', effect: `Now ${pairs(100)} pairs: ${dp(B100, 7)}. Same people, collision shape: (b) jumps from last to first.` },
+      { change: 'Change (c) to "someone among 5 people shares your birth month"', effect: `A fixed target: 1 − (11/12)^5 ≈ ${dp(C5)}. (c) drops from first to second, below (a).` },
+      { fusion: true, change: 'Double (a) to 46 people, and make it "someone of 46 others shares your birthday"', effect: `Doubling alone would make a collision near certain (${dp(A46)}); the fixed target alone would give ${dp(Y23)}. Together: ${dp(Y46)}, last of the three.` },
+    ] },
+    { type: 'transfer',
+      near: { make: nearT },
+      far: { make: farT },
+      principle: mc(null, 'Which idea carried over from birthdays to request IDs?', 'Count pairs, n(n − 1)/2, each matching with 1/d', [
+        ['Count the requests, each matching with chance 1/d', 'that is the fixed-target shape; any two IDs may match'],
+        ['A match is unlikely while there are more IDs than requests', 'pairs grow like n², so collisions come early'],
+        ['Divide the number of pairs by d and use it as the chance', 'pairs/d is an expected count; use 1 − e^(−pairs/d)'],
+      ], 'IDs, birthdays and PINs are all n draws from d values: the pairs decide when they collide.'),
+    },
 
     S('tryit'),
     { type: 'tryit', section: 'll', family: 'collisions', count: 3 },

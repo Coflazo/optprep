@@ -43,7 +43,11 @@ export default {
   ],
   blocks: [
     S('recognise'),
-    { type: 'challenge', q: 'Before any teaching: you throw a fair die until a 1 and a 2 have both appeared, in any order. What is the expected number of throws? Try two approaches.', answer: `${stageText(6, 2)} = ${stageSum(6, 2)}`, explain: 'If you answered 12, you added two separate waits of 6. At the start either special face ends the first stage, so it takes only 3 throws on average. The lesson splits every wait into stages like this.' },
+    { type: 'challenge', q: 'Before any teaching: you throw a fair die until a 1 and a 2 have both appeared, in any order. What is the expected number of throws? Try two approaches.', answer: `${stageText(6, 2)} = ${stageSum(6, 2)}`, explain: 'If you answered 12, you added two separate waits of 6. At the start either special face ends the first stage, so it takes only 3 throws on average. The lesson splits every wait into stages like this.', attempts: [
+      { id: 'series', label: 'Average over every finishing throw', approach: 'Started writing P(finished on throw k) for every k and summing k times it, and got stuck on the infinite series.', breaksAt: 'The sum is right but slow. Spending one throw and continuing from where you land turns the infinite series into a one-line equation.' },
+      { id: 'one-stage', label: 'One wait at 2/6', approach: `Used 1/p with p = 2/6 for "a 1 or a 2": ${Q.of(6, 2)} throws.`, breaksAt: 'E = 1/p needs the same p on every throw. Once one special face has shown, only the other helps and p drops to 1/6.' },
+      { id: 'two-waits', label: 'Two separate waits of 6', approach: 'Waited 6 throws for the 1 and 6 more for the 2: 12.', breaksAt: 'At the start either special face moves you on, so the first stage has chance 2/6 and lasts 3 throws, not 6.' },
+    ] },
     { type: 'text', text: 'Something is repeated **until** a target happens, and the question asks for the **expected number** of trials: the first six, a double, a 1 and a 2 both seen, two sixes in a row, three heads in a row, a throw that repeats the one before.' },
     { type: 'list', items: ['"You throw two dice until they show a double. Expected number of throws?"', '"A die is thrown until a 5 and a 6 have both appeared. Expected throws?"', '"Expected number of flips until three heads in a row?"'] },
     { type: 'text', text: 'Not this lesson: the **probability** that the wait ends on throw k (bto/first-success), which pattern of coin flips comes first (bto/pattern-waiting), and collecting **all** of n types (bto/coupon-collector).' },
@@ -74,20 +78,20 @@ export default {
     { type: 'text', text: 'When progress **can** be lost, an arrow points backwards. Waiting for two sixes in a row: after one six, a non-six sends you back to the start.' },
     { type: 'diagram', diagram: 'graph', spec: { markov: true, title: 'Waiting for 6, 6', nodes: [node('s', 'start', 0.05, 0.5), node('x', '6', 0.5, 0.5), node('y', '66', 0.95, 0.5)], edges: [{ from: 's', to: 's', p: 5 / 6, label: '5/6' }, { from: 's', to: 'x', p: 1 / 6, label: '1/6' }, { from: 'x', to: 'y', p: 1 / 6, label: '1/6' }, { from: 'x', to: 's', p: 5 / 6, label: '5/6' }, { from: 'y', to: 'y', p: 1, label: 'done' }] }, caption: `The arrow from "6" back to "start" is the reset. Stage sums no longer work; you need one equation per state. The answer is ${twoInRow(6)}, not 36.` },
     { type: 'check', scope: 'resets break stage sums', questions: [
-      { type: 'choice', q: 'Which wait can you solve by adding stage means?', options: ['a 5 and a 6 both seen, any order', 'two sixes in a row', 'three heads in a row', 'the pattern 6 then 5 then 6'], answer: 0, traps: { 1: 'a non-six after a six resets progress', 2: 'a tail resets the run', 3: 'a miss can lose progress, so states are needed' }, explain: 'Seen faces stay seen: no arrow points back.' },
+      { type: 'choice', q: 'Which wait can you solve by adding stage means?', options: ['a 5 and a 6 both seen, any order', 'two sixes in a row (a 6, then a 6)', 'three heads in a row', 'the pattern 6 then 5 then 6'], answer: 0, traps: { 1: 'a non-six after a six resets progress', 2: 'a tail resets the run', 3: 'a miss can lose progress, so states are needed' }, explain: 'Seen faces stay seen: no arrow points back.' },
     ] },
 
     S('derivation'),
     { type: 'steps', steps: [
-      { say: 'Let E be the expected number of trials. Spend one trial. With chance p you stop; with 1 − p you are back where you started, facing the same E again: E = 1 + (1 − p)E.', why: 'Independent trials have no memory: after a failure the remaining wait is a fresh copy of the whole wait.',
+      { say: 'Let E be the expected number of trials. Spend one trial. With chance p you stop; with 1 − p you are back where you started, facing the same E again: E = 1 + (1 − p)E.', why: 'Independent trials have no memory: after a failure the remaining wait is a fresh copy of the whole wait.', answers: 'series',
         checks: [
           { type: 'choice', q: 'Each try succeeds with 1/4. Which equation holds for the expected number of tries E?', options: ['E = 1 + (3/4)E', 'E = (3/4)E', 'E = 1 + (1/4)E', 'E = 4 + (3/4)E'], answer: 0, traps: { 1: 'forgot the trial you just spent', 2: 'restarted on success instead of failure', 3: 'spent 4 trials instead of 1' }, explain: 'One trial, then a fresh wait with chance 3/4.' },
         ] },
-      { say: 'Solve: E − (1 − p)E = 1, so pE = 1 and E = 1/p.', why: 'The one-line equation carries the whole infinite sum 1·p + 2·(1 − p)p + 3·(1 − p)²p + …',
+      { say: 'Solve: E − (1 − p)E = 1, so pE = 1 and E = 1/p.', why: 'The one-line equation carries the whole infinite sum 1·p + 2·(1 − p)p + 3·(1 − p)²p + … It holds only while p is the same on every trial.', answers: 'one-stage',
         checks: [
           { make: (rng) => { const [txt, p] = rng.pick([['two dice until the sum is at least 10', Q.of(6, 36)], ['a card with replacement until an ace', Q.of(4, 52)], ['two dice until the sum is 12', Q.of(1, 36)], ['a die until a 5 or a 6', Q.of(2, 6)], ['three dice until all show the same face', Q.of(6, 216)]]); return { type: 'number', q: `You throw or draw ${txt}. Expected number of tries?`, answer: one.div(p).toNumber(), hints: ['What is the success chance per try?', `p = ${p}.`], explain: `p = ${p}, so E = 1/p = ${one.div(p)}.` }; } },
         ] },
-      { say: 'Stages: if progress is never lost, split the wait where the success chance changes. Each stage is geometric with mean 1/p_i, and the total mean is the sum.', why: 'Linearity of expectation: the total time is the sum of the stage times.',
+      { say: 'Stages: if progress is never lost, split the wait where the success chance changes. Each stage is geometric with mean 1/p_i, and the total mean is the sum.', why: 'Linearity of expectation: the total time is the sum of the stage times.', answers: 'two-waits',
         checks: [
           { make: (rng) => { const s = rng.pick([6, 8, 12]), m = rng.int(2, 3); const v = stageSum(s, m); return { type: 'number', q: `A ${s}-sided die is thrown until faces 1 to ${m} have all appeared. Expected throws? (Exact decimals are fine.)`, answer: v.toNumber(), tolerance: 0.01, hints: [`First stage: any of ${m} faces, chance ${m}/${s}.`, stageText(s, m)], explain: `${stageText(s, m)} = ${v} ≈ ${v.toNumber().toFixed(2)}.` }; } },
         ] },
@@ -107,7 +111,7 @@ export default {
     { type: 'explain', prompt: 'In your own words: why does waiting for two sixes in a row take 42 throws on average and not 36, even though any given pair of throws is 6, 6 with chance 1/36?', model: 'The chance 1/36 is per pair of positions, but the pairs overlap and a failure is costly: after a six, a non-six throws away the progress, and the throw that failed cannot start a new attempt of its own. The first-step equations track that reset exactly and give 36 + 6 = 42.', points: ['1/36 is a chance per window, not a waiting time', 'a miss after a six resets progress to the start', 'one equation per state of progress captures the reset'] },
 
     S('worked'),
-    { type: 'worked', family: 'expected-waiting', section: 'bto', difficulty: 1, seed: 'd', intro: 'One geometric wait. Try it before opening the solution.' },
+    { type: 'worked', family: 'expected-waiting', section: 'bto', difficulty: 1, seed: 'd', explainAt: [1], intro: 'One geometric wait. Try it before opening the solution.' },
     { type: 'worked', family: 'expected-waiting', section: 'bto', difficulty: 3, seed: 'd', fade: 1, intro: 'A wait with a reset. The equations are given; solving them and the answer are yours.' },
 
     S('predict'),
@@ -126,13 +130,21 @@ export default {
       'So E₁ = 2 and E₀ = 4.',
     ], errorStep: 2, explain: `After a head, a tail destroys the run: E₁ = 1 + (1/2)E₀, not (1/2)E₁. Solving gives E₀ = ${run(2)}.` },
     { type: 'check', scope: 'the named traps', questions: [
-      { type: 'choice', q: 'Wait for a six. A candidate answers 5. Which belief?', options: ['Counted only the failures before the six', 'Gave the median', 'Squared 1/p'], answer: 0, explain: 'The six itself is a throw: 5 misses on average plus 1.' },
-      { type: 'choice', q: `Another answers ${median(SIX)}. Which belief?`, options: ['Gave the median, not the mean', 'Counted only the failures', 'Stage sum'], answer: 0, explain: `By throw ${median(SIX)} you are done at least half the time, but the mean is 6.` },
+      { type: 'choice', q: 'Wait for a six. A candidate answers 5. Which belief?', options: ['Counted only the failures before the six', 'Gave the median wait instead of the mean', 'Squared 1/p instead of taking 1/p itself'], answer: 0, traps: { 1: `the median wait for a six is ${median(SIX)}, not 5`, 2: '(1/p)² would be 36' }, explain: 'The six itself is a throw: 5 misses on average plus 1.' },
+      { type: 'choice', q: `Another answers ${median(SIX)}. Which belief?`, options: ['Gave the median, not the mean', 'Counted only the failures, not the six', 'Added stage means for a one-stage wait'], answer: 0, traps: { 1: 'failures only gives 5', 2: 'one six is a single stage, so the stage sum is just 6' }, explain: `By throw ${median(SIX)} you are done at least half the time, but the mean is 6.` },
     ] },
 
     S('speed'),
     { type: 'callout', tone: 'speed', text: `Know these cold: one six 6; any repeat of the previous face 7; a 1 and a 2 ${stageSum(6, 2)}; two sixes in a row ${twoInRow(6)}; HH ${run(2)}; HHH ${run(3)}; both sides of a fair coin 3. Each saves a full computation.` },
     { type: 'callout', tone: 'speed', text: `Sanity check: a wait with resets is always longer than the "fresh attempt" guess (${twoInRow(6)} > 36, ${run(2)} > 4). A stage sum is always shorter than separate waits added (${stageSum(6, 2)} < 12). Budget: ${SECTIONS.bto.exam.perItemSeconds} seconds; two-state equations take about 40.` },
+    { type: 'thinkaloud', problem: 'A fair coin is flipped until three heads in a row appear. What is the expected number of flips?', lines: [
+      { t: 0, say: 'Until a run of heads: a tail can wipe out progress, so this is a reset wait. States, not a stage sum.' },
+      { t: 4, say: 'Three flips are HHH with chance 1/8, so about 8 blocks of three...', slip: true },
+      { t: 8, say: 'Wait: blocks overlap and a tail throws the run away. Fresh-attempt guesses are always too short when there are resets.' },
+      { t: 13, say: `Run recursion E_k = 2E_(k−1) + 2: E₁ = ${run(1)}, E₂ = ${run(2)}, E₃ = ${run(3)}.` },
+      { t: 20, say: `Check with the landmark 2^(k+1) − 2 = ${2 ** 4} − 2 = ${run(3)}. Longer than the fresh guess, as a reset wait must be.` },
+      { t: 24, say: `Answer ${run(3)}, with ${SECTIONS.bto.exam.perItemSeconds - 24} seconds left.` },
+    ] },
     { type: 'check', scope: 'the landmark waits', questions: [
       { make: (rng) => { const [txt, v] = rng.pick([['a fair coin until HH', run(2)], ['a fair coin until HHH', run(3)], ['a die until two sixes in a row', twoInRow(6)], ['a die until a throw repeats the one before', 7]]); return { type: 'number', q: `Expected number of throws or flips: ${txt}?`, answer: v, explain: `Landmark value: ${v}.` }; } },
     ] },
@@ -153,6 +165,17 @@ export default {
     { type: 'check', scope: 'the contrast table and edge cases', questions: [
       { type: 'choice', q: 'A coin with heads 1/3. Expected flips until both a head and a tail have appeared?', options: [one.add(Q.of(1, 2)).add(Q.of(2)).toString(), '3', Q.of(3).add(Q.of(3, 2)).toString(), '2'], answer: 0, traps: { 1: 'used the fair-coin answer', 2: 'added two waits from scratch: after the first flip only the other side is missing', 3: 'assumed two flips always suffice' }, explain: `1 + (1/3)/(2/3) + (2/3)/(1/3) = ${one.add(Q.of(1, 2)).add(Q.of(2))}.` },
     ] },
+    { type: 'variation', base: `A fair die is thrown until a 1 and a 2 have both appeared: E = ${stageText(6, 2)} = ${stageSum(6, 2)}.`, rows: [
+      { change: 'Wait for a 5 and a 6 instead', effect: `No change: ${stageSum(6, 2)}. Only the number of special faces and sides enters the stages, not which faces they are.`, same: true },
+      { change: 'Require the 1 first and the 2 after it', effect: 'Now a 2 before the 1 is wasted, so the first stage waits for the 1 alone: 6 + 6 = 12.' },
+      { change: 'Wait for two sixes in a row', effect: `A reset appears (a miss after a six sends you back), so stage sums fail: the state equations give ${twoInRow(6)}.` },
+      { change: 'Use an 8-sided die', effect: `Each stage mean is 8 over the faces still missing: ${stageText(8, 2)} = ${stageSum(8, 2)}.` },
+      { change: 'An 8-sided die and three special faces', effect: `Both changes enter the same stage sum: 8 on top, one stage per special face: ${stageText(8, 3)} = ${stageSum(8, 3)} ≈ ${stageSum(8, 3).toNumber().toFixed(2)}.`, fusion: true },
+    ] },
+    { type: 'transfer',
+      near: { make: (rng) => { const [txt, c] = rng.pick([['a king and a queen', 4], ['a heart and a spade', 13], ['an ace and a king', 4]]); const v = Q.of(52, 2 * c).add(Q.of(52, c)); return { type: 'number', q: `You draw a card from a full deck, look, and put it back, until you have seen ${txt}. Expected number of draws?`, answer: v.toNumber(), tolerance: 0.01, hints: ['Two stages: first either kind, then the one still missing.', `Stage 1 has chance ${2 * c}/52, stage 2 has ${c}/52.`], explain: `52/${2 * c} + 52/${c} = ${v} (the same stage sum as a 1 and a 2 on a die).` }; } },
+      far: { make: (rng) => { const p = rng.pick([Q.of(1, 2), Q.of(1, 3), Q.of(2, 3), Q.of(1, 4)]); const v = one.div(p).add(one.div(p.mul(p))); return { type: 'number', q: `A trading strategy is profitable each day with probability ${p}, independently. Expected number of days until it has two profitable days in a row?`, answer: v.toNumber(), tolerance: 0.01, hints: ['States: no profitable day yet, and one profitable day just now. A loss after a win resets.', `E₀ = 1 + (1 − p)E₀ + pE₁ and E₁ = 1 + (1 − p)E₀ with p = ${p}.`, 'Solving gives 1/p + 1/p².'], explain: `The two sixes equations with p = ${p}: E = 1/p + 1/p² = ${one.div(p)} + ${one.div(p.mul(p))} = ${v}.` }; } },
+      principle: { type: 'choice', q: 'Which idea carried over from dice to the cards and to the trading days?', options: ['Spend one trial, continue from the state you land in', 'Treat each block of trials as a fresh 1/p attempt', 'Answer the trial by which you are probably done', 'Add a full separate wait for each thing you need'], answer: 0, traps: { 1: 'blocks overlap and resets waste trials, so this is too short', 2: 'that is the median, not the mean', 3: 'early on any missing item helps, so stages are shorter' }, explain: 'Both new waits are first-step problems: the cards never reset, so the stages add; the trading days reset after a loss, so each state gets its own equation.' } },
 
     S('tryit'),
     { type: 'tryit', family: 'expected-waiting', section: 'bto', count: 3 },

@@ -56,7 +56,12 @@ export default {
   ],
   blocks: [
     sec('recognise'),
-    { type: 'challenge', q: 'Before any teaching: a fair die is rolled 5 times. What is P(exactly two sixes)? And how many rolls do you expect to wait for the first six? Two approaches, then answers.', answer: `${frac(ch.two, ch.t)} ≈ ${dec(ch.two / ch.t)}; 6 rolls`, explain: `One order such as 6 6 x x x has chance (1/6)^{2}(5/6)^{3}; there are C(5, 2) = 10 such orders: ${nCr(5, 2)} × ${5 ** 3} / ${ch.t}. If you got ${frac(5 ** 3, ch.t)}, you counted one order only. The wait averages 1/(1/6) = 6 rolls.` },
+    { type: 'challenge', q: 'Before any teaching: a fair die is rolled 5 times. What is P(exactly two sixes)? And how many rolls do you expect to wait for the first six? Two approaches, then answers.', answer: `${frac(ch.two, ch.t)} ≈ ${dec(ch.two / ch.t)}; 6 rolls`, explain: `One order such as 6 6 x x x has chance (1/6)^{2}(5/6)^{3}; there are C(5, 2) = 10 such orders: ${nCr(5, 2)} × ${5 ** 3} / ${ch.t}. If you got ${frac(5 ** 3, ch.t)}, you counted one order only. The wait averages 1/(1/6) = 6 rolls.`,
+      attempts: [
+        { id: 'oneOrder', label: 'Counted one order only', approach: `Took (1/6)^{2} × (5/6)^{3} = ${frac(5 ** 3, ch.t)}.`, breaksAt: `That is one order, such as 6 6 x x x; C(5, 2) = ${nCr(5, 2)} orders share that chance.` },
+        { id: 'noFail', label: 'Ignored the non-sixes', approach: `Took C(5, 2) × (1/6)^{2} = ${frac(nCr(5, 2), 36)}.`, breaksAt: 'The other three rolls must not be sixes, so every order also carries (5/6)^{3}.' },
+        { id: 'halfWait', label: 'Waited about 3.5 rolls', approach: 'Expected the first six around roll 3 or 4, the middle of the faces.', breaksAt: 'Each roll succeeds with chance 1/6, so the waits average 1/(1/6) = 6 rolls.' },
+      ] },
     { type: 'text', text: 'Three shapes cover most repeated-trial questions. **Binomial**: a fixed number n of independent trials; count the successes. **Geometric**: repeat until the first success; count the trials. **Hypergeometric**: draw n without replacement from a pile with K successes; count the successes drawn.' },
     { type: 'check', scope: 'naming the model', questions: [
       mc({ q: 'A bag has 5 red and 7 blue balls. You draw 4 without replacement and count the reds. Which model?', right: 'hypergeometric', at: 1,
@@ -87,13 +92,13 @@ export default {
     sec('derivation'),
     { type: 'text', text: 'The binomial formula, one move at a time: n independent trials, each a success with chance p.' },
     { type: 'steps', steps: [
-      { say: 'Take one specific sequence, say S S F F F: its chance is p × p × (1 − p) × (1 − p) × (1 − p).', why: 'Independent trials multiply (independence lesson).',
+      { answers: 'noFail', say: 'Take one specific sequence, say S S F F F: its chance is p × p × (1 − p) × (1 − p) × (1 − p).', why: 'Independent trials multiply (independence lesson).',
         checks: [mc({ q: 'A biased coin shows heads with chance 0.3. P(H H T, in that order)?', right: dec(0.3 * 0.3 * 0.7, 3), at: 2,
           wrong: [[dec(0.3 * 0.3, 3), 'forgot the tail'], [dec(3 * 0.3 * 0.3 * 0.7, 3), 'counted all orders, but this one is fixed'], [dec(0.7 * 0.7 * 0.3, 3), 'swapped the chances of heads and tails']],
           explain: '0.3 × 0.3 × 0.7 = 0.063.' })] },
       { say: 'Every sequence with k successes has the same chance, p^{k}(1 − p)^{n − k}: only the order of the factors differs.', why: 'Multiplication does not care about order.',
         checks: [{ type: 'choice', q: 'Is P(F S F S F) equal to P(S S F F F)?', options: ['Yes', 'No'], answer: 0, traps: { 1: 'the same five factors appear, just in a different order' }, explain: 'Both are p^{2}(1 − p)^{3}.' }] },
-      { say: 'Count the orders: choose which k of the n trials succeed, C(n, k) ways.', why: 'A sequence is fixed by the positions of its successes (counting lesson).',
+      { answers: 'oneOrder', say: 'Count the orders: choose which k of the n trials succeed, C(n, k) ways.', why: 'A sequence is fixed by the positions of its successes (counting lesson).',
         checks: [{ make: (rng) => { const n = rng.int(5, 9), k = rng.int(2, 4); return { type: 'number', q: `How many sequences of ${n} tosses have exactly ${k} heads?`, answer: nCr(n, k), hints: [`Choose the ${k} positions of the heads.`], explain: `C(${n}, ${k}) = ${nCr(n, k)}.` }; } }] },
       { say: 'The orders cannot happen together, so add their chances: P(X = k) = C(n, k) p^{k}(1 − p)^{n − k}.', why: 'Adding C(n, k) equal chances is multiplying by C(n, k).',
         checks: [{ make: binomDiceQ }] },
@@ -113,7 +118,7 @@ export default {
           explain: `(${q}/${p[1]})^{${k - 1}} × 1/${p[1]} = ${frac(q ** (k - 1), p[1] ** k)}.` }, rng); } }] },
       { say: 'T > k means the first k trials all fail: (1 − p)^{k}.', why: 'Nothing is said about the trials after k.',
         checks: [{ make: (rng) => { const k = rng.int(2, 4); return mc({ q: `A die is rolled until the first six. What is P(no six in the first ${k} rolls)?`, right: frac(5 ** k, 6 ** k), wrong: [[frac(6 ** k - 5 ** k, 6 ** k), 'that is P(at least one six)'], [frac(5 ** (k - 1), 6 ** k), 'that is P(the first six on roll k)']], explain: `(5/6)^{${k}} = ${frac(5 ** k, 6 ** k)}.` }, rng); } }] },
-      { say: 'Mean wait: in a long run of N trials you see about Np successes, so the waits between them average N/(Np) = 1/p.', why: 'Each success ends one wait, and the waits fill the whole run. The first-step lesson proves it exactly.',
+      { answers: 'halfWait', say: 'Mean wait: in a long run of N trials you see about Np successes, so the waits between them average N/(Np) = 1/p.', why: 'Each success ends one wait, and the waits fill the whole run. The first-step lesson proves it exactly.',
         checks: [{ make: (rng) => { const k = rng.int(3, 5), p = frac(7 - k, 6); return { type: 'number', q: `A die is rolled until it shows ${k} or more. How many rolls do you expect?`, answer: 6 / (7 - k), tolerance: 0.006, hints: [`P(success per roll) = ${7 - k}/6.`, 'Mean wait = 1/p.'], explain: `p = ${p}, so E[T] = 1/p = ${frac(6, 7 - k)}${Number.isInteger(6 / (7 - k)) ? '' : ` ≈ ${dec(6 / (7 - k), 2)}`}.` }; } }] },
     ] },
 

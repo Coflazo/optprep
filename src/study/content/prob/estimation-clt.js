@@ -55,7 +55,11 @@ export default {
   ],
   blocks: [
     sec('recognise'),
-    { type: 'challenge', q: `Before any teaching: ${ch.n} fair coins are tossed. What is P(at least ${ch.k} heads)? Two approaches, then an answer.`, answer: `about ${dec(ch.exact, 3)} (exact ${dec(ch.exact, 4)})`, explain: `Summing ${ch.n - ch.k + 1} binomial terms is hopeless by hand. Estimate instead: mean ${ch.n / 2}, SD √${ch.n}/2 = ${ch.sd}, so ${ch.k} is about 2 SD above the mean: roughly 2.5%. Cutting at ${ch.k - 0.5} (the edge of the bar for ${ch.k}) gives z = ${dec(ch.zc, 2)} and ${dec(ch.cc, 4)}, close to the exact ${dec(ch.exact, 4)}.` },
+    { type: 'challenge', q: `Before any teaching: ${ch.n} fair coins are tossed. What is P(at least ${ch.k} heads)? Two approaches, then an answer.`, answer: `about ${dec(ch.exact, 3)} (exact ${dec(ch.exact, 4)})`, explain: `Summing ${ch.n - ch.k + 1} binomial terms is hopeless by hand. Estimate instead: mean ${ch.n / 2}, SD √${ch.n}/2 = ${ch.sd}, so ${ch.k} is about 2 SD above the mean: roughly 2.5%. Cutting at ${ch.k - 0.5} (the edge of the bar for ${ch.k}) gives z = ${dec(ch.zc, 2)} and ${dec(ch.cc, 4)}, close to the exact ${dec(ch.exact, 4)}.`,
+      attempts: [
+        { id: 'sumTerms', label: 'Added the binomial terms', approach: `Started adding C(${ch.n}, k)/2^{${ch.n}} for k = ${ch.k} to ${ch.n}.`, breaksAt: `${ch.n - ch.k + 1} terms with huge numbers: out of reach in a minute. Estimate with the mean and SD instead.` },
+        { id: 'sdAdd', label: 'SD grows like n', approach: `Took the SD of ${ch.n} coins as ${ch.n} × 1/2 = ${ch.n / 2}.`, breaksAt: `Variances add, not SDs: the SD is 1/2 × √${ch.n} = ${ch.sd}.` },
+      ] },
     { type: 'text', text: 'Trigger: **many** independent pieces added up (100 coins, 50 dice, a year of daily profits) and a question about the total or the average, often with "approximately" or "closest to". Exact counting is out of reach; the normal curve is not.' },
     { type: 'check', scope: 'spotting a CLT question', questions: [
       mc({ q: 'Which question wants the CLT shortcut?', right: 'P(the total of 100 dice is above 380)', at: 3,
@@ -96,11 +100,11 @@ export default {
         checks: [mc({ q: 'Which term decides whether Var(X + Y) equals Var(X) + Var(Y)?', right: '2 E[D_{X} D_{Y}]', at: 2,
           wrong: [['E[D_{X}^{2}]', 'that is Var(X) itself'], ['E[D_{Y}^{2}]', 'that is Var(Y) itself'], ['none: the square of a sum is the sum of the squares', '(a + b)^{2} has the cross term 2ab']],
           explain: 'The first two terms are the variances; only the cross term can break the sum.' })] },
-      { say: 'For independent pieces the cross term averages 0: whatever D_{X} is, D_{Y} still averages 0. So Var(X + Y) = Var(X) + Var(Y).', why: 'Independence means knowing D_{X} does not change D_{Y}, whose average is 0.',
+      { answers: 'sdAdd', say: 'For independent pieces the cross term averages 0: whatever D_{X} is, D_{Y} still averages 0. So Var(X + Y) = Var(X) + Var(Y).', why: 'Independence means knowing D_{X} does not change D_{Y}, whose average is 0.',
         checks: [{ make: (rng) => { const [a, b, c] = rng.pick([[3, 4, 5], [6, 8, 10], [5, 12, 13]]); return mc({ q: `X and Y are independent with SDs ${a} and ${b}. What is the SD of X + Y?`, right: String(c),
           wrong: [[String(a + b), 'added the SDs: variances add, not SDs'], [String(a * a + b * b), 'stopped at the variance'], [String(Math.abs(b - a)), 'subtracted the SDs']],
           explain: `Var = ${a}^{2} + ${b}^{2} = ${a * a + b * b}; SD = √${a * a + b * b} = ${c}.` }, rng); } }] },
-      { say: 'n independent copies: Var(S) = nσ^{2}, so SD(S) = σ√n.', why: 'Add the same variance n times, then take the square root.',
+      { answers: 'sumTerms', say: 'n independent copies: Var(S) = nσ^{2}, so SD(S) = σ√n.', why: 'Add the same variance n times, then take the square root.',
         checks: [{ make: sdSumQ }] },
     ] },
     { type: 'explain', prompt: 'Why does the SD of a sum of n independent pieces grow like √n and not like n?', model: 'Variances add because the cross terms of independent deviations average to zero: deviations partly cancel. n pieces give variance nσ^{2}, and the SD is its square root, σ√n. Only if every piece moved in the same direction would the SDs add to nσ.', points: ['Variances add for independent pieces; SDs do not', 'Independent deviations partly cancel (cross terms average 0)', 'SD = √(nσ^{2}) = σ√n'] },

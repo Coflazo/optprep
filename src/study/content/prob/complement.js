@@ -42,7 +42,12 @@ export default {
   ],
   blocks: [
     sec('recognise'),
-    { type: 'challenge', q: 'Before any teaching: four fair dice are thrown. What is P(at least one six)? Two approaches, then an answer.', answer: `1 − ${four.none}/${four.t} = ${frac(four.t - four.none, four.t)} ≈ ${dec((four.t - four.none) / four.t)}`, explain: `Direct counting splits into exactly one, two, three or four sixes. Adding 1/6 four times gives 4/6, too big, because throws with two or more sixes are counted repeatedly. The other side is one block: no six at all is 5^{4} = ${four.none} of 6^{4} = ${four.t} outcomes.` },
+    { type: 'challenge', q: 'Before any teaching: four fair dice are thrown. What is P(at least one six)? Two approaches, then an answer.', answer: `1 − ${four.none}/${four.t} = ${frac(four.t - four.none, four.t)} ≈ ${dec((four.t - four.none) / four.t)}`, explain: `Direct counting splits into exactly one, two, three or four sixes. Adding 1/6 four times gives 4/6, too big, because throws with two or more sixes are counted repeatedly. The other side is one block: no six at all is 5^{4} = ${four.none} of 6^{4} = ${four.t} outcomes.`,
+      attempts: [
+        { id: 'perDie', label: 'Added 1/6 per die', approach: `Answered 4 × 1/6 = ${frac(4, 6)}.`, breaksAt: 'Throws with two or more sixes are counted several times; with seven dice the sum passes 1.' },
+        { id: 'allSix', label: 'One minus all sixes', approach: `Took 1 − (1/6)^{4} = ${frac(four.t - 1, four.t)}.`, breaksAt: 'The opposite of "at least one six" is "no six", not "every die a six".' },
+        { id: 'cases', label: 'Counted each case', approach: 'Split into exactly one, two, three and four sixes and added them.', breaksAt: 'It works, but it takes four counts where the complement, no six, takes one.' },
+      ] },
     { type: 'text', text: 'The trigger words are **at least one**, **not all**, **some**, **any**. They describe a big event made of many cases; its opposite is usually one small block.' },
     { type: 'check', scope: 'spotting a complement question', questions: [
       mc({ q: 'Which of these is fastest through the complement?', right: 'P(at least one six in 5 dice)', at: 3,
@@ -80,16 +85,16 @@ export default {
     sec('derivation'),
     { type: 'text', text: 'Two cards are drawn from a deck. P(at least one ace), one move at a time.' },
     { type: 'steps', steps: [
-      { say: 'Name the complement exactly: "at least one ace" fails only when **no** card is an ace.', why: 'The complement of "at least one" is "none", not "exactly one": a hand with two aces also has at least one.',
+      { answers: 'allSix', say: 'Name the complement exactly: "at least one ace" fails only when **no** card is an ace.', why: 'The complement of "at least one" is "none", not "exactly one": a hand with two aces also has at least one.',
         checks: [mc({ q: 'What is the complement of "at least two heads in 5 tosses"?', right: 'at most one head', at: 2,
           wrong: [['no heads', 'forgot the outcomes with exactly one head'], ['exactly one head', 'forgot the outcome with no heads'], ['at most two heads', 'exactly two heads belongs to the event itself']],
           explain: 'Not "at least two" means 0 or 1 heads: at most one.' })] },
-      { say: `Count the complement: no-ace hands are 2 cards from the 48 non-aces, C(48, 2) = ${c48}, out of C(52, 2) = ${c52} hands.`, why: 'Unordered hands on both sides: the convention matches (counting lesson).',
+      { answers: 'cases', say: `Count the complement: no-ace hands are 2 cards from the 48 non-aces, C(48, 2) = ${c48}, out of C(52, 2) = ${c52} hands.`, why: 'Unordered hands on both sides: the convention matches (counting lesson).',
         checks: [{ type: 'number', q: 'C(48, 2) = ?', answer: c48, hints: ['48 × 47 ordered pairs.', 'Divide by 2.'], explain: `48 × 47 / 2 = ${c48}.` }] },
       { say: `Subtract: P(at least one ace) = 1 − ${c48}/${c52} = ${frac(aceAny, c52)} ≈ ${dec(aceAny / c52)}.`, why: 'The event and its complement share no hand and together cover every hand, so their probabilities add to 1.',
         checks: [{ make: (rng) => { const n = rng.int(8, 14), r = rng.int(2, 4), t = nCr(n, 2), no = nCr(n - r, 2); return mc({ q: `A pile of ${n} cards has ${r} red. Two are drawn. What is P(at least one red)?`, right: frac(t - no, t),
           wrong: [[frac(no, t), 'that is P(no red)'], [frac(2 * r, n), 'added the chance per card'], [frac(nCr(r, 2), t), 'that is P(both red)']], explain: `1 − C(${n - r}, 2)/C(${n}, 2) = 1 − ${no}/${t} = ${frac(t - no, t)}.` }, rng); } }] },
-      { say: `Sanity check: the quick guess 2 × 4/52 ≈ ${dec(8 / 52)} is a little above ${dec(aceAny / c52)}, because it counts hands with two aces twice.`, why: 'Adding per-card chances double-counts overlaps; the complement never does. The next lesson makes this exact.',
+      { answers: 'perDie', say: `Sanity check: the quick guess 2 × 4/52 ≈ ${dec(8 / 52)} is a little above ${dec(aceAny / c52)}, because it counts hands with two aces twice.`, why: 'Adding per-card chances double-counts overlaps; the complement never does. The next lesson makes this exact.',
         checks: [mc({ q: 'Why is 2 × 4/52 larger than the true P(at least one ace in 2 cards)?', right: 'it counts the hands with two aces twice', at: 0,
           wrong: [['it forgets that the second card has only 51 choices', 'the gap comes from the overlap, the double-counted two-ace hands'], ['it is not larger', `2 × 4/52 ≈ ${dec(8 / 52)} is above ${dec(aceAny / c52)}`], ['it counts ordered hands', 'no hands are counted there, only per-card chances']],
           explain: 'Each card has chance 4/52 of being an ace; adding the two chances counts the two-ace hands in both terms.' })] },

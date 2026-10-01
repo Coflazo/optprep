@@ -11,6 +11,9 @@ const AFF = affine(2, 2, 1, 5);
 const FACT = [1, 2, 6, 24, 120];
 const P2 = geo(2, 2, 10), P3 = geo(3, 3, 6);
 const HOP = arith(4, 3, 5);
+const TA = geo(3, -2, 6), TAs = TA.slice(0, 5).map(Math.abs);
+const G5 = G.slice(0, 5), FLIP = geo(3, -2, 6), BIG = geo(15, -2, 6), SH = G.map((v) => v + 10);
+const pow = (b, n) => b ** n;
 
 // Question pools: ratio r and a start that keeps every term an integer.
 function ratioSeq(rng, n, { neg: allowNeg = true, half = true } = {}) {
@@ -39,7 +42,12 @@ export default {
   ],
   blocks: [
     S('recognise'),
-    { type: 'challenge', q: `Before any teaching: ${seq(CH.slice(0, 5))}, ? What comes next? Try two ways: once with the gaps, once by dividing neighbours.`, answer: neg(CH[5]), explain: `The gaps ${seq(diffs(CH.slice(0, 5)))} swing wildly and never settle. Dividing works: every ratio is ${neg(CH[1] / CH[0])}, so ${CH[4]} × (${neg(CH[1] / CH[0])}) = ${neg(CH[5])}. If you answered ${-CH[5]}, you found the size but dropped the sign flip.` },
+    { type: 'challenge', q: `Before any teaching: ${seq(CH.slice(0, 5))}, ? What comes next? Try two ways: once with the gaps, once by dividing neighbours.`, answer: neg(CH[5]), explain: `The gaps ${seq(diffs(CH.slice(0, 5)))} swing wildly and never settle. Dividing works: every ratio is ${neg(CH[1] / CH[0])}, so ${CH[4]} × (${neg(CH[1] / CH[0])}) = ${neg(CH[5])}. If you answered ${-CH[5]}, you found the size but dropped the sign flip.`,
+      attempts: [
+        { id: 'gaps', label: 'Chase the gaps', approach: `Wrote the gaps ${seq(diffs(CH.slice(0, 5)))} and looked for a pattern in them.`, breaksAt: 'Under multiplication every gap is a fixed multiple of its term, so no layer of subtraction ever settles.' },
+        { id: 'add', label: 'Add the ratio', approach: `Found the ratio ${neg(CH[1] / CH[0])} and added it: ${CH[4]} + (${neg(CH[1] / CH[0])}) = ${CH[4] + CH[1] / CH[0]}.`, breaksAt: 'A ratio is a factor, not a step: a constant ratio means multiply by it every time.' },
+        { id: 'sign', label: 'Drop the sign flip', approach: `Saw the sizes double and answered ${-CH[5]}.`, breaksAt: `The ratio is ${neg(CH[1] / CH[0])}, not ${-CH[1] / CH[0]}: after the positive ${CH[4]} the next term must be negative.` },
+      ] },
     { type: 'text', text: 'The terms change by the same **factor** each step: doubling, tripling, halving, or doubling while the sign flips. The gaps are not constant; they grow (or shrink) in proportion to the terms themselves.' },
     { type: 'list', items: [`What number comes next?  ${seq(G.slice(0, 5))}, ?`, `What number comes next?  ${seq(HALF.slice(0, 5))}, ?`, `What number comes next?  ${seq(TRI.slice(0, 5))}, ?`] },
     { type: 'text', text: `Not this lesson: ratios that are close to a whole number but never exact (${seq(AFF)} is "double, then add 1"), or ratios that count up (${seq(FACT)}). Those have their own lessons, and dividing neighbours is how you tell them apart.` },
@@ -74,15 +82,15 @@ export default {
     ] },
     S('derivation'),
     { type: 'steps', steps: [
-      { say: 'Take the gaps first; it is the cheapest test. If they grow and look like a scaled copy of the terms, stop subtracting.', why: 'Under "multiply by r", next − last = (r − 1) × last, so every gap is a fixed multiple of its term. The gaps grow with the terms and no subtraction layer ever becomes constant.',
+      { answers: 'gaps', say: 'Take the gaps first; it is the cheapest test. If they grow and look like a scaled copy of the terms, stop subtracting.', why: 'Under "multiply by r", next − last = (r − 1) × last, so every gap is a fixed multiple of its term. The gaps grow with the terms and no subtraction layer ever becomes constant.',
         checks: [
           { make: (rng) => { const g = geo(rng.int(2, 7), rng.pick([2, 3]), 5), gp = diffs(g); return pick(rng, `The gaps of ${seq(g)} are ${seq(gp)}. What do you test next?`, 'the ratios', [['the gaps of the gaps', `they are ${seq(diffs(gp))}: a copy again, never constant`], [`add the last gap again: ${g[4] + gp[3]}`, 'the gaps are growing, so the last gap does not repeat']], 'Gaps that copy the sequence mean multiplication: divide neighbours.'); } },
         ] },
-      { say: 'Divide each term by the one before: term 2 ÷ term 1, term 3 ÷ term 2, and so on. If every ratio equals r, the rule is "multiply by r".', why: 'Division strips out the size and leaves the factor. A ratio between 0 and 1 means shrinking; a negative ratio means the sign flips every step.',
+      { answers: 'add', say: 'Divide each term by the one before: term 2 ÷ term 1, term 3 ÷ term 2, and so on. If every ratio equals r, the rule is "multiply by r".', why: 'Division strips out the size and leaves the factor. A ratio between 0 and 1 means shrinking; a negative ratio means the sign flips every step.',
         checks: [
           { make: (rng) => { const { r, xs } = ratioSeq(rng, 5); return num(`What is the constant ratio of ${seq(xs)}? (Give 1/2 as 0.5.)`, r, `${neg(xs[2])} ÷ ${neg(xs[1])} = ${rText(r)}.`, ['Divide a term by the one before it.', 'Check the sign: do the terms alternate?']); } },
         ] },
-      { say: 'Next term = last × r. With a negative r the sign flips once more.', why: 'The rule that produced every shown step produces the next one. Multiplying by a negative ratio always changes the sign.',
+      { answers: 'sign', say: 'Next term = last × r. With a negative r the sign flips once more.', why: 'The rule that produced every shown step produces the next one. Multiplying by a negative ratio always changes the sign.',
         checks: [
           { make: (rng) => { const { r, xs } = ratioSeq(rng, 6); return num(nextQ(xs.slice(0, 5)), xs[5], `Ratio ${rText(r)}: ${neg(xs[4])} × ${r < 0 ? `(${neg(r)})` : rText(r)} = ${neg(xs[5])}.`, ['Divide neighbours to find r.', `Multiply ${neg(xs[4])} by r, keeping the sign.`]); } },
         ] },
@@ -95,7 +103,7 @@ export default {
     { type: 'explain', prompt: 'Why does subtracting never settle for a doubling sequence, and what does a negative ratio do to the terms?', model: 'Doubling adds a step equal to the current term, so the gaps are the sequence again and so are their gaps; only division removes the size. A negative ratio multiplies the size by |r| and flips the sign every step, so the terms alternate.', points: ['Under ×r each gap is (r − 1) × the term, so gaps grow with the terms', 'Division isolates the factor r', 'Negative r: size × |r|, sign flips each step'] },
 
     S('worked'),
-    { type: 'worked', family: 'geometric', section: 'nl', difficulty: 1, seed: 'a', intro: 'A doubling or tripling item. Divide two neighbours before opening the solution.' },
+    { type: 'worked', family: 'geometric', section: 'nl', difficulty: 1, seed: 'a', explainAt: [0], intro: 'A doubling or tripling item. Divide two neighbours before opening the solution.' },
     { type: 'worked', family: 'geometric', section: 'nl', difficulty: 2, seed: 'b', fade: 1, intro: 'A harder ratio (large, negative or a half). The gaps and ratios are given; the last step is yours.' },
 
     S('predict'),
@@ -119,6 +127,16 @@ export default {
 
     S('speed'),
     { type: 'callout', tone: 'speed', text: `Sign first, size second. Alternating signs mean a negative ratio; then look only at sizes. Know the powers by sight: ${seq(P2)} and ${seq(P3)}. A term you recognise tells you the ratio at once.` },
+    { type: 'thinkaloud', problem: nextQ(TA.slice(0, 5)), lines: [
+      { t: 0, say: `Signs alternate and the sizes ${seq(TAs)} double. Gaps would zigzag, so divide straight away.` },
+      { t: 4, say: `${neg(TA[1])} ÷ ${TA[0]} = ${neg(TA[1] / TA[0])}, ${TA[2]} ÷ (${neg(TA[1])}) = ${neg(TA[2] / TA[1])}. Ratio ${neg(TA[1] / TA[0])} throughout.` },
+      { t: 8, say: `Next: ${TA[4]} × 2 = ${2 * TA[4]}.`, slip: true },
+      { t: 10, say: `Sign check fails: the signs alternate and ${TA[4]} is positive, so the next is negative. I dropped the minus: ${TA[4]} × (${neg(TA[1] / TA[0])}) = ${neg(TA[5])}.` },
+      { t: 14, say: `Divide back: ${neg(TA[5])} ÷ ${TA[4]} = ${neg(TA[1] / TA[0])}. Answer ${neg(TA[5])}.` },
+    ] },
+    { type: 'check', scope: 'the think-aloud: sign first, size second', questions: [
+      { make: (rng) => { const r = rng.pick([-2, -3]), xs = geo(rng.int(1, 6) * rng.pick([1, -1]), r, 6); return num(nextQ(xs.slice(0, 5)), xs[5], `Signs alternate, so r is negative: r = ${neg(r)}. ${neg(xs[4])} × (${neg(r)}) = ${neg(xs[5])}, the opposite sign to ${neg(xs[4])}.`, ['Decide the sign first: do the signs alternate?', `Then the size: multiply ${Math.abs(xs[4])} by ${-r}.`]); } },
+    ] },
     { type: 'callout', tone: 'speed', text: `Jump ahead: **term n = first × r^{n − 1}**. Doubling ten times multiplies by ${2 ** 10}, so a sequence cannot double for long before the numbers get huge; test writers stop early.` },
     { type: 'check', scope: 'term n = first × r^(n − 1)', questions: [
       { make: (rng) => { const a = rng.int(1, 5), r = rng.pick([2, 3]), n = r === 2 ? rng.int(7, 9) : rng.int(5, 6); return num(`A sequence starts at ${a} and multiplies by ${r} each step. What is term ${n}?`, a * r ** (n - 1), `${a} × ${r}^${n - 1} = ${a} × ${r ** (n - 1)} = ${a * r ** (n - 1)}.`, [`Term ${n} is ${n - 1} multiplications after term 1.`, `${r}^${n - 1} = ${r ** (n - 1)}.`]); } },
@@ -136,10 +154,28 @@ export default {
     ] },
     { type: 'callout', tone: 'edge', text: 'Edge cases: r = 1 is a constant sequence; r between 0 and 1 shrinks the terms towards zero; a negative r alternates the signs; a zero anywhere makes division impossible, so a sequence with a 0 in it is not geometric.' },
     { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: anything that shrinks or grows by a fixed factor per round is geometric. In Beat the Odds, "no six in n throws" is (5/6)^{n}: each extra throw multiplies the probability by the same 5/6.' },
+    { type: 'variation', base: `${seq(G5)}, ?  Ratio ${G[1] / G[0]}, next ${G[5]}.`, rows: [
+      { same: true, change: `Drop the first term: ${seq(G5.slice(1))}, ?`, effect: `Still ${G[5]}. Three ratios still read ${G[1] / G[0]} and the last term has not moved.` },
+      { change: `Multiply every term by 5: ${seq(G5.map((v) => 5 * v))}, ?`, effect: `${5 * G[5]}. The ratio stays ${G[1] / G[0]}: scaling every term cancels in each division (unlike a gap, which would scale too).` },
+      { change: `Add 10 to every term: ${seq(SH.slice(0, 5))}, ?`, effect: `${SH[5]}. The ratios are no longer equal, but the gaps ${seq(diffs(SH.slice(0, 5)))} still double: it becomes a "gaps multiply" item.` },
+      { change: `Flip the sign every step: ${seq(FLIP.slice(0, 5))}, ?`, effect: `${neg(FLIP[5])}. The ratio becomes ${neg(FLIP[1] / FLIP[0])}: same size, and the sign now alternates.` },
+      { fusion: true, change: `Multiply by 5 and flip the sign every step: ${seq(BIG.slice(0, 5))}, ?`, effect: `${neg(BIG[5])}. The 5 cancels in every ratio, the flip makes it ${neg(BIG[1] / BIG[0])}, so next = ${BIG[4]} × (${neg(BIG[1] / BIG[0])}).` },
+    ] },
     { type: 'check', scope: 'the contrast table and edge cases', questions: [
       { make: (rng) => { const t = rng.int(0, 2); const xs = t === 0 ? arith(rng.int(2, 9), rng.int(3, 8), 5) : t === 1 ? geo(rng.int(2, 6), rng.pick([2, 3]), 5) : affine(rng.int(2, 6), 2, rng.int(1, 3), 5); const names = ['add a constant', 'multiply by a constant', 'double, then add a constant']; const traps = [[null, 'the ratios shrink; the gaps are what stay equal', 'there is no multiplication: the gaps are equal'], ['the gaps grow, so this is not addition', null, 'the leftover after doubling is 0 every time: pure multiplication'], ['the gaps grow, so this is not addition', 'the ratios are close to 2 but not equal', null]]; return pick(rng, `${seq(xs)}: which rule?`, names[t], names.map((nm, i) => [nm, traps[t][i]]).filter((_, i) => i !== t), `Gaps ${seq(diffs(xs))}; ratios ${ratios(xs).join(', ')}.`); } },
       { make: (rng) => { const a = rng.pick([3, 5, 7, 9, 11]) * 32, xs = Array.from({ length: 6 }, (_, i) => a / 2 ** i); return num(nextQ(xs.slice(0, 5)), xs[5], `Ratio 1/2: ${xs[4]} ÷ 2 = ${xs[5]}.`, ['The terms shrink by the same factor.', 'Halve the last term.']); } },
     ] },
+
+    { type: 'transfer',
+      near: { make: (rng) => { const up = rng.chance(0.5), m = rng.int(1, 3), xs = up ? geo(32 * m, 1.5, 6) : geo(243 * m, 2 / 3, 6).map(Math.round); return num(nextQ(xs.slice(0, 5)), xs[5], `The ratio is ${up ? '3/2' : '2/3'} every time (${xs[1]} ÷ ${xs[0]} = ${up ? '1.5' : '2/3'}), so ${xs[4]} × ${up ? '3/2' : '2/3'} = ${xs[5]}.`, ['The gaps grow (or shrink) with the terms: divide neighbours.', `The ratio is not a whole number: ${xs[1]} ÷ ${xs[0]} as a fraction.`]); } },
+      far: { make: (rng) => { const n = rng.int(2, 4); return { type: 'number', q: `A fair die is thrown ${n} times. What is the probability that no six appears? (A fraction or a decimal to three places.)`, answer: pow(5, n) / pow(6, n), tolerance: 0.001, hints: ['Each throw keeps "no six so far" alive with the same chance.', `Multiply by 5/6 once per throw: (5/6)^{${n}}.`], explain: `Each throw multiplies the chance by 5/6: (5/6)^{${n}} = ${pow(5, n)}/${pow(6, n)}.` }; } },
+      principle: { type: 'choice', q: 'Which idea carried over from the sequence to the dice?', options: [
+        'each step multiplies by the same factor, so n steps give factor^{n}',
+        'each step adds the same amount, so n steps give n × the amount',
+        'the gaps between the values grow by a fixed amount each step',
+        'each step multiplies by a factor that counts up: 2, 3, 4, …',
+      ], answer: 0, traps: { 1: 'adding 5/6 per throw would pass 1 after two throws: chances of "every throw" multiply', 2: 'that is the second-difference rule; here each value is a fixed multiple of the one before', 3: 'the factor is 5/6 on every throw; it never changes' }, explain: 'The chance of "no six so far" and a geometric sequence both multiply by one fixed factor per step, so after n steps the start is multiplied by the factor to the power n.' },
+    },
 
     S('tryit'),
     { type: 'tryit', family: 'geometric', section: 'nl', count: 3 },

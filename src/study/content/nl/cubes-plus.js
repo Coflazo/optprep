@@ -1,5 +1,5 @@
 // NumberLogic family lesson: cubes, shifted (b³ + k, or b³ ± b + k). Every number shown is computed here.
-import { S, neg, sgn, seq, diffs, ladderRows, nz, nextQ, pick, num, geo } from './method-ladder.js';
+import { S, neg, sgn, seq, diffs, ladderRows, nz, nextQ, pick, fair, num, geo } from './method-ladder.js';
 
 // term i = (s + i)³ + lin·(s + i) + k: the generator's parametrisation.
 const cu = (s, k, lin, n) => Array.from({ length: n }, (_, i) => (i + s) ** 3 + lin * (i + s) + k);
@@ -20,6 +20,9 @@ const CUBES = Array.from({ length: 12 }, (_, i) => (i + 1) ** 3);
 const d2 = (rng, n) => { const s = rng.int(1, 6), k = nz(rng, -9, 9); return { s, k, lin: 0, xs: cu(s, k, 0, n) }; };
 const d3 = (rng, n) => { const s = rng.int(1, 7), k = rng.int(-9, 9), lin = rng.pick([-1, 1]); return { s, k, lin, xs: cu(s, k, lin, n) }; };
 const anyP = (rng, n) => (rng.chance(0.5) ? d2(rng, n) : d3(rng, n));
+const TA = { s: 3, k: 2, lin: 1 }, TAx = cu(TA.s, TA.k, TA.lin, 6), TAl = TAx.map((v, i) => v - (TA.s + i) ** 3), TAb = TA.s + 5;
+const E25 = E2.slice(0, 5), KUP = cu(E2s, 4, 0, 6), LIN = cu(E2s, E2k, 1, 6), LB = 5, LATE = cu(LB, E2k, 0, 6), BOTH = cu(LB, E2k, 1, 6);
+const pmk = (k) => (k < 0 ? `− ${-k}` : `+ ${k}`);
 const leftovers = (p, n) => p.xs.slice(0, n).map((v, i) => v - (p.s + i) ** 3);
 
 export default {
@@ -38,12 +41,17 @@ export default {
   ],
   blocks: [
     S('recognise'),
-    { type: 'challenge', q: `Before any teaching: ${seq(CH.slice(0, 5))}, ? What comes next? Try two ways: the difference ladder (as many rows as it takes), and comparing each term with a famous list.`, answer: String(CH[5]), explain: `Ladder: gaps ${seq(g(CH.slice(0, 5)))}, then ${seq(g(g(CH.slice(0, 5))))}, then ${seq(g(g(g(CH.slice(0, 5)))))}: three rows to settle. Famous list: each term is ${neg(CHk)} from ${seq(bases(CHs, 5).map((b) => b ** 3))}, the cubes, so the next is ${CHs + 5}³ ${sgn(CHk)} = ${CH[5]}.` },
+    { type: 'challenge', q: `Before any teaching: ${seq(CH.slice(0, 5))}, ? What comes next? Try two ways: the difference ladder (as many rows as it takes), and comparing each term with a famous list.`, answer: String(CH[5]), explain: `Ladder: gaps ${seq(g(CH.slice(0, 5)))}, then ${seq(g(g(CH.slice(0, 5))))}, then ${seq(g(g(g(CH.slice(0, 5)))))}: three rows to settle. Famous list: each term is ${neg(CHk)} from ${seq(bases(CHs, 5).map((b) => b ** 3))}, the cubes, so the next is ${CHs + 5}³ ${sgn(CHk)} = ${CH[5]}.`,
+      attempts: [
+        { id: 'squares', label: 'Read them as squares', approach: `Looked for squares near ${seq(CH.slice(1, 4))} (${seq(CH.slice(1, 4).map((v) => Math.round(Math.sqrt(v)) ** 2))}) and tried a "square + k" rule.`, breaksAt: `The growth outruns squares: the terms sit next to the cubes ${seq(bases(CHs + 1, 3).map((b) => b ** 3))}.` },
+        { id: 'one-term', label: 'Match one term only', approach: `Saw ${CH[3]} next to ${(CHs + 3) ** 3} and built a guess on that one term.`, breaksAt: 'One term near a cube proves nothing. Only a leftover column with a simple rule in every row proves the reading.' },
+        { id: 'next-cube', label: 'Answer the next cube', approach: `Spotted the cubes and answered ${CHs + 5}³ = ${(CHs + 5) ** 3}.`, breaksAt: `Every term sits ${Math.abs(CHk)} ${CHk < 0 ? 'below' : 'above'} its cube, so the constant goes back on: ${(CHs + 5) ** 3} ${pmk(CHk)} = ${CH[5]}.` },
+      ] },
     { type: 'text', text: `The terms grow faster than squares but with no fixed ratio. Each is a **cube plus a small constant k**, or a cube plus or minus its own base plus k. Numbers such as ${seq(E1.slice(0, 4))} sit right next to ${seq(bases(E1s, 4).map((b) => b ** 3))}.` },
     { type: 'list', items: [`What number comes next?  ${seq(E1.slice(0, 5))}, ?`, `What number comes next?  ${seq(E2.slice(0, 5))}, ?`, `What number comes next?  ${seq(E3x.slice(0, 5))}, ?`] },
     { type: 'text', text: `Not this lesson: squares plus a constant (${seq(SQ)}, growth too slow, second row constant) and powers of 2 plus a constant (${seq(PW)}, gaps that double).` },
     { type: 'check', scope: 'the cue: terms next to cubes', questions: [
-      { make: (rng) => { const p = d2(rng, 5), s = rng.int(2, 6), q = Array.from({ length: 5 }, (_, i) => (i + s) ** 2 + rng.int(-3, 3)), pw = geo(rng.int(1, 3), 2, 5).map((v) => v + rng.int(1, 5)); return pick(rng, 'Which sequence is cubes plus a constant?', seq(p.xs), [[seq(q), 'too slow for cubes: those sit next to squares'], [seq(pw), `its gaps ${seq(g(pw))} double: powers of 2`]], `${seq(p.xs)} is ${seq(bases(p.s, 5).map((b) => b ** 3))} ${p.k < 0 ? 'minus' : 'plus'} ${Math.abs(p.k)}.`); } },
+      { make: fair((rng) => { const p = d2(rng, 5), s = rng.int(2, 6), q = Array.from({ length: 5 }, (_, i) => (i + s) ** 2 + rng.int(-3, 3)), pw = geo(rng.int(1, 3), 2, 5).map((v) => v + rng.int(1, 5)); return pick(rng, 'Which sequence is cubes plus a constant?', seq(p.xs), [[seq(q), 'too slow for cubes: those sit next to squares'], [seq(pw), `its gaps ${seq(g(pw))} double: powers of 2`]], `${seq(p.xs)} is ${seq(bases(p.s, 5).map((b) => b ** 3))} ${p.k < 0 ? 'minus' : 'plus'} ${Math.abs(p.k)}.`); }) },
     ] },
 
     S('why'),
@@ -69,19 +77,19 @@ export default {
 
     S('derivation'),
     { type: 'steps', steps: [
-      { say: 'Growth that outruns squares but has no fixed ratio: line the terms up against consecutive cubes. The first term tells you the starting base.', why: 'Cubes grow like b³: each is roughly (1 + 1/b)³ times the last, so the ratios fall steadily instead of staying fixed.',
+      { answers: 'squares', say: 'Growth that outruns squares but has no fixed ratio: line the terms up against consecutive cubes. The first term tells you the starting base.', why: 'Cubes grow like b³: each is roughly (1 + 1/b)³ times the last, so the ratios fall steadily instead of staying fixed.',
         checks: [
           { make: (rng) => { const p = d2(rng, 5); return num(`${seq(p.xs)}: which base b has the cube nearest the first term?`, p.s, `${p.s}³ = ${p.s ** 3}, next to ${neg(p.xs[0])}.`); } },
         ] },
-      { say: 'Subtract each cube from its term. That column is the leftover.', why: 'Removing the cube isolates whatever the rule adds on top of it.',
+      { answers: 'one-term', say: 'Subtract each cube from its term. That column is the leftover.', why: 'Removing the cube isolates whatever the rule adds on top of it.',
         checks: [
           { make: (rng) => { const p = d3(rng, 5), b = p.s + 2; return num(`${seq(p.xs)} starts at base ${p.s}. What is the leftover of the third term, term − ${b}³?`, p.xs[2] - b ** 3, `${neg(p.xs[2])} − ${b ** 3} = ${neg(p.xs[2] - b ** 3)}.`); } },
         ] },
       { say: 'Read the leftover rule: the same number every time (a constant k), or a number that moves by 1 each step (±b + k).', why: 'The leftover must follow its own simple rule. If it rises or falls by exactly 1 per step, the base itself is being added or subtracted.',
         checks: [
-          { make: (rng) => { const p = rng.chance(0.5) ? d2(rng, 5) : d3(rng, 5), lo = leftovers(p, 5); const moving = p.lin !== 0; return pick(rng, `${seq(p.xs)}: the leftovers after subtracting cubes are ${seq(lo)}. Which leftover rule?`, moving ? 'it moves with the base (± b)' : 'a constant', [[moving ? 'a constant' : 'it moves with the base (± b)', moving ? `the leftovers ${seq(lo)} change by 1 each step` : `every leftover is ${neg(lo[0])}`]], `Leftovers: ${seq(lo)}.`); } },
+          { make: (rng) => { const p = rng.chance(0.5) ? d2(rng, 5) : d3(rng, 5), lo = leftovers(p, 5); const moving = p.lin !== 0; return pick(rng, `${seq(p.xs)}: the leftovers after subtracting cubes are ${seq(lo)}. Which leftover rule?`, moving ? 'the base itself, ± b, plus a constant' : 'a fixed constant k on every row', [[moving ? 'a fixed constant k on every row' : 'the base itself, ± b, plus a constant', moving ? `the leftovers ${seq(lo)} change by 1 each step` : `every leftover is ${neg(lo[0])}`]], `Leftovers: ${seq(lo)}.`); } },
         ] },
-      { say: 'Next term = (next base)³ + the leftover rule at the next base.', why: 'Both parts continue independently: the base by 1, the leftover by its own rule.',
+      { answers: 'next-cube', say: 'Next term = (next base)³ + the leftover rule at the next base.', why: 'Both parts continue independently: the base by 1, the leftover by its own rule.',
         checks: [
           { make: (rng) => { const p = d2(rng, 6), b = p.s + 5; return num(nextQ(p.xs.slice(0, 5)), p.xs[5], `${form(p)}: ${b}³ ${sgn(p.k)} = ${neg(p.xs[5])}.`, ['Subtract the nearest cubes.', 'Cube the next base, then add the constant back.']); } },
           { make: (rng) => { const p = d3(rng, 7), b = p.s + 6; return num(nextQ(p.xs.slice(0, 6)), p.xs[6], `Leftovers ${seq(leftovers(p, 6))} move by ${p.lin} each step; next ${b}³ ${p.lin < 0 ? '−' : '+'} ${b} ${sgn(p.k)} = ${neg(p.xs[6])}.`, ['Subtract the cubes and look at the leftovers.', 'Continue the leftovers by their step, then add the next cube.']); } },
@@ -92,7 +100,7 @@ export default {
     { type: 'explain', prompt: 'Why does subtracting cubes expose the rule faster than the three-row ladder, and why does a leftover that rises by 1 each step mean "+ b"?', model: 'Subtracting the cubes removes the fast-growing part in one move, leaving a leftover you can read at a glance, while the ladder needs three rounds of subtraction. The base b goes up by 1 from term to term, so a leftover that also goes up by 1 each step is b plus a fixed constant.', points: ['One subtraction per term removes the cube', 'The ladder needs three rows (third difference 6)', 'A leftover that moves by 1 per step is ± b + constant'] },
 
     S('worked'),
-    { type: 'worked', family: 'cubes-plus', section: 'nl', difficulty: 2, seed: 'a', intro: 'Cubes plus a constant. Find the leftover before opening the solution.' },
+    { type: 'worked', family: 'cubes-plus', section: 'nl', difficulty: 2, seed: 'a', explainAt: [0], intro: 'Cubes plus a constant. Find the leftover before opening the solution.' },
     { type: 'worked', family: 'cubes-plus', section: 'nl', difficulty: 3, seed: 'b', fade: 1, intro: 'The leftover moves with the base. The reading is given; the last step is yours.' },
 
     S('predict'),
@@ -118,6 +126,16 @@ export default {
     S('speed'),
     { type: 'callout', tone: 'speed', text: `Cubes to know: ${seq(CUBES)}. Last digits help you place a big term: 2³ ends in 8 and 8³ in 2, 3³ ends in 7 and 7³ in 3; every other digit cubes to itself in the last place.` },
     { type: 'callout', tone: 'speed', text: 'Products of three neighbours are cubes in disguise: (b − 1) × b × (b + 1) = b³ − b. And a leftover that moves by 1 is ± b: read it off two rows, never assume it is constant.' },
+    { type: 'thinkaloud', problem: nextQ(TAx.slice(0, 5)), lines: [
+      { t: 0, say: `Fast growth, no fixed ratio. Near cubes: ${seq(bases(TA.s, 5).map((b) => b ** 3))}.` },
+      { t: 6, say: `Leftovers, term minus cube: ${seq(TAl.slice(0, 5))}.` },
+      { t: 10, say: `Next base ${TAb}: ${TAb ** 3} + ${TAl[4]} = ${TAb ** 3 + TAl[4]}.`, slip: true },
+      { t: 13, say: `Wait, the leftover moves by 1 each step: it is b ${pmk(TA.k)}, so at b = ${TAb} it is ${TAl[5]}, not ${TAl[4]}.` },
+      { t: 17, say: `${TAb ** 3} + ${TAl[5]} = ${TAx[5]}. Check a row: ${TA.s + 1}³ + ${TA.s + 1} ${pmk(TA.k)} = ${TAx[1]}. Answer ${TAx[5]}.` },
+    ] },
+    { type: 'check', scope: 'the think-aloud: continue the leftover before adding it', questions: [
+      { make: (rng) => { const p = d3(rng, 7), b = p.s + 6; return num(nextQ(p.xs.slice(0, 6)), p.xs[6], `Leftovers ${seq(leftovers(p, 6))} move by ${p.lin} per step, so at b = ${b} the leftover is ${neg(p.xs[6] - b ** 3)}: ${b ** 3} ${pmk(p.xs[6] - b ** 3)} = ${neg(p.xs[6])}.`, ['Subtract the cubes: is the leftover fixed or moving?', 'Move the leftover one more step, then add the next cube.']); } },
+    ] },
     { type: 'check', scope: 'cubes by sight and b³ − b', questions: [
       { make: (rng) => { const b = rng.int(5, 12); return num(`What is ${b - 1} × ${b} × ${b + 1}?`, b ** 3 - b, `(b − 1) × b × (b + 1) = b³ − b = ${b ** 3} − ${b} = ${b ** 3 - b}.`, ['The middle number is b.', `b³ − b with b = ${b}.`]); } },
     ] },
@@ -133,13 +151,31 @@ export default {
       [seq(P3.slice(0, 5)), seq(g(P3.slice(0, 5))), `third (${g(g(g(P3)))[0]})`, 'b³ − b: products of three neighbours'],
     ] },
     { type: 'check', scope: 'the contrast table', questions: [
-      { make: (rng) => { const t = rng.int(0, 2), s = rng.int(2, 5), k = nz(rng, -5, 5); const xs = t === 0 ? Array.from({ length: 5 }, (_, i) => (i + s) ** 2 + k) : t === 1 ? cu(s, k, 0, 5) : geo(2, 2, 5).map((v) => v + Math.abs(k)); const names = ['squares + k', 'cubes + k', 'powers of 2 + k']; const trp = [[null, 'cubes grow much faster; the second row here is constant', 'the gaps do not double'], ['the second row is not constant: it grows', null, 'the gaps do not double; the third row is 6'], ['the gaps double, which no polynomial does', 'the gaps double; cubes have a constant third row', null]]; return pick(rng, `${seq(xs)}: which reading?`, names[t], names.map((nm, i) => [nm, trp[t][i]]).filter((_, i) => i !== t), `Gaps ${seq(g(xs))}; second row ${seq(g(g(xs)))}.`); } },
+      { make: (rng) => { const t = rng.int(0, 2), s = rng.int(2, 5), k = nz(rng, -5, 5); const xs = t === 0 ? Array.from({ length: 5 }, (_, i) => (i + s) ** 2 + k) : t === 1 ? cu(s, k, 0, 5) : geo(2, 2, 5).map((v) => v + Math.abs(k)); const names = ['squares b² plus k', 'cubes b³ plus k', 'powers 2^{b} plus k']; const trp = [[null, 'cubes grow much faster; the second row here is constant', 'the gaps do not double'], ['the second row is not constant: it grows', null, 'the gaps do not double; the third row is 6'], ['the gaps double, which no polynomial does', 'the gaps double; cubes have a constant third row', null]]; return pick(rng, `${seq(xs)}: which reading?`, names[t], names.map((nm, i) => [nm, trp[t][i]]).filter((_, i) => i !== t), `Gaps ${seq(g(xs))}; second row ${seq(g(g(xs)))}.`); } },
     ] },
     { type: 'callout', tone: 'edge', text: 'Edge cases: 0³ = 0, so a list can start at 0 or at k; a leftover of b + k and one of −b + k move in opposite directions; and a list of cubes with k = 0 needs no subtraction at all.' },
     { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: subtract the dominant part to expose the rest. It is the same move as the leftover test for "multiply, then add" and the same as reading squares under a shift.' },
+    { type: 'variation', base: `${seq(E25)}, ?  b³ − ${-E2k} for b = ${seq(bases(E2s, 5))}; next ${E2s + 5}³ − ${-E2k} = ${E2[5]}.`, rows: [
+      { same: true, change: `Drop the first term: ${seq(E25.slice(1))}, ?`, effect: `Still ${E2[5]}. Every remaining term is still b³ − ${-E2k}, and the next base is still ${E2s + 5}.` },
+      { change: `A shift of +4 instead: ${seq(KUP.slice(0, 5))}, ?`, effect: `${KUP[5]}. Same cubes and bases; only the constant you put back changes.` },
+      { change: `Let the leftover move with the base, b³ + b − ${-E2k}: ${seq(LIN.slice(0, 5))}, ?`, effect: `${LIN[5]}. The leftovers now climb by 1, so at b = ${E2s + 5} the leftover is ${LIN[5] - (E2s + 5) ** 3}.` },
+      { change: `Start at base ${LB}: ${seq(LATE.slice(0, 5))}, ?`, effect: `${LATE[5]} = ${LB + 5}³ − ${-E2k}. Bigger cubes, same leftover.` },
+      { fusion: true, change: `Start at base ${LB} and let the leftover move: ${seq(BOTH.slice(0, 5))}, ?`, effect: `${BOTH[5]}. The start fixes the next base (${LB + 5}), the moving leftover is read at that base (${LB + 5} − ${-E2k}): the two changes act on different columns of the table.` },
+    ] },
     { type: 'check', scope: 'the edge cases', questions: [
       { make: (rng) => { const s = rng.int(2, 5), xs = cu(s, 0, -1, 6); return num(nextQ(xs.slice(0, 5)), xs[5], `Products of three neighbours: ${s + 4} × ${s + 5} × ${s + 6} = ${(s + 5) ** 3} − ${s + 5} = ${xs[5]}.`, ['Factor each term as three neighbours.', 'The next product moves every factor up by 1.']); } },
     ] },
+
+    { type: 'transfer',
+      near: { make: (rng) => { const p = { s: rng.int(9, 12), k: nz(rng, -9, 9), lin: 0 }, xs = cu(p.s, p.k, 0, 6); return num(nextQ(xs.slice(0, 5)), xs[5], `These are ${p.s}³ to ${p.s + 4}³ ${p.k < 0 ? 'minus' : 'plus'} ${Math.abs(p.k)}: next ${p.s + 5}³ ${pmk(p.k)} = ${(p.s + 5) ** 3} ${pmk(p.k)} = ${xs[5]}.`, [`Is ${xs[0]} close to a cube? 10³ = 1000.`, 'Read the bases, then cube the next one and put the shift back.']); } },
+      far: { make: (rng) => { const n = rng.int(4, 9); return num(`A big cube is built from ${n} × ${n} × ${n} small cubes, and its whole outside is painted. How many small cubes have no paint at all?`, (n - 2) ** 3, `Strip one layer from every face: the unpainted core is ${n - 2} × ${n - 2} × ${n - 2} = ${n - 2}³ = ${(n - 2) ** 3}.`, ['The unpainted cubes form a smaller cube inside.', 'Its side is two shorter: one layer off each end.']); } },
+      principle: { type: 'choice', q: 'Which idea carried over from the sequences to the painted cube?', options: [
+        'spot a count of the form b³ and find the right base',
+        'spot a count of the form b² and find the right base',
+        'spot a count that doubles each time the base grows',
+        'spot a count of 6 faces times the base of the cube',
+      ], answer: 0, traps: { 1: 'a solid block counts length × width × height: three factors, not two', 2: 'the counts grow like b³, not by a fixed factor per step', 3: 'faces describe the painted surface; the unpainted cubes fill the inside' }, explain: 'Both questions come down to a cube number at the right base: the sequence terms sit next to b³, and the unpainted core is (n − 2)³.' },
+    },
 
     S('tryit'),
     { type: 'tryit', family: 'cubes-plus', section: 'nl', count: 3 },

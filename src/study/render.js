@@ -4,12 +4,14 @@
 import { h } from '../ui/dom.js';
 import { renderInline } from './markup.js';
 import { renderDiagram } from './diagrams/index.js';
-import { resolveQuestion, gradeCheck } from './check.js';
+import { resolveQuestion as resolveRaw, gradeCheck, arrangeChoice } from './check.js';
+// Every rendered question is resolved (generators run) and its choice options arranged fairly.
+const resolveQuestion = (spec, rng) => arrangeChoice(resolveRaw(spec, rng), rng.fork('arrange'));
 import { SECTION_MODULES } from '../sections/index.js';
 import { makeRng } from '../core/rng.js';
 import { itemBody, runFeedbackSession } from '../ui/runner.js';
 import { solutionPanel } from '../ui/solution.js';
-import { recordTry, markRead, recordReflection, statusOf, recordUnit, studyState } from './progress.js';
+import { recordTry, markRead, recordReflection, statusOf, recordUnit, studyState, scaffoldsOff, logEvent, recordMiss } from './progress.js';
 import { LESSON_BY_ID } from './content/index.js';
 import { checkItem } from '../core/check.js';
 
@@ -44,11 +46,12 @@ export function renderBlock(b, ctx) {
     case 'traps': return trapsBlock(b, ctx);
     case 'tryit': return tryBlock(b, ctx);
     case 'recognize': return recognizeBlock(b, ctx);
-    case 'challenge': return challengeBlock(b);
+    case 'challenge': return challengeBlock(b, ctx);
     case 'explain': return explainBlock(b);
     case 'erroneous': return erroneousBlock(b);
     case 'thinkaloud': return thinkAloudBlock(b);
     case 'variation': return variationBlock(b);
+    case 'transfer': return h('div', { class: 'study-transfer' }, h('div', { class: 'check-label' }, 'Transfer: same type in a new setting, then the same idea somewhere else'), checkBlock([b.near, b.far, b.principle], ctx, 'the principle of this lesson, in new settings', null, 'transfer: near, far, principle'));
     default: return h('p', { class: 'muted' }, `Unknown block ${b.type}`);
   }
 }
@@ -59,7 +62,7 @@ function diagramBlock(b, ctx) {
   return h('figure', { class: 'study-figure' }, el, b.caption ? h('figcaption', {}, T(val(b.caption, ctx))) : null);
 }
 
-const moveUnit = (i, st) => `move ${i + 1}: ${st.say.split(/\s+/).slice(0, 7).join(' ')}…`;
+export const moveUnit = (i, st) => `move ${i + 1}: ${st.say.split(/\s+/).slice(0, 7).join(' ')}…`;
 
 // Derivation: one move at a time. A move's micro-checks must be answered before the next move opens.
 function stepsBlock(b, ctx) {
@@ -72,6 +75,13 @@ function stepsBlock(b, ctx) {
   function addStep(skipChecks = false) {
     const st = b.steps[shown];
     const li = h('li', {}, h('span', { class: 'n' }, String(shown + 1)), h('div', {}, T(st.say)), h('div', { class: 'why' }, T(st.why)));
+    if (st.answers) {
+      const note = h('div', { class: 'attempt-note', hidden: true });
+      const show = (a) => { if (a.id === st.answers) { note.replaceChildren(h('strong', {}, `This is where "${a.label}" breaks. `), T(a.breaksAt)); note.hidden = false; } };
+      (ctx.attemptNotes ||= []).push(show);
+      if (ctx.attempt) show(ctx.attempt);
+      li.append(note);
+    }
     if (st.checks?.length && !skipChecks) {
       pending += 1;
       li.append(checkBlock(st.checks, ctx, null, () => { pending -= 1; sync(); }, moveUnit(shown, st)));
@@ -109,9 +119,13 @@ export function checkBlock(questions, ctx, scope, onDone, unit = scope) {
   const finished = (first) => {
     clean += first.clean ? 1 : 0; unitClean &&= first.clean; open -= 1;
     ctx.onCheck?.(first);
+    if (ctx.lesson?.id && ctx.store && !ctx.noTrack) {
+      logEvent(ctx.store, { kind: 'check', lesson: ctx.lesson.id, unit, clean: first.clean, hints: first.hints });
+      if (first.trap) recordMiss(ctx.store, { belief: first.trap, lesson: ctx.lesson.id, unit });
+    }
     if (open === 0) { if (ctx.lesson?.id && !ctx.noTrack) recordUnit(ctx.store, ctx.lesson.id, unit, unitClean); onDone?.({ n: questions.length, clean }); }
   };
-  questions.forEach((spec, qi) => box.append(questionView(resolveQuestion(spec, rng.fork(`q${qi}`)), finished, { spec, rng: rng.fork(`again${qi}`) })));
+  questions.forEach((spec, qi) => box.append(questionView(resolveQuestion(spec, rng.fork(`q${qi}`)), finished, { spec, rng: rng.fork(`again${qi}`), noHints: ctx.noHints })));
   return box;
 }
 
@@ -134,7 +148,7 @@ function masteryBlock(b, ctx) {
   return h('div', { class: 'study-try' }, status, box, again);
 }
 
-function questionView(q, onAnswered, { spec, rng } = {}) {
+function questionView(q, onAnswered, { spec, rng, noHints = false } = {}) {
   let tries = 0;
   const again = h('div', {});
   const offerAnother = (res) => {
@@ -146,20 +160,32 @@ function questionView(q, onAnswered, { spec, rng } = {}) {
     again.append(btn);
   };
   const fb = h('div', { class: 'check-feedback' });
-  let answered = false, firstResult = null;
-  const done = (res, response) => {
-    const first = !answered;
-    answered = true;
-    if (first) firstResult = { clean: res.correct && used === 0 };
+  let attempts = 0, revealed = false, firstResult = null;
+  // Repair loop: a wrong first attempt names the false belief (when known) but keeps the
+  // answer hidden, so the learner locates the error and tries once more before being told.
+  const reveal = (res) => {
+    revealed = true;
+    control?.querySelectorAll?.('button, input').forEach((x) => { if (!x.classList.contains('is-picked')) x.disabled = true; });
     fb.replaceChildren(h('div', { class: `feedback ${res.correct ? 'ok' : 'no'}` },
-      h('strong', {}, res.correct ? 'Right. ' : 'Not quite. '),
+      h('strong', {}, res.correct ? (attempts > 1 ? 'Right on the second try. ' : 'Right. ') : 'Not quite. '),
       res.trap ? h('span', {}, 'That answer comes from: ', h('em', {}, T(res.trap)), '. ') : null,
       !res.correct ? h('span', {}, 'Answer: ', T(answerText(q)), '. ') : null,
       res.score != null ? h('span', {}, `Score ${res.score.toFixed(2)}. `) : null,
       h('div', { class: 'muted' }, T(q.explain))));
-    if (first) onAnswered?.(firstResult);
     offerAnother(res);
-    void response;
+  };
+  const done = (res, response) => {
+    if (revealed) return;
+    attempts += 1;
+    if (attempts === 1) { firstResult = { clean: res.correct && used === 0, trap: res.trap, hints: used }; onAnswered?.(firstResult); }
+    if (!res.correct && attempts === 1) {
+      if (q.type === 'choice' && Number.isInteger(response)) control.querySelectorAll('button')[response].disabled = true;
+      fb.replaceChildren(h('div', { class: 'feedback no' }, h('strong', {}, 'Not yet. '),
+        res.trap ? h('span', {}, 'That answer comes from: ', h('em', {}, T(res.trap)), '. Where does your reasoning use that? ') : 'Find the exact step where your working leaves the unit above. ',
+        'One more try, or ', h('button', { class: 'linkish', type: 'button', onclick: () => reveal({ ...res, correct: false }) }, 'show the answer'), '.'));
+      return;
+    }
+    reveal(res);
   };
   let control;
   if (q.type === 'choice') {
@@ -186,7 +212,7 @@ function questionView(q, onAnswered, { spec, rng } = {}) {
   // Progressive hint ladder: one hint at a time, each only after trying without it.
   let used = 0;
   const hintBox = h('div', {});
-  const hintBtn = q.hints?.length ? h('button', { class: 'btn small', type: 'button', onclick: () => {
+  const hintBtn = q.hints?.length && !noHints ? h('button', { class: 'btn small', type: 'button', onclick: () => {
     if (used >= q.hints.length) return;
     hintBox.append(h('div', { class: 'feedback' }, h('strong', {}, `Hint ${used + 1}. `), T(q.hints[used])));
     used += 1;
@@ -197,11 +223,21 @@ function questionView(q, onAnswered, { spec, rng } = {}) {
 }
 
 // Productive failure: two attempted approaches and an answer before any teaching.
-function challengeBlock(b) {
+function challengeBlock(b, ctx) {
   const a1 = h('textarea', { class: 'study-text', rows: 2, placeholder: 'Approach 1: how would you attack it?', 'aria-label': 'Approach 1' });
   const a2 = h('textarea', { class: 'study-text', rows: 2, placeholder: 'Approach 2: a different way in', 'aria-label': 'Approach 2' });
   const ans = h('input', { type: 'text', class: 'study-input', placeholder: 'Your answer', 'aria-label': 'Your answer' });
-  const out = h('div', { hidden: true }, h('div', { class: 'feedback' }, h('strong', {}, 'Answer: '), T(b.answer), h('div', { class: 'muted' }, T(b.explain))));
+  const picked = h('div', {});
+  const attempts = b.attempts?.length ? h('div', {}, h('p', { class: 'small-note' }, 'Which of these is closest to what you tried?'),
+    h('div', { class: 'check-options' }, [...b.attempts.map((a) => h('button', { class: 'btn small check-option', type: 'button', onclick: (e) => {
+      e.currentTarget.parentElement.querySelectorAll('button').forEach((x) => x.classList.toggle('is-picked', x === e.currentTarget));
+      picked.replaceChildren(h('div', { class: 'feedback' }, h('strong', {}, `${a.label}: `), T(a.approach), h('div', { class: 'muted' }, 'Where it breaks: ', T(a.breaksAt)), h('div', { class: 'small-note muted' }, 'The derivation below marks the exact step that fixes this.')));
+      ctx.pickAttempt?.(a);
+    } }, T(a.label))), h('button', { class: 'btn small check-option', type: 'button', onclick: (e) => {
+      e.currentTarget.parentElement.querySelectorAll('button').forEach((x) => x.classList.toggle('is-picked', x === e.currentTarget));
+      picked.replaceChildren(h('p', { class: 'small-note muted' }, 'Something else. Keep your attempt in mind and find the step where it and the derivation part ways.'));
+    } }, 'None of these')]), picked) : null;
+  const out = h('div', { hidden: true }, h('div', { class: 'feedback' }, h('strong', {}, 'Answer: '), T(b.answer), h('div', { class: 'muted' }, T(b.explain))), attempts);
   const btn = h('button', { class: 'btn small', type: 'button', onclick: () => {
     if (!a1.value.trim() || !a2.value.trim() || !ans.value.trim()) { btn.textContent = 'Write both approaches and an answer first'; return; }
     out.hidden = false; btn.hidden = true;
@@ -279,12 +315,36 @@ function workedBlock(b, ctx) {
   const sol = h('div', { hidden: true });
   const btn = h('button', { class: 'btn', type: 'button', onclick: () => {
     body.view.reveal?.({ correct: true, score: 1 }, null);
-    sol.replaceChildren(solutionPanel(item, { stepwise: false }));
+    sol.replaceChildren(item.solution?.steps?.length ? stepwiseSolution(item, b.explainAt || []) : solutionPanel(item, { stepwise: false }));
     if (b.diagram) { try { const d = b.diagram(item); sol.prepend(diagramBlock({ diagram: d.diagram, spec: d.spec, caption: d.caption }, ctx)); } catch { /* optional */ } }
     sol.hidden = false; btn.hidden = true;
   } }, 'I have tried it: show the solution');
   if (b.fade >= 1) return fadedWorked(b, item, ctx);
   return h('div', { class: 'study-worked' }, h('div', { class: 'check-label' }, `Worked example · difficulty ${item.difficulty}`), b.intro ? h('p', {}, T(b.intro)) : null, body.el, btn, sol);
+}
+
+// Self-explaining a worked example: steps appear one at a time; each reason stays hidden
+// until the learner has said why (and typed it at the explainAt steps).
+function stepwiseSolution(item, explainAt) {
+  const steps = item.solution.steps;
+  const list = h('ol', { class: 'steps' });
+  const end = h('div', {});
+  let i = 0;
+  const next = h('button', { class: 'btn small primary', type: 'button', onclick: () => add() }, 'Next step');
+  function add() {
+    const st = steps[i], k = i;
+    const why = h('div', { class: 'why', hidden: true }, T(st.why));
+    const typed = explainAt.includes(k) ? h('textarea', { class: 'study-text', rows: 2, placeholder: 'Why is this step right? Write it in your own words (a sentence).', 'aria-label': `Explain step ${k + 1}` }) : null;
+    const reveal = h('button', { class: 'linkish small-note', type: 'button', onclick: () => {
+      if (typed && typed.value.trim().split(/\s+/).length < 5) { reveal.textContent = 'Write at least a short sentence first'; return; }
+      why.hidden = false; reveal.remove();
+    } }, typed ? 'Compare with the reason' : 'Why this step? Say it to yourself, then reveal');
+    list.append(h('li', {}, h('span', { class: 'n' }, String(k + 1)), h('div', {}, T(st.say)), typed, reveal, why));
+    i += 1;
+    if (i >= steps.length) { next.remove(); if (item.solution.rule) end.append(h('div', { class: 'rule' }, item.solution.rule)); }
+  }
+  add();
+  return h('div', { class: 'solution' }, list, next, end);
 }
 
 // Worked-example fading: the first steps are given, the last `fade` steps are yours.
@@ -340,22 +400,32 @@ function tryBlock(b, ctx) {
   }
   const f = familyOf(b.section, b.family);
   if (!f) return h('p', { class: 'muted' }, `Unknown family ${b.family}`);
-  const status = h('p', { class: 'muted' }, 'Three fresh questions of this type. Answer all three right without hints to master the lesson.');
-  const start = h('button', { class: 'btn primary', type: 'button', onclick: () => {
-    start.hidden = true;
+  const status = h('p', { class: 'muted' }, 'Three fresh questions of this type. Answer all three right without hints to master the lesson; do it inside the exam time per question to earn the exam-pace badge.');
+  const secs = (ms) => `${Math.round(ms / 1000)} s`;
+  // Two tiers: Mastered (3/3 right first time, no hints) and Exam pace (the same, each inside the exam's time per item).
+  const run = (paced) => {
+    start.hidden = true; pace.hidden = true;
     const rng = makeRng(`try:${ctx.lesson.id}:${Date.now()}`);
     const levels = f.family.levels?.length ? f.family.levels : [1];
     const items = Array.from({ length: b.count ?? 3 }, (_, i) => f.family.generate(rng.fork(`t${i}`), { difficulty: levels[Math.min(i, levels.length - 1)] }));
     const area = h('div', {});
     box.append(area);
-    runFeedbackSession(area, { sectionId: f.section, mode: 'learn', items, store: ctx.store, title: `Try it: ${f.family.title}`, onDone: (r) => {
-      const pass = recordTry(ctx.store, ctx.lesson.id, r);
-      status.replaceChildren(h('span', { class: `badge ${pass ? 'ok' : 'no'}` }, pass ? 'Mastered' : 'Not yet'), ` ${r.clean} of ${r.n} right without hints. `, pass ? 'This lesson will come back for review.' : 'Re-read the step you missed, then try three new ones.');
-      start.textContent = 'Three more'; start.hidden = false;
-      ctx.onProgress?.();
-    } });
-  } }, 'Start: 3 fresh questions');
-  box.append(status, start);
+    runFeedbackSession(area, { sectionId: f.section, mode: paced ? 'drill' : 'learn', items, store: ctx.store, title: `${paced ? 'Exam pace' : 'Try it'}: ${f.family.title}`, diagnose: !paced,
+      onMiss: (d) => recordMiss(ctx.store, { belief: d.item.options?.[d.response?.choice]?.misconception || d.belief, lesson: ctx.lesson.id, unit: 'try-it', type: d.type }),
+      onDone: (r) => {
+        const pass = recordTry(ctx.store, ctx.lesson.id, r);
+        const onPace = pass && r.ms.every((m) => m <= r.budgetMs);
+        const avg = r.ms.reduce((a, m) => a + m, 0) / Math.max(1, r.ms.length);
+        status.replaceChildren(h('span', { class: `badge ${pass ? 'ok' : 'no'}` }, pass ? 'Mastered' : 'Not yet'), onPace ? [' ', h('span', { class: 'badge ok' }, 'Exam pace')] : null,
+          ` ${r.clean} of ${r.n} right without hints, average ${secs(avg)} against ${secs(r.budgetMs)} per question. `,
+          !pass ? 'Find the step you missed, then try three new ones.' : onPace ? 'Right and fast enough: this lesson comes back for review.' : 'Correct, not yet at exam pace: use the speed section, then try at exam pace.');
+        start.textContent = 'Three more'; start.hidden = false; pace.hidden = !pass;
+        ctx.onProgress?.();
+      } });
+  };
+  const start = h('button', { class: 'btn primary', type: 'button', onclick: () => run(false) }, 'Start: 3 fresh questions');
+  const pace = h('button', { class: 'btn', type: 'button', hidden: !(ctx.store && scaffoldsOff(ctx.store, ctx.lesson.id)), onclick: () => run(true) }, 'Try at exam pace (timed)');
+  box.append(status, h('div', { class: 'row' }, start, pace));
   return box;
 }
 
@@ -371,19 +441,20 @@ function recognizeBlock(b) {
   }));
 }
 
-export function renderLesson(root, lesson, { store, onProgress } = {}) {
-  const status = store ? statusOf(store, lesson.id) : 'new';
-  const faded = status === 'mastered' || status === 'review';
+// `restore: true` (after a failed review) keeps every scaffold on for this visit.
+export function renderLesson(root, lesson, { store, onProgress, restore = false } = {}) {
+  const faded = !restore && !!store && scaffoldsOff(store, lesson.id);
   const tally = { answered: 0, clean: 0, total: countQuestions(lesson) };
   const bar = h('span', {}), label = h('span', { class: 'small-note muted num' });
   const paint = () => { bar.style.width = `${Math.round((100 * tally.answered) / Math.max(1, tally.total))}%`; label.textContent = `${tally.answered} of ${tally.total} checks answered · ${tally.clean} right first time`; };
   const ctx = { lesson, store, rng: makeRng(`lesson:${lesson.id}:${Date.now()}`), onProgress, faded, tally,
-    onCheck: (first) => { tally.answered += 1; tally.clean += first.clean ? 1 : 0; paint(); } };
+    onCheck: (first) => { tally.answered += 1; tally.clean += first.clean ? 1 : 0; paint(); },
+    pickAttempt: (a) => { ctx.attempt = a; (ctx.attemptNotes || []).forEach((f) => f(a)); } };
   markRead(store, lesson.id);
   paint();
   const toc = h('nav', { class: 'study-toc', 'aria-label': 'Lesson sections' }, lesson.blocks.filter((b) => b.type === 'section').map((b) => h('a', { href: `#s-${b.key}`, onclick: (e) => { e.preventDefault(); root.querySelector(`#s-${b.key}`)?.scrollIntoView({ behavior: 'smooth' }); } }, b.title)));
   const progress = h('div', { class: 'study-progress', role: 'status' }, h('div', { class: 'bar' }, bar), label);
-  const plan = planBlock(lesson, store, faded, root);
+  const plan = planBlock(lesson, store, faded, root, restore);
   const body = h('article', { class: 'study-body' }, warmUp(lesson, ctx), lesson.blocks.map((b) => renderBlock(b, ctx)));
   return h('div', {}, plan, toc, progress, body, reflectBlock(lesson, store, tally));
 }
@@ -406,7 +477,7 @@ function warmUp(lesson, ctx) {
 
 // Plan (goal setting + confidence before), shown above the lesson. Brings back last
 // visit's if-then plan and weak units, and offers a test-out for people who know the type.
-function planBlock(lesson, store, faded, root) {
+function planBlock(lesson, store, faded, root, restore) {
   const conf = h('div', { class: 'row', role: 'group', 'aria-label': 'Confidence before' }, [1, 2, 3, 4, 5].map((n) => h('button', { class: 'btn small', type: 'button', onclick: (e) => {
     recordReflection(store, lesson.id, { before: n });
     e.currentTarget.parentElement.querySelectorAll('button').forEach((x) => x.setAttribute('aria-pressed', String(x === e.currentTarget)));
@@ -422,6 +493,7 @@ function planBlock(lesson, store, faded, root) {
     weak.length ? h('div', { class: 'callout callout-trap' }, h('div', { class: 'callout-label' }, 'Missed last time: watch these units'), h('ul', { class: 'study-list' }, weak.map((w) => h('li', {}, w)))) : null,
     h('div', { class: 'small-note' }, 'Before you start: how confident are you with this type? (1 = never seen it, 5 = could teach it)'), conf,
     hasTry && !faded ? h('p', { class: 'small-note' }, 'Already solve this type reliably? ', h('button', { class: 'linkish', type: 'button', onclick: toTest }, 'Test out: go straight to the three questions'), '. All three right first time without hints marks it mastered.') : null,
+    restore ? h('div', { class: 'callout callout-edge' }, h('div', { class: 'callout-label' }, 'Scaffolds back on'), h('div', {}, 'Your last review missed something, so every check gates the next step again on this visit.')) : null,
     faded ? h('p', { class: 'small-note muted' }, 'You have mastered this lesson, so the scaffolds are faded: every step is open and no check blocks you. Use the checks as a quick self-test.') : null);
 }
 

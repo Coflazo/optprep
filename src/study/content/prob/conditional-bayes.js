@@ -57,7 +57,12 @@ export default {
   ],
   blocks: [
     sec('recognise'),
-    { type: 'challenge', q: `Before any teaching: ${S.sickPct}% of people have a condition. A test flags ${S.hitPct}% of those who have it and wrongly flags ${S.faPct}% of those who do not. You test positive. What is P(you have it)? Two approaches, then an answer.`, answer: `${S.tp}/${S.pos} ≈ ${dec(S.tp / S.pos, 2)}`, explain: `Out of 1,000 people: ${S.sick} have it and ${S.tp} of them test positive; ${S.healthy} do not and ${S.fp} of them test positive anyway. Of the ${S.pos} positives, ${S.tp} are sick. If you said ${S.hitPct}%, you answered a different question: P(positive | sick).` },
+    { type: 'challenge', q: `Before any teaching: ${S.sickPct}% of people have a condition. A test flags ${S.hitPct}% of those who have it and wrongly flags ${S.faPct}% of those who do not. You test positive. What is P(you have it)? Two approaches, then an answer.`, answer: `${S.tp}/${S.pos} ≈ ${dec(S.tp / S.pos, 2)}`, explain: `Out of 1,000 people: ${S.sick} have it and ${S.tp} of them test positive; ${S.healthy} do not and ${S.fp} of them test positive anyway. Of the ${S.pos} positives, ${S.tp} are sick. If you said ${S.hitPct}%, you answered a different question: P(positive | sick).`,
+      attempts: [
+        { id: 'hitRate', label: 'Answered the hit rate', approach: `Said a positive means a ${S.hitPct}% chance of being sick.`, breaksAt: `${S.hitPct}% is P(positive | sick): its total is the ${S.sick} sick people, not the ${S.pos} positives.` },
+        { id: 'joint', label: 'Multiplied the two rates', approach: `Took ${S.sickPct}% × ${S.hitPct}% = ${dec(S.tp / S.n, 3)}.`, breaksAt: 'That is P(sick and positive), a share of everyone; the question makes the positives the total.' },
+        { id: 'noBase', label: 'Ignored the base rate', approach: `Compared ${S.hitPct}% with ${S.faPct}% as if sick and healthy people were equally common.`, breaksAt: `They are not: ${S.healthy} healthy people produce ${S.fp} false alarms against ${S.tp} true positives.` },
+      ] },
     { type: 'text', text: 'Trigger words: **given that**, **of those who**, **if we know**, "a test is positive", "the first card was a heart". You are told something about the outcome and asked about something else. Written **P(A | B)**, read "A given B".' },
     { type: 'check', scope: 'what P(A | B) means', questions: [
       mc({ q: 'A test flags 90% of sick people. "Of the people who test positive, what fraction are sick?" asks for:', right: 'P(sick | positive)', at: 1,
@@ -111,8 +116,8 @@ export default {
     { type: 'diagram', diagram: 'table', spec: { columns: ['1,000 people', 'test +', 'test −', 'total'], rows: [['sick', String(S.tp), String(S.fn), String(S.sick)], ['healthy', String(S.fp), String(S.tn), String(S.healthy)], ['total', String(S.pos), String(S.fn + S.tn), String(S.n)]] }, caption: `The challenge as whole people. Given a positive, look only at the "test +" column: ${S.tp} of its ${S.pos} people are sick.` },
     { type: 'check', scope: 'reading the 1,000-people table', questions: [
       { type: 'number', q: 'In the table, how many of the 1,000 people test positive?', answer: S.pos, explain: `The "test +" column: ${S.tp} sick + ${S.fp} healthy = ${S.pos}.` },
-      mc({ q: 'Given a positive test, which group of people is the new total?', right: `the ${S.pos} in the "test +" column`, at: 1,
-        wrong: [[`the ${S.sick} sick people`, 'that conditions on being sick, not on the test result'], ['all 1,000 people', 'the negatives are ruled out by the result'], [`the ${S.tp} sick positives`, 'those are the favourable ones, not the total']],
+      mc({ q: 'Given a positive test, which group of people is the new total?', right: `all ${S.pos} who test positive`, at: 1,
+        wrong: [[`the ${S.sick} sick people, positive or not`, 'that conditions on being sick, not on the test result'], ['all 1,000 people in the table', 'the negatives are ruled out by the result'], [`the ${S.tp} sick people who test positive`, 'those are the favourable ones, not the total']],
         explain: 'Given the result, only the positive column remains.' }),
     ] },
     { type: 'diagram', diagram: 'tree', spec: { root: { label: 'person', children: [
@@ -125,15 +130,15 @@ export default {
     sec('derivation'),
     { type: 'text', text: 'The challenge again, one move at a time.' },
     { type: 'steps', steps: [
-      { say: `Start with 1,000 people. ${S.sickPct}% are sick: ${S.sick} sick, ${S.healthy} healthy.`, why: 'Whole people are easier to reason about than percentages of percentages.',
+      { answers: 'noBase', say: `Start with 1,000 people. ${S.sickPct}% are sick: ${S.sick} sick, ${S.healthy} healthy.`, why: 'Whole people are easier to reason about than percentages of percentages.',
         checks: [{ make: (rng) => { const k = rng.pick([20, 25, 40, 50, 100, 200]); return { type: 'number', q: `A condition affects 1 in ${k} people. Out of 1,000 people, how many have it?`, answer: 1000 / k, explain: `1000 / ${k} = ${1000 / k}.` }; } }] },
       { say: `Split each group by the test: ${S.hitPct}% of the ${S.sick} sick test positive (${S.tp}); ${S.faPct}% of the ${S.healthy} healthy test positive (${S.fp}).`, why: 'Each group gets its own rate: the hit rate applies only to the sick, the false-alarm rate only to the healthy.',
         checks: [{ make: (rng) => { const h = rng.pick([900, 950, 960, 980]), fa = rng.pick([5, 10]); return { type: 'number', q: `Of ${h} healthy people, ${fa}% wrongly test positive. How many is that?`, answer: (h * fa) / 100, explain: `${fa}% of ${h} = ${(h * fa) / 100}.` }; } }] },
-      { say: `Keep only the positives: ${S.tp} + ${S.fp} = ${S.pos} people. Given a positive, this group is the new sample space.`, why: 'Conditioning on the result throws away everyone who tested negative.',
+      { answers: 'hitRate', say: `Keep only the positives: ${S.tp} + ${S.fp} = ${S.pos} people. Given a positive, this group is the new sample space.`, why: 'Conditioning on the result throws away everyone who tested negative.',
         checks: [mc({ q: 'After a positive test, who is still in the sample space?', right: 'everyone who tested positive, sick or healthy', at: 2,
-          wrong: [['only the sick', 'the healthy false alarms also tested positive'], ['everyone', 'the negatives are ruled out by the result'], ['the sick, positive or negative', 'that conditions on being sick, not on the test']],
+          wrong: [['only the sick people who tested positive', 'the healthy false alarms also tested positive'], ['everyone, since the test can be wrong', 'the negatives are ruled out by the result'], ['the sick, whether positive or negative', 'that conditions on being sick, not on the test']],
           explain: 'You know the result, not the condition: every positive stays, whatever their health.' })] },
-      { say: `Read off: P(sick | positive) = ${S.tp}/${S.pos} ≈ ${dec(S.tp / S.pos, 2)}.`, why: 'Favourable (sick and positive) over the new total (all positives).',
+      { answers: 'joint', say: `Read off: P(sick | positive) = ${S.tp}/${S.pos} ≈ ${dec(S.tp / S.pos, 2)}.`, why: 'Favourable (sick and positive) over the new total (all positives).',
         checks: [{ make: bayesQ }] },
     ] },
     { type: 'explain', prompt: `The test catches ${S.hitPct}% of sick people, yet a positive means only about ${Math.round((100 * S.tp) / S.pos)}% chance of being sick. Explain why.`, model: `Healthy people vastly outnumber sick ones. A small false-alarm rate applied to ${S.healthy} healthy people produces more positives (${S.fp}) than the ${S.hitPct}% hit rate applied to only ${S.sick} sick people (${S.tp}). Among the positives, the healthy ones dominate.`, points: ['The base rate makes the sick group small', 'False positives come from the large healthy group', 'P(sick | +) compares true positives with all positives, not with the sick'] },

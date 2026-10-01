@@ -25,6 +25,9 @@ const both6 = (a, b) => a === 6 && b === 6;
 const cells = (pred) => pairs.filter(([a, b]) => pred(a, b)).map(([a, b]) => [a - 1, b - 1]);
 const grid = (pred, text) => ({ rows: 6, cols: 6, rowTitle: 'first die', colTitle: 'second die', cellText: F.map((a) => F.map((b) => text(a, b))), highlight: cells(pred), count: n(pred) });
 const A11 = n(has(6)); // outcomes with at least one 6
+const WIN = Q.of(1, 3); // far transfer: each strategy wins a day
+const BOTH_W = WIN.mul(WIN);
+const ANY_W = Q.of(1).sub(Q.of(1).sub(WIN).mul(Q.of(1).sub(WIN)));
 const V = { A: n((a, b) => has(6)(a, b) && !sumGe(10)(a, b)), B: n((a, b) => sumGe(10)(a, b) && !has(6)(a, b)), AB: n((a, b) => has(6)(a, b) && sumGe(10)(a, b)), none: n((a, b) => !has(6)(a, b) && !sumGe(10)(a, b)) };
 
 export default {
@@ -43,7 +46,11 @@ export default {
   ],
   blocks: [
     S('recognise'),
-    { type: 'challenge', q: 'Before any teaching: two dice are thrown and you are told that at least one of them shows a 6. What is the probability that both show a 6? Try two approaches.', answer: `${cond(both6, has(6))}`, explain: `${A11} of the 36 outcomes contain a 6, and only (6,6) has two. If you said 1/6 you reasoned about "the other die", but the information does not say which die is the 6.` },
+    { type: 'challenge', q: 'Before any teaching: two dice are thrown and you are told that at least one of them shows a 6. What is the probability that both show a 6? Try two approaches.', answer: `${cond(both6, has(6))}`, explain: `${A11} of the 36 outcomes contain a 6, and only (6,6) has two. If you said 1/6 you reasoned about "the other die", but the information does not say which die is the 6.`, attempts: [
+      { id: 'twelve', label: 'Twelve cells with a 6', approach: 'Counted 6 cells with the first die a 6 and 6 with the second: 1/12.', breaksAt: `(6,6) is in both lists. There are ${A11} cells with a 6, not 12.` },
+      { id: 'over-36', label: 'Both sixes out of 36', approach: 'Took P(both 6) = 1/36 and stopped there.', breaksAt: `That ignores the information: the ${36 - A11} cells with no 6 are ruled out, so the total is ${A11}.` },
+      { id: 'other-die', label: 'The other die must be a 6', approach: 'One die is a 6, so the other die needs a 6 too: 1/6.', breaksAt: '"At least one" does not say which die. There is no single "other die" to reason about.' },
+    ] },
     { type: 'text', text: 'Two dice are thrown (or a family has two children) and you are **told something** before the question: "given that the sum is 8", "at least one die shows a 6", "the first die is even", "at least one child is a boy". The question asks about another event in that light.' },
     { type: 'list', items: ['"Two dice. Given that at least one shows a 6, probability both do?"', '"Given that the sum is at least 10, probability that at least one die is a 6?"', '"Given that the dice differ, probability the sum is 7?"', '"A family has two children, at least one a girl. Probability both are girls?"'] },
     { type: 'text', text: 'Not this lesson: conditioning on a noisy signal about a hidden cause, such as a test result (bto/bayes-test) or a ball drawn from an unknown box (bto/bayes-boxes). Here the information is a plain fact about the outcome itself.' },
@@ -83,11 +90,11 @@ export default {
         checks: [
           { type: 'number', q: 'Two children, each a boy or girl with 1/2. How many equally likely ordered outcomes (older, younger)?', answer: 4, explain: 'BB, BG, GB, GG.' },
         ] },
-      { say: 'Delete every outcome that contradicts the information. What is left is the new sample space A.', why: 'The information says those outcomes did not happen; nothing else is learned.',
+      { answers: 'twelve', say: 'Delete every outcome that contradicts the information. What is left is the new sample space A.', why: 'The information says those outcomes did not happen; nothing else is learned.',
         checks: [
           { make: (rng) => { const opts = [['the sum is 8', sumIs(8)], ['the dice differ', (a, b) => a !== b], ['the sum is even', (a, b) => (a + b) % 2 === 0], ['at least one die is a 2', has(2)], ['the first die is odd', (a) => a % 2 === 1]]; const [t, f] = rng.pick(opts); return { type: 'number', q: `Two dice. You are told ${t}. How many of the 36 outcomes remain?`, answer: n(f), hints: ['Count ordered pairs that fit.', 'Remember (a,b) and (b,a) are different unless a = b.'], explain: `${n(f)} ordered pairs fit.` }; } },
         ] },
-      { say: 'Count the event inside A and divide: P(B | A) = |A ∩ B| / |A|.', why: 'The surviving outcomes stay equally likely, so favourable over total still works, with the new total.',
+      { answers: 'over-36', say: 'Count the event inside A and divide: P(B | A) = |A ∩ B| / |A|.', why: 'The surviving outcomes stay equally likely, so favourable over total still works, with the new total.',
         checks: [
           { make: (rng) => { const s = rng.int(4, 10); const x = rng.pick(F.filter((v) => s - v >= 1 && s - v <= 6)); const v = cond(has(x), sumIs(s)); return mc(rng, `Two dice. Given the sum is ${s}, P(at least one die shows ${x})?`, v.toString(), [[Q.of(A11, 36).toString(), 'ignored the condition'], [cond(sumIs(s), has(x)).toString(), 'reversed the condition'], [Q.of(1, 6).toString(), 'thought about one die only']], `${n(sumIs(s))} pairs sum to ${s}; ${n((a, b) => sumIs(s)(a, b) && has(x)(a, b))} contain a ${x}: ${v}.`); } },
         ] },
@@ -95,7 +102,7 @@ export default {
         checks: [
           { type: 'choice', q: 'P(A and B) = 5/36 and P(A) = 11/36. P(B | A)?', options: ['5/11', '5/36', '11/36', '55/1296'], answer: 0, traps: { 1: 'forgot to divide by P(A)', 2: 'that is P(A)', 3: 'multiplied instead of dividing' }, explain: '(5/36)/(11/36) = 5/11.' },
         ] },
-      { say: '"At least one" and "this one" are different information. "At least one child is a boy" keeps BB, BG, GB: P(BB) = 1/3. "The older is a boy" keeps BB, BG: P(BB) = 1/2.', why: 'Naming which child (or die) deletes more outcomes. The trap is to treat "at least one" as if it named one.',
+      { answers: 'other-die', say: '"At least one" and "this one" are different information. "At least one child is a boy" keeps BB, BG, GB: P(BB) = 1/3. "The older is a boy" keeps BB, BG: P(BB) = 1/2.', why: 'Naming which child (or die) deletes more outcomes. The trap is to treat "at least one" as if it named one.',
         checks: [
           { type: 'choice', q: 'Two children; you learn at least one is a girl. P(both girls)?', options: ['1/3', '1/2', '1/4', '2/3'], answer: 0, traps: { 1: 'treated "at least one" as naming a particular child', 2: 'ignored the information', 3: 'answered "one of each"' }, explain: 'GG, GB, BG remain; GG is one of three.' },
         ] },
@@ -103,8 +110,16 @@ export default {
     { type: 'explain', prompt: 'In your own words: why is P(both 6 | at least one 6) equal to 1/11 and not 1/6?', model: `"At least one 6" does not say which die shows it, so ${A11} ordered outcomes remain: five with only the first die a 6, five with only the second, and (6,6). Only (6,6) has two sixes. The 1/6 answer pretends we know which die is the 6 and asks about the other one, which would keep only 6 outcomes.`, points: ['list the outcomes consistent with "at least one 6": 11', 'only (6,6) is favourable', '1/6 assumes a named die, a different condition'] },
 
     S('worked'),
-    { type: 'worked', family: 'conditional-dice', section: 'bto', difficulty: 2, seed: 'b', intro: 'A plain dice condition. Try it before opening the solution.' },
+    { type: 'worked', family: 'conditional-dice', section: 'bto', difficulty: 2, seed: 'b', explainAt: [0], intro: 'A plain dice condition. Try it before opening the solution.' },
     { type: 'worked', family: 'conditional-dice', section: 'bto', difficulty: 3, seed: 'f', fade: 1, intro: 'A sum condition and an "at least one" event. The first steps are given; the last one and the answer are yours.' },
+
+    { type: 'thinkaloud', problem: 'Two dice are thrown. Given that the sum is at least 10, what is the probability that at least one die shows a 6?', lines: [
+      { t: 0, say: '"Given that": shrink the 36 cells to those with sum at least 10, then count inside.' },
+      { t: 4, say: `At least one 6 is ${A11} cells of 36, so ${Q.of(A11, 36)}.`, slip: true },
+      { t: 7, say: `Wait, that ignores the information. The new total is the cells with sum at least 10: ${n(sumIs(10))} + ${n(sumIs(11))} + ${n(sumIs(12))} = ${n(sumGe(10))}.` },
+      { t: 11, say: `Inside them, the cells with a 6: (4,6), (6,4), (5,6), (6,5), (6,6). That is ${V.AB} of ${n(sumGe(10))}.` },
+      { t: 15, say: `Check: only (5,5) has no 6, so ${cond(has(6), sumGe(10))} fits. Answer ${cond(has(6), sumGe(10))}, with time to spare.` },
+    ] },
 
     S('predict'),
     { type: 'predict', question: 'Two dice. Is P(sum is 7 | the dice differ) bigger or smaller than P(sum is 7)?', answer: `Bigger: ${cond(sumIs(7), (a, b) => a !== b)} against 1/6.`, explain: 'No sum-7 pair is a double, so deleting the 6 doubles removes only failures.' },
@@ -148,6 +163,19 @@ export default {
     { type: 'check', scope: 'the contrast table and edge cases', questions: [
       { type: 'choice', q: 'Two dice. Given the sum is 7, P(both dice show the same face)?', options: ['0', '1/6', '1/11', '1/36'], answer: 0, traps: { 1: 'ignored the condition', 2: 'reused the "at least one" denominator', 3: 'the unconditional chance of one double' }, explain: 'A sum of 7 is odd, so the faces cannot be equal.' },
     ] },
+
+    { type: 'variation', base: `Two dice; at least one shows a 6. P(both show 6) = ${cond(both6, has(6))}.`, rows: [
+      { change: 'At least one shows a 1; ask whether both show 1', effect: `No change: ${cond((a, b) => a === 1 && b === 1, has(1))}. Any face plays the role of 6.`, same: true },
+      { change: 'You are told the first die shows a 6', effect: `A named die keeps only its row: ${cond(both6, (a) => a === 6)}.` },
+      { change: 'You are told nothing', effect: `No cells are deleted: ${cond(both6, () => true)}.` },
+      { change: 'You are told the sum is at least 11', effect: `Three cells remain, (5,6), (6,5), (6,6): ${cond(both6, sumGe(11))}.` },
+      { change: 'The first die is named, and you ask for sum 12 instead of both 6', effect: `Sum 12 and "both 6" are the same cells, so that change does nothing; only the naming moves the answer: ${cond(sumIs(12), (a) => a === 6)}. Check which change touches the deleted cells.`, fusion: true },
+    ] },
+    { type: 'transfer',
+      near: { make: (rng) => { const k = rng.pick([4, 8, 10]); return mc(rng, `Two fair ${k}-sided dice (faces 1 to ${k}). You are told at least one shows ${k}. P(both show ${k})?`, Q.of(1, 2 * k - 1).toString(), [[Q.of(1, k).toString(), 'reasoned about "the other die"'], [Q.of(1, 2 * k).toString(), `counted ${2 * k} cells with a ${k}, double counting the double`], [Q.of(1, k * k).toString(), 'ignored the information']], `${2 * k - 1} cells contain a ${k}; one of them is the double.`); } },
+      far: { type: 'choice', q: `A trader runs two independent strategies; each has a winning day with probability ${WIN}. You hear that at least one won today. P(both won)?`, options: [BOTH_W.div(ANY_W).toString(), WIN.toString(), BOTH_W.toString(), ANY_W.toString()], answer: 0, traps: { 1: 'reasoned about "the other strategy", or treated WW, WL, LW as equally likely', 2: 'ignored the news', 3: 'computed P(at least one won), the condition itself' }, explain: `P(both | at least one) = P(both)/P(at least one) = ${BOTH_W}/${ANY_W} = ${BOTH_W.div(ANY_W)}.` },
+      principle: { type: 'choice', q: 'Which idea carried over from dice to bigger dice and strategies?', options: ['Delete what the information rules out, then rescale', '"At least one" names one item; ask about the other', 'The information changes nothing: use the plain chance', 'Divide the overlap by the total before the news'], answer: 0, traps: { 1: '"at least one" does not say which item', 2: 'information deletes outcomes, so it changes the total', 3: 'that is P(A and B), not P(B | A)' }, explain: 'P(B | A) = P(A and B)/P(A): keep only what is still possible, then rescale it to total 1.' },
+    },
 
     S('tryit'),
     { type: 'tryit', family: 'conditional-dice', section: 'bto', count: 3 },

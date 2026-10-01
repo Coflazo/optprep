@@ -41,13 +41,14 @@ function spreadsBoard(rng, rich = rng.chance(0.5)) {
 }
 const edgeOf = (x, parts, rich) => (rich ? edgeSell(x, parts) : edgeBuy(x, parts));
 
+// A number, not yes/no: on a hidden board the leg hedge always fails, so a yes/no check could be
+// passed from the lesson's theme alone. Computing the loss cannot.
 function legHedgeQ(rng) {
   const { w, legs, rich, cards } = hiddenBoard(rng);
   const ed = edgeOf(w, legs, rich);
-  return mc({ q: `Board (bid / ask): ${boardText(cards)}. Does ${rich ? 'selling 2A + B and buying two A and one B' : 'buying 2A + B and selling two A and one B'} lock in a profit?`,
-    right: `No: the edge is ${px(ed)}`,
-    wrong: [[`Yes: the edge is ${px(Math.abs(ed))}`, 'dropped the sign: the wide legs make this a loss'], [`Yes: ${rich ? 'the bundle bid is above the legs\' mids' : 'the bundle ask is below the legs\' mids'}`, 'mids are not tradable']],
-    explain: rich ? `Bid ${px(w.bid)} − (2 × ${px(legs[0].ask)} + ${px(legs[1].ask)}) = ${px(ed)}.` : `(2 × ${px(legs[0].bid)} + ${px(legs[1].bid)}) − ask ${px(w.ask)} = ${px(ed)}.` }, rng);
+  return { type: 'number', q: `Board (bid / ask): ${boardText(cards)}. What does ${rich ? 'selling 2A + B and buying two A and one B' : 'buying 2A + B and selling two A and one B'} lock in (negative for a loss)?`, answer: ed,
+    hints: [rich ? 'Bundle bid minus the legs at their asks, with A counted twice.' : 'The legs at their bids, with A counted twice, minus the bundle ask.', rich ? `${px(w.bid)} − (2 × ${px(legs[0].ask)} + ${px(legs[1].ask)}).` : `(2 × ${px(legs[0].bid)} + ${px(legs[1].bid)}) − ${px(w.ask)}.`],
+    explain: `${rich ? `Bid ${px(w.bid)} − (2 × ${px(legs[0].ask)} + ${px(legs[1].ask)})` : `(2 × ${px(legs[0].bid)} + ${px(legs[1].bid)}) − ask ${px(w.ask)}`} = ${px(ed)}: the wide legs make the leg hedge a loss.` };
 }
 
 function bundleHedgeQ(rng) {
@@ -94,7 +95,11 @@ export default {
   ],
   blocks: [
     sec('recognise'),
-    { type: 'challenge', q: `Before any teaching: board (bid / ask) ${boardText([A, B, AB, W])}. Find a flat, profitable set of trades. Two approaches, then the trades and the profit.`, answer: `${cap(tradeText(pkg))}: +${px(outcome(pkg, 2).cash)}.`, explain: `Against its legs 2A + B fails: 2 × ${px(A.ask)} + ${px(B.ask)} = ${px(buyCost(viaLegs))} is above the bid ${px(W.bid)}. But 2A + B = (A + B) + A, and that costs ${px(AB.ask)} + ${px(A.ask)} = ${px(buyCost(viaAB))}. If your first approach was the leg hedge and you stopped, that is the belief this lesson removes.` },
+    { type: 'challenge', q: `Before any teaching: board (bid / ask) ${boardText([A, B, AB, W])}. Find a flat, profitable set of trades. Two approaches, then the trades and the profit.`, answer: `${cap(tradeText(pkg))}: +${px(outcome(pkg, 2).cash)}.`, explain: `Against its legs 2A + B fails: 2 × ${px(A.ask)} + ${px(B.ask)} = ${px(buyCost(viaLegs))} is above the bid ${px(W.bid)}. But 2A + B = (A + B) + A, and that costs ${px(AB.ask)} + ${px(A.ask)} = ${px(buyCost(viaAB))}. If your first approach was the leg hedge and you stopped, that is the belief this lesson removes.`,
+      attempts: [
+        { id: 'stop', label: 'Leg hedge fails, so skip', approach: `Priced 2A + B against two A and one B, found ${px(edgeSell(W, viaLegs))}, and skipped the board.`, breaksAt: `The legs are not the only replica: (A + B) + A costs ${px(buyCost(viaAB))}, below the bid ${px(W.bid)}.` },
+        { id: 'abOnly', label: 'Hedged with A + B alone', approach: 'Sold 2A + B and bought one A + B.', breaksAt: `A + B holds one A and 2A + B holds two: the net row reads ${posText(['A', 'B'], outcome([[W, 'sell'], [AB, 'buy']], 2).net)}.` },
+      ] },
     { type: 'text', text: 'The cue: **single products with wide quotes** (spreads of several points) next to **bundles with tight quotes**, and a card that overlaps another bundle almost completely: 2A + B next to A + B, or A − C next to A − B and B − C. Run the plain check and it fails; the edge is between the bundles.' },
     { type: 'list', items: [`"${boardText([A, B, AB, W])}"`, `"${boardText([As, Bs, Cs, AmB, BmC, AmC])}"`] },
     { type: 'check', scope: 'the leg hedge on a hidden board', questions: [{ make: legHedgeQ }] },
@@ -133,11 +138,11 @@ export default {
     { type: 'steps', steps: [
       { say: 'Run the obvious hedge first: the card against its own legs. On a hidden board it fails, because each leg is wide.', why: 'It is one addition, and on most boards it is the answer, so it always comes first.',
         checks: [{ make: legHedgeQ }] },
-      { say: 'List the other exact replicas: any cards whose contents add up to the card. 2A + B = (A + B) + A = 2 × (A + B) − B.', why: 'A hedge is any set of trades with the same contents; there is usually more than one.',
+      { answers: 'stop', say: 'List the other exact replicas: any cards whose contents add up to the card. 2A + B = (A + B) + A = 2 × (A + B) − B.', why: 'A hedge is any set of trades with the same contents; there is usually more than one.',
         checks: [mc({ q: 'Which of these is also an exact replica of 2A + B?', right: '2 × (A + B) − B', wrong: [['2 × (A + B) − A', 'that is A + 2B'], ['(A + B) + 2A', 'that is 3A + B'], ['(A + B) − B + A', 'that is 2A']], explain: '2A + 2B minus one B leaves 2A + B.' })] },
       { say: 'Price each replica on the traded side. The one crossing the fewest wide spreads is cheapest to buy (or fetches the most when sold).', why: 'Every card costs half its spread against its mid; tight cards cost almost nothing.',
         checks: [{ make: bundleHedgeQ }] },
-      { say: 'Trade the card against its cheapest replica if the edge is positive, then read the net row.', why: 'Card and replica cancel product by product; any replica that pays solves the board.',
+      { answers: 'abOnly', say: 'Trade the card against its cheapest replica if the edge is positive, then read the net row: every product must show 0.', why: 'Card and replica cancel product by product; any replica that pays solves the board.',
         checks: [{ hinge: true, make: packageQ }] },
       { say: 'Spread cards work the same way: A − C = (A − B) + (B − C). Buy (or sell) both spreads against the card.', why: 'B enters once with + and once with −, so it cancels.',
         checks: [mc({ q: 'Which spread trades copy buying one A − C?', right: 'Buy A − B, buy B − C', wrong: [['Buy A − B, sell B − C', 'that is A − 2B + C: the B terms add instead of cancelling'], ['Sell A − B, sell B − C', 'that copies selling A − C'], ['Buy A − B only', 'leaves −B open and C untouched']], explain: '(A − B) + (B − C) = A − C.' })] },
@@ -147,14 +152,16 @@ export default {
     sec('worked'),
     { type: 'text', text: 'An expert solves the challenge board at exam pace first. Watch the order: one glance at the leg hedge, then straight to the replica that uses the tight bundle. The first live board after it is a 2A + B board; the second can be either version, 2A + B or a spread A − C next to A − B and B − C.' },
     { type: 'thinkaloud', problem: `Board (bid / ask): ${boardText([A, B, AB, W])}.`, lines: [
-      { t: 0, say: 'Wide singles, a tight A + B, and 2A + B. Leg hedge first, then the bundle hedge.' },
+      { t: 0, say: 'Wide singles, a tight A + B, and 2A + B. Leg hedge first.' },
       { t: 4, say: `Legs at the asks: 2 × ${px(A.ask)} + ${px(B.ask)} = ${px(buyCost(viaLegs))} against bid ${px(W.bid)}. Fails. Other side fails too: quote sits inside the legs' range.` },
-      { t: 9, say: `2A + B = (A + B) + A. Cost ${px(AB.ask)} + ${px(A.ask)} = ${px(buyCost(viaAB))}.` },
-      { t: 13, say: `${px(W.bid)} beats ${px(buyCost(viaAB))} by ${px(edgeSell(W, viaAB))}. Sell 2A + B, buy A + B, buy A.` },
-      { t: 18, say: `Net: A −2 + 1 + 1 = 0, B −1 + 1 = 0. Cash +${px(outcome(pkg, 2).cash)}. Submit.` },
+      { t: 7, say: 'Both directions fail against the legs: nothing here. Skip the board.', slip: true },
+      { t: 9, say: 'No: wide legs next to a tight bundle is exactly the hidden tell. Try the other replica.' },
+      { t: 11, say: `2A + B = (A + B) + A. Cost ${px(AB.ask)} + ${px(A.ask)} = ${px(buyCost(viaAB))}.` },
+      { t: 15, say: `${px(W.bid)} beats ${px(buyCost(viaAB))} by ${px(edgeSell(W, viaAB))}. Sell 2A + B, buy A + B, buy A.` },
+      { t: 19, say: `Net: A −2 + 1 + 1 = 0, B −1 + 1 = 0. Cash +${px(outcome(pkg, 2).cash)}. Submit.` },
     ] },
     { type: 'check', scope: 'the same method on a fresh board', questions: [{ make: bundleHedgeQ }] },
-    { type: 'worked', section: 'ob', family: 'hidden', difficulty: 4, seed: 'a', intro: '2A + B against A + B and A. Try the leg hedge, see it fail, then find the bundle hedge.' },
+    { type: 'worked', section: 'ob', family: 'hidden', difficulty: 4, seed: 'a', explainAt: [1], intro: '2A + B against A + B and A. Try the leg hedge, see it fail, then find the bundle hedge.' },
     { type: 'worked', section: 'ob', family: 'hidden', difficulty: 5, seed: 'b', fade: 4, intro: 'Either version can appear here. The failed leg hedge is shown; finding the other replica, the decision and the taps are yours.' },
 
     sec('predict'),
@@ -193,14 +200,30 @@ export default {
     { type: 'callout', tone: 'edge', text: 'Edge cases. When both hedges pay, either is a correct submission; the bundle hedge usually earns more. A bundle replica whose edge is exactly 0 does not count. On a spread board, check each spread card against the other two before building anything.' },
     { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: real desks hedge a position with whatever instrument is cheapest to trade, often a liquid index future instead of its many thinly traded parts. The replica is chosen by cost, not by how obvious it is.' },
     { type: 'check', scope: 'choosing between hedges', questions: [
-      mc({ q: `Board: ${boardText([A3, B3, AB3, W3])}. Which submission solves it?`, right: 'Either package: buying 2A + B against the legs or against (A + B) + A', wrong: [['Only the bundle hedge: the leg hedge is wrong', `the leg hedge is flat with cash +${px(edgeBuy(W3, legs3))}, which also counts`], ['Only the leg hedge: bundle hedges are not allowed', 'any cards can form a replica'], ['Neither: the edges are too small', 'any positive cash counts']], explain: `Leg hedge +${px(edgeBuy(W3, legs3))}, bundle hedge +${px(edgeBuy(W3, rep3))}: both flat and positive.` }),
+      mc({ q: `Board: ${boardText([A3, B3, AB3, W3])}. You will buy 2A + B. Which hedge solves the board?`, right: 'Either hedge: the legs or (A + B) + A', wrong: [['Only (A + B) + A: the leg hedge is wrong', `the leg hedge is flat with cash +${px(edgeBuy(W3, legs3))}, which also counts`], ['Only the legs: bundles cannot be a hedge', 'any cards whose contents match can form a replica'], ['Neither: both edges are too small to count', 'any positive cash counts']], explain: `Leg hedge +${px(edgeBuy(W3, legs3))}, bundle hedge +${px(edgeBuy(W3, rep3))}: both flat and positive.` }),
     ] },
     { type: 'variation', base: `Base: ${boardText([A, B, AB, W])}. Sell 2A + B against (A + B) + A: +${px(edgeSell(W, viaAB))}; the leg hedge gives ${px(edgeSell(W, viaLegs))}.`, rows: [
       { change: `A narrows to ${quote(An)}`, effect: `Both hedges now pay: legs ${px(edgeSell(W, [part(An, 2), part(B, 1)]))}, bundle hedge ${px(edgeSell(W, [part(AB, 1), part(An, 1)]))}. Either solves; the bundle hedge still pays more.` },
-      { change: `B widens to ${quote(Bw)}`, effect: `Nothing for the bundle hedge: it never touches B. Profit stays ${px(edgeSell(W, viaAB))}.` },
+      { same: true, change: `B widens to ${quote(Bw)}`, effect: `Nothing for the bundle hedge: it never touches B. Profit stays ${px(edgeSell(W, viaAB))}.` },
       { change: `A + B's ask rises to ${px(ABup.ask)}`, effect: `The bundle replica now costs ${px(buyCost([part(ABup, 1), part(A, 1)]))}: edge ${px(edgeSell(W, [part(ABup, 1), part(A, 1)]))}, no trade.` },
-      { change: `2A + B's ask rises to ${px(Wask.ask)}`, effect: `Nothing: selling 2A + B uses its bid. Profit stays ${px(edgeSell(Wask, viaAB))}.` },
+      { same: true, change: `2A + B's ask rises to ${px(Wask.ask)}`, effect: `Nothing: selling 2A + B uses its bid. Profit stays ${px(edgeSell(Wask, viaAB))}.` },
+      { fusion: true, change: `A + B's ask rises by ${px(0.5)} and A's ask falls by ${px(0.5)}`, effect: `The bundle replica holds one A + B and one A, so the moves cancel: still ${px(edgeSell(W, [part(card('A + B', [1, 1], AB.bid, AB.ask + 0.5), 1), part(card('A', [1, 0], A.bid, A.ask - 0.5), 1)]))}. The leg hedge gains twice the A move, to ${px(edgeSell(W, [part(card('A', [1, 0], A.bid, A.ask - 0.5), 2), part(B, 1)]))}: still no trade.` },
     ] },
+    { type: 'transfer',
+      near: { make: (rng) => { const v1 = hp(rng, 20, 90); let v2; do { v2 = hp(rng, 20, 90); } while (v2 === v1); const wide = rng.pick([1.5, 2]), e = rng.pick([0.5, 1, 1.5]), rich = rng.chance(0.5);
+        const a = card('A', [1, 0], v1 - wide, v1 + wide), b = card('B', [0, 1], v2 - wide, v2 + wide), ab = card('A + B', [1, 1], v1 + v2 - 0.5, v1 + v2 + 0.5);
+        const rep = [part(ab, 1), part(b, 1)], X = mispriced('A + 2B', [1, 2], rep, rich, e, 0.5);
+        return { type: 'number', q: `Board (bid / ask): ${boardText(rng.shuffle([a, b, ab, X]))}. Hedge A + 2B with (A + B) + B. What does the profitable package lock in?`, answer: e,
+          hints: [rich ? 'Buying the replica: A + B at its ask, B at its ask.' : 'Selling the replica: A + B at its bid, B at its bid.', rich ? `Cost ${px(ab.ask)} + ${px(b.ask)} = ${px(buyCost(rep))}; compare with the A + 2B bid.` : `Value ${px(ab.bid)} + ${px(b.bid)} = ${px(sellValue(rep))}; compare with the A + 2B ask.`],
+          explain: rich ? `${px(X.bid)} − ${px(buyCost(rep))} = ${px(e)}.` : `${px(sellValue(rep))} − ${px(X.ask)} = ${px(e)}.` }; } },
+      far: { make: (rng) => { const p1 = rng.int(180, 260), p2 = 2 * p1 - rng.int(30, 70), eur = (c) => (c / 100).toFixed(2), best = 2 * p2 + p1;
+        return { type: 'number', q: `A shop sells rice in 1 kg bags for €${eur(p1)} and 2 kg bags for €${eur(p2)}. You need exactly 5 kg. What is the cheapest way to pay, in euros?`, answer: best / 100, tolerance: 0.005,
+          hints: ['List every mix that makes exactly 5 kg: five 1 kg bags, one 2 kg and three 1 kg, two 2 kg and one 1 kg.', `Their costs: ${eur(5 * p1)}, ${eur(p2 + 3 * p1)}, ${eur(best)}.`],
+          explain: `Two 2 kg bags and one 1 kg bag: 2 × ${eur(p2)} + ${eur(p1)} = €${eur(best)}. The 1 kg bags are the wide legs; the 2 kg bag is the tight bundle.` }; } },
+      principle: mc({ q: 'Which idea carried over from the hidden board to the rice bags?', right: 'Price every exact mix of packs and take the cheapest',
+        wrong: [['Always build the amount from the single 1 kg bags', 'single units are the leg hedge, often the dearest'], ['Buy the largest bag, whatever is left over', 'leftover rice is an open position: the mix must match exactly'], ['A mix counts only if it uses one kind of bag', 'any set with the same contents is an exact replica']],
+        explain: 'Several exact replicas exist; the one that crosses the least cost wins.' }),
+    },
 
     sec('tryit'),
     { type: 'tryit', section: 'ob', family: 'hidden', count: 3 },

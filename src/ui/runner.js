@@ -43,7 +43,7 @@ function paintTimer(el, ms) {
 }
 
 // ---------------------------------------------------------------- feedback modes
-export function runFeedbackSession(root, { sectionId, mode, family, count, store, onDone, items: fixedItems, title, setNumber }) {
+export function runFeedbackSession(root, { sectionId, mode, family, count, store, onDone, items: fixedItems, title, setNumber, diagnose = false, onMiss, noHints = false }) {
   const section = SECTION_MODULES[sectionId];
   const cfg = SECTIONS[sectionId];
   const rng = makeRng(`${sectionId}:${mode}:${Date.now()}`);
@@ -74,7 +74,7 @@ export function runFeedbackSession(root, { sectionId, mode, family, count, store
     const unsureBtn = CALIBRATED.has(sectionId) ? h('button', { class: 'btn', type: 'button', onclick: () => submit({ confidence: 0.6 }) }, 'Submit (unsure)') : null;
     if (unsureBtn) submitBtn.textContent = 'Submit (sure)';
     const skipBtn = item.kind === 'mcq' ? h('button', { class: 'btn', type: 'button', onclick: () => submit({ skip: true }) }, 'Skip') : null;
-    const hints = mode === 'drill' ? null : hintLadder(item, (n) => { current.hints = n; });
+    const hints = mode === 'drill' || noHints ? null : hintLadder(item, (n) => { current.hints = n; });
     const body = itemBody(item, { preview: mode !== 'drill' });
     const t = timerEl();
     // The family name can give the method away (e.g. "cheap bundle: buy it, sell the parts"),
@@ -125,7 +125,12 @@ export function runFeedbackSession(root, { sectionId, mode, family, count, store
     body.view.reveal(result, response);
     current.famLabel.textContent = ` · ${familyTitle(section, item.family)}`;
     const banner = feedbackBanner(item, result, response);
-    mount(current.after, banner, solutionPanel(item, { stepwise: !result.correct }),
+    // Study try-it: after a miss, the learner first locates the break ("correct until here")
+    // and names the error type; only then does the stepwise solution open.
+    const sol = diagnose && !result.correct && item.solution?.steps?.length
+      ? diagnosePanel(item, (d) => onMiss?.({ item, response, ...d }), () => solutionPanel(item, { stepwise: true }))
+      : solutionPanel(item, { stepwise: !result.correct });
+    mount(current.after, banner, sol,
       h('div', { class: 'row', style: { marginTop: '12px' } }, h('button', { class: 'btn primary', type: 'button', onclick: () => { idx++; show(); } }, idx + 1 >= limit ? 'Finish' : 'Next (Enter)'),
         !result.correct && lessonForFamily(sectionId, item.family) ? h('a', { class: 'btn', href: `#/study/lesson/${lessonForFamily(sectionId, item.family)}` }, `Study: ${familyTitle(section, item.family)}`) : null));
     if (item.kind === 'interval') intervalCoach(item, banner.querySelector('.coach-slot'));
@@ -150,11 +155,31 @@ export function runFeedbackSession(root, { sectionId, mode, family, count, store
         weakest && weakest[1].c < weakest[1].n ? h('a', { class: 'btn primary', href: `#/s/${sectionId}/learn/${weakest[0]}` }, `Learn: ${familyTitle(section, weakest[0])}`) : null,
         weakest && weakest[1].c < weakest[1].n && lessonForFamily(sectionId, weakest[0]) ? h('a', { class: 'btn', href: `#/study/lesson/${lessonForFamily(sectionId, weakest[0])}` }, `Study: ${familyTitle(section, weakest[0])}`) : null,
         h('a', { class: 'btn', href: `#/s/${sectionId}` }, 'Back to section'))));
-    onDone?.({ n, correct, clean: log.filter((x) => x.correct && !x.hints).length, family: fixedItems?.[0]?.family });
+    onDone?.({ n, correct, clean: log.filter((x) => x.correct && !x.hints).length, family: fixedItems?.[0]?.family, ms: log.map((x) => Math.round(x.ms)), budgetMs: perItemMs(fixedItems?.[0] || {}) });
   }
 
   show();
   return () => cleanup();
+}
+
+// "Correct until here": list the solution's moves; the learner clicks the first one they would
+// not have written, then names the error type. Slips get a checking habit, not a re-teach.
+const ERROR_TYPES = [['slip', 'Slip: I knew it, made a careless error'], ['idea', 'Missing idea: I did not know this step'], ['method', 'Wrong method: I used a different approach'], ['misread', 'Misread the question']];
+function diagnosePanel(item, record, solution) {
+  const box = h('div', { class: 'panel diagnose' });
+  const steps = item.solution.steps;
+  const open = (stepIndex) => {
+    box.replaceChildren(h('p', {}, stepIndex == null ? 'You would have written every step: the break is in the execution.' : h('span', {}, stepIndex === 0 ? 'The break is at the first step: ' : `Your reasoning was right up to step ${stepIndex}; the break is step ${stepIndex + 1}: `, h('em', {}, steps[stepIndex].say), h('div', { class: 'muted' }, steps[stepIndex].why))),
+      h('p', { class: 'small-note' }, 'What kind of error was it?'),
+      h('div', { class: 'check-options' }, ERROR_TYPES.map(([type, label]) => h('button', { class: 'btn small', type: 'button', onclick: () => {
+        record({ stepIndex, type, belief: stepIndex == null ? 'Execution slip in a method I knew' : steps[stepIndex].say });
+        box.replaceChildren(h('p', { class: 'small-note muted' }, type === 'slip' ? 'Slips need a checking habit, not a re-teach: before submitting, estimate the answer and compare.' : type === 'misread' ? 'Underline the deciding words (at least, exactly, without replacement) before you start.' : 'Here is the full solution; the step you marked is the one to re-learn.'), solution());
+      } }, label))));
+  };
+  box.append(h('p', {}, h('strong', {}, 'Find the break. '), 'Click the first step you would NOT have written:'),
+    h('ol', { class: 'steps' }, steps.map((st, i) => h('li', {}, h('span', { class: 'n' }, String(i + 1)), h('button', { class: 'linkish step-pick', type: 'button', onclick: () => open(i) }, st.say)))),
+    h('button', { class: 'btn small', type: 'button', onclick: () => open(null) }, 'I would have written all of these'));
+  return box;
 }
 
 function drillMs(cfg) {

@@ -22,9 +22,17 @@ const Q = { tl: cnt(([x, y]) => x < XA && y > YB), tr: corner, bl: cnt(([x, y]) 
 const CH = [['(a)', band / N, `${band}/${N}`], ['(b)', corner / N, `${corner}/${N}`], ['(c)', corner / strip, `${corner}/${strip}`]];
 const CHO = [...CH].sort((a, b) => b[1] - a[1]);
 
+// Variation: (c) over the low-x strip; OR instead of AND; mirror x → 10 − x with the strip flipped.
+const leftStrip = N - strip, cLeft = Q.tl / leftStrip, orR = N - Q.bl;
+if (!(corner / band > above / N && above / N > strip / N && above / N < 0.5 && corner / strip > band / N && band / N > corner / N && cLeft < corner / N && orR / N < corner / strip && orR / N > band / N && PTS.every(([x]) => x !== XA))) throw new Error('scatter-regions: prose orders no longer hold');
+
 // Quadrant counts for the reasoning checks: n points, strip s, band b, corner c.
 const quad = (rng) => { const n = rng.int(24, 40), s = rng.int(8, n - 8), b = rng.int(8, n - 8), c = rng.int(Math.max(2, s + b - n + 1), Math.min(s, b) - 1); return { n, s, b, c, a: rng.int(3, 7), v: rng.int(3, 7) }; };
 const sayQ = (q) => `${q.n} points: ${q.s} have x above ${q.a}, ${q.b} have y above ${q.v}, and ${q.c} have both.`;
+// A strip, a conditional on the band, and the corner. w words the story (yS/yP: singular/plural verb).
+const quadRank = (rng, w) => again(() => { const q = quad(rng); return rank(rng, `${w.intro(q)} Rank from most to least likely.`, [[`A random ${w.one} ${w.x(q)}.`, q.s / q.n], [`Among those who ${w.yP(q)}, a random one ${w.x(q)}.`, q.c / q.b], [`A random ${w.one} ${w.x(q)} and ${w.yS(q)}.`, q.c / q.n]], `The corner ${q.c}/${q.n} sits inside the strip ${q.s}/${q.n}. The conditional keeps ${q.c} but divides by the ${q.b} in the band.`, { gap: 0.02 }); });
+const POINT = { intro: sayQ, one: 'point', x: (q) => `has x above ${q.a}`, yS: (q) => `has y above ${q.v}`, yP: (q) => `have y above ${q.v}` };
+const STUDY = { intro: (q) => `A scatter plot of ${q.n} students: hours studied (x) against exam score (y). ${q.s} studied more than ${q.a} hours, ${q.b} scored above ${10 * q.v}, and ${q.c} did both.`, one: 'student', x: (q) => `studied more than ${q.a} hours`, yS: (q) => `scored above ${10 * q.v}`, yP: (q) => `scored above ${10 * q.v}` };
 
 export default {
   id: 'll/scatter-regions',
@@ -42,7 +50,12 @@ export default {
   ],
   blocks: [
     S('recognise'),
-    { type: 'challenge', q: `Before any teaching: ${N} trading days are plotted (x = signal strength, y = next-day return, both 0 to 10). ${strip} points have x above 5, ${band} have y above 6, ${corner} have both. Rank: (a) a random day has y above 6, (b) x above 5 and y above 6, (c) among days with x above 5, a random one has y above 6.`, answer: CHO.map((c) => `${c[0]} ${c[2]}`).join(' > '), explain: `(b) is a corner inside the band of (a), so (a) ≥ (b) with no counting. (c) uses the same ${corner} corner points but picks only from the ${strip} points in the strip x > 5: ${dp(corner / strip, 2)}. With an upward trend, high x comes with high y, so (c) climbs.` },
+    { type: 'challenge', q: `Before any teaching: ${N} trading days are plotted (x = signal strength, y = next-day return, both 0 to 10). ${strip} points have x above 5, ${band} have y above 6, ${corner} have both. Rank: (a) a random day has y above 6, (b) x above 5 and y above 6, (c) among days with x above 5, a random one has y above 6.`, answer: CHO.map((c) => `${c[0]} ${c[2]}`).join(' > '), explain: `(b) is a corner inside the band of (a), so (a) ≥ (b) with no counting. (c) uses the same ${corner} corner points but picks only from the ${strip} points in the strip x > 5: ${dp(corner / strip, 2)}. With an upward trend, high x comes with high y, so (c) climbs.`,
+      attempts: [
+        { id: 'corner', label: 'The trend fills the corner', approach: 'You put (b) above (a) because the upward trend packs points into the top-right corner.', breaksAt: `The corner is part of the band: over the same ${N} points it can never hold more.` },
+        { id: 'allpoints', label: 'Divide (c) by all points', approach: `You scored (c) as ${corner}/${N}, tied with (b).`, breaksAt: `"Among days with x above 5" makes the ${strip} points of the strip the total.` },
+        { id: 'nolink', label: 'x says nothing about y', approach: `You set (c) equal to (a), ${band}/${N}, since picking by x should not change y.`, breaksAt: 'The cloud slopes upward: the high-x strip is where the high-y points are, so (c) lands well above (a).' },
+      ] },
     { type: 'text', text: 'The prompt is a **scatter plot**: each point is one item (a day, a student, a stock) with an x and a y value. One point is picked at random, or from the points meeting a condition. Statements name regions: x above a (a vertical strip), y above b (a horizontal band), both (a corner), or above the dashed line y = x. Gridlines sit at whole numbers and no point sits on one.' },
     { type: 'text', text: 'Not this lesson: a histogram (one variable, bars of counts) or density curves (areas). Here you count dots.' },
     { type: 'check', scope: 'the recognition cues above', questions: [
@@ -82,17 +95,17 @@ export default {
         checks: [mc(null, 'Which region is contained in the strip "x above 5"?', 'x above 5 and y above 6', [['y above 6', 'the band sticks out to the left of x = 5'], ['above the line y = x', 'the half-plane crosses both sides of x = 5'], ['x above 4', 'reversed: that strip contains "x above 5"']], 'The corner keeps only strip points.', { at: 0 })] },
       { say: 'Probability = points in the region / points in scope. "A random point" means scope = all points.', why: 'Each point is one equally likely outcome.',
         checks: [{ make: (rng) => { const b = rng.int(2, 8); const k = cnt(([, y]) => y > b); return { type: 'number', q: `From the plot: P(a random point has y above ${b})? (2 decimals)`, answer: k / N, tolerance: 0.006, hints: [`Count dots above y = ${b}.`, `Divide by ${N}.`], explain: `${k}/${N} = ${dp(k / N, 2)}.` }; } }] },
-      { say: 'Corner ⊂ strip and corner ⊂ band: P(corner) is at most both, with no counting.', why: 'Adding a condition removes points; the scope is the same.',
+      { answers: 'corner', say: 'Corner ⊂ strip and corner ⊂ band: P(corner) is at most both, with no counting.', why: 'Adding a condition removes points; the scope is the same.',
         checks: [{ make: (rng) => again(() => { const q = quad(rng); return rank(rng, `${sayQ(q)} Rank for a random point, most to least likely.`, [[`x above ${q.a}.`, q.s / q.n], [`y above ${q.v}.`, q.b / q.n], [`x above ${q.a} and y above ${q.v}.`, q.c / q.n]], `The corner (${q.c}) is inside both; strip ${q.s} against band ${q.b} is a plain count.`); }) }] },
-      { say: '"Among points with x above a": the strip is the scope. P = corner / strip.', why: 'The pick is made inside the strip, so its count replaces the total.',
+      { answers: 'allpoints', say: '"Among points with x above a": the strip is the scope. P = corner / strip.', why: 'The pick is made inside the strip, so its count replaces the total.',
         checks: [{ make: (rng) => { const q = quad(rng); return { type: 'number', q: `${sayQ(q)} Among points with x above ${q.a}, P(y above ${q.v})? (2 decimals)`, answer: q.c / q.s, tolerance: 0.006, hints: ['Scope: the strip.', 'Corner over strip.'], explain: `${q.c}/${q.s} = ${dp(q.c / q.s, 2)}.` }; } }] },
-      { say: 'Trend check: with an upward trend, points in a high-x strip have high y, so P(y above b | x above a) > P(y above b). A downward trend flips it.', why: 'Conditioning on high x selects the part of the cloud where y is high.',
+      { answers: 'nolink', say: 'Trend check: with an upward trend, points in a high-x strip have high y, so P(y above b | x above a) > P(y above b). A downward trend flips it.', why: 'Conditioning on high x selects the part of the cloud where y is high.',
         checks: [{ hinge: true, make: (rng) => { const up = rng.chance(0.5); return mc(rng, `A scatter plot shows a clear ${up ? 'upward' : 'downward'} trend. Compared with P(y above 6), P(y above 6 | x above 7) is:`, up ? 'larger' : 'smaller', [[up ? 'smaller' : 'larger', 'read the trend backwards: follow the cloud to the right'], ['the same', 'treated x and y as unrelated despite the visible trend'], ['always 1', 'confused "most points" with "all points"']], up ? 'High x comes with high y, so the strip is rich in high-y points.' : 'High x comes with low y, so the strip is poor in high-y points.'); } }] },
     ] },
     { type: 'explain', prompt: 'Explain why "x above 5 and y above 6" can never beat "y above 6", yet "y above 6 among points with x above 5" can.', model: 'The corner is part of the band, so over the same set of points it has fewer points and cannot be more likely. The conditional keeps the corner count but divides by the strip only, not by all points; with an upward trend most strip points are high, so the fraction can exceed the band\'s share of all points.', points: ['Corner ⊂ band over the same scope', 'The conditional divides by the strip', 'An upward trend concentrates high y inside the high-x strip'] },
 
     S('worked'),
-    { type: 'worked', section: 'll', family: 'scatter-regions', difficulty: 2, seed: 'a', intro: 'Strips, bands, corners and the diagonal over all points. Count and order. Try it first.' },
+    { type: 'worked', section: 'll', family: 'scatter-regions', difficulty: 2, seed: 'a', explainAt: [0, 2], intro: 'Strips, bands, corners and the diagonal over all points. Count and order. Try it first.' },
     { type: 'worked', section: 'll', family: 'scatter-regions', difficulty: 3, seed: 'b', fade: 1, intro: 'One statement picks from a strip. The counts are given; the ordering is yours.' },
 
     S('predict'),
@@ -123,6 +136,16 @@ export default {
       { make: (rng) => { const c = [rng.int(2, 9), rng.int(2, 9), rng.int(2, 9), rng.int(2, 9)]; const n = c[0] + c[1] + c[2] + c[3]; return { type: 'number', q: `Quadrant counts: top-left ${c[0]}, top-right ${c[1]}, bottom-left ${c[2]}, bottom-right ${c[3]}. P(a random point is on the right or on top)? (2 decimals)`, answer: (n - c[2]) / n, tolerance: 0.006, hints: ['Only one quadrant is outside "right or top".'], explain: `Everything but bottom-left: ${n - c[2]}/${n} = ${dp((n - c[2]) / n, 2)}.` }; } },
     ] },
 
+    { type: 'thinkaloud', problem: 'The challenge plot. Rank: (a) a random day has x above 5, (b) among days with y above 6, a random one has x above 5, (c) a random day lies above the line y = x.', lines: [
+      { t: 0, say: 'Scatter plot: draw x = 5 and y = 6, read the quadrant counts, then deal with the diagonal.' },
+      { t: 6, say: `(a) the strip x > 5: ${strip} of ${N}.` },
+      { t: 11, say: `(b) picks inside the band y > 6: ${band} points, ${corner} of them in the corner. ${corner}/${band}.` },
+      { t: 17, say: '(c) above y = x: the cloud slopes upward, so most points must sit above the diagonal. Above 1/2.', slip: true },
+      { t: 23, say: `No: the cloud rises slower than y = x, so high-x points fall below it. Dots with y > x: ${above} of ${N}, under 1/2.` },
+      { t: 31, say: `Order (b) > (c) > (a): ${dp(corner / band, 2)}, ${dp(above / N, 2)}, ${dp(strip / N, 2)}. ${LL.exam.perItemSeconds - 31} seconds left.` },
+    ] },
+    { type: 'check', scope: 'the think-aloud routine on fresh quadrant counts', questions: [{ make: (rng) => quadRank(rng, POINT) }] },
+
     S('rule'),
     { type: 'text', text: 'Draw the lines, count four quadrants, then read every statement off those four numbers with its own scope.' },
     { type: 'callout', tone: 'rule', text: 'Scatter plot → region / scope. Four quadrant counts; corner ≤ strip, band; "among x > a" = corner / strip; an upward trend lifts the conditional, a downward one lowers it.' },
@@ -140,6 +163,22 @@ export default {
     { type: 'check', scope: 'the contrast table and edge cases', questions: [
       mc(null, 'Only one point has x above 9, and its y is 8. P(y above 6 | x above 9)?', '1', [['1/30', 'divided by all points instead of the one-point strip'], ['0', 'mixed up the thresholds: 8 is above 6'], ['1/2', 'treated the single point as a coin flip']], 'The strip has one point, and it qualifies.', { at: 0 }),
     ] },
+
+    { type: 'variation', base: `The challenge: (a) y above 6 (${band}/${N}), (b) x above 5 and y above 6 (${corner}/${N}), (c) among x above 5, y above 6 (${corner}/${strip}). Order (c) > (a) > (b).`, rows: [
+      { same: true, change: 'Slide every bottom-left point somewhere else inside the bottom-left quadrant', effect: 'No change. Every statement reads only the four quadrant counts, and none of them moves.' },
+      { change: 'Change (c) to "among days with x below 5"', effect: `The low-x strip holds ${leftStrip} points, only ${Q.tl} of them high: ${Q.tl}/${leftStrip} = ${dp(cLeft, 2)}. Against the trend, the conditional falls to last.` },
+      { change: 'Change (b) from "and" to "or"', effect: `Everything but the bottom-left: ${orR}/${N}. The OR contains the band, so (b) moves above (a) for free; it stays below (c) here.` },
+      { fusion: true, change: 'Mirror the plot left to right (x becomes 10 − x), and ask (c) among x below 5', effect: `The two changes cancel for (c): the new "x below 5" is the old "x above 5", still ${corner}/${strip}. (a) does not move; (b)'s corner becomes the old top-left, ${Q.tl}/${N}.` },
+    ] },
+    { type: 'transfer',
+      near: { make: (rng) => quadRank(rng, STUDY) },
+      far: { make: (rng) => { const up = rng.chance(0.5); return mc(rng, `A stock ${up ? 'tends to move with the market (it rises on most days the market rises)' : 'is a hedge: it tends to fall on days the market rises'}. Compared with P(the stock rises on a random day), P(the stock rises | the market rose that day) is:`, up ? 'larger' : 'smaller', [[up ? 'smaller' : 'larger', 'read the relationship backwards: follow the trend'], ['the same', 'treated the two as unrelated despite the stated relationship'], ['exactly 1', 'confused "most days" with "every day"']], up ? 'Conditioning on the market rising selects the days the stock tends to rise.' : 'Conditioning on the market rising selects the days the stock tends to fall.'); } },
+      principle: mc(null, 'Which idea carried over from the scatter plot to the stock and the market?', 'Conditioning on one variable follows the trend to shift the other', [
+        ['A conditional divides by every day, so it equals the plain rate', 'the condition names a smaller scope: only those days count'],
+        ['A condition always lowers the chance, so the conditional is smaller', 'with an upward trend the conditional rises'],
+        ['Only the corner counts, so the conditional equals the joint chance', 'the corner is the numerator; the strip is the denominator'],
+      ], 'Picking inside the high-x strip (or the market-up days) keeps the part of the cloud the trend points to.'),
+    },
 
     S('tryit'),
     { type: 'tryit', section: 'll', family: 'scatter-regions', count: 3 },

@@ -27,6 +27,7 @@ const W = Q.of(CH.w, CH.T);
 const w = W.toNumber();
 const S34 = Q.of(3, 4);
 const K = 3;
+const TK = Q.of(3, 2); // think-aloud: P(X + Y < 3/2)
 
 export default {
   id: 'bto/uniform-geometry',
@@ -44,7 +45,11 @@ export default {
   ],
   blocks: [
     S('recognise'),
-    { type: 'challenge', q: `Before any teaching: two friends each arrive at a café at a uniformly random time between 12:00 and 13:00, independently. Each waits ${CH.w} minutes for the other, then leaves. What is the probability that they meet? Try two approaches.`, answer: `1 − (${CH.T - CH.w}/${CH.T})² = ${meet(W)} ≈ ${f3(meet(W))}`, explain: `If you answered ${W} you let only one friend wait; if ${Q.of(2).mul(W)} you added both waits without trimming the parts outside the hour. Drawn as a square of arrival times, the "miss" region is two corner triangles, and corners are easy.` },
+    { type: 'challenge', q: `Before any teaching: two friends each arrive at a café at a uniformly random time between 12:00 and 13:00, independently. Each waits ${CH.w} minutes for the other, then leaves. What is the probability that they meet? Try two approaches.`, answer: `1 − (${CH.T - CH.w}/${CH.T})² = ${meet(W)} ≈ ${f3(meet(W))}`, explain: `If you answered ${W} you let only one friend wait; if ${Q.of(2).mul(W)} you added both waits without trimming the parts outside the hour. Drawn as a square of arrival times, the "miss" region is two corner triangles, and corners are easy.`, attempts: [
+      { id: 'one-line', label: 'Both arrivals on one line', approach: `Drew one ${CH.T}-minute timeline, tried to place both arrivals on it, and could not combine them.`, breaksAt: `Two independent times need two axes. The pair is one uniform point in a ${CH.T} × ${CH.T} square, and probability becomes area.` },
+      { id: 'one-waits', label: `Only one friend waits: ${W}`, approach: `Said the second friend must arrive within ${CH.w} minutes after the first: ${CH.w}/${CH.T} = ${W}.`, breaksAt: `Either friend can arrive first. The event is |x − y| ≤ ${CH.w}: a band on both sides of the diagonal.` },
+      { id: 'add-waits', label: `Both waits added: ${Q.of(2).mul(W)}`, approach: `Added the two waits: ${2 * CH.w}/${CH.T} = ${Q.of(2).mul(W)}.`, breaksAt: 'Near the start and end of the hour, part of that band falls outside the square. Measure the band through its two corner triangles instead.' },
+    ] },
     { type: 'text', text: 'Quantities are chosen **uniformly at random** from an interval (arrival times, break points on a stick, numbers in [0, 1], points on a circle) and the question asks for the probability of a condition on them: meeting, forming a triangle, a sum or product below a level.' },
     { type: 'list', items: ['"A stick is broken at two random points: P(the pieces form a triangle)?"', '"X, Y uniform on [0, 1]: P(X + Y < 3/4)?"', '"Three random points on a circle: P(they lie in some semicircle)?"'] },
     { type: 'text', text: 'Not this lesson: **expected** positions of uniform points (bto/expected-extremes), and sums of many uniforms, where the normal curve takes over (bto/clt-estimates).' },
@@ -80,15 +85,15 @@ export default {
 
     S('derivation'),
     { type: 'steps', steps: [
-      { say: 'Name each random quantity and its range, and map them: one uniform to a segment, two independent uniforms to a square.', why: 'Independent uniforms fill the product space evenly, so probability is proportional to length or area.',
+      { say: 'Name each random quantity and its range, and map them: one uniform to a segment, two independent uniforms to a square.', why: 'Independent uniforms fill the product space evenly, so probability is proportional to length or area.', answers: 'one-line',
         checks: [
           { type: 'choice', q: 'Two arrival times uniform on 9:00 to 10:00, independent. The sample space is:', options: ['a 60 × 60 square', 'a 60-minute segment', 'a triangle', 'a circle'], answer: 0, traps: { 1: 'that is one arrival time', 2: 'the triangle appears only if you order the times', 3: 'nothing is circular here' }, explain: 'One axis per arrival time.' },
         ] },
-      { say: 'Write the event as an inequality in x and y, then shade it: |x − y| ≤ w for meeting, x + y < s for a sum, "every piece < 1/2" for a triangle.', why: 'An inequality cuts the square along a straight line, leaving triangles and bands.',
+      { say: 'Write the event as an inequality in x and y, then shade it: |x − y| ≤ w for meeting, x + y < s for a sum, "every piece < 1/2" for a triangle.', why: 'An inequality cuts the square along a straight line, leaving triangles and bands. Meeting needs |x − y| ≤ w: whoever comes first waits.', answers: 'one-waits',
         checks: [
           { make: (rng) => { const s = rng.pick([Q.of(1, 2), Q.of(3, 4), Q.of(2, 3), Q.of(5, 4), Q.of(3, 2)]); const v = sumBelow(s); return mc(rng, `X, Y uniform on [0, 1], independent. P(X + Y < ${s})?`, v.toString(), [[s.div(Q.of(2)).toString(), 'treated X + Y as uniform on [0, 2]'], [s.cmp(one) <= 0 ? s.mul(s).toString() : one.sub(Q.of(2).sub(s).mul(Q.of(2).sub(s))).toString(), 'forgot the 1/2 in the triangle area'], [one.sub(v).toString(), 'answered the complement']], `${s.cmp(one) <= 0 ? `Triangle with legs ${s}: ${s}²/2` : `1 − corner triangle (2 − ${s})²/2`} = ${v}.`); } },
         ] },
-      { say: 'Measure the area, directly or through its complement. For bands the complement is two corner triangles: P(meet) = 1 − (1 − w)² with w the wait as a fraction of the window.', why: 'Two right triangles with legs 1 − w make a (1 − w)² square when put together.',
+      { say: 'Measure the area, directly or through its complement. For bands the complement is two corner triangles: P(meet) = 1 − (1 − w)² with w the wait as a fraction of the window.', why: 'Two right triangles with legs 1 − w make a (1 − w)² square when put together. Measuring the corners avoids the trimmed ends of the band.', answers: 'add-waits',
         checks: [
           { make: (rng) => { const m = rng.pick([6, 12, 15, 20, 30]); return { type: 'number', q: `Window 60 minutes, each waits ${m} minutes. P(meet), as a decimal to 3 places?`, answer: Number(meet(Q.of(m, 60)).toNumber().toFixed(3)), tolerance: 0.0015, hints: [`w = ${m}/60.`, `1 − (${60 - m}/60)².`], explain: `1 − (${60 - m}/60)² = ${meet(Q.of(m, 60))} ≈ ${f3(meet(Q.of(m, 60)))}.` }; } },
         ] },
@@ -108,7 +113,7 @@ export default {
     { type: 'explain', prompt: `In your own words: why does "each waits ${CH.w} minutes" give ${meet(W)} rather than ${W} or ${Q.of(2).mul(W)}?`, model: `Put the two arrival times on the axes of a square. They meet when the times differ by at most ${CH.w} minutes, a band around the diagonal. The band is easier to measure through what is left: two corner triangles with legs of ${CH.T - CH.w} minutes, which together make a ${CH.T - CH.w} × ${CH.T - CH.w} square, ${one.sub(meet(W))} of the hour-square. So they meet with 1 − ${one.sub(meet(W))} = ${meet(W)}. One friend waiting gives only half the band, and adding both waits counts the parts outside the hour.`, points: ['two independent times = a uniform point in a square', 'meeting is a band |x − y| ≤ w', 'the complement is two corner triangles: (1 − w)²'] },
 
     S('worked'),
-    { type: 'worked', family: 'uniform-geometry', section: 'bto', difficulty: 2, seed: 'a', intro: 'One break on a stick. Try it before opening the solution.' },
+    { type: 'worked', family: 'uniform-geometry', section: 'bto', difficulty: 2, seed: 'a', explainAt: [0, 1], intro: 'One break on a stick. Try it before opening the solution.' },
     { type: 'worked', family: 'uniform-geometry', section: 'bto', difficulty: 4, seed: 'a', fade: 1, intro: 'A product of two uniforms. The first steps are given; the last one and the answer are yours.' },
 
     S('predict'),
@@ -127,12 +132,20 @@ export default {
       `Answer ${S34.div(Q.of(2))}.`,
     ], errorStep: 2, explain: `X + Y is not uniform. The region is a triangle with legs ${S34}: area (${S34})²/2 = ${sumBelow(S34)}.` },
     { type: 'check', scope: 'the named traps', questions: [
-      { type: 'choice', q: 'Two uniform breaks of a stick. A candidate answers 1/8 for "forms a triangle". Which belief?', options: ['Treated the three pieces as independent', 'Answered the complement', 'Fixed one semicircle'], answer: 0, explain: '(1/2)³ multiplies dependent events. The answer is 1/4.' },
+      { type: 'choice', q: 'Two uniform breaks of a stick. A candidate answers 1/8 for "forms a triangle". Which belief?', options: ['Treated the three pieces as independent', 'Answered the complement of the true value', 'Used the semicircle rule for three points'], answer: 0, traps: { 1: 'the complement of 1/4 is 3/4, not 1/8', 2: `three points in a semicircle give ${semi(3)}` }, explain: '(1/2)³ multiplies dependent events. The answer is 1/4.' },
     ] },
 
     S('speed'),
     { type: 'callout', tone: 'speed', text: 'Draw first, always: a square with the event shaded takes ten seconds and prevents every trap above. Corners are faster than bands; triangles are half a square.' },
     { type: 'callout', tone: 'speed', text: `Landmarks: meeting with wait w: 1 − (1 − w)² (15 minutes in an hour → ${meet(Q.of(1, 4))}); triangle 1/4; three points in a semicircle 3/4; P(X + Y < 1) = 1/2; E|X − Y| = 1/3. Budget 30 of the ${SECTIONS.bto.exam.perItemSeconds} seconds.` },
+    { type: 'thinkaloud', problem: `X and Y are independent and uniform on [0, 1]. What is the probability that X + Y < ${TK}?`, lines: [
+      { t: 0, say: 'Two independent uniforms and an inequality: draw the unit square, shade the event, measure the area.' },
+      { t: 4, say: `X + Y runs from 0 to 2, so P = (${TK})/2 = ${TK.div(Q.of(2))}...`, slip: true },
+      { t: 8, say: 'No: X + Y is not uniform, it piles up near 1. Back to the square.' },
+      { t: 13, say: `Above the line x + y = ${TK} sits a corner triangle with legs ${Q.of(2).sub(TK)}: area (${Q.of(2).sub(TK)})²/2 = ${one.sub(sumBelow(TK))}.` },
+      { t: 18, say: `So P = 1 − ${one.sub(sumBelow(TK))} = ${sumBelow(TK)}.` },
+      { t: 22, say: `Sanity: ${TK} is past the middle value 1, so the answer must beat 1/2. ${sumBelow(TK)} does. Answer ${sumBelow(TK)}, ${SECTIONS.bto.exam.perItemSeconds - 22} seconds left.` },
+    ] },
     { type: 'check', scope: 'landmarks', questions: [
       { make: (rng) => { const [txt, v] = rng.pick([['a stick broken at two uniform points forms a triangle', Q.of(1, 4)], ['three uniform points on a circle lie in a semicircle', semi(3)], ['X + Y < 1 for independent uniforms X, Y', Q.of(1, 2)], ['two people waiting 15 minutes in an hour meet', meet(Q.of(1, 4))]]); return { type: 'number', q: `Probability that ${txt}? (Decimals are fine.)`, answer: v.toNumber(), tolerance: 0.001, explain: `${v}.` }; } },
     ] },
@@ -153,6 +166,17 @@ export default {
     { type: 'check', scope: 'the contrast table and edge cases', questions: [
       { type: 'choice', q: 'X, Y uniform on [0, 1]. Which is largest?', options: ['P(X + Y < 3/2)', 'P(|X − Y| ≤ 1/4)', 'P(X + Y < 1/2)', 'P(XY < 1/2)'], answer: 0, traps: { 1: `the band is ${meet(Q.of(1, 4))}`, 2: 'a small corner: 1/8', 3: `about ${f3(prod(0.5))}, just below 7/8` }, explain: `1 − (1/2)²/2 = ${sumBelow(Q.of(3, 2))}.` },
     ] },
+    { type: 'variation', base: `Two friends arrive uniformly between 12:00 and 13:00, independently, and each waits ${CH.w} minutes: P(meet) = 1 − (${CH.T - CH.w}/${CH.T})² = ${meet(W)}.`, rows: [
+      { change: 'The window is 15:00 to 16:00 instead', effect: `No change: ${meet(W)}. Only the wait as a fraction of the window, w = ${W}, enters the square.`, same: true },
+      { change: 'Only the first to arrive waits; the other leaves at once if alone', effect: `Still ${meet(W)}: the first to arrive is always the one waiting, so the band is the same. Only "a named friend waits" halves it.`, same: true },
+      { change: 'Friend A waits, friend B never waits', effect: `Only half the band counts (B must come after A): ${meet(W).div(Q.of(2))}.` },
+      { change: 'Each waits 30 minutes', effect: `w = 1/2: 1 − (1/2)² = ${meet(Q.of(1, 2))}.` },
+      { change: `A two-hour window and a ${2 * CH.w}-minute wait`, effect: `No change: ${meet(W)}. Both scale by 2, so w = ${2 * CH.w}/${2 * CH.T} = ${W} is unchanged.`, fusion: true },
+    ] },
+    { type: 'transfer',
+      near: { make: (rng) => { const m = rng.pick([1, 2, 3, 4, 5]); const v = meet(Q.of(m, 10)); return mc(rng, `Two orders arrive at independent uniform times in the same 10-minute window. They are matched if they arrive within ${m} minute${m > 1 ? 's' : ''} of each other. P(matched)?`, v.toString(), [[Q.of(m, 10).toString(), 'let only one order wait'], [Q.of(2 * m, 10).toString(), 'added both sides of the band without trimming the corners'], [Q.of(m * m, 100).toString(), 'squared the waiting fraction'], [one.sub(v).toString(), 'answered the complement']], `w = ${m}/10: 1 − (${10 - m}/10)² = ${v}.`); } },
+      far: { make: (rng) => { const r = rng.pick([0.2, 0.3, 0.4, 0.5]); return { type: 'number', q: `A sensor reading (X, Y) is uniform on the unit square. P(it lies within distance ${r} of the centre (1/2, 1/2)), to 3 decimals?`, answer: Number((Math.PI * r * r).toFixed(3)), tolerance: 0.0015, hints: ['Probability = area of the favourable region inside the square.', `A disc of radius ${r} fits inside the square: area πr².`], explain: `π × ${r}² ≈ ${(Math.PI * r * r).toFixed(3)}.` }; } },
+      principle: { type: 'choice', q: 'Which idea carried over from the café to the orders and to the sensor?', options: ['Map the uniforms to a square; probability is area', 'A sum or difference of uniforms is itself uniform', 'Add up the separate chances of each condition', 'Multiply the pieces\' chances as if independent'], answer: 0, traps: { 1: 'sums and differences pile up in the middle', 2: 'overlapping regions are counted twice', 3: 'the conditions are linked through the same point' }, explain: 'Both new questions are a uniform point in a square: the orders give the same diagonal band, the sensor a disc. Shade the event and measure its area.' } },
 
     S('tryit'),
     { type: 'tryit', family: 'uniform-geometry', section: 'bto', count: 3 },

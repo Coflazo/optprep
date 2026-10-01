@@ -22,6 +22,13 @@ const d3 = (rng, n) => { let k, c, a; do { k = rng.pick([-2, 3]); c = nz(rng, -1
 const pos = (rng, n) => { let p; do p = rng.chance(0.5) ? d2(rng, n) : d3(rng, n); while (p.k < 0); return p; };
 // Positive, strictly growing terms: the only case where "the ratios approach k" is readable.
 const grow = (rng, n) => { let p; do p = pos(rng, n); while (!p.xs.every((v, i) => v > 0 && (i === 0 || v > p.xs[i - 1]))); return p; };
+const TAk = 3, TAc = -4, TA = affine(6, TAk, TAc, 6);
+const E15 = E1.slice(0, 5), NEGC = affine(E1[0], E1k, -E1c, 6), K3 = affine(E1[0], 3, E1c, 6), ST2 = affine(2, E1k, E1c, 6), BOTH = affine(2, 3, E1c, 6);
+// k = 4 is left out of the near transfer: five terms of 4 × previous + c also fit a counting multiplier plus a
+// quadratic leftover (checked with the rule finder in src/sections/nl/solver.js); k = 5 has one reading.
+const pm = (c) => (c < 0 ? `− ${-c}` : `+ ${c}`);
+const r2c = (x) => Math.round(x * 100) / 100;
+const bank = (b, fee, yrs) => { for (let i = 0; i < yrs; i++) b = r2c(1.1 * b - fee); return b; };
 const anyP = (rng, n) => (rng.chance(0.5) ? d2(rng, n) : d3(rng, n));
 
 export default {
@@ -40,7 +47,12 @@ export default {
   ],
   blocks: [
     S('recognise'),
-    { type: 'challenge', q: `Before any teaching: ${seq(CH.slice(0, 5))}, ? What comes next? Try two ways: once with the gaps, once by comparing each term with ${CHk} × the term before it.`, answer: String(CH[5]), explain: `Gaps ${seq(g(CH.slice(0, 5)))} triple, so the next gap is ${g(CH)[4]} and ${CH[4]} + ${g(CH)[4]} = ${CH[5]}. Or: ${CHk} × each term, then ${CHc < 0 ? 'subtract' : 'add'} ${Math.abs(CHc)}: ${CHk} × ${CH[4]} ${sgn(CHc)} = ${CH[5]}. The second way is this lesson, and it is usually faster.` },
+    { type: 'challenge', q: `Before any teaching: ${seq(CH.slice(0, 5))}, ? What comes next? Try two ways: once with the gaps, once by comparing each term with ${CHk} × the term before it.`, answer: String(CH[5]), explain: `Gaps ${seq(g(CH.slice(0, 5)))} triple, so the next gap is ${g(CH)[4]} and ${CH[4]} + ${g(CH)[4]} = ${CH[5]}. Or: ${CHk} × each term, then ${CHc < 0 ? 'subtract' : 'add'} ${Math.abs(CHc)}: ${CHk} × ${CH[4]} ${sgn(CHc)} = ${CH[5]}. The second way is this lesson, and it is usually faster.`,
+      attempts: [
+        { id: 'first-ratio', label: 'Read k from the first pair', approach: `Took ${CH[1]} ÷ ${CH[0]} ≈ ${round2(CH[1] / CH[0])} as the ratio and tried k = ${Math.round(CH[1] / CH[0])}.`, breaksAt: `With small terms the constant swamps the ratio. The largest pair, ${CH[4]} ÷ ${CH[3]} ≈ ${round2(CH[4] / CH[3])}, shows k = ${CHk}.` },
+        { id: 'round-k', label: 'Multiply by the rough ratio', approach: `Saw ratios near ${CHk} and answered ${CH[4]} × ${CHk} = ${CHk * CH[4]}.`, breaksAt: `Roughly ${CHk} is not exactly ${CHk}: every term lands ${Math.abs(CHc)} ${CHc < 0 ? 'below' : 'above'} ${CHk} × the previous one, and that leftover must go back on.` },
+        { id: 'add-first', label: 'Add c before multiplying', approach: `Found c = ${neg(CHc)} but applied it first: ${CHk} × (${CH[4]} ${pm(CHc)}) = ${CHk * (CH[4] + CHc)}.`, breaksAt: `The rule multiplies, then adds. Test the order on a shown step: ${CHk} × (${CH[0]} ${pm(CHc)}) = ${CHk * (CH[0] + CHc)}, not ${CH[1]}.` },
+      ] },
     { type: 'text', text: `Each term is k times the previous term, plus (or minus) the same constant c. The ratios drift towards k without reaching it: in ${seq(CH.slice(0, 5))} they are ${CH.slice(1, 5).map((v, i) => round2(v / CH[i])).join(', ')}, near ${CHk} but never equal. The constant c is what spoils the exact ratio.` },
     { type: 'list', items: [`What number comes next?  ${seq(E1.slice(0, 5))}, ?`, `What number comes next?  ${seq(E2.slice(0, 5))}, ?`, `What number comes next?  ${seq(E3.slice(0, 5))}, ?`] },
     { type: 'text', text: `Not this lesson: exact ratios (${seq(GE)}, plain multiplication) and ratios that count up 2, 3, 4, 5 (${seq(FACT)}, multiplying by the counting numbers). Also not a leftover that changes from step to step, such as ${seq(MX)} (double, then add 1, 2, 3, 4): that is a later lesson.` },
@@ -71,11 +83,11 @@ export default {
     ] },
     S('derivation'),
     { type: 'steps', steps: [
-      { say: 'Divide neighbours roughly. If the ratios hover near a whole number k (2, 3, 4, or −2) without being exact, suspect k × previous + c.', why: 'For large terms, c is small next to k × term, so the ratio creeps towards k. For small terms c matters more, so use the later, larger terms to read k.',
+      { answers: 'first-ratio', say: 'Divide neighbours roughly. If the ratios hover near a whole number k (2, 3, 4, or −2) without being exact, suspect k × previous + c.', why: 'For large terms, c is small next to k × term, so the ratio creeps towards k. For small terms c matters more, so use the later, larger terms to read k.',
         checks: [
           { make: (rng) => { const p = grow(rng, 5); return num(`The ratios of ${seq(p.xs)} approach which whole number?`, p.k, `${neg(p.xs[4])} ÷ ${par(p.xs[3])} ≈ ${round2(p.xs[4] / p.xs[3])}: close to ${p.k}.`, ['Divide the last term by the one before.', 'Round to the nearest whole number.']); } },
         ] },
-      { say: 'Compute k × each term and subtract it from the next term. That difference is the leftover.', why: 'Removing the multiplied part isolates whatever is added on each step.',
+      { answers: 'round-k', say: 'Compute k × each term and subtract it from the next term. That difference is the leftover.', why: 'Removing the multiplied part isolates whatever is added on each step.',
         checks: [
           { make: (rng) => { const p = pos(rng, 5); return num(`${seq(p.xs)}, with k = ${p.k}. What is the first leftover, term 2 − ${p.k} × term 1?`, p.c, `${neg(p.xs[1])} − ${p.k} × ${par(p.xs[0])} = ${neg(p.c)}.`); } },
         ] },
@@ -83,7 +95,7 @@ export default {
         checks: [
           { make: (rng) => { const same = rng.chance(0.5), k = rng.pick([2, 3]); let xs; if (same) xs = affine(rng.int(1, 9), k, nz(rng, -6, 6), 5); else { xs = [rng.int(1, 9)]; while (xs.length < 5) xs.push(k * xs[xs.length - 1] + xs.length); } const lo = left(xs, k); return pick(rng, `${seq(xs)}: with k = ${k}, is the leftover constant?`, same ? 'Yes' : 'No', [[same ? 'No' : 'Yes', same ? `every leftover is ${neg(lo[0])}` : `the leftovers are ${seq(lo)}: they count up`]], `Leftovers: ${seq(lo)}.`); } },
         ] },
-      { say: 'Next = k × last + c. Multiply first, then add.', why: 'The rule multiplies the previous term and then adds c. Adding c first gives k × (last + c), a different number.',
+      { answers: 'add-first', say: 'Next = k × last + c. Multiply first, then add.', why: 'The rule multiplies the previous term and then adds c. Adding c first gives k × (last + c), a different number.',
         checks: [
           { make: (rng) => { const p = pos(rng, 6); return num(nextQ(p.xs.slice(0, 5)), p.xs[5], `k = ${p.k}, c = ${neg(p.c)}: ${p.k} × ${par(p.xs[4])} ${sgn(p.c)} = ${neg(p.xs[5])}.`, ['Ratios near which k? Then the leftover.', 'k × last, then add c.']); } },
         ] },
@@ -96,7 +108,7 @@ export default {
     { type: 'explain', prompt: 'Why do the ratios approach k but never equal it, and why is the leftover test more reliable than the ratio?', model: 'next ÷ previous = k + c ÷ previous. As the terms grow, c ÷ previous shrinks, so the ratio creeps towards k but never reaches it while c is not 0. The leftover next − k × previous removes the multiplied part exactly and gives c itself, so it is either constant or not: no rounding judgement is needed.', points: ['ratio = k + c ÷ previous', 'The ratio only approaches k as the terms grow', 'The leftover is exact: constant c or no rule'] },
 
     S('worked'),
-    { type: 'worked', family: 'affine-recurrence', section: 'nl', difficulty: 2, seed: 'a', intro: 'k is 2 or 3. Find the leftover before opening the solution.' },
+    { type: 'worked', family: 'affine-recurrence', section: 'nl', difficulty: 2, seed: 'a', explainAt: [1], intro: 'k is 2 or 3. Find the leftover before opening the solution.' },
     { type: 'worked', family: 'affine-recurrence', section: 'nl', difficulty: 3, seed: 'b', fade: 1, intro: 'k may be 4 or negative. The reading is given; the last step is yours.' },
 
     S('predict'),
@@ -120,6 +132,16 @@ export default {
 
     S('speed'),
     { type: 'callout', tone: 'speed', text: `Read k from the **last** two terms, where c matters least: ${CH[4]} ÷ ${CH[3]} is about ${CHk}. Then one subtraction gives c: ${CH[4]} − ${CHk} × ${CH[3]} = ${CHc}. Confirm on one earlier pair and answer. Two multiplications, one subtraction.` },
+    { type: 'thinkaloud', problem: nextQ(TA.slice(0, 5)), lines: [
+      { t: 0, say: `Ratios: ${TA[2]} ÷ ${TA[1]} ≈ ${round2(TA[2] / TA[1])}, ${TA[4]} ÷ ${TA[3]} ≈ ${round2(TA[4] / TA[3])}. Near ${TAk}, never exact: multiply, then add.` },
+      { t: 6, say: `Leftover from the last pair: ${TAk} × ${TA[3]} = ${TAk * TA[3]}, and ${TAk * TA[3]} − ${TA[4]} = ${-TAc}, so c = +${-TAc}.`, slip: true },
+      { t: 10, say: `Wait, the leftover is next minus ${TAk} × previous: ${TA[4]} − ${TAk * TA[3]} = ${neg(TAc)}. The term sits below ${TAk} × previous, so c is negative.` },
+      { t: 14, say: `Confirm on an earlier pair: ${TA[2]} − ${TAk} × ${TA[1]} = ${neg(TA[2] - TAk * TA[1])}. Same.` },
+      { t: 18, say: `Next = ${TAk} × ${TA[4]} − ${-TAc} = ${TA[5]}. Answer ${TA[5]}.` },
+    ] },
+    { type: 'check', scope: 'the think-aloud: c = next − k × previous, with its sign', questions: [
+      { make: (rng) => { let p; do p = pos(rng, 5); while (p.c > 0); return num(`${seq(p.xs)} is k × previous + c with k = ${p.k}. What is c?`, p.c, `c = next − ${p.k} × previous: ${neg(p.xs[3])} − ${p.k} × ${par(p.xs[2])} = ${neg(p.c)}. The terms sit below ${p.k} × previous, so c is negative.`, [`Compute ${p.k} × a term, then compare with the term after it.`, 'Next minus k × previous, not the other way round.']); } },
+    ] },
     { type: 'callout', tone: 'speed', text: 'Stuck on k? Use the gaps: they multiply by exactly k (the gap-ratio lesson), and dividing two gaps gives k with no rounding.' },
     { type: 'check', scope: 'k from the last pair, c from one subtraction', questions: [
       { make: (rng) => { const p = pos(rng, 6); return num(`${seq(p.xs.slice(0, 5))}, ? Read k from the last pair, c from one subtraction. What comes next?`, p.xs[5], `${neg(p.xs[4])} ÷ ${par(p.xs[3])} ≈ ${p.k}; c = ${neg(p.xs[4])} − ${p.k} × ${par(p.xs[3])} = ${neg(p.c)}; next ${p.k} × ${par(p.xs[4])} ${sgn(p.c)} = ${neg(p.xs[5])}.`, ['Largest pair gives the cleanest ratio.', 'c = last − k × second last.']); } },
@@ -141,9 +163,27 @@ export default {
     ] },
     { type: 'callout', tone: 'edge', text: 'Edge cases: k = 1 is a constant gap c; c = 0 is plain multiplication; a negative k alternates signs; and if k × a + c = a the sequence never moves (a fixed point), which test writers avoid.' },
     { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: a balance that grows by a fixed percentage and also receives a fixed deposit each period follows k × previous + c. Expected-value recursions in probability, "value = p × value + cost", have the same shape.' },
+    { type: 'variation', base: `${seq(E15)}, ?  × ${E1k}, then ${sgn(E1c)}; next ${E1k} × ${E1[4]} ${pm(E1c)} = ${E1[5]}.`, rows: [
+      { same: true, change: `Drop the first term: ${seq(E15.slice(1))}, ?`, effect: `Still ${E1[5]}. Every remaining step is still × ${E1k}, then ${sgn(E1c)}; the last term has not moved.` },
+      { change: `Flip the constant to ${sgn(-E1c)}: ${seq(NEGC.slice(0, 5))}, ?`, effect: `${neg(NEGC[5])}. Same multiplier, leftover ${sgn(-E1c)} every step: the terms now run below ${E1k} × previous.` },
+      { change: `Multiply by 3 instead of ${E1k}: ${seq(K3.slice(0, 5))}, ?`, effect: `${K3[5]}. The ratios now creep towards 3; the leftover after × 3 is still ${sgn(E1c)}.` },
+      { change: `Start at 2 instead of ${E1[0]}: ${seq(ST2.slice(0, 5))}, ?`, effect: `${ST2[5]}. k and c are untouched: every leftover is still ${sgn(E1c)}. The start only decides where the run begins.` },
+      { fusion: true, change: `Start at 2 and multiply by 3: ${seq(BOTH.slice(0, 5))}, ?`, effect: `${BOTH[5]}. The ratios move to near 3 (from k), the run begins higher (from the start), and the leftover ${sgn(E1c)} is untouched by either.` },
+    ] },
     { type: 'check', scope: 'the edge cases', questions: [
       { make: (rng) => { const c = nz(rng, -9, 9), xs = affine(rng.int(2, 20), 1, c, 6); return num(`${seq(xs.slice(0, 5))}, ? This is k × previous + c with k = 1. What comes next?`, xs[5], `k = 1 means add c every step: ${neg(xs[4])} ${sgn(c)} = ${neg(xs[5])}. A constant gap is the k = 1 case.`); } },
     ] },
+
+    { type: 'transfer',
+      near: { make: (rng) => { let k, c, a, xs; do { k = 5; c = nz(rng, -5, 5); a = rng.int(1, 5); xs = affine(a, k, c, 6); } while (k * a + c === a || xs[1] <= 0); return num(nextQ(xs.slice(0, 5)), xs[5], `Ratios near ${k}; leftover ${neg(xs[2])} − ${k} × ${xs[1]} = ${neg(c)} every step. Next: ${k} × ${xs[4]} ${pm(c)} = ${xs[5]}.`, ['Read k from the largest pair.', 'Leftover = next − k × previous; then k × last + c.']); } },
+      far: { make: (rng) => { const b = rng.pick([1000, 2000, 500]), fee = rng.pick([20, 50, 100]), y = rng.int(2, 3), ans = bank(b, fee, y); return { type: 'number', q: `A savings balance of €${b} earns 10% interest at the end of each year, and then a fixed €${fee} fee is taken. What is the balance after ${y} years?`, answer: ans, tolerance: 0.01, hints: ['Each year: multiply by 1.1, then subtract the fee.', 'Multiply first, then take the fee, once per year.'], explain: `Each year is 1.1 × previous − ${fee}: ${[b, ...Array.from({ length: y }, (_, i) => bank(b, fee, i + 1))].join(' → ')}.` }; } },
+      principle: { type: 'choice', q: 'Which idea carried over from the sequences to the savings balance?', options: [
+        'multiply the last value by k, then add a fixed c',
+        'add the fixed c first, then multiply by k',
+        'multiply by k only; c is too small to matter',
+        'add the same amount to the value every step',
+      ], answer: 0, traps: { 1: 'the fee comes after the interest; test the order on one year and it fails', 2: 'the leftover is the same every step, so leaving it out is wrong by c each time', 3: 'the step grows with the balance; only the leftover after multiplying is fixed' }, explain: 'Interest then fee is k × previous + c with k = 1.1 and c = −fee: the same two moves, in the same order, as the number sequences.' },
+    },
 
     S('tryit'),
     { type: 'tryit', family: 'affine-recurrence', section: 'nl', count: 3 },

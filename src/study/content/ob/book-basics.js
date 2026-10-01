@@ -275,8 +275,8 @@ export default {
     { type: 'check', scope: 'crossed venues', questions: [{ hinge: true, make: crossedQ }] },
     { type: 'text', text: `If venue 2's bid only **equals** venue 1's ask, buying and selling earns exactly 0. Zero is not a profit, so a touching market is not an arbitrage.` },
     { type: 'check', scope: 'touching is not crossed', questions: [
-      { make: (rng) => { const v = hp(rng, 30, 140), h = rng.pick([0.5, 1]); const touch = rng.chance(0.5); const b2 = v + h + (touch ? 0 : rng.pick([0.5, 1])); return mc({ q: `Venue 1: A ${px(v - h)} / ${px(v + h)}. Venue 2: A ${px(b2)} / ${px(b2 + 1)}. Is there an arbitrage?`, right: touch ? 'No: the best bid only equals the best ask' : `Yes: buy on venue 1 at ${px(v + h)}, sell on venue 2 at ${px(b2)}`,
-        wrong: touch ? [[`Yes: buy on venue 1 at ${px(v + h)}, sell on venue 2 at ${px(b2)}`, 'a zero profit is not a profit']] : [['No: the best bid only equals the best ask', `the bid ${px(b2)} is strictly above the ask ${px(v + h)}`]],
+      { make: (rng) => { const v = hp(rng, 30, 140), h = rng.pick([0.5, 1]); const touch = rng.chance(0.5); const b2 = v + h + (touch ? 0 : rng.pick([0.5, 1])); const yes = `Yes: buy on venue 1 at ${px(v + h)}, sell on venue 2 at ${px(b2)}`, no = `No: selling at ${px(b2)} after buying at ${px(v + h)} earns exactly 0`; return mc({ q: `Venue 1: A ${px(v - h)} / ${px(v + h)}. Venue 2: A ${px(b2)} / ${px(b2 + 1)}. Is there an arbitrage?`, right: touch ? no : yes,
+        wrong: touch ? [[yes, 'a zero profit is not a profit']] : [[no, `the bid ${px(b2)} is strictly above the ask ${px(v + h)}`]],
         explain: touch ? `${px(b2)} − ${px(v + h)} = 0: nothing to lock in.` : `${px(b2)} − ${px(v + h)} = ${px(b2 - v - h)} > 0.` }, rng); } },
     ] },
 
@@ -291,9 +291,9 @@ export default {
     sec('flat', 'Why every position must end flat'),
     { type: 'text', text: 'Suppose you sell A + B and stop. Your cash is large, but you owe one A and one B. What that costs you depends on prices you do not control. **Flat** means every product nets to 0: nothing is owed, nothing is held, so the cash cannot change any more. That is what "locked in" means, and it is the only kind of profit a board accepts.' },
     { type: 'check', scope: 'flat and cash > 0', questions: [
-      mc({ q: `Board: A ${quote(A0)}; B ${quote(B0)}; A + B ${quote(AB)}. Which submission solves it?`, right: `Sell A + B, buy A, buy B: flat, cash +${px(flatOpts.good.cash)}`,
-        wrong: [[`Sell A + B only: cash +${px(flatOpts.onlySell.cash)}`, 'large cash, but short one A and one B: nothing is locked in'], [`Sell A + B, buy A: cash +${px(flatOpts.oneLeg.cash)}`, 'still short one B: not flat'], [`Buy A + B, sell A, sell B: flat, cash ${px(flatOpts.wrongWay.cash)}`, 'flat, but the cash is negative: a locked-in loss']],
-        explain: `Only the first is flat with cash above zero: +${px(flatOpts.good.cash)}.` }),
+      mc({ q: `Board: A ${quote(A0)}; B ${quote(B0)}; A + B ${quote(AB)}. Which submission solves it?`, right: 'Sell A + B, buy A, buy B',
+        wrong: [['Sell A + B only', `cash +${px(flatOpts.onlySell.cash)}, but short one A and one B: nothing is locked in`], ['Sell A + B, buy A', `cash +${px(flatOpts.oneLeg.cash)}, but still short one B: not flat`], ['Buy A + B, sell A, sell B', `flat, but the cash is ${px(flatOpts.wrongWay.cash)}: a locked-in loss`]],
+        explain: `Only "sell A + B, buy A, buy B" is flat with cash above zero: +${px(flatOpts.good.cash)}.` }),
     ] },
     { type: 'text', text: 'One more definition, so the solutions make sense. Doing the same profitable trades twice is also flat and profitable, and it solves the board too, but it is one idea repeated. The solution the trainer shows is the most profitable **single package**: a flat set of trades that cannot be split into two smaller flat sets. Extra copies only cost taps and time.' },
     { type: 'check', scope: 'a single package', questions: [
@@ -350,8 +350,8 @@ export default {
       'Each product nets to 0: submit.',
     ], errorStep: 1, explain: `Buying the legs pays their **asks**: ${px(A0.ask)} + ${px(B0.ask)} = ${px(buyCost(legs0))}. The real edge is ${px(ABfair.bid)} − ${px(buyCost(legs0))} = ${px(edgeSell(ABfair, legs0))}, a loss, and the other direction gives ${px(edgeBuy(ABfair, legs0))}. No bundle trade here: this submit would cost ${PENALTY} seconds.` },
     { type: 'check', scope: 'the named traps', questions: [
-      mc({ q: `A candidate says: "A + B's mid is above the legs' mids, so sell A + B and buy the legs." What is wrong?`, right: 'Mids are not tradable: compare the bundle bid with the legs\' ask',
-        wrong: [['Nothing: a higher mid means the bundle is rich', 'a mid gap can vanish once you cross every spread'], ['They should buy the bundle instead', 'the direction is not the issue; the prices are'], ['Bundles cannot be sold', 'every card has a bid you can sell at']], explain: 'Profit is measured at executable prices only.' }),
+      mc({ q: `A candidate says: "A + B's mid is above the legs' mids, so sell A + B and buy the legs." What is wrong?`, right: 'Mids never trade: use the bundle bid and the legs\' ask',
+        wrong: [['Nothing: a higher mid means the bundle is rich', 'a mid gap can vanish once you cross every spread'], ['The direction: a higher mid means buy A + B', 'the direction is not the issue; the prices are'], ['They should compare the bundle ask with the legs\' bid', 'that is the check for buying the bundle; they want to sell it']], explain: 'Profit is measured at executable prices only.' }),
     ] },
 
     sec('speed'),

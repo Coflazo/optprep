@@ -73,7 +73,7 @@ const fam = {
       { say: 'Use a proportional width (about ±8% per side for a multi-segment path).', why: 'Measurement error scales with length, so the interval should too.' },
     ],
     predict: { question: 'You measure 7.5 bars and each bar is 10 m. You trust yourself to ±8%. Interval?', answer: 'About [67, 85]: 75 × e^(±0.1) with a little more room above.' },
-    rule: 'Length = (bars counted) × (bar value); interval = estimate × e^(±1.3 × relative error).',
+    rule: 'Length = (bars counted) × (bar value); interval = estimate × e^(±k × relative error), k ≈ 2 for 5-10% errors.',
     contrast: 'Straight-line distance from start to end is shorter than the path; the question asks for the path.',
     edge: 'Diagonal segments are the trap: a diagonal across a 3 × 4 bar box is 5 bars, not 7.',
   },

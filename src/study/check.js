@@ -17,6 +17,13 @@ export function validateQuestion(x) {
       else {
         if (!(Number.isInteger(x.answer) && x.answer >= 0 && x.answer < x.options.length)) e.push('check: answer index');
         if (new Set(x.options.map(String)).size !== x.options.length) e.push('check: duplicate options');
+        if (Number.isInteger(x.answer) && x.options[x.answer] != null) {
+          // Length cue: the right answer must not stand out as the long, careful one.
+          const len = (o) => String(o).length;
+          const numeric = x.options.every(isPlainNumber);
+          const longest = Math.max(...x.options.filter((_, i) => i !== x.answer).map(len));
+          if (!numeric && len(x.options[x.answer]) >= 15 && len(x.options[x.answer]) > 1.3 * longest) e.push('check: length cue (the right option is much longer than every wrong one)');
+        }
       }
       break;
     case 'number': if (!Number.isFinite(x.answer)) e.push('check: number answer'); break;
@@ -28,6 +35,21 @@ export function validateQuestion(x) {
     default: e.push(`check: unknown type ${x.type}`);
   }
   return e;
+}
+
+// A plain number ("0.25", "-3", "12%", "≈ 4.5" is not) or an integer fraction ("5/12"). Quotes such as
+// "100.5 / 101.5" are not numbers to sort: they are shuffled like any other option.
+const isPlainNumber = (o) => /^[-−]?\d+(\.\d+)?%?$|^[-−]?\d+\/\d+$/.test(String(o).trim());
+
+// Fair choice checks: the correct option's position must carry no information. Numeric
+// options are shown in ascending order (a logical order); others are shuffled, unless the
+// author marks the order as meaningful with `stable: true`. Answer index and trap keys follow.
+export function arrangeChoice(q, rng) {
+  if (q?.type !== 'choice' || q.stable) return q;
+  const idx = q.options.map((_, i) => i);
+  const order = q.options.every(isPlainNumber) ? idx.sort((a, b) => parseNumber(String(q.options[a]).replace('%', '')) - parseNumber(String(q.options[b]).replace('%', ''))) : rng.shuffle(idx);
+  const traps = q.traps ? Object.fromEntries(Object.entries(q.traps).map(([k, v]) => [order.indexOf(Number(k)), v])) : q.traps;
+  return { ...q, options: order.map((i) => q.options[i]), answer: order.indexOf(q.answer), traps };
 }
 
 // Resolve a question spec (data or generator) into concrete data.

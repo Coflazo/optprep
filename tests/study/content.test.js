@@ -31,7 +31,7 @@ for (const book of BOOKS.filter((b) => !b.pending)) {
     for (const L of lessonsOf(book)) {
       for (const b of L.blocks) {
         if (b.type === 'diagram') assert.deepEqual(validateDiagram(b.diagram, val(b.spec)), [], `${L.id} ${b.diagram}`);
-        const qs = b.type === 'check' ? b.questions : b.type === 'steps' ? b.steps.flatMap((s) => s.checks || []) : [];
+        const qs = b.type === 'check' ? b.questions : b.type === 'steps' ? b.steps.flatMap((s) => s.checks || []) : b.type === 'transfer' ? [b.near, b.far, b.principle] : [];
         for (const q of qs) {
           if (typeof q.make === 'function') for (let s = 0; s < 25; s++) assert.deepEqual(validateQuestion(q.make(makeRng(`${L.id}:${s}`))), [], `${L.id} generated check seed ${s}`);
           else assert.deepEqual(validateQuestion(q), [], `${L.id} check: ${q.q}`);
@@ -41,6 +41,10 @@ for (const book of BOOKS.filter((b) => !b.pending)) {
           assert.ok(f, `${L.id}: unknown family ${b.family}`);
           const lv = f.levels?.length ? f.levels : [1];
           for (let s = 0; s < (b.type === 'worked' ? 60 : 40); s++) f.generate(makeRng(`${L.id}:${b.type}:${s}`), { difficulty: b.difficulty ?? lv[s % lv.length] });
+          if (b.type === 'worked' && b.explainAt) {
+            const item = f.generate(makeRng(`study:${L.id}:${b.family}:${b.seed ?? b.difficulty}`), { difficulty: b.difficulty });
+            for (const i of b.explainAt) assert.ok(i < (item.solution?.steps?.length || 0), `${L.id}: explainAt ${i} beyond the ${item.solution?.steps?.length} steps of the worked item`);
+          }
         }
       }
     }

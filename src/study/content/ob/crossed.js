@@ -89,14 +89,18 @@ export default {
   ],
   blocks: [
     sec('recognise'),
-    { type: 'challenge', q: `Before any teaching: A trades on three venues (bid / ask): ${boardLine(C3)}. Which one buy and one sell lock in the most? Try two approaches, then give the trades and the profit.`, answer: `Buy on venue ${venueOf(ca)} at ${px(ca.ask)}, sell on venue ${venueOf(cb)} at ${px(cb.bid)}: +${px(cb.bid - ca.ask)}.`, explain: `Pairing the neighbours venue 1 and venue 2 (buy ${px(C3[0].ask)}, sell ${px(C3[1].bid)}) earns only ${px(near12)}. It still solves the board, but the widest pair uses the lowest ask of all venues, which sits on venue ${venueOf(ca)}.` },
+    { type: 'challenge', q: `Before any teaching: A trades on three venues (bid / ask): ${boardLine(C3)}. Which one buy and one sell lock in the most? Try two approaches, then give the trades and the profit.`, answer: `Buy on venue ${venueOf(ca)} at ${px(ca.ask)}, sell on venue ${venueOf(cb)} at ${px(cb.bid)}: +${px(cb.bid - ca.ask)}.`, explain: `Pairing the neighbours venue 1 and venue 2 (buy ${px(C3[0].ask)}, sell ${px(C3[1].bid)}) earns only ${px(near12)}. It still solves the board, but the widest pair uses the lowest ask of all venues, which sits on venue ${venueOf(ca)}.`,
+      attempts: [
+        { id: 'neighbours', label: 'Pair the neighbouring venues', approach: `Compared venue 1 with venue 2 and traded that pair for ${px(near12)}.`, breaksAt: `It solves the board but leaves money behind: the lowest ask, ${px(ca.ask)}, sits on venue ${venueOf(ca)}, so the best pair earns ${px(cb.bid - ca.ask)}.` },
+        { id: 'sides', label: 'Bought at bids, sold at asks', approach: `Bought on venue 3 at ${px(C3[2].bid)} and sold on venue 2 at ${px(C3[1].ask)}, the widest gap on the board.`, breaksAt: `Buying pays the ask and selling receives the bid, so that ${px(C3[1].ask - C3[2].bid)} gap was never on offer.` },
+      ] },
     { type: 'text', text: 'The cue: **one product appears on two or more lines**, labelled by venue ("A (venue 1)", "A (venue 2)"). Every line holds the same single product, so any buy on one line cancels any sell on another.' },
     { type: 'list', items: [`"A (venue 1) ${quote(PV1)}; A (venue 2) ${quote(PV2)}"`, 'Three venues for A, each with its own bid and ask', 'A and B each on two venues: one product crosses, the other only touches'] },
     { type: 'text', text: 'Not this lesson: a card that holds **several** products (A + B, 2A + B, A − B). Those are priced from their legs in the bundle lessons.' },
     { type: 'check', scope: 'the recognition cues', questions: [
-      mc({ q: 'Which board is a crossed-venue board?', right: 'A (venue 1), A (venue 2), B (venue 1), B (venue 2)',
-        wrong: [['A, B, A + B', 'a bundle board: A + B is priced from its legs'], ['A, B, A − B', 'a spread card: priced from A and B with a sign flip'], ['A, A + B, B + C, C', 'a chain: B has no card of its own']],
-        explain: 'Only the first lists single products on several venues.' }),
+      mc({ q: 'Which board is a crossed-venue board?', right: 'A (venue 1) and A (venue 2)',
+        wrong: [['the cards A, B and A + B', 'a bundle board: A + B is priced from its legs'], ['the cards A, B and A − B', 'a spread card: priced from A and B with a sign flip'], ['the cards A, A + B, B + C and C', 'a chain: B has no card of its own']],
+        explain: 'Only "A (venue 1) and A (venue 2)" lists one single product on several venues.' }),
     ] },
 
     sec('why'),
@@ -127,9 +131,9 @@ export default {
     { type: 'steps', steps: [
       { say: 'Group the cards by product. Only cards of the same product can cancel each other.', why: 'Buying A on one venue and selling B on another leaves you long A and short B: not flat.',
         checks: [mc({ q: 'You buy A on venue 1 and sell B on venue 2. What is your position?', right: 'A +1, B −1', wrong: [['Flat', 'different products never cancel'], ['A −1, B +1', 'a buy adds, a sale removes'], ['A 0, B 0 with cash locked in', 'nothing is locked in while A and B are open']], explain: 'Each product keeps its own count.' })] },
-      { say: 'For that product, find the highest bid on any venue. That is the best price you can sell at.', why: 'Any other bid pays you less for the same unit.',
+      { answers: 'sides', say: 'For that product, find the highest bid on any venue. That is the best price you can sell at.', why: 'Any other bid pays you less for the same unit, and a sale can only ever happen at a bid.',
         checks: [{ make: (rng) => { const { cs, b } = venueBoard(rng, 3); return { type: 'number', q: `A (bid / ask): ${boardLine(cs)}. Highest bid?`, answer: b.bid, explain: `Venue ${venueOf(b)}: ${px(b.bid)}.` }; } }] },
-      { say: 'Find the lowest ask on any venue. That is the cheapest place to buy.', why: 'Any other ask costs you more for the same unit.',
+      { answers: 'neighbours', say: 'Find the lowest ask on any venue, scanning every line. That is the cheapest place to buy.', why: 'Any other ask costs you more for the same unit, wherever it is listed.',
         checks: [{ make: (rng) => { const { cs, a } = venueBoard(rng, 3); return { type: 'number', q: `A (bid / ask): ${boardLine(cs)}. Lowest ask?`, answer: a.ask, explain: `Venue ${venueOf(a)}: ${px(a.ask)}.` }; } }] },
       { say: 'If the best bid is above the best ask, buy one at the best ask and sell one at the best bid. The profit is best bid − best ask.', why: 'One buy and one sell of the same product is flat, so the price gap is locked-in cash. No other pair can beat the extremes.',
         checks: [{ hinge: true, make: hingeQ }] },
@@ -141,12 +145,13 @@ export default {
     { type: 'thinkaloud', problem: `A on three venues (bid / ask): ${boardLine(C3)}.`, lines: [
       { t: 0, say: 'Three lines, all A, different venues: a crossed-venue board. Two numbers to find.' },
       { t: 3, say: `Bid column: ${C3.map((c) => px(c.bid)).join(', ')}. Highest ${px(cb.bid)}, venue ${venueOf(cb)}.` },
-      { t: 6, say: `Ask column: ${C3.map((c) => px(c.ask)).join(', ')}. Lowest ${px(ca.ask)}, venue ${venueOf(ca)}.` },
-      { t: 9, say: `${px(cb.bid)} is above ${px(ca.ask)}: crossed by ${px(cb.bid - ca.ask)}. The venues are not neighbours; that does not matter.` },
-      { t: 12, say: `Buy on venue ${venueOf(ca)} at ${px(ca.ask)}, sell on venue ${venueOf(cb)} at ${px(cb.bid)}. One buy, one sell of A: net 0. Submit.` },
+      { t: 5, say: `Venue 1 sits right next to it and asks ${px(C3[0].ask)}: that is ${px(near12)} of profit. Take it.`, slip: true },
+      { t: 7, say: `Wait, I skipped the rest of the ask column: ${C3.map((c) => px(c.ask)).join(', ')}. Lowest ${px(ca.ask)}, venue ${venueOf(ca)}.` },
+      { t: 10, say: `${px(cb.bid)} is above ${px(ca.ask)}: crossed by ${px(cb.bid - ca.ask)}. The venues are not neighbours; that does not matter.` },
+      { t: 13, say: `Buy on venue ${venueOf(ca)} at ${px(ca.ask)}, sell on venue ${venueOf(cb)} at ${px(cb.bid)}. One buy, one sell of A: net 0. Submit.` },
     ] },
     { type: 'check', scope: 'the same scan on a fresh board', questions: [{ make: bestProfitQ }] },
-    { type: 'worked', section: 'ob', family: 'crossed', difficulty: 1, seed: 'a', intro: 'One product, two venues. Find the cross, tap the two prices, check the net, then open the solution.' },
+    { type: 'worked', section: 'ob', family: 'crossed', difficulty: 1, seed: 'a', explainAt: [1], intro: 'One product, two venues. Find the cross, tap the two prices, check the net, then open the solution.' },
     { type: 'worked', section: 'ob', family: 'crossed', difficulty: 2, seed: 'b', fade: 2, intro: 'Two products, two venues each. The scan is given; the trades and the final check are yours.' },
 
     sec('predict'),
@@ -196,11 +201,24 @@ export default {
     ] },
 
     { type: 'variation', base: `Base: venue 1 A ${quote(PV1)}, venue 2 A ${quote(PV2)}. Buy on venue 1, sell on venue 2: +${px(PV2.bid - PV1.ask)}.`, rows: [
-      { change: `Venue 1's bid drops by ${px(vDrop)}`, effect: `Nothing: you buy on venue 1, so only its ask counts. Profit stays ${px(PV2.bid - PV1.ask)}.` },
+      { same: true, change: `Venue 1's bid drops by ${px(vDrop)}`, effect: `Nothing: you buy on venue 1, so only its ask counts. Profit stays ${px(PV2.bid - PV1.ask)}.` },
       { change: `Venue 2's bid drops by ${px(PV2.bid - PV1.ask)}`, effect: `It now equals venue 1's ask: profit 0, no trade.` },
       { change: `A third venue quotes A ${quote(PV3)}`, effect: `New lowest ask ${px(PV3.ask)}: buy there instead. Profit ${px(PV2.bid - PV3.ask)}.` },
       { change: `Every venue 2 price rises by ${px(shift)}`, effect: `The bid you sell at rises: profit ${px(PV2.bid + shift - PV1.ask)}.` },
+      { fusion: true, change: `Venue 2's bid rises by ${px(shift)} and venue 1's ask rises by ${px(widen)}`, effect: `Both prices you trade at move, in opposite directions for you: +${px(shift)} on the sale, −${px(widen)} on the purchase. Profit ${px(PV2.bid + shift - PV1.ask - widen)}.` },
     ] },
+    { type: 'transfer',
+      near: { make: (rng) => { const { cs, b, a, profit } = venueBoard(rng, 4, 'C'); return { type: 'number', q: `C on four venues (bid / ask): ${boardLine(cs)}. What is the most one buy and one sell of C can lock in?`, answer: profit,
+        hints: ['Highest bid anywhere, lowest ask anywhere.', `Highest bid ${px(b.bid)}, lowest ask ${px(a.ask)}.`], explain: `Best bid ${px(b.bid)} (venue ${venueOf(b)}) − best ask ${px(a.ask)} (venue ${venueOf(a)}) = ${px(profit)}.` }; } },
+      far: { make: (rng) => { const a1 = rng.int(108, 116), b1 = a1 - rng.int(3, 5), b2 = a1 + rng.int(1, 3), a2 = b2 + rng.int(3, 5), n = rng.pick([500, 1000, 2000]), swap = rng.chance(0.5); const usd = (c) => (c / 100).toFixed(2);
+        const X = swap ? [b2, a2] : [b1, a1], Y = swap ? [b1, a1] : [b2, a2], gain = (n * (b2 - a1)) / 100;
+        return { type: 'number', q: `At an airport, booth 1 buys euros for $${usd(X[0])} and sells them for $${usd(X[1])}; booth 2 buys euros for $${usd(Y[0])} and sells them for $${usd(Y[1])}. Starting and ending with no euros, what is the most you can lock in on ${n} euros, in dollars?`, answer: gain,
+          hints: ['A booth\'s buying price is its bid (where you sell euros); its selling price is its ask (where you buy them).', `Buy at the lowest selling price, $${usd(a1)}, sell at the highest buying price, $${usd(b2)}.`],
+          explain: `Buy ${n} euros at $${usd(a1)} and sell them at $${usd(b2)}: ${n} × $${usd(b2 - a1)} = $${gain}. The booths are two venues for one product.` }; } },
+      principle: mc({ q: 'Which idea carried over from the venues to the currency booths?', right: 'One place\'s bid above another place\'s ask for the same thing',
+        wrong: [['Sell where the average of the two prices is highest', 'averages (mids) are never traded: only a bid above an ask pays'], ['Buy and sell at the booth with the narrowest spread', 'one book never crosses: a round trip there pays its spread'], ['Any two places quoting different prices', 'different prices are normal; the gap must put one bid above the other ask']],
+        explain: 'Both are one product on two books: buy at the lowest ask, sell at the highest bid, and only if that bid is higher.' }),
+    },
 
     sec('tryit'),
     { type: 'tryit', section: 'ob', family: 'crossed', count: 3 },

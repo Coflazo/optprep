@@ -22,6 +22,13 @@ const CHO = [['(a) above 4.5', CH.a], ['(b) between 3 and 3.5', CH.b], ['(c) bel
 const ONE = nArea(0, 1, -1, 1), TWO = nArea(0, 1, -2, 2);
 const TRI = [0, 2, 6];
 
+// Think-aloud: desk A bell (mean 2, sd 2), desk B uniform on −4 to 6.
+const TK = { m: 2, s: 2, lo: -4, hi: 6, cut: 4 };
+TK.a = nArea(TK.m, TK.s, TK.m + TK.s, 50); TK.b = uni(TK.lo, TK.hi, TK.cut, TK.hi); TK.c = nArea(TK.m, TK.s, TK.m - TK.s, TK.m);
+// Variation: sd doubled; (b) narrowed; sd halved with (c) moved to 2.5.
+const V2 = { a: nArea(M, 2, 4.5, 50), b: nArea(M, 2, 3, 3.5), c: nArea(M, 2, -50, 2) }, VB = nArea(M, SD, 3, 3.25), VH = { a: nArea(M, 0.5, 4.5, 50), b: nArea(M, 0.5, 3, 3.5), c: nArea(M, 0.5, -50, 2.5) };
+if (!(TK.c > TK.b && TK.b > TK.a && V2.c > V2.a && V2.a > V2.b && CH.c > VB && VB > CH.a && VH.b > VH.c && VH.c > VH.a && Math.abs(VH.c - CH.c) < 1e-9)) throw new Error('density-curves: prose orders no longer hold');
+
 // Landmark statements about a bell with mean m and sd s.
 const LAND = (m, s) => [
   [`X is above ${m}.`, 0.5],
@@ -31,6 +38,9 @@ const LAND = (m, s) => [
   [`X is between ${m} and ${m + 2 * s}.`, TWO / 2],
   [`X is between ${m - 2 * s} and ${m + 2 * s}.`, TWO],
 ];
+// Two landmark statements about desk A (a bell) and one exact statement about desk B (flat).
+const twoDesks = (rng) => again(() => { const m = rng.int(1, 5), s = rng.pick([1, 2]), lo = m - rng.int(4, 8), w = rng.int(8, 14), cut = lo + rng.int(1, w - 1); const pool = rng.shuffle(LAND(m, s)).slice(0, 2).map(([t, p]) => [`Desk A: ${t.replace('X', 'its P&L')}`, p]);
+  return rank(rng, `Desk A's daily P&L is bell-shaped with mean ${m} and sd ${s}. Desk B's is uniform between ${lo} and ${lo + w}. Rank from most to least likely.`, [...pool, [`Desk B: its P&L is above ${cut}.`, uni(lo, lo + w, cut, lo + w)]], `Desk A by landmarks; desk B exactly: (${lo + w} − ${cut})/${w} = ${dp(uni(lo, lo + w, cut, lo + w), 2)}.`, { gap: 0.03 }); });
 
 export default {
   id: 'll/density-curves',
@@ -48,7 +58,12 @@ export default {
   ],
   blocks: [
     S('recognise'),
-    { type: 'challenge', q: `Before any teaching: X has a bell-shaped density centred at ${M} with standard deviation ${SD}. Rank: (a) X is above 4.5, (b) X is between 3 and 3.5, (c) X is below 2. Two approaches, then an order.`, answer: CHO.map(([t, p]) => `${t} ≈ ${dp(p, 3)}`).join(' > '), explain: 'The narrow band (b) sits at the peak, where the curve is tallest: half a unit of width at full height. (c) is the whole tail beyond 1 sd, about 16%. (a) is the tail beyond 1.5 sd. If you ranked the tails first because they are "wider", you compared widths without heights.' },
+    { type: 'challenge', q: `Before any teaching: X has a bell-shaped density centred at ${M} with standard deviation ${SD}. Rank: (a) X is above 4.5, (b) X is between 3 and 3.5, (c) X is below 2. Two approaches, then an order.`, answer: CHO.map(([t, p]) => `${t} ≈ ${dp(p, 3)}`).join(' > '), explain: 'The narrow band (b) sits at the peak, where the curve is tallest: half a unit of width at full height. (c) is the whole tail beyond 1 sd, about 16%. (a) is the tail beyond 1.5 sd. If you ranked the tails first because they are "wider", you compared widths without heights.',
+      attempts: [
+        { id: 'height', label: 'Read the curve height', approach: 'You ranked each statement by how tall the curve is over its interval.', breaksAt: 'Height is density, not probability: each statement is the area over its interval, on its side of the cut.' },
+        { id: 'bothtails', label: 'Use 32% for one tail', approach: 'You put (c) at about 0.32, the share outside one sd.', breaksAt: '0.32 is both tails together; one side beyond 1 sd holds about 0.16.' },
+        { id: 'wide', label: 'The wider interval wins', approach: 'You put both tails above (b) because they stretch out forever.', breaksAt: 'Area is width × height: half a unit at the peak beats a long, thin tail.' },
+      ] },
     { type: 'text', text: 'The prompt shows one or more smooth **density curves**: the P&L of a desk, a measurement X. Statements ask whether the quantity is above a, below a, or between a and b, possibly for different curves. The curves have shapes you can reason with: bells (normal), flat blocks (uniform), triangles, and right-skewed humps.' },
     { type: 'text', text: 'Not this lesson: a histogram with counts on the bars (add counts) or a fund chart (count years). Here there are no counts; the area is the probability.' },
     { type: 'check', scope: 'the recognition cues above', questions: [
@@ -84,19 +99,19 @@ export default {
     S('derivation'),
     { type: 'text', text: 'Four moves from "area" to a ranking. The first three give exact or landmark areas; the last one compares areas you have not computed. In an item you rarely need all four: pick the one that matches each curve\'s shape.' },
     { type: 'steps', steps: [
-      { say: 'Identify the curve, the interval and the side: "above a" is the area right of a, "below a" left of a, "between" the band.', why: 'Every statement is one area; getting the side wrong gives the complement.',
+      { answers: 'height', say: 'Identify the curve, the interval and the side: "above a" is the area right of a, "below a" left of a, "between" the band.', why: 'Every statement is one area; getting the side wrong gives the complement.',
         checks: [{ make: (rng) => { const m = rng.int(2, 6); return mc(rng, `X is bell-shaped with mean ${m}. Which statement is the complement of "X is above ${m + 1}"?`, `X is below ${m + 1}`, [[`X is below ${m - 1}`, 'mirrored the point across the mean: that is the matching tail, equal in size, not the complement'], [`X is above ${m - 1}`, 'shifted the cut instead of switching sides']], 'Same cut, other side: the two areas add to 1.'); } }] },
       { say: 'Flat curve: height = 1/width of the support, so P(interval) = overlap width / support width.', why: 'A rectangle of area 1 over width w must have height 1/w.',
         checks: [{ make: (rng) => { const w = rng.int(3, 8); return { type: 'number', q: `A uniform density runs over an interval of width ${w}. What is its height? (3 decimals)`, answer: 1 / w, tolerance: 0.0015, explain: `1/${w} = ${dp(1 / w, 3)}.` }; } }] },
-      { say: 'Bell curve: symmetric about the mean, about 68% within 1 sd, 95% within 2 sd. One tail beyond 1 sd ≈ 16%, beyond 2 sd ≈ 2.5%.', why: 'The two tails outside a symmetric band are equal, so each gets half of what the band leaves.',
+      { answers: 'bothtails', say: 'Bell curve: symmetric about the mean, about 68% within 1 sd, 95% within 2 sd. One tail beyond 1 sd ≈ 16%, beyond 2 sd ≈ 2.5%.', why: 'The two tails outside a symmetric band are equal, so each gets half of what the band leaves.',
         checks: [{ make: (rng) => { const m = rng.int(1, 6), s = rng.pick([1, 2]); return mc(rng, `X is bell-shaped, mean ${m}, sd ${s}. P(X > ${m + s}) is closest to:`, '0.16', [['0.32', 'took both tails beyond 1 sd, not one'], ['0.34', 'took the band between the mean and 1 sd'], ['0.05', 'used the 2-sd tail for a 1-sd cut']], `(1 − 0.68)/2 = 0.16.`); } }] },
-      { say: 'Rank areas you did not compute by width × typical height: a narrow band at the peak can beat a wide stretch of tail.', why: 'Area is roughly width times the height over the interval; the peak is where height is largest.',
+      { answers: 'wide', say: 'Rank areas you did not compute by width × typical height: a narrow band at the peak can beat a wide stretch of tail.', why: 'Area is roughly width times the height over the interval; the peak is where height is largest.',
         checks: [{ make: (rng) => again(() => { const m = rng.int(1, 5), s = rng.pick([0.5, 1, 2]); const pool = rng.shuffle(LAND(m, s)).slice(0, 3); return rank(rng, `X is bell-shaped, mean ${m}, sd ${s}. Rank from most to least likely.`, pool, 'Symmetry and the 68-95 landmarks place each one.', { gap: 0.05 }); }) }] },
     ] },
     { type: 'explain', prompt: 'Explain why "X between 3 and 3.5" can beat "X below 2" for a bell curve centred at 3 with sd 1, although the second interval is much wider.', model: 'Probability is area, and area is width times height. The interval from 3 to 3.5 is only half a unit wide but sits under the tallest part of the curve. Below 2 is infinitely wide, but the curve there is low and falls away fast, so its area is only the one-sided tail beyond 1 sd, about 0.16, against about 0.19 for the band at the peak.', points: ['Probability is area, not width', 'Area ≈ width × height over the interval', 'The peak is tall; the tail is thin'] },
 
     S('worked'),
-    { type: 'worked', section: 'll', family: 'density-curves', difficulty: 2, seed: 'a', intro: 'One curve, three intervals. Estimate each area. Try it before opening the solution.' },
+    { type: 'worked', section: 'll', family: 'density-curves', difficulty: 2, seed: 'a', explainAt: [0, 3], intro: 'One curve, three intervals. Estimate each area. Try it before opening the solution.' },
     { type: 'worked', section: 'll', family: 'density-curves', difficulty: 3, seed: 'b', fade: 1, intro: 'Two curves. The areas are worked out for you; the ordering is yours.' },
 
     S('predict'),
@@ -127,6 +142,16 @@ export default {
       { make: (rng) => { const m = rng.int(0, 5), s = rng.pick([1, 2, 3]); return { type: 'number', q: `X is bell-shaped, mean ${m}, sd ${s}. P(${m} < X < ${m + s})? (2 decimals)`, answer: ONE / 2, tolerance: 0.02, hints: ['Half of the 68% band.'], explain: `0.68 / 2 ≈ ${dp(ONE / 2, 2)}.` }; } },
     ] },
 
+    { type: 'thinkaloud', problem: `Desk A's daily P&L is bell-shaped with mean ${TK.m} and sd ${TK.s}; desk B's is uniform between ${TK.lo} and ${TK.hi}. Rank: (a) A's P&L is above ${TK.m + TK.s}, (b) B's P&L is above ${TK.cut}, (c) A's P&L is between ${TK.m - TK.s} and ${TK.m}.`, lines: [
+      { t: 0, say: 'Two curves, three areas. Each statement gets one number: a landmark or an exact rectangle.' },
+      { t: 6, say: `(c) runs from 1 sd below A's mean to the mean: half of 0.68, about ${dp(TK.c, 2)}.` },
+      { t: 12, say: `(a) is one tail of A beyond 1 sd: about ${dp(TK.a, 2)}.` },
+      { t: 17, say: '(b): B is flat and spread wide, so its curve is low everywhere. Its area must be below A\'s tail.', slip: true },
+      { t: 23, say: `Low is not small. Height 1/${TK.hi - TK.lo}, width ${TK.hi - TK.cut}: exactly ${dp(TK.b, 2)}, which beats ${dp(TK.a, 2)}.` },
+      { t: 29, say: `Order (c) > (b) > (a), with ${LL.exam.perItemSeconds - 29} seconds left.` },
+    ] },
+    { type: 'check', scope: 'the think-aloud routine with fresh desks', questions: [{ make: twoDesks }] },
+
     S('rule'),
     { type: 'callout', tone: 'rule', text: 'Density → probability = area. Flat: width/support. Triangle: ½ base × height, corners scale with the square. Bell: 0.5 / 0.68 / 0.16 / 0.025. Compare the rest by width × height.' },
 
@@ -142,6 +167,23 @@ export default {
     { type: 'check', scope: 'the contrast table and edge cases', questions: [
       mc(null, 'X has a smooth density. How do P(X > 2) and P(X ≥ 2) compare?', 'They are equal', [['P(X ≥ 2) is larger', 'counted the single point 2 as having probability, but it has no width'], ['P(X > 2) is larger', 'a strict inequality cannot add area'], ['It depends on the curve', 'for any smooth density a single point has area 0']], 'A single point has zero width, so zero area.', { at: 0 }),
     ] },
+
+    { type: 'variation', base: `The challenge: bell centred at ${M}, sd ${SD}. (a) above 4.5 ≈ ${dp(CH.a, 3)}, (b) between 3 and 3.5 ≈ ${dp(CH.b, 3)}, (c) below 2 ≈ ${dp(CH.c, 3)}. Order (b) > (c) > (a).`, rows: [
+      { same: true, change: 'Add 10 to the mean and to every number in the statements', effect: 'No change. Areas depend only on where each interval sits relative to the curve, and everything moved together.' },
+      { change: 'Double the sd to 2', effect: `The peak flattens and the tails fatten: (a) ≈ ${dp(V2.a, 3)}, (b) ≈ ${dp(V2.b, 3)}, (c) ≈ ${dp(V2.c, 3)}. The narrow band loses its height and drops to last.` },
+      { change: 'Narrow (b) to "between 3 and 3.25"', effect: `Half the width at nearly the same height: about ${dp(VB, 3)}. (b) falls below (c) but stays above (a).` },
+      { fusion: true, change: 'Halve the sd to 0.5, and move (c) to "below 2.5"', effect: `The narrower curve alone would turn "below 2" into a 2-sd tail; the new cut 2.5 puts it back at 1 sd, still ${dp(VH.c, 3)}. (b) becomes a full sd from the mean (${dp(VH.b, 3)}), (a) a 3-sd tail (${dp(VH.a, 4)}).` },
+    ] },
+    { type: 'transfer',
+      near: { make: (rng) => again(() => { const m = rng.int(20, 40), s = rng.pick([2, 4, 5]); return rank(rng, `A trade's fill time (ms) is bell-shaped with mean ${m} and sd ${s}. Rank from most to least likely.`, rng.shuffle(LAND(m, s)).slice(0, 3).map(([t, p]) => [t.replace('X', 'The fill time'), p]), 'Symmetry and the 68-95 landmarks place each one.', { gap: 0.05 }); }) },
+      far: { make: (rng) => { const n = rng.pick([1000, 2000, 4000]), m = rng.pick([170, 175, 180]), s = rng.pick([6, 7, 8]), k = rng.pick([1, 2]), tail = (1 - (k === 1 ? ONE : TWO)) / 2;
+        return { type: 'number', q: `The heights of ${n} adults are bell-shaped with mean ${m} cm and sd ${s} cm. About how many are taller than ${m + k * s} cm? (use 68-95)`, answer: n * (k === 1 ? 0.16 : 0.025), tolerance: n * 0.01, hints: [`${m + k * s} is ${k} sd above the mean.`, `One tail beyond ${k} sd holds about ${k === 1 ? '16%' : '2.5%'}.`], explain: `About ${k === 1 ? '16%' : '2.5%'} of ${n}: ${n * (k === 1 ? 0.16 : 0.025)} (the exact tail is ${dp(tail, 4)}).` }; } },
+      principle: mc(null, 'Which idea carried over from the P&L curves to the heights?', 'Probability is the area beyond the cut, read from the 68-95 landmarks', [
+        ['The height of the curve at the cut is the share of people above it', 'height is density, not a share'],
+        ['The wider side of the cut always holds more of the probability', 'width alone ignores how tall the curve is there'],
+        ['About 32% lie beyond one sd on each side of the mean', '32% is both tails together; one side is about 16%'],
+      ], 'A share of a population is an area under its density, exactly like a probability for one random pick.'),
+    },
 
     S('tryit'),
     { type: 'tryit', section: 'll', family: 'density-curves', count: 3 },

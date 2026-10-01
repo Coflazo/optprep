@@ -51,6 +51,7 @@ const f3 = (x) => (x instanceof Q ? x.toNumber() : x).toFixed(3);
 const R4 = [0, 1, 2, 3, 4];
 const decide = (r, b) => (draw(r, b).cmp(zero) > 0 ? 'draw' : draw(r, b).cmp(zero) === 0 ? 'either' : 'stop');
 const B3 = { r: 3, b: 3 };
+const TK = { r: 3, b: 2 }; // think-aloud deck
 
 export default {
   id: 'bto/card-stopping',
@@ -68,7 +69,11 @@ export default {
   ],
   blocks: [
     S('recognise'),
-    { type: 'challenge', q: 'Before any teaching: a deck of 2 red and 2 black cards is shuffled and turned over one card at a time. Each red pays you $1, each black costs $1, and you may stop whenever you like. With the best strategy, what is the game worth? Try two approaches.', answer: `${V(2, 2)} ≈ ${f3(V(2, 2))}`, explain: `If you answered 0 you played the whole deck: 2 − 2 = 0. The right to stop is worth something: after a red you can quit ahead. If you answered ${f3(hindsight(2, 2))}, you stopped at the best moment in hindsight, which needs knowledge of the cards to come.` },
+    { type: 'challenge', q: 'Before any teaching: a deck of 2 red and 2 black cards is shuffled and turned over one card at a time. Each red pays you $1, each black costs $1, and you may stop whenever you like. With the best strategy, what is the game worth? Try two approaches.', answer: `${V(2, 2)} ≈ ${f3(V(2, 2))}`, explain: `If you answered 0 you played the whole deck: 2 − 2 = 0. The right to stop is worth something: after a red you can quit ahead. If you answered ${f3(hindsight(2, 2))}, you stopped at the best moment in hindsight, which needs knowledge of the cards to come.`, attempts: [
+      { id: 'play-all', label: 'The deck totals 0', approach: 'Added the cards: 2 × (+1) + 2 × (−1) = 0, so the game is worth 0.', breaksAt: 'That is the value if you must play every card. At each state you take the larger of stopping and drawing, so the value is never below 0, and here it is above.' },
+      { id: 'sunk', label: 'Stop after red, else play out', approach: 'Stop if the first card is red (+1); after a black, play out the rest (back to 0): 1/2 × 1 + 1/2 × 0 = 1/2.', breaksAt: 'After a black the $1 lost is sunk. The deck left, 2 red and 1 black, has its own value, and playing it out blindly throws away the option inside it.' },
+      { id: 'hindsight', label: 'Stop at the best moment', approach: `Averaged the highest running total over all orderings: ${hindsight(2, 2)}.`, breaksAt: 'That stops at the peak after seeing the whole deck. You decide before each card, so each draw is valued as an average over the card still hidden.' },
+    ] },
     { type: 'text', text: 'Cards (or other items) are revealed one at a time from a **finite** pile, each one wins or loses money, and you may **stop whenever you like** and keep the running total. The question asks for the value of the game with the best strategy.' },
     { type: 'list', items: ['"3 red and 3 black cards: +$1 per red, −$1 per black, stop any time. What is the game worth?"', '"A deck of 4 red and 2 black: optimal value?"', '"Should you draw when 1 red and 2 black remain?"'] },
     { type: 'text', text: 'Not this lesson: dice, where every roll is a fresh copy of the last (bto/dice-games-ev), and card probabilities with no decisions (bto/card-draws).' },
@@ -82,7 +87,7 @@ export default {
     S('anchor'),
     { type: 'text', text: 'From bto/dice-games-ev: with a reroll, keep a roll exactly when the sure amount beats the value of continuing. Card stopping is the same rule with **one change**: every draw changes the deck, so the value of continuing depends on what is left. You need a value for every possible remaining deck. Luckily the decks are small, and each value only needs the values of decks with one card fewer.' },
     { type: 'check', scope: 'stop iff the sure amount beats continuing', questions: [
-      { type: 'choice', q: 'Only red cards remain (3 of them). What should you do?', options: ['Draw them all: +3 for sure', 'Stop now', 'Draw one and stop'], answer: 0, traps: { 1: 'stopping gives 0 more; each red is +1', 2: 'every remaining card is a sure +1' }, explain: 'V(r, 0) = r.' },
+      { type: 'choice', q: 'Only red cards remain (3 of them). What should you do?', options: ['Draw them all: +3 for sure', 'Stop now and keep what you hold', 'Draw one card, then stop at +1'], answer: 0, traps: { 1: 'stopping gives 0 more; each red is +1', 2: 'every remaining card is a sure +1' }, explain: 'V(r, 0) = r.' },
       { type: 'choice', q: 'Only black cards remain. What should you do?', options: ['Stop now', 'Draw one', 'Draw them all'], answer: 0, traps: { 1: 'each black is a sure −1', 2: 'each black is a sure −1' }, explain: 'V(0, b) = 0.' },
     ] },
 
@@ -108,7 +113,7 @@ export default {
 
     S('derivation'),
     { type: 'steps', steps: [
-      { say: 'The state is (r, b): reds and blacks still in the deck. Money already won or lost does not change which future choices are best.', why: 'Every future card adds to or subtracts from whatever you hold. The best continuation depends only on what is left to draw.',
+      { say: 'The state is (r, b): reds and blacks still in the deck. Money already won or lost does not change which future choices are best.', why: 'Every future card adds to or subtracts from whatever you hold. The best continuation depends only on what is left to draw.', answers: 'sunk',
         checks: [
           { type: 'choice', q: 'You are $2 down with 2 red and 1 black left. What matters for your next decision?', options: ['Only the 2 red and 1 black left', 'The $2 you are down', 'Both equally', 'The order of the cards already drawn'], answer: 0, traps: { 1: 'sunk money: it is the same whatever you do next', 2: 'the past total adds a constant to every choice', 3: 'past cards matter only through what is left' }, explain: 'Future gains depend only on the remaining deck.' },
         ] },
@@ -116,7 +121,7 @@ export default {
         checks: [
           { make: (rng) => { const r = rng.int(1, 6); return { type: 'number', q: `${r} red cards and no black cards remain. Value of the rest of the game?`, answer: r, explain: `Take them all: +${r}.` }; } },
         ] },
-      { say: 'Otherwise compare stopping (0 more) with drawing once: with chance r/(r + b) you gain 1 and move to (r − 1, b); with b/(r + b) you lose 1 and move to (r, b − 1). V(r, b) = max(0, that draw value).', why: 'Drawing once and then playing optimally is worth the average of the two outcomes, each followed by the best play from the new deck.',
+      { say: 'Otherwise compare stopping (0 more) with drawing once: with chance r/(r + b) you gain 1 and move to (r − 1, b); with b/(r + b) you lose 1 and move to (r, b − 1). V(r, b) = max(0, that draw value).', why: 'Drawing once and then playing optimally is worth the average of the two outcomes, each followed by the best play from the new deck.', answers: 'hindsight',
         checks: [
           { make: (rng) => { const [r, b] = rng.pick([[2, 1], [1, 2], [2, 2], [3, 1]]); const d = draw(r, b); return mc(rng, `V(${r - 1}, ${b}) = ${V(r - 1, b)} and V(${r}, ${b - 1}) = ${V(r, b - 1)}. Draw value at (${r}, ${b})?`, d.toString(), [[Q.of(r - b, r + b).toString(), 'used only the card value, forgetting the value of the deck after it'], [Q.of(r, r + b).mul(V(r - 1, b)).add(Q.of(b, r + b).mul(V(r, b - 1))).toString(), 'forgot the +1 and −1 of the card itself'], [Q.of(r, r + b).mul(Q.of(1).add(V(r - 1, b))).toString(), 'left out the black branch']], `${r}/${r + b} × (1 + ${V(r - 1, b)}) + ${b}/${r + b} × (−1 + ${V(r, b - 1)}) = ${d}.`, { hinge: true }); } },
         ] },
@@ -124,7 +129,7 @@ export default {
         checks: [
           { type: 'choice', q: `V(1, 2) = ${V(1, 2)} and V(2, 1) = ${V(2, 1)}. What is V(2, 2)?`, options: [V(2, 2).toString(), '0', '1/2', Q.of(1, 2).mul(Q.of(1).add(V(1, 2))).add(Q.of(1, 2).mul(V(2, 1))).toString()], answer: 0, traps: { 1: 'the must-play value: the option is ignored', 2: 'the 1-and-1 value reused', 3: 'forgot the −1 of the black card' }, explain: `1/2 × (1 + ${V(1, 2)}) + 1/2 × (−1 + ${V(2, 1)}) = ${draw(2, 2)} > 0, so V(2, 2) = ${V(2, 2)}.` },
         ] },
-      { say: 'Read the strategy off the table: draw while the draw value is positive, stop when it is negative. At exactly 0 you are indifferent.', why: 'V = max(0, draw value) is a decision: the larger branch is the move.',
+      { say: 'Read the strategy off the table: draw while the draw value is positive, stop when it is negative. At exactly 0 you are indifferent.', why: 'V = max(0, draw value) is a decision: the larger branch is the move.', answers: 'play-all',
         checks: [
           { make: (rng) => { const [r, b] = rng.pick([[1, 3], [2, 1], [1, 1], [2, 4], [3, 2]]); const d = decide(r, b); return mc(rng, `${r} red and ${b} black left. Draw or stop?`, d === 'draw' ? 'draw' : d === 'stop' ? 'stop' : 'either: both are worth 0', [['draw', 'the draw value is negative here'], ['stop', 'the draw value is positive: the deck still favours you'], ['either: both are worth 0', 'the draw value is not exactly 0 here']], `Draw value ${draw(r, b)}: ${d === 'draw' ? 'positive, so draw' : d === 'stop' ? 'negative, so stop' : 'exactly 0'}.`); } },
         ] },
@@ -132,7 +137,7 @@ export default {
     { type: 'explain', prompt: 'In your own words: a deck with 2 red and 2 black cards has a total of 0. Why is the game worth more than 0 when you may stop?', model: `If you had to play every card you would always end at 0. With the right to stop you can quit when the deck has been kind to you (for example after an early red) and keep playing when the remaining deck favours you. You never have to take the bad endings in full, so the option is worth more than nothing: ${V(2, 2)} here.`, points: ['must-play value is r − b = 0', 'stopping lets you keep good early runs', 'the value is max(stop, draw) at every state, so it is never below 0'] },
 
     S('worked'),
-    { type: 'worked', family: 'card-stopping', section: 'bto', difficulty: 4, seed: 'c', intro: 'A three-card deck. Build the small table before opening the solution.' },
+    { type: 'worked', family: 'card-stopping', section: 'bto', difficulty: 4, seed: 'c', explainAt: [1], intro: 'A three-card deck. Build the small table before opening the solution.' },
     { type: 'worked', family: 'card-stopping', section: 'bto', difficulty: 5, seed: 'a', fade: 1, intro: 'A bigger deck with more blacks than reds. The first steps are given; filling the table and the answer are yours.' },
 
     S('predict'),
@@ -151,12 +156,20 @@ export default {
       `Drawing beats stopping now, but after the first red you are ahead, so stop there: value ${ahead(2, 1)}.`,
     ], errorStep: 3, explain: `Being ahead is no reason to stop: the draw value from what is left still decides. V(2, 1) = ${V(2, 1)}.` },
     { type: 'check', scope: 'the named traps', questions: [
-      { type: 'choice', q: `3 red, 3 black. A candidate answers ${ahead(3, 3)}. Which belief?`, options: ['Stop as soon as you are ahead', 'Play everything', 'Hindsight'], answer: 0, explain: `"Stop when ahead" gives ${ahead(3, 3)}; optimal gives ${V(3, 3)}.` },
+      { type: 'choice', q: `3 red, 3 black. A candidate answers ${ahead(3, 3)}. Which belief?`, options: ['Stopped as soon as it was ahead', 'Played every card to the end', 'Stopped at the peak in hindsight'], answer: 0, traps: { 1: 'playing every card gives 0', 2: `stopping at the peak in hindsight gives ${hindsight(3, 3)}` }, explain: `"Stop when ahead" gives ${ahead(3, 3)}; optimal gives ${V(3, 3)}.` },
     ] },
 
     S('speed'),
     { type: 'callout', tone: 'speed', text: `Know the balanced decks: V(1,1) = ${V(1, 1)}, V(2,2) = ${V(2, 2)}, V(3,3) = ${V(3, 3)}, V(4,4) = ${V(4, 4)}. For an unbalanced deck, the answer is at least max(0, r − b); if an option is below that, it is wrong.` },
     { type: 'callout', tone: 'speed', text: `Fill the table diagonally, smallest decks first, and write fractions, not decimals. A 3 × 3 table is nine short averages: about 60 of your ${SECTIONS.bto.exam.perItemSeconds} seconds, so do these last.` },
+    { type: 'thinkaloud', problem: `A deck of ${TK.r} red and ${TK.b} black cards is turned over one at a time: +$1 per red, −$1 per black, and you may stop any time. What is the game worth?`, lines: [
+      { t: 0, say: 'Finite deck, stop any time: backward induction on (reds left, blacks left).' },
+      { t: 5, say: `Playing it out gives ${TK.r} − ${TK.b} = ${TK.r - TK.b}; I can do better by quitting once I am ahead, so that is the plan...`, slip: true },
+      { t: 10, say: 'No: being ahead is sunk. Only the deck left matters. Build the table from small decks.' },
+      { t: 20, say: `V(1,1) = ${V(1, 1)}, V(2,1) = ${V(2, 1)}, V(1,2) = ${V(1, 2)}, V(2,2) = ${V(2, 2)}, V(3,1) = ${V(3, 1)}.` },
+      { t: 40, say: `Draw at (${TK.r},${TK.b}): ${TK.r}/${TK.r + TK.b} × (1 + ${V(TK.r - 1, TK.b)}) + ${TK.b}/${TK.r + TK.b} × (−1 + ${V(TK.r, TK.b - 1)}) = ${draw(TK.r, TK.b)}.` },
+      { t: 52, say: `Sanity: at least r − b = ${TK.r - TK.b}, below the hindsight bound ${f3(hindsight(TK.r, TK.b))}. Answer ${V(TK.r, TK.b)} ≈ ${f3(V(TK.r, TK.b))}.` },
+    ] },
     { type: 'check', scope: 'bounds and landmark values', questions: [
       { make: (rng) => { const [r, b] = rng.pick([[4, 2], [4, 1], [3, 1], [3, 2]]); return mc(rng, `${r} red, ${b} black. Which value could be the optimal game value?`, V(r, b).toString(), [[String(r - b - 1), 'below the must-play value r − b: impossible'], [String(r), 'more than the reds can ever pay'], [hindsight(r, b).toString(), 'the hindsight bound, not reachable']], `It must lie between r − b = ${r - b} and the hindsight bound ${f3(hindsight(r, b))}: ${V(r, b)}.`); } },
     ] },
@@ -176,6 +189,17 @@ export default {
     { type: 'check', scope: 'the contrast table and edge cases', questions: [
       { type: 'choice', q: 'Which statement is always true?', options: ['V(r, b) ≥ max(0, r − b)', 'V(r, b) = r − b', 'V(r, b) ≤ 0 when b > r', 'V(r, b) = V(b, r)'], answer: 0, traps: { 1: 'ignores the option to stop', 2: 'false: V(3, 4) is positive, the option can still pay', 3: 'reds and blacks are not symmetric: reds pay' }, explain: 'You can always stop at once (0) or play everything (r − b), so the optimum is at least the better of the two.' },
     ] },
+    { type: 'variation', base: `2 red and 2 black, +$1 per red, −$1 per black, stop any time: V(2, 2) = ${V(2, 2)}.`, rows: [
+      { change: 'You start the game $5 down from an earlier round', effect: `No change: the game still adds ${V(2, 2)} on average. Money already lost is sunk; only the deck left decides.`, same: true },
+      { change: 'You must turn every card', effect: 'No option any more: the total is always 2 − 2 = 0.' },
+      { change: 'Add a red: 3 red, 2 black', effect: `More reds make drawing more attractive: V(3, 2) = ${V(3, 2)} ≈ ${f3(V(3, 2))}.` },
+      { change: 'Add a black: 2 red, 3 black', effect: `The must-play value is −1, but the option keeps it positive: V(2, 3) = ${V(2, 3)} ≈ ${f3(V(2, 3))}.` },
+      { change: 'Add one of each: 3 red, 3 black', effect: `The must-play value stays 0, but a longer deck gives the option more room: V(3, 3) = ${V(3, 3)} ≈ ${f3(V(3, 3))}.`, fusion: true },
+    ] },
+    { type: 'transfer',
+      near: { make: (rng) => { const [r, b] = rng.pick([[2, 1], [3, 1], [3, 2], [3, 3]]); const v = V(r, b); return mc(rng, `A bag holds ${r} winning tickets (+$1 each) and ${b} losing tickets (−$1 each). You draw tickets one at a time without replacement and may stop whenever you like. Value with the best play?`, v.toString(), [[String(Math.max(0, r - b)), 'played every ticket: the option is ignored'], [hindsight(r, b).toString(), 'stopped at the best moment in hindsight'], [ahead(r, b).toString(), 'stopped as soon as you were ahead'], [String(r), 'counted the winning tickets and ignored the losing ones'], [Q.of(r, r + b).toString(), 'gave P(the first ticket wins)']], `Tickets are cards: V(${r}, ${b}) = ${v} ≈ ${f3(v)}.`); } },
+      far: { make: (rng) => { const [u, d] = rng.pick([[2, 1], [1, 1], [2, 2], [3, 1], [3, 2]]); const v = V(u, d); return { type: 'number', q: `A stock will make exactly ${u} up-tick${u > 1 ? 's' : ''} (+1) and ${d} down-tick${d > 1 ? 's' : ''} (−1) over its next ${u + d} moves, in random order. You hold one share and may sell after any move (or at once). Expected profit with the best rule? (Decimals are fine.)`, answer: v.toNumber(), tolerance: 0.001, hints: ['Up-ticks are red cards, down-ticks black cards.', `Fill V(r, b) up to (${u}, ${d}).`], explain: `Same recursion: V(${u}, ${d}) = ${v} ≈ ${f3(v)}.` }; } },
+      principle: { type: 'choice', q: 'Which idea carried over from cards to the tickets and to the stock?', options: ['At each state, take max(stop now, average of going on)', 'Play everything: the total of what is left is the value', 'Stop the first time the running total is above zero', 'Stop at the peak of the running total for the path'], answer: 0, traps: { 1: 'that ignores the option to stop', 2: 'past gains are sunk; the remaining deck decides', 3: 'the peak is only known in hindsight' }, explain: 'Tickets and ticks are a finite deck of +1s and −1s. The state is what is left, and each value is max(0, draw value), filled from small decks up.' } },
 
     S('tryit'),
     { type: 'tryit', family: 'card-stopping', section: 'bto', count: 3 },

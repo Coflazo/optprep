@@ -100,12 +100,16 @@ export default {
   ],
   blocks: [
     sec('recognise'),
-    { type: 'challenge', q: 'Before any teaching: two fair coins are tossed. What is the probability of one head and one tail? Find two different ways to get there.', answer: frac(2, 4), explain: 'List what each coin does: HH, HT, TH, TT. Four equally likely results, and two of them (HT, TH) have one of each: 2/4 = 1/2. If you got 1/3, you listed "two heads, two tails, one of each" and treated those three as equally likely. This lesson is about exactly that trap.' },
+    { type: 'challenge', q: 'Before any teaching: two fair coins are tossed. What is the probability of one head and one tail? Find two different ways to get there.', answer: frac(2, 4), explain: 'List what each coin does: HH, HT, TH, TT. Four equally likely results, and two of them (HT, TH) have one of each: 2/4 = 1/2. If you got 1/3, you listed "two heads, two tails, one of each" and treated those three as equally likely. This lesson is about exactly that trap.',
+      attempts: [
+        { id: 'three', label: 'Three results, one favourable', approach: 'Listed two heads, two tails and one of each, and answered 1/3.', breaksAt: 'The three results are not equally likely: one of each is made by HT and by TH.' },
+        { id: 'oneOrder', label: 'Multiplied 1/2 × 1/2', approach: `Took P(head then tail) = 1/2 × 1/2 = ${frac(1, 4)} as the answer.`, breaksAt: 'That is one order, HT. The order TH also gives one of each, so count both.' },
+      ] },
     { type: 'text', text: 'A probability question describes an **experiment** (toss, throw, draw, deal) and asks about its result. One complete result is an **outcome**: for two coins, "first H, second T" is one outcome. The list of every possible outcome is the **sample space**. An **event** is a yes/no question about the result, which is the same as the set of outcomes where the answer is yes.' },
     { type: 'list', items: ['"A fair die is thrown": 6 outcomes, the faces 1 to 6.', '"Three coins are tossed": outcomes are sequences like HTH.', '"Two cards are drawn": outcomes are pairs of cards.'] },
     { type: 'check', scope: 'outcome, sample space, event', questions: [
-      mc({ q: 'Two dice are thrown. Which of these is a single outcome rather than an event?', right: '(3, 5): first die 3, second die 5', at: 2,
-        wrong: [['the sum is 8', `an event: ${sum8} outcomes share it`], ['both faces are odd', `an event: ${odd2} outcomes`], ['a double', `an event: ${doubles} outcomes`]],
+      mc({ q: 'Two dice are thrown. Which of these is a single outcome rather than an event?', right: 'first die 3 and second die 5', at: 2,
+        wrong: [['the sum of the two dice is 8', `an event: ${sum8} outcomes share it`], ['both faces are odd numbers', `an event: ${odd2} outcomes`], ['the two dice show a double', `an event: ${doubles} outcomes`], ['first die 3 and second die odd', 'the second die is not pinned down: 3 outcomes share it']],
         explain: 'An outcome records everything about one throw. The others are yes/no questions, so they are sets of outcomes: events.' }),
       { type: 'number', q: 'A coin is tossed three times. Write out the sample space (sequences like HTH). How many outcomes does it have?', answer: 8, hints: ['Start from the two-toss list HH, HT, TH, TT.', 'Each two-toss sequence can end in H or in T.'], explain: 'HHH, HHT, HTH, HTT, THH, THT, TTH, TTT: 8 sequences.' },
     ] },
@@ -154,9 +158,9 @@ export default {
     sec('derivation'),
     { type: 'text', text: 'Build one probability from nothing: two fair dice, P(the larger face is 4).' },
     { type: 'steps', steps: [
-      { say: 'Name one outcome: the ordered pair (first die, second die). Paint one die red if it helps.', why: 'An outcome must be one complete result. The pair records both dice, so every question about them can be answered from it.',
+      { answers: 'oneOrder', say: 'Name one outcome: the ordered pair (first die, second die). Paint one die red if it helps.', why: 'An outcome must be one complete result. The pair records both dice, so every question about them can be answered from it.',
         checks: [{ type: 'number', q: 'How many ordered pairs are there for two dice?', answer: 36, explain: '6 rows × 6 columns in the grid.' }] },
-      { say: 'Check the pairs are equally likely: each die is fair and neither affects the other, so all 36 pairs have the same chance.', why: 'Only then may you divide by 36. The 11 sums would not qualify: 7 is made by 6 pairs, 12 by one.',
+      { answers: 'three', say: 'Check the pairs are equally likely: each die is fair and neither affects the other, so all 36 pairs have the same chance.', why: 'Only then may you divide by 36. The 11 sums would not qualify: 7 is made by 6 pairs, 12 by one.',
         checks: [mc({ q: 'Which list of outcomes for two dice is equally likely?', right: 'the 36 ordered pairs', at: 3,
           wrong: [['the 11 sums from 2 to 12', 'sums are made by different numbers of pairs'], ['the 21 unordered pairs like {2, 5}', 'a mixed pair happens two ways, a double one way'], ['the 6 values of the larger face', `larger face 6 happens in ${nWays((a, b) => Math.max(a, b) === 6)} pairs, larger face 1 in one`]],
           explain: 'Only the ordered pairs are equally likely; every other list groups them unevenly.' })] },
@@ -215,7 +219,7 @@ export default {
     { type: 'callout', tone: 'edge', text: 'Edge cases: an event with no favourable outcomes has P = 0; the whole sample space has P = 1. A **biased** coin has no equally likely list at all: there you weight each outcome by its own probability instead of counting.' },
     { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: Beat the Odds dice and card questions (count ordered pairs or ordered cards), Likelihood List tables where each row is one equally likely case, and the Intervals dice grids. Each starts by asking what the equally likely outcomes are.' },
     { type: 'check', scope: 'the contrast table and edge cases', questions: [
-      { type: 'choice', q: 'A biased coin lands heads with probability 0.7. A candidate says P(heads) = 1/2 because there are two outcomes. Right or wrong?', options: ['Wrong: the outcomes are not equally likely, P(heads) = 0.7', 'Right: two outcomes, one favourable'], answer: 0, traps: { 1: 'favourable / total used on outcomes that are not equally likely' }, explain: 'Counting only works over equally likely outcomes; here the probability is given directly.' },
+      { type: 'choice', q: 'A biased coin lands heads with probability 0.7. A candidate says P(heads) = 1/2 because there are two outcomes. Right or wrong?', options: ['Wrong: the two outcomes are not equally likely', 'Right: two outcomes, one of them favourable'], answer: 0, traps: { 1: 'favourable / total used on outcomes that are not equally likely' }, explain: 'Counting only works over equally likely outcomes; here P(heads) = 0.7 is given directly.' },
       { type: 'number', q: 'A die is thrown and two coins are tossed. Using a grid (die faces against the coin sequences), how many outcomes are there?', answer: 6 * 4, explain: '6 faces against the 4 sequences HH, HT, TH, TT: 24 cells.' },
     ] },
 

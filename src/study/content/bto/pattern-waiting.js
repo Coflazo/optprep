@@ -24,6 +24,10 @@ const P2 = ['HH', 'HT', 'TH', 'TT'];
 const P3 = ['HHH', 'HHT', 'HTH', 'HTT', 'THH', 'THT', 'TTH', 'TTT'];
 const RACES = [['HH', 'TH'], ['HH', 'HT'], ['HHT', 'THH'], ['HTH', 'HHT'], ['TTH', 'HTT'], ['HHH', 'THH']].filter(([a, b]) => !pFirst(a, b).eq(Q.of(1, 2)));
 const node = (id, label, x, y) => ({ id, label, x, y });
+const dieWait = (A) => overlaps(A).reduce((a, k) => a + 6 ** k, 0); // six-letter alphabet: Σ 6^k
+const HIT = Q.of(1, 3); // far transfer: a quote is hit each minute
+const hitHit = Q.of(1).add(HIT).div(HIT.mul(HIT)); // E for two hits in a row: (1 + p)/p²
+const ud = (A) => A.replace(/H/g, 'U').replace(/T/g, 'D');
 
 export default {
   id: 'bto/pattern-waiting',
@@ -41,7 +45,10 @@ export default {
   ],
   blocks: [
     S('recognise'),
-    { type: 'challenge', q: 'Before any teaching: you flip a fair coin until you see two heads in a row (HH). What is the expected number of flips? Try two approaches, then compare with your answer for HT.', answer: `HH: ${wait('HH')} flips. HT: ${wait('HT')} flips.`, explain: 'If you answered 4 for both, you treated every pair of flips as a fresh 1/4 attempt. HH is slower because a near miss (HT) throws the progress away, while a near miss for HT (HH) keeps the last H.' },
+    { type: 'challenge', q: 'Before any teaching: you flip a fair coin until you see two heads in a row (HH). What is the expected number of flips? Try two approaches, then compare with your answer for HT.', answer: `HH: ${wait('HH')} flips. HT: ${wait('HT')} flips.`, explain: 'If you answered 4 for both, you treated every pair of flips as a fresh 1/4 attempt. HH is slower because a near miss (HT) throws the progress away, while a near miss for HT (HH) keeps the last H.', attempts: [
+      { id: 'fresh-pairs', label: 'Each pair a fresh 1/4 try', approach: 'Each pair of flips is HH with chance 1/4, so answered 4 flips.', breaksAt: 'Pairs overlap and are not fresh attempts: after H then T the progress is gone, while HHH holds two HH at once.' },
+      { id: 'two-waits', label: 'Wait for H, then wait again', approach: 'Waited 2 flips for an H, then 2 more flips for the next H: 4.', breaksAt: 'The second H must come on the very next flip. A T in between sends you back to the start.' },
+    ] },
     { type: 'text', text: 'A fair coin is flipped **until** a given pattern of consecutive flips appears (HH, HTH, HHT, …). The question asks for the **expected number of flips**, or, with two patterns, **which appears first**.' },
     { type: 'list', items: ['"A coin is flipped until two heads in a row appear. Expected number of flips?"', '"Expected flips until HTH?"', '"Flip until either HH or TH appears. Probability TH comes first?"'] },
     { type: 'text', text: 'Not this lesson: a fixed number of flips (bto/coin-sequences) and a single success (bto/first-success, which is the one-letter case of this lesson).' },
@@ -67,7 +74,7 @@ export default {
     { type: 'text', text: 'Now HT. The states are "start", "H" and "HT". A tail from "H" finishes. The key difference: a **head** from "H" leaves you at "H", because the new H is still a valid start of HT. Progress is never lost once you have an H.' },
     { type: 'diagram', diagram: 'graph', spec: { markov: true, title: 'Waiting for HT', nodes: [node('s', 'start', 0.05, 0.5), node('h', 'H', 0.5, 0.5), node('ht', 'HT', 0.95, 0.5)], edges: [{ from: 's', to: 'h', p: 0.5, label: 'H 1/2' }, { from: 's', to: 's', p: 0.5, label: 'T 1/2' }, { from: 'h', to: 'ht', p: 0.5, label: 'T 1/2' }, { from: 'h', to: 'h', p: 0.5, label: 'H 1/2' }, { from: 'ht', to: 'ht', p: 1, label: 'done' }] }, caption: 'No arrow points backwards from H: a near miss (HH) keeps the last H. Same two steps of progress, no way to lose them, so HT is faster.' },
     { type: 'check', scope: 'progress states for HT', questions: [
-      { type: 'choice', q: 'Why is the expected wait for HT shorter than for HH?', options: ['From state H, a wrong flip keeps you at H for HT but sends you to start for HH', 'HT is more likely than HH at any position', 'HT has fewer letters', 'Tails are more common'], answer: 0, traps: { 1: 'both are 1/4 at any fixed pair of positions', 2: 'both have two letters', 3: 'the coin is fair' }, explain: 'Same per-window chance, different fate after a near miss.' },
+      { type: 'choice', q: 'Why is the expected wait for HT shorter than for HH?', options: ['After an H, a wrong flip keeps HT at H but resets HH', 'HT is more likely than HH at any fixed pair of flips', 'HT needs fewer flips because it has fewer letters', 'Tails come up more often than heads on this coin'], answer: 0, traps: { 1: 'both are 1/4 at any fixed pair of positions', 2: 'both have two letters', 3: 'the coin is fair' }, explain: 'Same per-window chance, different fate after a near miss.' },
     ] },
     { type: 'diagram', diagram: 'table', spec: { columns: ['pattern', 'self-overlaps k', 'expected flips Σ 2^k'], rows: [...P2, 'HHH', 'HHT', 'HTH', 'HTT'].map((A) => [A, overlaps(A).join(', '), overlaps(A).map((k) => `2^${k}`).join(' + ') + ` = ${wait(A)}`]) }, caption: 'A self-overlap of length k means the last k letters equal the first k letters. The full length always counts. More overlaps, longer wait: HH and HHH overlap themselves at every shift.' },
     { type: 'check', scope: 'reading self-overlaps', questions: [
@@ -78,9 +85,9 @@ export default {
     { type: 'steps', steps: [
       { say: 'Name one unknown per progress state. For HH: E₀ = expected flips still needed from start, E₁ = expected flips still needed when the last flip was H.', why: 'The future depends only on the useful progress so far, not on the whole history, so one number per state is enough.',
         checks: [
-          { type: 'choice', q: 'Waiting for HH, you have flipped T, T, H, T, H. Which state are you in?', options: ['E₁ (last flip H)', 'E₀ (start)', 'done'], answer: 0, traps: { 1: 'the last flip is H, which is progress', 2: 'no HH has appeared' }, explain: 'Only the last flip matters for HH: it is H.' },
+          { type: 'choice', q: 'Waiting for HH, you have flipped T, T, H, T, H. Which state are you in?', options: ['E₁ (last flip H)', 'E₀ (start, no progress)', 'done (HH has appeared)'], answer: 0, traps: { 1: 'the last flip is H, which is progress', 2: 'no HH has appeared' }, explain: 'Only the last flip matters for HH: it is H.' },
         ] },
-      { say: 'From state H, spend one flip: H finishes, T sends you to start. So E₁ = 1 + ½ × 0 + ½ × E₀.', why: 'First-step analysis: pay the flip you are about to make, then average the expected remaining wait over where it lands you.',
+      { answers: 'two-waits', say: 'From state H, spend one flip: H finishes, T sends you to start. So E₁ = 1 + ½ × 0 + ½ × E₀.', why: 'First-step analysis: pay the flip you are about to make, then average the expected remaining wait over where it lands you.',
         checks: [
           { type: 'choice', q: 'Waiting for HT, which equation holds for the state "last flip H"?', options: ['E₁ = 1 + ½ × 0 + ½ × E₁', 'E₁ = 1 + ½ × 0 + ½ × E₀', 'E₁ = ½ × E₀', 'E₁ = 1 + E₀'], answer: 0, traps: { 1: 'that is HH: for HT a head keeps you at H', 2: 'forgot to pay for the flip', 3: 'ignored the chance of finishing' }, explain: 'T finishes HT; H leaves you in the same state.' },
         ] },
@@ -92,7 +99,7 @@ export default {
         checks: [
           { type: 'number', q: 'Waiting for HH: what is E₁, the expected flips still needed when the last flip was H?', answer: 1 + wait('HH') / 2, hints: ['Use E₁ = 1 + ½ E₀.', `E₀ = ${wait('HH')}.`], explain: `E₁ = 1 + ½ × ${wait('HH')} = ${1 + wait('HH') / 2}. Having one H saves only 2 flips.` },
         ] },
-      { say: 'Shortcut: the expected wait is Σ 2^k over the pattern\'s self-overlaps k (the full length always counts). HH: 2 + 4 = 6. HT: 4.', why: 'Each self-overlap is a way a failed or finished attempt doubles as the start of a new one. The equations above always sum to this; it is Conway\'s rule for a fair coin.',
+      { answers: 'fresh-pairs', say: 'Shortcut: the expected wait is Σ 2^k over the pattern\'s self-overlaps k (the full length always counts). HH: 2 + 4 = 6. HT: 4.', why: 'Each self-overlap is a way a failed or finished attempt doubles as the start of a new one. The equations above always sum to this; it is Conway\'s rule for a fair coin.',
           checks: [
           { make: (rng) => { const A = rng.pick(['HTH', 'HHT', 'HHH', 'THT', 'TTH']); const L = A.length; return mc(rng, `Expected flips until ${A}?`, String(wait(A)), [[String(2 ** L), 'treated each window as a fresh 1/8 attempt, ignoring overlaps'], [String(wait(A) / 2), 'added 2^(k−1) instead of 2^k'], [String(2 ** (L + 1) - 2), 'used the all-heads formula for a pattern that does not overlap itself at every shift'], [String(L * 2 ** (L - 1)), 'multiplied the length by 2^(L−1)']], `Overlaps ${overlaps(A).join(', ')}: ${overlaps(A).map((k) => `2^${k}`).join(' + ')} = ${wait(A)}.`); } },
         ] },
@@ -104,8 +111,16 @@ export default {
     { type: 'explain', prompt: 'In your own words: HH and HT each have chance 1/4 in any two consecutive flips. Why does HH take longer to appear?', model: 'The long-run rate is the same, but occurrences of HH overlap and come in clumps (HHH contains two), so the gaps between clumps are longer, and the first one arrives later. In state terms: after one H, a wrong flip for HH (a tail) sends you back to start, while a wrong flip for HT (a head) keeps you one step in.', points: ['same chance per window, different waiting time', 'after a near miss HH loses its progress and HT keeps it', 'self-overlaps make occurrences clump, which delays the first'] },
 
     S('worked'),
-    { type: 'worked', family: 'pattern-waiting', section: 'bto', difficulty: 3, seed: 'c', intro: 'One pattern, expected flips. Try it before opening the solution.' },
+    { type: 'worked', family: 'pattern-waiting', section: 'bto', difficulty: 3, seed: 'c', explainAt: [0], intro: 'One pattern, expected flips. Try it before opening the solution.' },
     { type: 'worked', family: 'pattern-waiting', section: 'bto', difficulty: 4, seed: 'e', fade: 1, intro: 'Two patterns racing. The first steps are given; the last one and the answer are yours.' },
+
+    { type: 'thinkaloud', problem: 'A fair coin is flipped until HTH appears. What is the expected number of flips?', lines: [
+      { t: 0, say: 'Flip until a three-letter pattern: overlap rule, add 2^k for every self-overlap k.' },
+      { t: 3, say: 'Three letters, each window is 1/8, so 8 flips.', slip: true },
+      { t: 6, say: 'Wait, that ignores overlaps. Check them: last letter H equals first letter H, so k = 1 counts. Last two TH against HT: no. k = 3 always counts.' },
+      { t: 12, say: `So ${overlaps('HTH').map((k) => `2^${k}`).join(' + ')} = ${wait('HTH')}.` },
+      { t: 15, say: `Sanity: a self-overlapping pattern waits longer than 2^3, never shorter. ${wait('HTH')} fits. Answer ${wait('HTH')}.` },
+    ] },
 
     S('predict'),
     { type: 'predict', question: 'Flip until HH or TH appears. Which pattern usually wins, and with what probability?', answer: `TH, with ${pFirst('TH', 'HH')}.`, explain: 'HH can only win if the first two flips are HH. Once any T appears, the next H completes TH before HH can form.' },
@@ -123,7 +138,7 @@ export default {
       'Answer: 8.',
     ], errorStep: 2, explain: `The long-run rate is right, but occurrences overlap (HHHH holds two, HHHHH three), so they come in clumps and the first one takes longer. Self-overlaps 1, 2, 3 give 2 + 4 + 8 = ${wait('HHH')}.` },
     { type: 'check', scope: 'the named traps', questions: [
-      { type: 'choice', q: 'A candidate says HTH and HTT both wait 8 flips. Which is wrong?', options: [`HTH: it overlaps itself (H…H), so it waits ${wait('HTH')}`, `HTT: it waits ${wait('HTT') + 2}`, 'Neither'], answer: 0, traps: { 1: `HTT has no self-overlap except its length: ${wait('HTT')} is right`, 2: 'HTH ends with its own first letter' }, explain: `HTH: 2 + 8 = ${wait('HTH')}. HTT: ${wait('HTT')}.` },
+      { type: 'choice', q: 'A candidate says HTH and HTT both wait 8 flips. Which is wrong?', options: [`HTH: it overlaps itself, so it waits ${wait('HTH')}`, `HTT: it overlaps itself, so it waits ${wait('HTT') + 2}`, 'Neither: both have three letters, so both wait 8'], answer: 0, traps: { 1: `HTT has no self-overlap except its length: ${wait('HTT')} is right`, 2: 'HTH ends with its own first letter' }, explain: `HTH: 2 + 8 = ${wait('HTH')}. HTT: ${wait('HTT')}.` },
     ] },
 
     S('speed'),
@@ -148,6 +163,19 @@ export default {
     { type: 'check', scope: 'the transfer to dice', questions: [
       { type: 'choice', q: 'A die is thrown until a 1 is immediately followed by a 2. Expected throws?', options: ['36', '42', '12', '6'], answer: 0, traps: { 1: '"1 then 2" does not overlap itself, unlike "6 then 6"', 2: 'added 6 per letter', 3: 'waited for one letter only' }, explain: 'Only the full-length overlap: 6² = 36.' },
     ] },
+
+    { type: 'variation', base: `Fair coin, flip until HH. Expected flips = ${wait('HH')}.`, rows: [
+      { change: 'Wait for TT instead', effect: `No change: swapping H and T maps every string to one just as likely, and TT overlaps itself exactly like HH. ${wait('TT')} flips.`, same: true },
+      { change: 'Wait for HT', effect: `Only the full-length overlap: ${wait('HT')}. A near miss (HH) keeps the last H.` },
+      { change: 'Wait for HHH', effect: `Overlaps at 1, 2 and 3: ${overlaps('HHH').map((k) => `2^${k}`).join(' + ')} = ${wait('HHH')}.` },
+      { change: 'Ask for P(the next two flips are HH)', effect: 'A per-window chance, 1/4, not a waiting time. Overlaps do not enter at all.' },
+      { change: 'A die, waiting for "1 then 2"', effect: `Two changes: the die turns each 2^k into 6^k, and "1 then 2" overlaps itself only at full length, so the 6^1 term disappears: ${dieWait('12')} throws, against ${dieWait('66')} for "6 then 6".`, fusion: true },
+    ] },
+    { type: 'transfer',
+      near: { make: (rng) => { const A = rng.pick(['HTH', 'HHT', 'HHH', 'THT', 'TTH']); const L = A.length; return mc(rng, `A signal goes up (U) or down (D) each minute, each with probability 1/2, independently. Expected minutes until ${ud(A)} first appears?`, String(wait(A)), [[String(2 ** L), 'treated each window as a fresh 1/8 attempt'], [String(wait(A) / 2), 'added 2^(k−1) instead of 2^k'], [String(L * 2 ** (L - 1)), 'multiplied the length by 2^(L−1)']], `U and D are H and T. Overlaps ${overlaps(A).join(', ')}: ${wait(A)}.`); } },
+      far: { type: 'choice', q: `Each minute a quote is hit with probability ${HIT}, independently. Expected minutes until it is hit in two consecutive minutes?`, options: [hitHit.toString(), Q.of(1).div(HIT.mul(HIT)).toString(), String(wait('HH')), Q.of(1).div(HIT).toString()], answer: 0, traps: { 1: 'treated each pair of minutes as a fresh 1/9 attempt', 2: 'used the fair-coin answer; the chance per minute is 1/3', 3: 'waited for a single hit' }, explain: `States as for HH: E₁ = 1 + (1 − p)E₀ and E₀ = 1/p + E₁. With p = ${HIT}: E₀ = ${hitHit}.` },
+      principle: { type: 'choice', q: 'Which idea carried over from coin patterns to signals and quotes?', options: ['A near miss can reset progress: track the progress states', 'Every window is a fresh attempt at the pattern\'s chance', 'Patterns of the same length take the same time', 'The wait is two to the power of the length'], answer: 0, traps: { 1: 'windows overlap and share flips', 2: 'HH waits 6 while HT waits 4', 3: 'true only for patterns with no self-overlap' }, explain: 'The wait depends on what survives a near miss; one first-step equation per progress state captures it.' },
+    },
 
     S('tryit'),
     { type: 'tryit', family: 'pattern-waiting', section: 'bto', count: 3 },

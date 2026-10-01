@@ -43,7 +43,11 @@ export default {
   ],
   blocks: [
     sec('recognise'),
-    { type: 'challenge', q: 'Before any teaching: from 7 people, how many different committees of 3 can be formed? And how many ways are there to pick a president, a secretary and a treasurer from the same 7? Two approaches, then both answers.', answer: `${nCr(7, 3)} committees; ${nPr(7, 3)} ways to fill the three roles`, explain: `Roles first: 7 × 6 × 5 = ${nPr(7, 3)}. A committee has no roles, and each committee of 3 was counted once per way of assigning the roles, 3! = 6 times: ${nPr(7, 3)} / 6 = ${nCr(7, 3)}.` },
+    { type: 'challenge', q: 'Before any teaching: from 7 people, how many different committees of 3 can be formed? And how many ways are there to pick a president, a secretary and a treasurer from the same 7? Two approaches, then both answers.', answer: `${nCr(7, 3)} committees; ${nPr(7, 3)} ways to fill the three roles`, explain: `Roles first: 7 × 6 × 5 = ${nPr(7, 3)}. A committee has no roles, and each committee of 3 was counted once per way of assigning the roles, 3! = 6 times: ${nPr(7, 3)} / 6 = ${nCr(7, 3)}.`,
+      attempts: [
+        { id: 'noDivide', label: 'Same count for both', approach: `Counted the committees as 7 × 6 × 5 = ${nPr(7, 3)} too.`, breaksAt: `A committee has no roles: each one appears 3! = ${fact(3)} times among those ${nPr(7, 3)} ordered picks.` },
+        { id: 'add', label: 'Added the choices', approach: `Counted 7 + 6 + 5 = ${7 + 6 + 5} ways to fill the three roles.`, breaksAt: 'Every first choice pairs with every second and every third: stages multiply.' },
+      ] },
     { type: 'text', text: 'Counting questions ask "how many ways", or hide a count inside a probability: favourable hands over all hands. Three questions pick the method: are there **stages**, does **order** matter, can items **repeat**?' },
     { type: 'list', items: ['"How many 4-digit codes…" (order matters, repeats allowed)', '"How many ways to award gold, silver and bronze…" (order matters, no repeats)', '"How many 5-card hands…" or "committees of 3…" (order does not matter)'] },
     { type: 'check', scope: 'order matters or not', questions: [
@@ -90,7 +94,7 @@ export default {
     sec('derivation'),
     { type: 'text', text: 'Two cards are drawn from a 52-card deck. P(both aces), counted two ways.' },
     { type: 'steps', steps: [
-      { say: `Ordered total: the first card is any of 52, the second any of the 51 left: 52 × 51 = ${deckO} ordered draws.`, why: 'Two stages, and the second stage has 51 choices whatever the first card was.',
+      { answers: 'add', say: `Ordered total: the first card is any of 52, the second any of the 51 left: 52 × 51 = ${deckO} ordered draws.`, why: 'Two stages, and the second stage has 51 choices whatever the first card was.',
         checks: [{ make: (rng) => { const n = rng.int(10, 30); return { type: 'number', q: `How many ordered draws of 2 cards are there from a pile of ${n}?`, answer: n * (n - 1), hints: ['Two stages; the second card cannot be the first.'], explain: `${n} × ${n - 1} = ${n * (n - 1)}.` }; } }] },
       { say: `Ordered favourable: the first ace is any of 4, the second any of the 3 left: 4 × 3 = ${aceO}.`, why: 'The same principle, restricted to aces.',
         checks: [{ make: (rng) => { const r = rng.int(3, 8); return { type: 'number', q: `A pile holds ${r} red cards. How many ordered ways are there to draw 2 red cards?`, answer: r * (r - 1), explain: `${r} × ${r - 1} = ${r * (r - 1)}.` }; } }] },
@@ -98,7 +102,7 @@ export default {
         checks: [mc({ q: 'Two cards from a 52-card deck. What is P(both hearts)?', right: frac(13 * 12, deckO), at: 1,
           wrong: [[frac(1, 16), 'as if the first card went back: 13/52 twice'], [frac(nCr(13, 2), deckO), 'mixed: unordered favourable over ordered total'], [frac(13 * 12, 52 * 52), 'shrank the hearts but not the deck']],
           explain: `Ordered: 13 × 12 = ${13 * 12} over ${deckO}, so ${frac(13 * 12, deckO)}.` })] },
-      { say: `Unordered: C(4, 2) / C(52, 2) = ${nCr(4, 2)} / ${nCr(52, 2)} = ${frac(nCr(4, 2), nCr(52, 2))} again.`, why: 'Both counts were divided by 2! = 2, and the factor cancels. Order was never the problem; mixing conventions is.',
+      { answers: 'noDivide', say: `Unordered: C(4, 2) / C(52, 2) = ${nCr(4, 2)} / ${nCr(52, 2)} = ${frac(nCr(4, 2), nCr(52, 2))} again.`, why: 'Both counts were divided by 2! = 2, and the factor cancels. Order was never the problem; mixing conventions is.',
         checks: [{ type: 'number', q: 'C(52, 2) = ?', answer: nCr(52, 2), hints: ['Ordered pairs first: 52 × 51.', 'Divide by 2! = 2.'], explain: `52 × 51 / 2 = ${nCr(52, 2)}.` }] },
     ] },
     { type: 'explain', prompt: 'Why do the ordered and unordered counts give the same probability, and when do they not?', model: 'Each unordered pair of cards matches exactly 2! ordered draws, in the favourable count and in the total, so the factor cancels in the ratio. The answer goes wrong only when one count is ordered and the other unordered.', points: ['Each hand of k cards matches k! ordered draws', 'The k! appears top and bottom and cancels', 'Mixing an ordered count with an unordered one is the error'] },

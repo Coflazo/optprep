@@ -29,6 +29,7 @@ const E1 = Math.exp(-1);
 const PERMS3 = [['A', 'B', 'C'], ['A', 'C', 'B'], ['B', 'A', 'C'], ['B', 'C', 'A'], ['C', 'A', 'B'], ['C', 'B', 'A']];
 const fixed3 = (p) => p.filter((x, i) => x === 'ABC'[i]).length;
 const NS = [1, 2, 3, 4, 5, 6, 7, 8];
+const TK = 6; // think-aloud: 6 traders
 const altSum = (n) => { let s = Q.of(0); for (let k = 0; k <= n; k++) s = s.add(Q.of(k % 2 ? -1 : 1, fact(k))); return s; };
 
 export default {
@@ -47,7 +48,11 @@ export default {
   ],
   blocks: [
     S('recognise'),
-    { type: 'challenge', q: 'Before any teaching: 4 letters are put at random into their 4 addressed envelopes, one per envelope. What is the probability that no letter is in its own envelope? Try two approaches.', answer: `${D(4)}/${fact(4)} = ${none(4)}`, explain: `If you got (3/4)⁴ = ${indep(4)} ≈ ${f3(indep(4))}, you treated the letters as independent. They are not: once letter A takes envelope b, letter B has one fewer place to go. The lesson counts the ${fact(4)} arrangements directly.` },
+    { type: 'challenge', q: 'Before any teaching: 4 letters are put at random into their 4 addressed envelopes, one per envelope. What is the probability that no letter is in its own envelope? Try two approaches.', answer: `${D(4)}/${fact(4)} = ${none(4)}`, explain: `If you got (3/4)⁴ = ${indep(4)} ≈ ${f3(indep(4))}, you treated the letters as independent. They are not: once letter A takes envelope b, letter B has one fewer place to go. The lesson counts the ${fact(4)} arrangements directly.`, attempts: [
+      { id: 'independent', label: 'Multiply 3/4 per letter', approach: `Each letter misses with 3/4, so (3/4)⁴ ≈ ${f3(indep(4))}.`, breaksAt: 'The letters share the envelopes. Multiplying treats them as independent, which would let two letters land in the same envelope.' },
+      { id: 'chain', label: 'A chain of misses', approach: `Letter A misses (3/4), then B misses among what is left (2/3), then C (1/2): 3/4 × 2/3 × 1/2 = ${Q.of(3, 4).mul(Q.of(2, 3)).mul(Q.of(1, 2))}.`, breaksAt: 'Whether a later letter can miss depends on whether its own envelope is already taken. The chain mixes two cases that must be counted separately.' },
+      { id: 'add-matches', label: 'Add 1/4 per letter', approach: 'Added 1/4 for each letter being home: P(some match) = 1, so P(none) = 0.', breaksAt: 'Two letters can be home at once, so the match events overlap and the sum overcounts. Overlaps must be subtracted back.' },
+    ] },
     { type: 'text', text: 'n items belong to n owners and are handed back **at random, one each**: letters and envelopes, hats, coats, Secret Santa names. The question asks for the chance that **nobody** gets their own, that **at least one** does, or that **exactly k** do.' },
     { type: 'list', items: ['"5 letters go into 5 addressed envelopes at random. Probability no letter is in the right envelope?"', '"6 traders draw names from a hat. Probability that exactly 2 draw their own name?"', '"7 coats handed back at random. Probability that exactly 6 people get their own coat?"'] },
     { type: 'text', text: 'Not this lesson: values drawn independently with repeats allowed (bto/birthday), and the **expected** number who get their own, which is always 1 (bto/linearity).' },
@@ -69,7 +74,7 @@ export default {
     { type: 'diagram', diagram: 'table', spec: { caption: 'All 6 arrangements of 3 letters', columns: ['envelope a', 'envelope b', 'envelope c', 'letters in own envelope'], rows: PERMS3.map((p) => [...p, String(fixed3(p))]) }, caption: `Two rows have no letter at home (B C A and C A B): D(3) = ${D(3)}, so P(no match) = ${none(3)}. No row has exactly 2 at home: if two are right, the third has only its own envelope left.` },
     { type: 'check', scope: 'reading the 3-letter table', questions: [
       { type: 'number', q: 'In the table, how many arrangements have exactly one letter in its own envelope?', answer: PERMS3.filter((p) => fixed3(p) === 1).length, explain: 'A C B, B A C and C B A: fix one letter, swap the other two.' },
-      { type: 'choice', q: 'Why does no row have exactly 2 letters at home?', options: ['If two are home, the third has only its own envelope left', 'Because 2 is even', 'It happens, but rarely', 'The table is incomplete'], answer: 0, traps: { 1: 'parity has nothing to do with it', 2: 'it is impossible, not rare: no arrangement does it', 3: 'all 3! = 6 arrangements are listed' }, explain: 'Exactly n − 1 matches is impossible for any n.' },
+      { type: 'choice', q: 'Why does no row have exactly 2 letters at home?', options: ['If two are home, the third has only its own envelope left', 'Two at home needs a swap count that 3 letters cannot make', 'It can happen, but it is too rare to show up in 6 rows', 'The table lists only some of the arrangements of 3 letters'], answer: 0, traps: { 1: 'parity has nothing to do with it', 2: 'it is impossible, not rare: no arrangement does it', 3: 'all 3! = 6 arrangements are listed' }, explain: 'Exactly n − 1 matches is impossible for any n.' },
     ] },
     { type: 'text', text: 'Count fixed points for 4 letters the same way, over all 24 arrangements, and plot how many arrangements have each count.' },
     { type: 'diagram', diagram: 'bar', spec: { title: 'Arrangements of 4 letters by letters at home', xLabel: 'letters in own envelope', yLabel: 'arrangements', categories: ['0', '1', '2', '3', '4'], series: [{ name: 'arrangements', values: [0, 1, 2, 3, 4].map((k) => nCr(4, k) * D(4 - k)) }], valueLabels: true }, caption: `${D(4)} + ${nCr(4, 1) * D(3)} + ${nCr(4, 2) * D(2)} + 0 + 1 = ${fact(4)}. The bar at 3 is empty (exactly n − 1 is impossible), and "nobody" is the tallest bar: ${D(4)} of ${fact(4)}.` },
@@ -87,15 +92,15 @@ export default {
         checks: [
           { make: (rng) => { const n = rng.int(4, 7); return { type: 'number', q: `${n} coats are handed back at random, one each. How many equally likely arrangements are there?`, answer: fact(n), explain: `${n}! = ${fact(n)}.` }; } },
         ] },
-      { say: 'Do not multiply ((n − 1)/n)^n. That assumes independent matches, and they are dependent.', why: 'The independent model allows two people to receive the same hat. A permutation never does.',
+      { say: 'Do not multiply ((n − 1)/n)^n. That assumes independent matches, and they are dependent.', why: 'The independent model allows two people to receive the same hat. A permutation never does.', answers: 'independent',
         checks: [
           { type: 'choice', q: '4 letters. Which is P(no letter in its own envelope)?', options: [none(4).toString(), indep(4).toString(), Q.of(1, 4).toString(), (1 - E1).toFixed(3)], answer: 0, traps: { 1: 'the independent model: letters would be allowed to share envelopes', 2: 'one letter\'s chance of a match', 3: 'the large-n answer for "at least one", not "none"' }, explain: `${D(4)} of ${fact(4)} arrangements: ${none(4)} = ${f3(none(4))}. The independent guess gives ${f3(indep(4))}.` },
         ] },
-      { say: 'Count derangements by where item 1 goes. It goes to some slot j (n − 1 choices). Then either item j goes to slot 1, a swap, leaving D(n − 2), or it does not, leaving D(n − 1). So D(n) = (n − 1)(D(n−1) + D(n−2)).', why: 'In the second case, "item j must not go to slot 1" acts like j\'s forbidden home: n − 1 items each with one forbidden slot.',
+      { say: 'Count derangements by where item 1 goes. It goes to some slot j (n − 1 choices). Then either item j goes to slot 1, a swap, leaving D(n − 2), or it does not, leaving D(n − 1). So D(n) = (n − 1)(D(n−1) + D(n−2)).', why: 'In the second case, "item j must not go to slot 1" acts like j\'s forbidden home: n − 1 items each with one forbidden slot.', answers: 'chain',
         checks: [
           { make: (rng) => { const n = rng.int(4, 7); return { type: 'number', q: `D(${n - 2}) = ${D(n - 2)} and D(${n - 1}) = ${D(n - 1)}. What is D(${n})?`, answer: D(n), hints: ['Add the two previous values.', `Multiply by n − 1 = ${n - 1}.`], explain: `(${n} − 1)(${D(n - 1)} + ${D(n - 2)}) = ${D(n)}.` }; } },
         ] },
-      { say: 'P(nobody gets their own) = D(n)/n!. Inclusion-exclusion writes it as 1 − 1 + 1/2! − 1/3! + … ± 1/n!, the start of the series for e^(−1).', why: 'Subtract arrangements with some forced match, add back the doubly counted, and so on. The alternating tail shrinks like 1/n!.',
+      { say: 'P(nobody gets their own) = D(n)/n!. Inclusion-exclusion writes it as 1 − 1 + 1/2! − 1/3! + … ± 1/n!, the start of the series for e^(−1).', why: 'Subtract arrangements with some forced match, add back the doubly counted, and so on. The alternating tail shrinks like 1/n!.', answers: 'add-matches',
         checks: [
           { make: (rng) => { const n = rng.int(4, 6); const v = altSum(n); return mc(rng, `Evaluate 1 − 1 + 1/2! − 1/3! + … ± 1/${n}! exactly.`, v.toString(), [[none(n - 1).toString(), `stopped one term early (that is the n = ${n - 1} answer)`], [one.sub(v).toString(), 'answered the complement'], [indep(n).toString(), 'used the independent model']], `It equals D(${n})/${n}! = ${D(n)}/${fact(n)} = ${v}.`); } },
         ] },
@@ -111,7 +116,7 @@ export default {
     { type: 'explain', prompt: 'In your own words: why is ((n − 1)/n)^n the wrong answer for "nobody gets their own", even though each person individually misses with (n − 1)/n?', model: 'Each person misses with (n − 1)/n on their own, but the misses are linked: the items are handed out one each, so what one person receives changes what is left for the others. Multiplying assumes independence, which would allow two people to receive the same item. Counting permutations respects the one-each rule and gives D(n)/n!.', points: ['each individual chance is (n − 1)/n', 'the events are dependent because items are handed out one each', 'count arrangements instead: D(n)/n!'] },
 
     S('worked'),
-    { type: 'worked', family: 'derangements', section: 'bto', difficulty: 2, seed: 'a', intro: 'Nobody gets their own. Try it before opening the solution.' },
+    { type: 'worked', family: 'derangements', section: 'bto', difficulty: 2, seed: 'a', explainAt: [0], intro: 'Nobody gets their own. Try it before opening the solution.' },
     { type: 'worked', family: 'derangements', section: 'bto', difficulty: 3, seed: 'f', fade: 1, intro: 'Exactly k matches. The first steps are given; the last one and the answer are yours.' },
 
     S('predict'),
@@ -130,12 +135,20 @@ export default {
       `P = ${nCr(5, 2) * fact(3)}/${fact(5)} = ${Q.of(nCr(5, 2) * fact(3), fact(5))}.`,
     ], errorStep: 1, explain: `The other 3 must **all** miss, or more than 2 would be right: only D(3) = ${D(3)} ways. P = ${nCr(5, 2)} × ${D(3)}/${fact(5)} = ${exactly(5, 2)}.` },
     { type: 'check', scope: 'the named traps', questions: [
-      { type: 'choice', q: `5 letters. A candidate answers (4/5)⁵ ≈ ${f3(indep(5))} for "no letter right". Which belief?`, options: ['Independent matches', 'Forgot to choose which match', 'Answered at least one'], answer: 0, explain: `The letters compete for the same envelopes. D(5)/5! = ${none(5)} ≈ ${f3(none(5))}.` },
+      { type: 'choice', q: `5 letters. A candidate answers (4/5)⁵ ≈ ${f3(indep(5))} for "no letter right". Which belief?`, options: ['Treated the matches as independent', 'Forgot to choose which letters match', 'Answered "at least one right" instead'], answer: 0, traps: { 1: 'choosing which letters match belongs to "exactly k" questions, and gives a count, not a power', 2: `"at least one right" is about ${f3(one.sub(none(5)))}, above 1/2` }, explain: `The letters compete for the same envelopes. D(5)/5! = ${none(5)} ≈ ${f3(none(5))}.` },
     ] },
 
     S('speed'),
     { type: 'callout', tone: 'speed', text: `Memorise D(n) for n = 1 to 7: ${[1, 2, 3, 4, 5, 6, 7].map(D).join(', ')}. Each is n·D(n − 1) ± 1 (plus for even n, minus for odd): ${D(5)} = 5 × ${D(4)} − 1, ${D(6)} = 6 × ${D(5)} + 1.` },
     { type: 'callout', tone: 'speed', text: `For n ≥ 5, answer 1/e ≈ ${E1.toFixed(3)} for "nobody" and 1 − 1/e ≈ ${(1 - E1).toFixed(3)} for "at least one". Exactly k for large n: e^(−1)/k!. That takes five seconds of the ${SECTIONS.bto.exam.perItemSeconds}.` },
+    { type: 'thinkaloud', problem: `${TK} traders draw names from a hat for Secret Santa, one each. What is the probability that nobody draws their own name?`, lines: [
+      { t: 0, say: 'Names handed back one each at random: a permutation. "Nobody" means a derangement.' },
+      { t: 4, say: `Each trader misses with ${TK - 1}/${TK}, so (${TK - 1}/${TK})^${TK} ≈ ${f3(indep(TK))}...`, slip: true },
+      { t: 9, say: 'No: that treats the draws as independent, as if two traders could draw the same name. Count arrangements instead.' },
+      { t: 14, say: `D(${TK}) = ${TK} × D(${TK - 1}) ${TK % 2 ? '−' : '+'} 1 = ${TK} × ${D(TK - 1)} ${TK % 2 ? '−' : '+'} 1 = ${D(TK)}, over ${TK}! = ${fact(TK)}.` },
+      { t: 22, say: `${D(TK)}/${fact(TK)} ≈ ${f3(none(TK))}, right on 1/e as expected for n ≥ 5. The independent ${f3(indep(TK))} is the trap one option away.` },
+      { t: 26, say: `Answer ${f3(none(TK))}, with ${SECTIONS.bto.exam.perItemSeconds - 26} seconds left.` },
+    ] },
     { type: 'check', scope: 'D(n) values and the 1/e shortcut', questions: [
       { make: (rng) => { const n = rng.int(5, 7); return { type: 'number', q: `D(${n - 1}) = ${D(n - 1)}. Use D(n) = n·D(n − 1) ± 1 to get D(${n}).`, answer: D(n), hints: [`${n} × ${D(n - 1)} = ${n * D(n - 1)}.`, n % 2 ? 'n is odd: subtract 1.' : 'n is even: add 1.'], explain: `${n} × ${D(n - 1)} ${n % 2 ? '−' : '+'} 1 = ${D(n)}.` }; } },
     ] },
@@ -155,6 +168,17 @@ export default {
     { type: 'check', scope: 'the contrast table and edge cases', questions: [
       { type: 'choice', q: '2 people swap hats at random (one each). P(nobody gets their own)?', options: ['1/2', '1/4', '0', '1/e'], answer: 0, traps: { 1: 'the independent model (1/2)²', 2: 'the swap is a derangement', 3: 'the large-n limit, wrong for n = 2' }, explain: 'Two equally likely arrangements: keep or swap. Only the swap works.' },
     ] },
+    { type: 'variation', base: `4 letters go into their 4 envelopes at random, one each. P(no letter in its own envelope) = ${D(4)}/${fact(4)} = ${none(4)}.`, rows: [
+      { change: 'Fill the envelopes in a different order (envelope d first)', effect: `No change: ${none(4)}. Every one of the ${fact(4)} arrangements is still equally likely; the order of filling does not matter.`, same: true },
+      { change: 'Ask for exactly 1 letter in its own envelope', effect: `Choose the one at home, then the other 3 must all miss: ${nCr(4, 1)} × D(3) = ${nCr(4, 1) * D(3)}, so ${exactly(4, 1)}.` },
+      { change: 'Ask for exactly 3 letters in their own envelopes', effect: 'Exactly 0: with 3 at home, the fourth letter has only its own envelope left.' },
+      { change: 'Let each letter pick any envelope, repeats allowed', effect: `Now the picks are independent: (3/4)⁴ = ${indep(4)} ≈ ${f3(indep(4))}. A different model, so a different answer.` },
+      { change: 'Use 5 letters and ask for at least one in its own envelope', effect: `Two changes: n = 5 gives D(5)/5! = ${none(5)}, and "at least one" flips it: 1 − ${none(5)} = ${one.sub(none(5))} ≈ ${f3(one.sub(none(5)))}.`, fusion: true },
+    ] },
+    { type: 'transfer',
+      near: { make: (rng) => { const n = rng.int(4, 6), k = rng.int(1, 2); const v = exactly(n, k); const binom = Q.of(nCr(n, k) * (n - 1) ** (n - k), n ** n); return mc(rng, `${n} lockers each have one key. The ${n} keys are handed out at random, one per locker. P(exactly ${k} key${k === 1 ? '' : 's'} end${k === 1 ? 's' : ''} up in ${k === 1 ? 'its' : 'their'} own locker)?`, v.toString(), [[binom.toString(), 'treated each key as landing home independently with chance 1/n (a binomial)'], [Q.of(nCr(n, k) * fact(n - k), fact(n)).toString(), 'let the other keys be anything, so more could land home'], [Q.of(D(n - k), fact(n)).toString(), `forgot to choose which ${k} are home`], [one.sub(v).toString(), 'answered the complement']], `C(${n},${k}) × D(${n - k}) / ${n}! = ${nCr(n, k)} × ${D(n - k)} / ${fact(n)} = ${v}.`); } },
+      far: { make: (rng) => { const n = rng.pick([20, 30, 52]), atLeast = rng.chance(0.5); return { type: 'number', q: `Two packs of ${n} different cards are shuffled separately, then turned over together, one card from each pack at a time. P(${atLeast ? 'at least once the two cards are the same' : 'the two cards never match'}), to 2 decimals?`, answer: Number((atLeast ? 1 - E1 : E1).toFixed(2)), tolerance: 0.006, hints: ['Pack 2 is a random permutation of pack 1: a match is a fixed point.', `For large n, P(no fixed point) ≈ 1/e ≈ ${E1.toFixed(3)}.`], explain: `Pack 2 is a random reordering of pack 1, and a match is a card in its own position. P(no match) = D(${n})/${n}! ≈ 1/e ≈ ${E1.toFixed(3)}${atLeast ? `, so at least one match ≈ ${(1 - E1).toFixed(3)}` : ''}.` }; } },
+      principle: { type: 'choice', q: 'Which idea carried over from letters to lockers and to the two packs?', options: ['A one-each matching is a permutation: count D(n)/n!', 'Each match is independent: multiply ((n − 1)/n)^n', 'Add 1/n per item: some match is certain at n items', 'The expected matches, 1, is the chance of a match'], answer: 0, traps: { 1: 'one-each handing back makes the matches dependent', 2: 'match events overlap; adding overcounts', 3: 'an expectation of 1 is not a probability of 1' }, explain: 'Keys to lockers and card against card are both random one-to-one matchings. A match is a fixed point, so derangement counts (and 1/e for large n) answer both.' } },
 
     S('tryit'),
     { type: 'tryit', family: 'derangements', section: 'bto', count: 3 },

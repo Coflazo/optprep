@@ -44,11 +44,15 @@ export default {
   ],
   blocks: [
     sec('recognise'),
-    { type: 'challenge', q: 'Before any teaching: 10 people drop their hats in a pile and each takes one back at random. How many people do you expect to get their own hat back? Two approaches, then an answer.', answer: '1', explain: 'Listing all 10! orders is hopeless. The fast route: each person gets their own hat with chance 1/10, and the expected number of matches is the sum of those ten chances, 10 × 1/10 = 1. This lesson builds that route.' },
+    { type: 'challenge', q: 'Before any teaching: 10 people drop their hats in a pile and each takes one back at random. How many people do you expect to get their own hat back? Two approaches, then an answer.', answer: '1', explain: 'Listing all 10! orders is hopeless. The fast route: each person gets their own hat with chance 1/10, and the expected number of matches is the sum of those ten chances, 10 × 1/10 = 1. This lesson builds that route.',
+      attempts: [
+        { id: 'list', label: 'Listed every order', approach: `Tried to count matches over all 10! = ${Array.from({ length: 10 }, (_, i) => i + 1).reduce((a, b) => a * b)} orders.`, breaksAt: 'Hopeless by hand. One indicator per person needs only one chance each: 1/10.' },
+        { id: 'dependent', label: 'Stuck on dependence', approach: 'Decided the matches depend on each other, so no shortcut exists.', breaksAt: 'Linearity never needs independence: each indicator still averages 1/10, so the count averages 10 × 1/10.' },
+      ] },
     { type: 'text', text: 'Trigger words: **expected**, **on average**, **fair price**, "how much would you pay to play", "expected number of". The answer is a long-run average, not a probability, so it can be any number: negative, above 1, or a value the game never actually pays.' },
     { type: 'check', scope: 'spotting an expected-value question', questions: [
-      mc({ q: 'Which question asks for an expected value?', right: 'How much should you pay to play a game that pays the face of a die in euros?', at: 2,
-        wrong: [['What is P(the die shows 6)?', 'a probability, not an average payout'], ['What is the most likely sum of two dice?', 'the most likely value is not the average value'], ['How many outcomes do two dice have?', 'a count of outcomes, not an average']],
+      mc({ q: 'Which question asks for an expected value?', right: 'What is a fair price for a game paying a die face in €?', at: 2,
+        wrong: [['What is the chance that a fair die shows a 6?', 'a probability, not an average payout'], ['Which sum of two fair dice is the most likely?', 'the most likely value is not the average value'], ['How many ordered outcomes do two dice have?', 'a count of outcomes, not an average']],
         explain: 'A fair price is the long-run average payout: an expected value.' }),
     ] },
 
@@ -90,13 +94,13 @@ export default {
     sec('derivation'),
     { type: 'text', text: 'The hats challenge with n people, one move at a time.' },
     { type: 'steps', steps: [
-      { say: 'Give each person an indicator: I_{k} = 1 if person k gets their own hat, 0 otherwise.', why: 'The number of matches is hard to handle directly; each indicator is one yes/no event with an easy chance.',
+      { answers: 'list', say: 'Give each person an indicator: I_{k} = 1 if person k gets their own hat, 0 otherwise.', why: 'The number of matches is hard to handle directly; each indicator is one yes/no event with an easy chance.',
         checks: [mc({ q: 'With 10 people, what is E[I_{k}] for one person k?', right: '1/10', at: 1,
           wrong: [['1/2', 'treated "own hat or not" as equally likely'], ['1', 'assumed a match is certain'], ['1/9', 'left the own hat out of the pile']],
           explain: 'Person k is equally likely to receive any of the 10 hats, so P(own hat) = 1/10, and E[indicator] = P.' })] },
       { say: 'The number of matches is X = I_{1} + I_{2} + … + I_{n}.', why: 'Each person who matches adds exactly 1 to the sum; everyone else adds 0.',
         checks: [{ type: 'number', q: 'Five people. The indicators come out 1, 0, 0, 1, 0. How many matches are there?', answer: 2, explain: 'The sum of the indicators counts the matches: 1 + 0 + 0 + 1 + 0 = 2.' }] },
-      { say: 'Linearity: E[X] = E[I_{1}] + … + E[I_{n}] = n × 1/n = 1.', why: 'The indicators are dependent (if all but one match, the last must too), but linearity never needed independence.',
+      { answers: 'dependent', say: 'Linearity: E[X] = E[I_{1}] + … + E[I_{n}] = n × 1/n = 1.', why: 'The indicators are dependent (if all but one match, the last must too), but linearity never needed independence.',
         checks: [{ make: (rng) => { const n = rng.pick([5, 12, 30, 100]); return { type: 'number', q: `${n} people and ${n} hats, handed back at random. Expected number of matches?`, answer: 1, explain: `${n} × 1/${n} = 1, whatever the number of people.` }; } }] },
       { say: 'Same move, new question: the expected number of sixes in 20 throws is 20 × 1/6.', why: 'Every "expected number of" is a sum of chances: find one chance, multiply by how many events there are.',
         checks: [{ make: (rng) => { const k = rng.pick([13, 26, 39]); return { type: 'number', q: `${k} cards are dealt from a shuffled deck. What is the expected number of aces?`, answer: k / 13, explain: `Each card is an ace with chance 4/52 = 1/13: ${k} × 1/13 = ${k / 13}.` }; } }] },

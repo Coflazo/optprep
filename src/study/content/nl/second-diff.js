@@ -19,6 +19,10 @@ const sum3 = (xs) => xs.slice(3, 5).every((v, i) => v === xs[i] + xs[i + 1] + xs
 const hard = (rng, n) => { let xs; do xs = quad(rng.int(-10, 40), rng.int(-10, 15), nz(rng, -6, 6), n); while (xs.slice(0, 5).some((v, i) => Math.abs(v) < 3 || v === xs[i + 1] || v === xs[i + 2]) || sum3(xs)); return xs; };
 const any = (rng, n) => (rng.chance(0.5) ? easy(rng, n) : hard(rng, n));
 const sOf = (xs) => diffs(diffs(xs))[0];
+const TA = quad(4, 3, 4, 6), TAg = g(TA);
+const UP5 = UP.slice(0, 5), LIN = UP.map((v, i) => v + 5 * (i + 1)), DBL = UP.map((v) => 2 * v), BOTH = UP.map((v, i) => 2 * v + 5 * (i + 1)), NEGS = quad(2, 1, -3, 6);
+// Figures for the near transfer: five shown, ask for the seventh (checked unique with the rule finder).
+const figs = (rng) => quad(rng.int(2, 9), rng.int(3, 8), rng.int(1, 4), 7);
 
 export default {
   id: 'nl/second-diff',
@@ -36,7 +40,12 @@ export default {
   ],
   blocks: [
     S('recognise'),
-    { type: 'challenge', q: `Before any teaching: ${seq(CH.slice(0, 5))}, ? What comes next? Try two ways: once with the gaps, once by guessing a formula in n.`, answer: String(CH[5]), explain: `Gaps ${seq(g(CH.slice(0, 5)))} rise by ${sOf(CH)} each time, so the next gap is ${g(CH)[4]} and ${CH[4]} + ${g(CH)[4]} = ${CH[5]}. A formula exists (${CH[0]} + (n − 1)²) but finding it takes longer than the ladder, which needs no formula at all.` },
+    { type: 'challenge', q: `Before any teaching: ${seq(CH.slice(0, 5))}, ? What comes next? Try two ways: once with the gaps, once by guessing a formula in n.`, answer: String(CH[5]), explain: `Gaps ${seq(g(CH.slice(0, 5)))} rise by ${sOf(CH)} each time, so the next gap is ${g(CH)[4]} and ${CH[4]} + ${g(CH)[4]} = ${CH[5]}. A formula exists (${CH[0]} + (n − 1)²) but finding it takes longer than the ladder, which needs no formula at all.`,
+      attempts: [
+        { id: 'formula', label: 'Hunt for a formula in n', approach: 'Tried to guess a rule in the position n, such as n² plus something.', breaksAt: 'It can work, but it costs time and a wrong guess costs a point. The gaps of the gaps give the answer with no formula at all.' },
+        { id: 'last-gap', label: 'Repeat the last gap', approach: `Added the last gap again: ${CH[4]} + ${g(CH)[3]} = ${CH[4] + g(CH)[3]}.`, breaksAt: `The gaps grow by ${sOf(CH)} every step, so the next gap is ${g(CH)[4]}, not ${g(CH)[3]}.` },
+        { id: 'add-s', label: 'Add the growth to the term', approach: `Saw the gaps rise by ${sOf(CH)} and added ${sOf(CH)} to ${CH[4]}: ${CH[4] + sOf(CH)}.`, breaksAt: `The ${sOf(CH)} changes the gap, not the term: only the new gap, ${g(CH)[4]}, lands on the last term.` },
+      ] },
     { type: 'text', text: 'The gaps are not constant, but they move **steadily**: each gap is the previous gap plus the same amount s. The gaps can grow, shrink, or cross zero, so the terms can rise, peak and fall.' },
     { type: 'list', items: [`What number comes next?  ${seq(UP.slice(0, 5))}, ?`, `What number comes next?  ${seq(PEAK.slice(0, 6))}, ?`, `Which number replaces the question mark?  ${seq(ERR.slice(0, 3))}, ?, ${ERR[4]}`] },
     { type: 'text', text: `Not this lesson: gaps that multiply (${seq(g(DG))}) or gaps that zigzag. Squares, triangular numbers and "add 1, 2, 3, …" are special cases of this lesson; they have shortcut lessons, but this method always works on them.` },
@@ -67,15 +76,15 @@ export default {
         checks: [
           { make: (rng) => { const xs = hard(rng, 5); return num(`Write the gaps of ${seq(xs)}. What is the last gap?`, g(xs)[3], `Gaps: ${seq(g(xs))}.`, ['Later term minus earlier term.', `${neg(xs[4])} − ${neg(xs[3])}.`]); } },
         ] },
-      { say: 'Write the gaps of the gaps. If they all equal s, the gap row is a constant-gap sequence with step s.', why: 'This is the arithmetic test applied one level down. Three equal entries (from five terms) are enough to trust it.',
+      { answers: 'formula', say: 'Write the gaps of the gaps. If they all equal s, the gap row is a constant-gap sequence with step s.', why: 'This is the arithmetic test applied one level down. Three equal entries (from five terms) are enough to trust it.',
         checks: [
           { make: (rng) => { const xs = hard(rng, 6); return num(`${seq(xs)}: what is the second difference?`, sOf(xs), `Gaps ${seq(g(xs))}, second differences ${seq(diffs(g(xs)))}.`, ['Gaps first.', 'Then gaps of the gaps, keeping signs.']); } },
         ] },
-      { say: 'Extend the bottom row by copying s, then the gap row: next gap = last gap + s.', why: 'The constant row is the only one you may copy. The gap row then continues exactly like a constant-gap sequence.',
+      { answers: 'last-gap', say: 'Extend the bottom row by copying s, then the gap row: next gap = last gap + s.', why: 'The constant row is the only one you may copy. The gap row then continues exactly like a constant-gap sequence.',
         checks: [
           { make: (rng) => { const xs = any(rng, 6); return num(`${seq(xs.slice(0, 5))}, ? What is the next gap?`, g(xs)[4], `Gaps ${seq(g(xs).slice(0, 4))}, step ${sgn(sOf(xs))}: ${neg(g(xs)[3])} ${sgn(sOf(xs))} = ${neg(g(xs)[4])}.`, ['Find the gaps and their step s.', 'Last gap + s.']); } },
         ] },
-      { say: 'Climb up: next term = last term + next gap.', why: 'Each term is the previous term plus the gap between them, so the new gap lands on the last term.',
+      { answers: 'add-s', say: 'Climb up: next term = last term + next gap.', why: 'Each term is the previous term plus the gap between them, so the new gap lands on the last term.',
         checks: [
           { make: (rng) => { const xs = any(rng, 6); return num(nextQ(xs.slice(0, 5)), xs[5], `Next gap ${neg(g(xs)[4])}; ${neg(xs[4])} ${sgn(g(xs)[4])} = ${neg(xs[5])}.`, ['Two rows: gaps, then gaps of gaps.', 'Extend the bottom row, then the gap row, then the terms.']); } },
         ] },
@@ -89,7 +98,7 @@ export default {
     { type: 'explain', prompt: 'Why does a constant second difference turn the gap row into a constant-gap sequence, and why is the new gap (not s) what you add to the last term?', model: 'The second differences are the gaps of the gap row; if they are all s, the gap row adds s each step, which is a constant-gap sequence. The terms are built from the gaps, not from s, so the last term grows by the new gap; s only tells you how the gap changes.', points: ['Second differences are the gaps of the gap row', 'Constant s makes the gap row arithmetic', 'Terms add gaps; gaps add s'] },
 
     S('worked'),
-    { type: 'worked', family: 'second-diff', section: 'nl', difficulty: 1, seed: 'a', intro: 'Five terms, a small positive second difference. Build the ladder before opening the solution.' },
+    { type: 'worked', family: 'second-diff', section: 'nl', difficulty: 1, seed: 'a', explainAt: [1], intro: 'Five terms, a small positive second difference. Build the ladder before opening the solution.' },
     { type: 'worked', family: 'second-diff', section: 'nl', difficulty: 2, seed: 'b', fade: 1, intro: 'Six terms, any sign. The two rows are given; the climb back up is yours.' },
 
     S('predict'),
@@ -113,6 +122,16 @@ export default {
 
     S('speed'),
     { type: 'callout', tone: 'speed', text: 'One line: **next = last + (last gap + s)**. You need only the last two gaps to read s, but glance at the earlier ones to confirm it. If s = 2, a plain n² is hiding inside; if s = 1, triangular numbers are.' },
+    { type: 'thinkaloud', problem: nextQ(TA.slice(0, 5)), lines: [
+      { t: 0, say: `Gaps first: ${seq(TAg.slice(0, 4))}. Not constant.` },
+      { t: 5, say: `They look steady, so add the last gap again: ${TA[4]} + ${TAg[3]} = ${TA[4] + TAg[3]}.`, slip: true },
+      { t: 8, say: `No, that treats the gaps as constant. They grow by ${sOf(TA)} each time, so the next gap is ${TAg[3]} + ${sOf(TA)} = ${TAg[4]}.` },
+      { t: 12, say: `${TA[4]} + ${TAg[4]} = ${TA[5]}.` },
+      { t: 16, say: `Check: all three second differences are ${sOf(TA)}, and ${TAg[4]} continues ${seq(TAg.slice(0, 4))}. Answer ${TA[5]}.` },
+    ] },
+    { type: 'check', scope: 'the think-aloud: move the gap before the term', questions: [
+      { make: (rng) => { const xs = hard(rng, 7); return num(nextQ(xs.slice(0, 6)), xs[6], `Gaps ${seq(g(xs).slice(0, 5))} step by ${sgn(sOf(xs))}: next gap ${neg(g(xs)[4])} ${sgn(sOf(xs))} = ${neg(g(xs)[5])}, so ${neg(xs[5])} ${sgn(g(xs)[5])} = ${neg(xs[6])}.`, ['Gaps, then gaps of gaps, keeping signs.', 'Next gap first, then add it to the last term.']); } },
+    ] },
     { type: 'callout', tone: 'speed', text: 'Two steps ahead (useful when the blank is late, or to double-check): the next two gaps are last gap + s and last gap + 2s, so the term after next is last + 2 × last gap + 3s.' },
     { type: 'check', scope: 'the one-line and two-step shortcuts', questions: [
       { make: (rng) => { const xs = any(rng, 7), l = xs[4], lg = g(xs)[3], s = sOf(xs); return num(`${seq(xs.slice(0, 5))}, ?, ? What is the term **after** the next one?`, xs[6], `Next gaps ${neg(lg + s)} and ${neg(lg + 2 * s)}: ${neg(l)} + 2 × ${lg < 0 ? `(${neg(lg)})` : lg} + 3 × ${s < 0 ? `(${neg(s)})` : s} = ${neg(xs[6])}.`, ['Find the last gap and s.', 'last + 2 × last gap + 3s.']); } },
@@ -130,10 +149,28 @@ export default {
     ] },
     { type: 'callout', tone: 'edge', text: `Edge cases: s = 0 is a constant gap. A negative s makes a peak, and a gap of exactly 0 repeats a term (${seq(PEAK.slice(3, 5))}). If the second row is not constant but itself changes steadily, a third row settles it: the same method, one layer deeper.` },
     { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: a constant second difference is constant acceleration. Distance covered under steady acceleration, or running totals of a steadily growing count, all have this two-row ladder.' },
+    { type: 'variation', base: `${seq(UP5)}, ?  Gaps ${seq(g(UP5))}, s = ${sOf(UP)}, next ${UP[5]}.`, rows: [
+      { same: true, change: `Drop the first term: ${seq(UP5.slice(1))}, ?`, effect: `Still ${UP[5]}. The gaps ${seq(g(UP5.slice(1)))} still grow by ${sOf(UP)}; the only loss is evidence (two second differences instead of three).` },
+      { change: `Add 5, 10, 15, … (5 × position) to the terms: ${seq(LIN.slice(0, 5))}, ?`, effect: `${LIN[5]}. Every gap grows by 5, to ${seq(g(LIN.slice(0, 5)))}, but s stays ${sOf(LIN)}: a constant-gap sequence added on top vanishes in the second row.` },
+      { change: `Make s negative: ${seq(NEGS.slice(0, 5))}, ?`, effect: `${NEGS[5]}. The gaps ${seq(g(NEGS.slice(0, 5)))} shrink by ${-sOf(NEGS)}; the method is identical, and the terms will peak once a gap crosses 0.` },
+      { change: `Double every term: ${seq(DBL.slice(0, 5))}, ?`, effect: `${DBL[5]}. Every row doubles, so s becomes ${sOf(DBL)}.` },
+      { fusion: true, change: `Double every term, then add 5 × position: ${seq(BOTH.slice(0, 5))}, ?`, effect: `${BOTH[5]}. The doubling reaches every row (s = ${sOf(BOTH)}); the added 5, 10, 15, … only lifts the gaps by 5, so s ignores it.` },
+    ] },
     { type: 'check', scope: 'the contrast table and edge cases', questions: [
-      { make: (rng) => { const t = rng.int(0, 2); let xs; if (t === 0) xs = arith(rng.int(1, 20), rng.int(2, 9), 5); else if (t === 1) xs = easy(rng, 5); else { const g0 = rng.int(1, 3); xs = [rng.int(1, 9)]; while (xs.length < 5) xs.push(xs[xs.length - 1] + g0 * 2 ** (xs.length - 1)); } const names = ['constant gap', 'gaps grow by a constant', 'gaps double']; const tr = [[null, 'the gaps do not change at all', 'the gaps are equal, not doubling'], ['the gaps change', null, 'the gaps grow by a fixed amount, not a factor'], ['the gaps change', 'the gaps of the gaps are not constant: they double too', null]]; return pick(rng, `${seq(xs)}: which rule?`, names[t], names.map((nm, i) => [nm, tr[t][i]]).filter((_, i) => i !== t), `Gaps: ${seq(g(xs))}.`); } },
+      { make: (rng) => { const t = rng.int(0, 2); let xs; if (t === 0) xs = arith(rng.int(1, 20), rng.int(2, 9), 5); else if (t === 1) xs = easy(rng, 5); else { const g0 = rng.int(1, 3); xs = [rng.int(1, 9)]; while (xs.length < 5) xs.push(xs[xs.length - 1] + g0 * 2 ** (xs.length - 1)); } const names = ['the gaps stay the same', 'the gaps grow by a constant', 'the gaps double each time']; const tr = [[null, 'the gaps do not change at all', 'the gaps are equal, not doubling'], ['the gaps change', null, 'the gaps grow by a fixed amount, not a factor'], ['the gaps change', 'the gaps of the gaps are not constant: they double too', null]]; return pick(rng, `${seq(xs)}: which rule?`, names[t], names.map((nm, i) => [nm, tr[t][i]]).filter((_, i) => i !== t), `Gaps: ${seq(g(xs))}.`); } },
       { make: (rng) => { const xs = quad(rng.int(0, 20), rng.int(10, 16), -rng.int(3, 5), 7); return num(nextQ(xs.slice(0, 6)), xs[6], `Gaps ${seq(g(xs).slice(0, 5))} fall by ${-sOf(xs)}: next gap ${neg(g(xs)[5])}, so ${neg(xs[5])} ${sgn(g(xs)[5])} = ${neg(xs[6])}.`, ['The gaps shrink by the same amount each step.', 'Once a gap is negative, the terms fall.']); } },
     ] },
+
+    { type: 'transfer',
+      near: { make: (rng) => { const xs = figs(rng); return num(`A tile pattern uses ${seq(xs.slice(0, 5))} tiles in figures 1 to 5. The number of tiles added per figure grows by the same amount each time. How many tiles does figure 7 use?`, xs[6], `Tiles added: ${seq(g(xs.slice(0, 5)))}, growing by ${sOf(xs)}. Next two: ${g(xs)[4]} and ${g(xs)[5]}, so figure 7 = ${xs[4]} + ${g(xs)[4]} + ${g(xs)[5]} = ${xs[6]}.`, ['Write the tiles added per figure, then how that grows.', 'Figure 7 is two steps on: last + 2 × last gap + 3s.']); } },
+      far: { make: (rng) => { const a = rng.int(10, 30), k = rng.int(2, 6), n = rng.int(5, 8); return num(`A new trader makes ${a} trades on day 1, and each day ${k} more than the day before. How many trades in total over the first ${n} days?`, n * a + (k * n * (n - 1)) / 2, `Daily counts ${seq(arith(a, k, n))} have a constant gap ${k}; their running totals have a constant second difference. Total = ${n} × ${a} + ${k} × (0 + 1 + … + ${n - 1}) = ${n * a} + ${k * n * (n - 1) / 2} = ${n * a + (k * n * (n - 1)) / 2}.`, ['The daily counts form a constant-gap sequence.', `Total = ${n} × ${a} + ${k} × (0 + 1 + … + ${n - 1}).`]); } },
+      principle: { type: 'choice', q: 'Which idea carried over from the sequences to the tiles and the trades?', options: [
+        'the step grows by a fixed amount: move the step, then the total',
+        'the step is the same every time: add the last step once more',
+        'each total is a fixed multiple of the total before it',
+        'add the fixed growth of the step straight onto the total',
+      ], answer: 0, traps: { 1: 'the amount added per figure (or per day) grows, so the last step does not repeat', 2: 'the ratios drift towards 1; what stays fixed is the change in the step', 3: 'the growth belongs to the step: it changes the step, and only the new step lands on the total' }, explain: 'Tiles per figure and running totals of trades both have a step that grows by a constant: the two-row ladder, with the new step added to the last total.' },
+    },
 
     S('tryit'),
     { type: 'tryit', family: 'second-diff', section: 'nl', count: 3 },

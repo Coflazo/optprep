@@ -12,8 +12,8 @@ import { setsPage, setRunPage } from './src/ui/pages/sets.js';
 import { runFeedbackSession, runExam } from './src/ui/runner.js';
 import { optiverLogo } from './src/ui/logo.js';
 import { createSync } from './src/ui/sync.js';
-import { studyHome, bookPage, lessonPage, cheatPage, drillPage, mixedPage } from './src/study/pages.js';
-import { dueLessons } from './src/study/progress.js';
+import { studyHome, bookPage, lessonPage, cheatPage, drillPage, mixedPage, reviewPage, mistakesPage, weekPage } from './src/study/pages.js';
+import { dueLessons, openBeliefs } from './src/study/progress.js';
 
 const sync = createSync();
 const store = makeStore(undefined, sync.hooks);
@@ -39,6 +39,10 @@ const ROUTES = [
   [/^#\/study$/, () => studyHome(view, { store })],
   [/^#\/study\/book\/(\w+)$/, (m) => bookPage(view, { store, id: m[1] })],
   [/^#\/study\/lesson\/(\w+\/[\w-]+)$/, (m) => lessonPage(view, { store, id: m[1] })],
+  [/^#\/study\/lesson\/(\w+\/[\w-]+)\/restore$/, (m) => lessonPage(view, { store, id: m[1], restore: true })],
+  [/^#\/study\/review\/(\w+\/[\w-]+)$/, (m) => reviewPage(view, { store, id: m[1] })],
+  [/^#\/study\/mistakes(?:\/(.+))?$/, (m) => mistakesPage(view, { store, key: decode(m[1]) })],
+  [/^#\/study\/week$/, () => weekPage(view, { store })],
   [/^#\/study\/cheat\/(\w+)$/, (m) => cheatPage(view, { id: m[1] })],
   [/^#\/study\/drill\/(\w+)$/, (m) => drillPage(view, { id: m[1] })],
   [/^#\/study\/mixed\/(\w+)\/(\d+)$/, (m) => mixedPage(view, { store, id: m[1], chapter: +m[2] })],
@@ -46,15 +50,21 @@ const ROUTES = [
   [/^#\/data$/, () => dataPage(view, { store })],
 ];
 
+const decode = (x) => { try { return x ? decodeURIComponent(x) : null; } catch { return null; } };
+
 function renderNav(hash) {
   const due = dueLessons(store).length;
-  const link = (href, label) => h('a', { href, 'aria-current': hash === href || (href !== '#/' && hash.startsWith(`${href}/`)) ? 'page' : null }, label);
+  const open = openBeliefs(store).length;
+  const link = (href, label, on = hash === href || (href !== '#/' && hash.startsWith(`${href}/`))) => h('a', { href, 'aria-current': on ? 'page' : null }, label);
+  const studyOwn = /^#\/study\/(mistakes|week)/.test(hash);
   mount(nav,
     link('#/', 'Readiness'),
     h('div', { class: 'group' }, 'Portal tasks'),
     PORTAL_ORDER.map((id) => (id === 'zapn' ? link('#/zapn', 'Zap-N') : link(`#/s/${id}`, SECTIONS[id].title))),
     h('div', { class: 'group' }, 'Study'),
-    link('#/study', ['Study guide', due ? h('span', { class: 'badge', 'aria-label': `${due} lessons due for review` }, String(due)) : null]),
+    link('#/study', ['Study guide', due ? h('span', { class: 'badge', 'aria-label': `${due} lessons due for review` }, String(due)) : null], (hash === '#/study' || hash.startsWith('#/study/')) && !studyOwn),
+    link('#/study/mistakes', ['Mistake log', open ? h('span', { class: 'badge', 'aria-label': `${open} open mistakes` }, String(open)) : null]),
+    link('#/study/week', 'Weekly review'),
     h('div', { class: 'group' }, 'Practice'),
     link('#/mock', 'Full mock'),
     link('#/data', 'Data and backup'));
@@ -64,7 +74,7 @@ function route() {
   const hash = location.hash || '#/';
   cleanup?.();
   cleanup = null;
-  renderNav(hash.replace(/\/(practice|exam|drill|mistakes).*$/, ''));
+  renderNav(hash.startsWith('#/study') ? hash : hash.replace(/\/(practice|exam|drill|mistakes).*$/, ''));
   for (const [re, fn] of ROUTES) {
     const m = hash.match(re);
     if (m) {

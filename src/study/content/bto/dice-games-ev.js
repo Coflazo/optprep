@@ -28,7 +28,9 @@ const f2 = (x) => (x instanceof Q ? x.toNumber() : x).toFixed(2);
 const f3 = (x) => (x instanceof Q ? x.toNumber() : x).toFixed(3);
 const RS = [1, 2, 3, 4, 5];
 const DIFFS = [0, 1, 2, 3, 4, 5].map((d) => (d === 0 ? 6 : 2 * (6 - d))); // ordered pairs with |X − Y| = d
+const TK = 8; // think-aloud: an 8-sided die
 const COST = 1; // a reroll that costs $1: continuing is worth mean − cost
+const sqReroll = avg(6, (x) => (Q.of(x * x).cmp(sq(6)) >= 0 ? Q.of(x * x) : sq(6)));
 const costly = avg(6, (x) => (Q.of(x).cmp(mean(6).sub(Q.of(COST))) >= 0 ? Q.of(x) : mean(6).sub(Q.of(COST))));
 
 export default {
@@ -47,7 +49,10 @@ export default {
   ],
   blocks: [
     S('recognise'),
-    { type: 'challenge', q: 'Before any teaching: you roll a fair die and are paid its face in dollars. You may reroll once, but then you must accept the second roll. With the best strategy, what is the game worth? Try two approaches.', answer: `${V(6, 2)} = ${f2(V(6, 2))}`, explain: `If you answered 3.5 you ignored the option; if ${f3(maxOf(6, 2))} you took the better of two rolls, but a reroll cannot be undone. Keep 4, 5, 6 and reroll 1, 2, 3: the lesson shows why that cut-off is exactly the value of rerolling.` },
+    { type: 'challenge', q: 'Before any teaching: you roll a fair die and are paid its face in dollars. You may reroll once, but then you must accept the second roll. With the best strategy, what is the game worth? Try two approaches.', answer: `${V(6, 2)} = ${f2(V(6, 2))}`, explain: `If you answered 3.5 you ignored the option; if ${f3(maxOf(6, 2))} you took the better of two rolls, but a reroll cannot be undone. Keep 4, 5, 6 and reroll 1, 2, 3: the lesson shows why that cut-off is exactly the value of rerolling.`, attempts: [
+      { id: 'ignore-option', label: 'The plain average, 3.5', approach: 'Priced the game at the average face, 3.5, as if the reroll did not exist.', breaksAt: 'The reroll is used only when it helps: a 1, 2 or 3 is swapped for a fresh roll worth 3.5 on average, so the value rises above 3.5.' },
+      { id: 'best-of-two', label: 'The better of two rolls', approach: `Took the expected maximum of two rolls, ${maxOf(6, 2)} ≈ ${f3(maxOf(6, 2))}.`, breaksAt: 'You decide before seeing the second roll and must accept it. The first roll is compared with 3.5, the value of a fresh roll, not with the second roll itself.' },
+    ] },
     { type: 'text', text: 'A game pays money depending on dice, and the question asks for its **fair price**, its **expected profit**, or its value **with the best strategy** when you may reroll or stop. Payoffs can be the face, its square, a product of two dice, or a win/lose rule.' },
     { type: 'list', items: ['"You are paid the square of a die roll. What is the fair price?"', '"You roll a die: 4 or more wins that many dollars, otherwise you lose that many. Expected profit?"', '"You may reroll up to twice and keep the last roll. Value with optimal play?"'] },
     { type: 'text', text: 'Not this lesson: a stopping game where the deck changes as you draw (bto/card-stopping), and the expected maximum of rolls you all keep (bto/expected-extremes).' },
@@ -95,11 +100,11 @@ export default {
         checks: [
           { type: 'choice', q: 'Two fair dice pay the absolute difference of the faces. Fair price?', options: [absDiff().toString(), '0', '5/2', '7/2'], answer: 0, traps: { 1: 'E[X − Y] = 0, but the absolute value removes the cancellation', 2: 'treated differences 0 to 5 as equally likely', 3: 'used one die' }, explain: `Counts of differences 0..5: ${DIFFS.join(', ')}. Σ d × count = ${absDiff().mul(Q.of(36))}, so ${absDiff()} ≈ ${f3(absDiff())}.` },
         ] },
-      { say: 'Reroll games go backwards. On the last roll you must accept, so it is worth its mean (k + 1)/2. One roll earlier, keep x exactly when x is at least that mean.', why: 'Each decision compares a sure amount (the roll in hand) with an expectation (the value of continuing).',
+      { say: 'Reroll games go backwards. On the last roll you must accept, so it is worth its mean (k + 1)/2. One roll earlier, keep x exactly when x is at least that mean.', why: 'Each decision compares a sure amount (the roll in hand) with an expectation (the value of continuing).', answers: 'ignore-option',
         checks: [
           { make: (rng) => { const k = rng.pick([4, 6, 8, 12]); return mc(rng, `A fair ${k}-sided die, one reroll. The value of rerolling is:`, mean(k).toString(), [[String(k), 'assumed the reroll hits the top face'], [V(k, 2).toString(), 'used the value of the whole game, which includes the first roll\'s choice'], [Q.of(k, 2).toString(), 'forgot the faces start at 1']], `A forced roll is worth its mean ${mean(k)}.`); } },
         ] },
-      { say: 'The value with the option is E[max(X, value of continuing)]. With more rerolls repeat: V₁ = mean, V_(r+1) = E[max(X, V_r)].', why: 'Averaging over the first roll with the keep-or-reroll rule applied gives the value; the recursion adds one decision per reroll.',
+      { say: 'The value with the option is E[max(X, value of continuing)]. With more rerolls repeat: V₁ = mean, V_(r+1) = E[max(X, V_r)].', why: 'Averaging over the first roll with the keep-or-reroll rule applied gives the value; the recursion adds one decision per reroll. The max is with a number, the value of continuing, not with a second roll you have already seen: that would be the best of two rolls.', answers: 'best-of-two',
         checks: [
           { make: (rng) => { const k = rng.pick([4, 6, 8]), r = rng.int(2, 3); const v = V(k, r); return mc(rng, `A fair ${k}-sided die with ${r - 1} reroll${r > 2 ? 's' : ''} (keep the last roll). Value with optimal play?`, v.toString(), [[mean(k).toString(), 'ignored the option'], [maxOf(k, r).toString(), `took the best of ${r} rolls: a reroll cannot be undone`], [String(k), 'assumed optimal play reaches the top face'], ...(r === 3 ? [[V(k, 2).toString(), 'stopped the recursion one reroll early']] : [])], `V₁ = ${mean(k)}${r === 3 ? `, V₂ = ${V(k, 2)}` : ''}, V${r === 3 ? '₃' : '₂'} = ${v} ≈ ${f3(v)}.`); } },
         ] },
@@ -107,7 +112,7 @@ export default {
     { type: 'explain', prompt: `In your own words: why is one reroll of a die worth ${V(6, 2)} and not ${maxOf(6, 2)}, the expected maximum of two rolls?`, model: 'With a reroll you decide before seeing the second roll, and once you reroll you must accept it. So you compare your first roll with the average of a fresh roll, 3.5, and keep 4, 5, 6. The maximum of two rolls would let you keep the better one after seeing both, which is more information and therefore worth more.', points: ['a reroll must be accepted: you cannot go back', 'the decision compares the roll in hand with 3.5, the value of a fresh roll', 'seeing both rolls first (the maximum) is worth more'] },
 
     S('worked'),
-    { type: 'worked', family: 'dice-games-ev', section: 'bto', difficulty: 2, seed: 'b', intro: 'A squared payoff. Try it before opening the solution.' },
+    { type: 'worked', family: 'dice-games-ev', section: 'bto', difficulty: 2, seed: 'b', explainAt: [0], intro: 'A squared payoff. Try it before opening the solution.' },
     { type: 'worked', family: 'dice-games-ev', section: 'bto', difficulty: 4, seed: 'c', fade: 1, intro: 'Two rerolls. The first steps are given; the last one and the answer are yours.' },
 
     S('predict'),
@@ -126,12 +131,19 @@ export default {
       `Value = (3 × ${V(6, 2)} + 4 + 5 + 6)/6 = ${Q.of(3).mul(V(6, 2)).add(Q.of(15)).div(Q.of(6))}.`,
     ], errorStep: 2, explain: `With two rerolls left the future is worth ${V(6, 2)}, not 3.5, so 4 must be rerolled. Keep 5 and 6: value (4 × ${V(6, 2)} + 5 + 6)/6 = ${V(6, 3)} ≈ ${f3(V(6, 3))}.` },
     { type: 'check', scope: 'the named traps', questions: [
-      { type: 'choice', q: `A die pays the square of its face. A candidate prices it at ${f2(mean(6).mul(mean(6)))}. Which belief?`, options: ['Squared the average roll', 'Averaged the extremes', 'Used the reroll value'], answer: 0, explain: `3.5² = ${f2(mean(6).mul(mean(6)))}. The fair price is E[X²] = ${sq(6)} ≈ ${f2(sq(6))}.` },
+      { type: 'choice', q: `A die pays the square of its face. A candidate prices it at ${f2(mean(6).mul(mean(6)))}. Which belief?`, options: ['Squared the average roll', 'Averaged the extremes', 'Used the reroll value'], answer: 0, traps: { 1: 'averaging the smallest and largest payoffs gives (1 + 36)/2 = 18.5', 2: `the one-reroll value of the face game is ${V(6, 2)}` }, explain: `3.5² = ${f2(mean(6).mul(mean(6)))}. The fair price is E[X²] = ${sq(6)} ≈ ${f2(sq(6))}.` },
     ] },
 
     S('speed'),
     { type: 'callout', tone: 'speed', text: `Values to know for a fair die: rolls allowed 1, 2, 3, 4 → ${[1, 2, 3, 4].map((r) => V(6, r).toString()).join(', ')}. E[X²] = ${sq(6)}, E[XY] = ${mean(6).mul(mean(6))}, E|X − Y| = ${absDiff()}. Each one is a free point.` },
     { type: 'callout', tone: 'speed', text: `Backward induction is short: write the value of continuing, list the faces at or above it, average. Two lines per reroll, about 30 of your ${SECTIONS.bto.exam.perItemSeconds} seconds.` },
+    { type: 'thinkaloud', problem: `A fair ${TK}-sided die pays its face in dollars. You may reroll once, but must accept the reroll. What is the game worth with the best strategy?`, lines: [
+      { t: 0, say: `A payoff with one reroll: go backwards. The forced last roll is worth its mean, ${mean(TK)}.` },
+      { t: 5, say: 'So the game is worth the better of two rolls, E[max]...', slip: true },
+      { t: 9, say: `No: I decide before seeing the reroll and must accept it. Compare the roll in hand with ${mean(TK)}.` },
+      { t: 14, say: `Keep ${keepSet(TK, mean(TK)).join(', ')}; reroll the rest. Value = (${TK - keepSet(TK, mean(TK)).length} × ${mean(TK)} + ${keepSet(TK, mean(TK)).join(' + ')})/${TK} = ${V(TK, 2)}.` },
+      { t: 23, say: `Sanity: above ${f2(mean(TK))} (the option helps) and below E[max of two] ≈ ${f2(maxOf(TK, 2))} (less information). Answer ${f2(V(TK, 2))}, ${SECTIONS.bto.exam.perItemSeconds - 23} seconds left.` },
+    ] },
     { type: 'check', scope: 'values to know', questions: [
       { make: (rng) => { const r = rng.int(1, 3); return { type: 'number', q: `Fair die, ${r} roll${r > 1 ? 's' : ''} allowed in total, keep the last. Value? (Decimals are fine.)`, answer: V(6, r).toNumber(), tolerance: 0.005, explain: `${V(6, r)} ≈ ${f3(V(6, r))}.` }; } },
     ] },
@@ -151,6 +163,18 @@ export default {
     { type: 'check', scope: 'the contrast table and edge cases', questions: [
       { type: 'choice', q: 'Rank the values: best of two rolls, one reroll, one roll.', options: ['best of two > one reroll > one roll', 'one reroll > best of two > one roll', 'best of two = one reroll > one roll', 'one roll > one reroll > best of two'], answer: 0, traps: { 1: 'seeing both rolls is more information than deciding blind', 2: 'they differ: the reroll must be accepted', 3: 'options never lower the value' }, explain: `${f3(maxOf(6, 2))} > ${f3(V(6, 2))} > ${f3(mean(6))}.` },
     ] },
+    { type: 'variation', base: `Fair die, paid the face, one reroll that must be accepted: keep 4, 5, 6 and the game is worth ${V(6, 2)}.`, rows: [
+      { change: 'The reroll uses a second, identical die instead of the same one', effect: `No change: ${V(6, 2)}. A fresh roll of any fair die is worth 3.5; which die carries it does not matter.`, same: true },
+      { change: 'Allow two rerolls', effect: `Continuing is now worth ${V(6, 2)}, so the first roll keeps only 5 and 6: ${V(6, 3)} ≈ ${f3(V(6, 3))}.` },
+      { change: 'See both rolls and keep the better one', effect: `No decision under uncertainty any more: E[max] = ${maxOf(6, 2)} ≈ ${f3(maxOf(6, 2))}, more than ${V(6, 2)}.` },
+      { change: `The reroll costs $${COST}`, effect: `Continuing is worth ${mean(6).sub(Q.of(COST))}, so keep ${keepSet(6, mean(6).sub(Q.of(COST)))[0]} or more: ${costly} ≈ ${f3(costly)}.` },
+      { change: 'Pay the square of the face instead', effect: `Continuing is worth E[X²] = ${sq(6)} ≈ ${f2(sq(6))}, so keep 4, 5, 6 (16, 25, 36): value ${sqReroll} ≈ ${f2(sqReroll)}.` },
+      { change: `An ${TK}-sided die and two rerolls`, effect: `Both enter the recursion: V₁ = ${mean(TK)}, V₂ = ${V(TK, 2)}, so the first roll keeps ${keepSet(TK, V(TK, 2)).join(', ')}: V₃ = ${V(TK, 3)} ≈ ${f3(V(TK, 3))}.`, fusion: true },
+    ] },
+    { type: 'transfer',
+      near: { make: (rng) => { const k = rng.pick([5, 8, 10, 12]); const v = V(k, 2); return mc(rng, `Cards numbered 1 to ${k}, one of each. You draw one and are paid its number. You may put it back, shuffle and draw once more, but then must accept the new card. Value with the best play?`, v.toString(), [[mean(k).toString(), 'ignored the option to redraw'], [maxOf(k, 2).toString(), 'took the better of two draws: the redraw must be accepted'], [avg(k, (x) => (x >= k - 1 ? Q.of(x) : mean(k))).toString(), 'kept only the top two cards: anything at least the mean is worth keeping']], `A redraw is worth ${mean(k)}; keep ${keepSet(k, mean(k))[0]} or more: ${v} = ${f3(v)}.`); } },
+      far: { make: (rng) => { const b = rng.pick([60, 100, 200, 400]); return { type: 'number', q: `You are selling a position. Today a bid arrives, uniform between 0 and ${b} thousand euros. You may accept it, or refuse and take tomorrow's bid (also uniform on 0 to ${b}), which you must accept. Expected sale price with the best rule, in thousands?`, answer: (5 * b) / 8, tolerance: 0.01, hints: [`Tomorrow's forced bid is worth its mean, ${b / 2}.`, `Accept today's bid when it is at least ${b / 2}: half the time, averaging ${(3 * b) / 4}.`], explain: `Keep today's bid iff it is at least ${b / 2}. Value = 1/2 × ${(3 * b) / 4} + 1/2 × ${b / 2} = ${(5 * b) / 8}.` }; } },
+      principle: { type: 'choice', q: 'Which idea carried over from the reroll to the cards and to the bids?', options: ['Keep what you hold iff it beats the value of going on', 'Take the best of all the draws you could possibly see', 'Price at the plain average; the option adds nothing', 'Only ever keep the single top value that is on offer'], answer: 0, traps: { 1: 'you must accept the redraw, so you never see both', 2: 'an option is used only when it helps, so it adds value', 3: 'anything above the continuation value is worth keeping' }, explain: 'Both are one-option stopping problems: the forced last draw is worth its mean, and you keep the first draw exactly when it is at least that.' } },
 
     S('tryit'),
     { type: 'tryit', family: 'dice-games-ev', section: 'bto', count: 3 },

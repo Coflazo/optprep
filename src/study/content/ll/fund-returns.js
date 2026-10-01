@@ -21,6 +21,21 @@ const area = (m, s, lo, hi) => { let t = 0; const n = 4000, h = (hi - lo) / n; f
 const STEADY = [4, 3], SWING = [6, 14];
 const tail = (ms, x) => area(ms[0], ms[1], x, ms[0] + 12 * ms[1]);
 
+// Think-aloud: Swing lost, Steady above 5% (strict: the 5% years are out), Steady persistence.
+const ge5 = cnt((i) => A.r[i] >= 5), gt5 = cnt((i) => A.r[i] > 5), PAr = PA.hit / PA.idx.length;
+// Variation: both tails for (b); both funds lost; Swing + 5 points with a 15% line.
+const bExt = cnt((i) => B.r[i] > 10 || B.r[i] < -10), trail5 = cnt((i) => B.r[i] <= A.r[i] && B.r[i] + 5 > A.r[i]), bBeat5 = cnt((i) => B.r[i] + 5 > A.r[i]), bGt10s = cnt((i) => B.r[i] + 5 > 15);
+if (!(PAr > bNeg / N && bNeg / N > gt5 / N && ge5 / N > bNeg / N && bExt / N < aPos / N && bExt / N > bBeat / N && bothNeg / N < bGt10 / N && bGt10s === bGt10 && bBeat5 === bBeat + trail5)) throw new Error('fund-returns: prose orders no longer hold');
+
+// Fresh pair of funds for the think-aloud check and the near transfer.
+const pair = (rng) => ({ a: Array.from({ length: 10 }, () => rng.int(-2, 8)), b: Array.from({ length: 10 }, () => rng.int(-15, 20)) });
+const persistOf = (r) => { const idx = r.map((_, i) => i).filter((i) => i > 0 && r[i - 1] > 0); return { n: idx.length, hit: idx.filter((i) => r[i] > 0).length }; };
+const farT = (rng) => again(() => {
+  const d = Array.from({ length: 12 }, () => (rng.chance(0.5) ? 'R' : 'D')), idx = d.map((_, i) => i).filter((i) => i > 0 && d[i - 1] === 'R'), hit = idx.filter((i) => d[i] === 'R').length;
+  if (idx.length < 3) return null;
+  return { type: 'number', q: `A weather log for 12 days (R = rain, D = dry): ${d.join(' ')}. P(rain on a day, given rain the day before)? (2 decimals)`, answer: hit / idx.length, tolerance: 0.006, hints: ['The scope is the days right after a rainy day; day 1 has no day before.', `There are ${idx.length} such days.`], explain: `${idx.length} days follow a rainy day, ${hit} of them rainy: ${dp(hit / idx.length, 2)}.` };
+});
+
 // Checks on the fixed chart: threshold statements for either fund.
 const thresholds = (rng) => {
   const f = rng.pick([A, B]), t = rng.pick(['gt', 'lt']), v = f === A ? rng.pick([2, 3, 4, 5]) : rng.pick([-10, -5, 5, 10, 15, 20]);
@@ -44,7 +59,12 @@ export default {
   ],
   blocks: [
     S('recognise'),
-    { type: 'challenge', q: `Before any teaching: two funds, ${A.name} and ${B.name}, returned (in %) over ${YEARS[0]} to ${YEARS[N - 1]}: ${A.name} ${A.r.join(', ')}; ${B.name} ${B.r.join(', ')}. A year is picked at random. Rank: (a) ${A.name} was positive, (b) ${B.name} returned more than 10%, (c) ${B.name} beat ${A.name}.`, answer: `(a) ${aPos}/${N} > (c) ${bBeat}/${N} > (b) ${bGt10}/${N}`, explain: `All three are counts of years out of ${N}. (a): ${A.name} lost only ${N - aPos} years. (c): compare the two bars year by year. (b): ${B.name} is volatile, so it clears 10% often but not most of the time.` },
+    { type: 'challenge', q: `Before any teaching: two funds, ${A.name} and ${B.name}, returned (in %) over ${YEARS[0]} to ${YEARS[N - 1]}: ${A.name} ${A.r.join(', ')}; ${B.name} ${B.r.join(', ')}. A year is picked at random. Rank: (a) ${A.name} was positive, (b) ${B.name} returned more than 10%, (c) ${B.name} beat ${A.name}.`, answer: `(a) ${aPos}/${N} > (c) ${bBeat}/${N} > (b) ${bGt10}/${N}`, explain: `All three are counts of years out of ${N}. (a): ${A.name} lost only ${N - aPos} years. (c): compare the two bars year by year. (b): ${B.name} is volatile, so it clears 10% often but not most of the time.`,
+      attempts: [
+        { id: 'eyeball', label: 'Judge the bars by eye', approach: 'You ordered the statements from the look of the chart without counting years.', breaksAt: 'Each year is one equally likely outcome: count the bars past the line, one year at a time.' },
+        { id: 'average', label: 'Compare the averages', approach: `You ranked (c) from which fund has the higher average return.`, breaksAt: '"Beat" is decided year by year: compare the two bars of each year, not the averages.' },
+        { id: 'risky', label: 'Volatile means less likely', approach: `You put every ${B.name} statement low because ${B.name} is the risky fund.`, breaksAt: `Spread fattens both tails: ${B.name} wins statements about extremes, ${A.name} wins "positive".` },
+      ] },
     { type: 'text', text: 'The prompt is a **bar chart of yearly returns** for two funds, one pair of bars per year. A year is picked at random (for "given" statements, from the years that qualify). Statements: a fund was positive, returned more or less than v%, one fund beat the other, both lost money, or a fund was positive **given** it was positive the year before.' },
     { type: 'text', text: 'Not this lesson: a histogram (bars are counts of values, not years) and density curves (smooth areas). Here every bar is a single year\'s outcome and you count bars.' },
     { type: 'check', scope: 'the recognition cues above', questions: [
@@ -81,19 +101,19 @@ export default {
     S('derivation'),
     { type: 'text', text: 'Four moves cover every statement in this family. They all reduce to one question: which years count, out of which years?' },
     { type: 'steps', steps: [
-      { say: 'Threshold statements: count one fund\'s bars on the right side of the line. "More than 10%" excludes a 10% year.', why: 'A random year makes each year equally likely; the line splits years into qualifying and not.',
+      { answers: 'eyeball', say: 'Threshold statements: count one fund\'s bars on the right side of the line. "More than 10%" excludes a 10% year.', why: 'A random year makes each year equally likely; the line splits years into qualifying and not.',
         checks: [{ make: (rng) => { const s = thresholds(rng); return { type: 'number', q: `How many years did ${s.text}?`, answer: s.k, hints: ['Compare each bar with the line; strict inequality.'], explain: `${s.k} years.` }; } }] },
-      { say: 'Head-to-head ("B beat A"): compare the two bars of each year. It is not about which fund has the higher average.', why: 'The event is about a single random year, so only that year\'s pair matters.',
+      { answers: 'average', say: 'Head-to-head ("B beat A"): compare the two bars of each year. It is not about which fund has the higher average.', why: 'The event is about a single random year, so only that year\'s pair matters.',
         checks: [{ type: 'number', q: `In how many years did ${B.name} beat ${A.name}?`, answer: bBeat, hints: ['Year by year: is the second bar higher?'], explain: `${bBeat} of the ${N} years.` }] },
       { say: 'Persistence: list the years whose previous year was positive. That list is the denominator; count the positive years in it.', why: 'The condition is about the year before, so the scope is shifted by one year and the first year is never in it.',
         checks: [{ make: (rng) => { const r = Array.from({ length: 6 }, () => rng.pick([-3, -1, 2, 4, 6, 8])); const idx = r.map((_, i) => i).filter((i) => i > 0 && r[i - 1] > 0); if (!idx.length) r[0] = 5; const idx2 = r.map((_, i) => i).filter((i) => i > 0 && r[i - 1] > 0); return { type: 'number', q: `A fund returned ${r.join(', ')} (%) over six years. How many years are in scope for "positive, given positive the year before"?`, answer: idx2.length, hints: ['Look at years 2 to 6.', 'A year is in scope when the year before it was positive.'], explain: `Years ${idx2.map((i) => i + 1).join(', ')}: ${idx2.length} years.` }; } }] },
-      { say: 'Sanity-check the order with the shape: the volatile fund should win statements about big gains or big losses, the steady fund statements about being positive.', why: 'A wider spread puts more years far from the centre on both sides.',
+      { answers: 'risky', say: 'Sanity-check the order with the shape: the volatile fund should win statements about big gains or big losses, the steady fund statements about being positive.', why: 'A wider spread puts more years far from the centre on both sides.',
         checks: [mc(null, `Which is more likely in a random year: "${B.name} lost money" or "${A.name} lost money"?`, `"${B.name} lost money"`, [[`"${A.name} lost money"`, 'forgot that volatility fattens the loss side too, not only the gain side'], ['equally likely', 'judged by the average return instead of the spread']], `${bNeg} years against ${N - aPos}.`, { at: 1 })] },
     ] },
     { type: 'explain', prompt: 'Explain why the volatile fund can be more likely to return over 15% and also more likely to lose money than the steady fund.', model: 'Volatility is spread: the volatile fund\'s returns land far from their centre in both directions. So it has more very good years and more losing years, while the steady fund\'s returns stay in a narrow band just above zero, which makes it positive almost every year but never spectacular.', points: ['Spread pushes outcomes into both tails', 'The steady fund lives in a narrow positive band', 'Extreme statements favour spread; "positive" favours a positive centre with low spread'] },
 
     S('worked'),
-    { type: 'worked', section: 'll', family: 'fund-returns', difficulty: 2, seed: 'a', intro: 'Threshold and head-to-head statements. Count bars and order. Try it before opening the solution.' },
+    { type: 'worked', section: 'll', family: 'fund-returns', difficulty: 2, seed: 'a', explainAt: [0], intro: 'Threshold and head-to-head statements. Count bars and order. Try it before opening the solution.' },
     { type: 'worked', section: 'll', family: 'fund-returns', difficulty: 4, seed: 'b', fade: 1, intro: 'A persistence or "both lost" statement is mixed in. The counts are given; the ordering is yours.' },
 
     S('predict'),
@@ -125,6 +145,19 @@ export default {
       { make: (rng) => again(() => { const s1 = thresholds(rng), s2 = thresholds(rng); if (s1.text === s2.text) return null; return rank(rng, 'From the chart, rank from most to least likely for a random year.', [[`${s1.text}.`, s1.k / N], [`${s2.text}.`, s2.k / N], [`${B.name} beat ${A.name}.`, bBeat / N]], 'Count each on its short side.'); }) },
     ] },
 
+    { type: 'thinkaloud', problem: `The same chart. Rank for a random year: (a) ${B.name} lost money, (b) ${A.name} returned more than 5%, (c) ${A.name} was positive, given it was positive the year before.`, lines: [
+      { t: 0, say: 'Two funds by year: each statement is years that count over years in scope.' },
+      { t: 6, say: `(a) ${B.name} below zero: ${bNeg} of ${N}.` },
+      { t: 12, say: `(b) ${A.name} at 5% or more: ${ge5} years, so ${ge5}/${N}, above (a).`, slip: true },
+      { t: 17, say: `Wait: "more than 5%" is strict. The ${ge5 - gt5} years at exactly 5% are out: ${gt5} of ${N}, below (a).` },
+      { t: 25, say: `(c) persistence: ${PA.idx.length} years follow a positive ${A.name} year, ${PA.hit} of them positive again. ${PA.hit}/${PA.idx.length}, not over ${N}.` },
+      { t: 31, say: `Order (c) > (a) > (b), with ${LL.exam.perItemSeconds - 31} seconds left.` },
+    ] },
+    { type: 'check', scope: 'the think-aloud routine on fresh funds', questions: [
+      { make: (rng) => again(() => { const f = pair(rng), pa = persistOf(f.a), v = rng.int(3, 6); if (pa.n < 3) return null; const neg = f.b.filter((x) => x < 0).length, gt = f.a.filter((x) => x > v).length;
+        return rank(rng, `Returns (%) over 10 years. Calm: ${f.a.join(', ')}. Wild: ${f.b.join(', ')}. Rank for a random year from most to least likely.`, [['Wild lost money.', neg / 10], [`Calm returned more than ${v}%.`, gt / 10], ['Calm was positive, given it was positive the year before.', pa.hit / pa.n]], `Wild below zero: ${neg}/10. Calm strictly above ${v}: ${gt}/10. Persistence: ${pa.hit} of the ${pa.n} years after a positive year.`, { gap: 0.02 }); }) },
+    ] },
+
     S('rule'),
     { type: 'callout', tone: 'rule', text: 'Fund chart → years in scope; count bars past the line (strict inequalities); "beat" = year-by-year; persistence divides by years after a positive year. Spread wins extremes, steadiness wins "positive".' },
 
@@ -141,6 +174,23 @@ export default {
     { type: 'check', scope: 'the contrast table and edge cases', questions: [
       mc(null, 'Two funds with the same average: one with a wide spread, one narrow. Which is more likely to lose more than 10% in a random year?', 'the wide one', [['the narrow one', 'reversed: a narrow spread keeps returns near the average'], ['equally likely', 'the same average does not mean the same tails']], 'Spread puts more years in both tails.', { at: 0 }),
     ] },
+
+    { type: 'variation', base: `The challenge: (a) ${A.name} positive ${aPos}/${N}, (b) ${B.name} above 10% ${bGt10}/${N}, (c) ${B.name} beat ${A.name} ${bBeat}/${N}. Order (a) > (c) > (b).`, rows: [
+      { same: true, change: 'Shuffle the order of the years', effect: 'No change. A random year treats every year alike, and "beat" compares within one year. (A persistence statement would change: it depends on which year comes before which.)' },
+      { change: `Change (b) to "${B.name} returned more than 10% or less than −10%"`, effect: `Both tails now count: ${bExt}/${N}. Volatility wins extremes on both sides, so (b) climbs from last to second.` },
+      { change: 'Change (c) to "both funds lost money"', effect: `Both bars must be below zero: ${bothNeg}/${N}. ${A.name} rarely loses, so (c) falls to last.` },
+      { fusion: true, change: `Add 5 points to every ${B.name} return, and raise the line in (b) to 15%`, effect: `For (b) the two changes cancel: ${B.name} + 5 > 15 is ${B.name} > 10, still ${bGt10}/${N}. (c) gains only years where ${B.name} trailed by less than 5 points: ${trail5}, so ${bBeat5}/${N}.` },
+    ] },
+    { type: 'transfer',
+      near: { make: (rng) => again(() => { const f = pair(rng), v = rng.pick([5, 10]); const pos = f.a.filter((x) => x > 0).length, gt = f.b.filter((x) => x > v).length, beat = f.b.filter((x, i) => x > f.a[i]).length;
+        return rank(rng, `Daily P&L (k€) of two traders over 10 days. Ann: ${f.a.join(', ')}. Bob: ${f.b.join(', ')}. Rank for a random day from most to least likely.`, [['Ann made money.', pos / 10], [`Bob made more than ${v}k.`, gt / 10], ['Bob beat Ann.', beat / 10]], `Ann positive ${pos}/10; Bob strictly above ${v}: ${gt}/10; Bob above Ann day by day: ${beat}/10.`, { gap: 0.02 }); }) },
+      far: { make: farT },
+      principle: mc(null, 'Which idea carried over from the fund chart to the weather log?', 'Scope = the steps right after a qualifying one; count hits among those', [
+        ['Divide the rainy days that follow rain by every day in the log', 'the first day has no day before, and days after a dry day are not in scope'],
+        ['Yesterday cannot matter, so use the plain share of rainy days', 'that answers P(rain), ignoring the condition'],
+        ['Count the rainy days, then divide by the days before each of them', 'the scope is the days after a rainy day, not the days before one'],
+      ], '"Given positive the year before" and "given rain the day before" both keep only the steps that follow a qualifying one.'),
+    },
 
     S('tryit'),
     { type: 'tryit', section: 'll', family: 'fund-returns', count: 3 },

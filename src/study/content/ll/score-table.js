@@ -19,6 +19,28 @@ const M80 = st.filter(ge('Maths', 80)), P80gM80 = cnt(ge('Physics', 80), M80);
 const AVG75 = cnt((r) => r.Maths + r.Physics + r.Economics >= 225);
 const GT = cnt((r) => r.Maths > r.Physics);
 
+// Think-aloud: (a) Physics ≥ 70, (b) among Physics ≥ 80, Maths ≥ 80, (c) average ≥ 75.
+const P70 = cnt(ge('Physics', 70)), P80 = st.filter(ge('Physics', 80)), M80gP80 = cnt(ge('Maths', 80), P80), MP80 = cnt(both('Maths', 'Physics', 80));
+const AVA = st.find((r) => r.Maths + r.Physics + r.Economics === 225);
+const TL = { a: P70 / N, b: M80gP80 / P80.length, c: AVG75 / N };
+// Variation: either instead of both; a stricter threshold in (a); the conditional built from (a) and (b).
+const M90 = cnt(ge('Maths', 90)), CgA = MP70 / M70;
+if (!(TL.b > TL.a && TL.a > TL.c && MP80 / N < TL.c && AVA && EI70 / N > P80gM80 / M80.length && M90 < MP70 && CgA > MP70 / N)) throw new Error('score-table: prose orders no longer hold');
+
+// Transfer: near = a sales table with fresh rows; far = two dice with a restricted scope.
+const NAMES = ['Ana', 'Bo', 'Cy', 'Di', 'Ed', 'Fay', 'Gil', 'Hal'];
+const nearT = (rng) => again(() => {
+  const rows = NAMES.map((n) => [n, rng.int(4, 16), rng.int(4, 16)]), v = rng.int(8, 11), a = rng.int(10, 12), b = rng.int(9, 12);
+  const g = rows.filter((r) => r[1] >= a); if (g.length < 2) return null;
+  return rank(rng, `Deals closed per salesperson (Q1/Q2): ${rows.map((r) => `${r[0]} ${r[1]}/${r[2]}`).join(', ')}. Rank from most to least likely.`, [
+    [`A randomly chosen salesperson closed at least ${v} deals in Q1.`, rows.filter((r) => r[1] >= v).length / 8],
+    [`A randomly chosen salesperson closed at least ${v} in both quarters.`, rows.filter((r) => Math.min(r[1], r[2]) >= v).length / 8],
+    [`Among those with at least ${a} in Q1, a random one closed at least ${b} in Q2.`, g.filter((r) => r[2] >= b).length / g.length],
+  ], `"Both" sits inside "Q1" over all 8. The conditional divides by the ${g.length} with Q1 ≥ ${a}: ${g.filter((r) => r[2] >= b).length}/${g.length}.`, { gap: 0.02 });
+});
+const farT = (rng) => { const a = rng.int(3, 5), t = rng.int(8, 10); let k = 0; for (let x = a; x <= 6; x++) for (let y = 1; y <= 6; y++) if (x + y >= t) k++; const n = 6 * (7 - a);
+  return { type: 'number', q: `Two fair dice are thrown. Given that the first die shows at least ${a}, what is P(the sum is at least ${t})? (2 decimals)`, answer: k / n, tolerance: 0.006, hints: [`The scope is the rows where the first die is ${a} or more: ${7 - a} × 6 = ${n} outcomes.`, `Count the pairs in that scope with sum ≥ ${t}.`], explain: `${k} of the ${n} outcomes in scope: ${dp(k / n, 2)}. Dividing by 36 would be the whole-class mistake.` }; };
+
 export default {
   id: 'll/score-table',
   book: 'll',
@@ -35,7 +57,12 @@ export default {
   ],
   blocks: [
     S('recognise'),
-    { type: 'challenge', q: `Before any teaching: the table shows ${N} students' scores (Maths, Physics, Economics): ${ROWS.map((r) => `${r[0]} ${r.slice(1).join('/')}`).join(', ')}. Rank: (a) a random student scored at least 70 in Maths, (b) at least 70 in both Maths and Physics, (c) among students with at least 80 in Maths, a random one scored at least 80 in Physics.`, answer: `(c) ${P80gM80}/${M80.length} > (a) ${M70}/${N} > (b) ${MP70}/${N}`, explain: `(b) sits inside (a): no count needed for that pair. (c) picks only from the ${M80.length} strong mathematicians, and ${P80gM80} of them are strong in Physics: ${dp(P80gM80 / M80.length, 2)}. If you divided (c) by ${N}, you counted the right rows over the wrong scope.` },
+    { type: 'challenge', q: `Before any teaching: the table shows ${N} students' scores (Maths, Physics, Economics): ${ROWS.map((r) => `${r[0]} ${r.slice(1).join('/')}`).join(', ')}. Rank: (a) a random student scored at least 70 in Maths, (b) at least 70 in both Maths and Physics, (c) among students with at least 80 in Maths, a random one scored at least 80 in Physics.`, answer: `(c) ${P80gM80}/${M80.length} > (a) ${M70}/${N} > (b) ${MP70}/${N}`, explain: `(b) sits inside (a): no count needed for that pair. (c) picks only from the ${M80.length} strong mathematicians, and ${P80gM80} of them are strong in Physics: ${dp(P80gM80 / M80.length, 2)}. If you divided (c) by ${N}, you counted the right rows over the wrong scope.`,
+      attempts: [
+        { id: 'average', label: 'Compare average scores', approach: 'You compared the typical Maths score with 70 instead of counting students.', breaksAt: 'A random student makes each row equally likely, so the probability is a count of qualifying rows, not a typical score.' },
+        { id: 'easy', label: 'Both is easy if Physics is', approach: 'You put (b) level with or above (a), since good mathematicians tend to do well in Physics too.', breaksAt: '"Both" keeps only the Maths rows that also pass Physics: a subset over the same class.' },
+        { id: 'wholeclass', label: 'Divide (c) by the class', approach: `You scored (c) as ${P80gM80}/${N}: the right rows over all ${N} students.`, breaksAt: `(c) picks only from the ${M80.length} students with Maths ≥ 80, so that is the denominator.` },
+      ] },
     { type: 'text', text: 'The prompt is a **table with one row per student** and a score per subject. One student is picked at random, or from a subgroup ("among students who ..."). Statements set thresholds: at least v in a subject, below v, at least v in **both** of two subjects, in **either**, higher in one subject than another, or an **average** of at least v.' },
     { type: 'text', text: 'Not this lesson: a 2 × 2 table of counts (two-way tables), where you read cells instead of counting rows, and match results (football), where each row is a match.' },
     { type: 'check', scope: 'the recognition cues above', questions: [
@@ -79,11 +106,11 @@ export default {
     S('derivation'),
     { type: 'text', text: 'Four moves turn any statement into a count. The first fixes what a probability means here, the second saves counts, the third fixes the denominator of the trap statement, and the fourth handles averages without a single division.' },
     { type: 'steps', steps: [
-      { say: 'Write each statement as rows that qualify over rows in scope. "A randomly chosen student" means scope = all rows.', why: 'Every row is equally likely to be picked, so a probability is a count ratio.',
+      { answers: 'average', say: 'Write each statement as rows that qualify over rows in scope. "A randomly chosen student" means scope = all rows.', why: 'Every row is equally likely to be picked, so a probability is a count ratio.',
         checks: [{ make: (rng) => { const v = rng.pick(V); const k = cnt((r) => r.Economics < v); return { type: 'number', q: `P(a random student scored below ${v} in Economics)? (2 decimals)`, answer: k / N, tolerance: 0.006, hints: ['Tally the Economics column.', `Divide by ${N}.`], explain: `${k}/${N} = ${dp(k / N, 2)}.` }; } }] },
-      { say: 'Order nested conditions before counting: "both" ⊂ "one subject" ⊂ "either". A higher threshold sits inside a lower one.', why: 'A stricter condition keeps a subset of the rows; the same scope means the subset cannot be more likely.',
+      { answers: 'easy', say: 'Order nested conditions before counting: "both" ⊂ "one subject" ⊂ "either". A higher threshold sits inside a lower one.', why: 'A stricter condition keeps a subset of the rows; the same scope means the subset cannot be more likely.',
         checks: [{ make: (rng) => again(() => { const v = rng.pick(V); return rank(rng, `Rank for a random student in the table (use containment, then check with the counts): from most to least likely.`, [[`At least ${v} in Maths.`, cnt(ge('Maths', v)) / N], [`At least ${v} in both Maths and Physics.`, cnt(both('Maths', 'Physics', v)) / N], [`At least ${v} in Maths or Physics.`, cnt(either('Maths', 'Physics', v)) / N]], 'Either ⊇ Maths ⊇ both, and in this table each step removes at least one row.'); }) }] },
-      { say: '"Among students who scored at least a in X": list those rows first; they are the denominator. Count the qualifying rows among them.', why: 'The pick is made inside the subgroup, so the total is its size, not the class size.',
+      { answers: 'wholeclass', say: '"Among students who scored at least a in X": list those rows first; they are the denominator. Count the qualifying rows among them.', why: 'The pick is made inside the subgroup, so the total is its size, not the class size.',
         checks: [{ make: (rng) => again(() => { const a = rng.pick([70, 75, 80]), b = rng.pick([70, 75, 80, 85]), s = rng.pick(['Physics', 'Economics']); const g = st.filter(ge('Maths', a)); if (g.length < 3) return null; const k = cnt(ge(s, b), g); return { type: 'number', q: `Among students with at least ${a} in Maths, a random one is picked. P(at least ${b} in ${s})? (2 decimals)`, answer: k / g.length, tolerance: 0.006, hints: [`First list the students with Maths ≥ ${a}: that is the denominator.`, `Count those with ${s} ≥ ${b}.`], explain: `${g.length} students have Maths ≥ ${a} (${g.map((r) => r.name).join(', ')}); ${k} of them have ${s} ≥ ${b}: ${k}/${g.length} = ${dp(k / g.length, 2)}.` }; }) }] },
       { say: '"Average of at least v across three subjects" is the same as "sum of at least 3v". Add the row, compare with 3v, never divide.', why: 'Multiplying both sides by 3 keeps the inequality and turns a division per row into one multiplication.',
         checks: [{ make: (rng) => { const v = rng.pick([65, 70, 75, 80]); const k = cnt((r) => r.Maths + r.Physics + r.Economics >= 3 * v); return { type: 'number', q: `How many students have an average of at least ${v} across the three subjects?`, answer: k, hints: [`Compare each row's sum with ${3 * v}.`], explain: `Rows with Maths + Physics + Economics ≥ ${3 * v}: ${k}.` }; } }] },
@@ -91,7 +118,7 @@ export default {
     { type: 'explain', prompt: 'Explain why "at least 70 in both Maths and Physics" can never beat "at least 70 in Maths", but "among students with at least 80 in Maths, at least 80 in Physics" can beat both.', model: 'Every student who clears 70 in both also clears 70 in Maths, so the "both" rows are a subset of the Maths rows, over the same class. The conditional statement divides by the strong-maths subgroup instead of the class, so a small denominator can make its fraction large; containment does not apply because the scopes differ.', points: ['"Both" rows are a subset of the single-subject rows', 'Same denominator plus subset means smaller or equal', 'A conditional has a different, smaller denominator, so it must be counted'] },
 
     S('worked'),
-    { type: 'worked', section: 'll', family: 'score-table', difficulty: 2, seed: 'a', intro: 'Three unconditional statements. Tally in one pass and order. Try it before opening the solution.' },
+    { type: 'worked', section: 'll', family: 'score-table', difficulty: 2, seed: 'a', explainAt: [0, 3], intro: 'Three unconditional statements. Tally in one pass and order. Try it before opening the solution.' },
     { type: 'worked', section: 'll', family: 'score-table', difficulty: 3, seed: 'b', fade: 1, intro: 'One statement picks from a subgroup. The counts are given; the ordering is yours.' },
 
     S('predict'),
@@ -126,6 +153,19 @@ export default {
       { make: (rng) => { const r = rng.pick(st), v = rng.pick(V); const ok = Math.min(r.Maths, r.Economics) >= v; return mc(rng, `${r.name} scored ${r.Maths} in Maths and ${r.Economics} in Economics. Does ${r.name} count for "at least ${v} in both Maths and Economics"?`, ok ? 'Yes' : 'No', [[ok ? 'No' : 'Yes', ok ? 'checked the wrong score: both scores are at least the threshold' : `looked at the larger score; the smaller, ${Math.min(r.Maths, r.Economics)}, decides "both"`]], `The smaller score is ${Math.min(r.Maths, r.Economics)}, ${ok ? 'at least' : 'below'} ${v}.`); } },
     ] },
 
+    { type: 'thinkaloud', problem: 'The same table. Rank: (a) a random student scored at least 70 in Physics, (b) among students with at least 80 in Physics, a random one scored at least 80 in Maths, (c) a random student averaged at least 75.', lines: [
+      { t: 0, say: 'One row per student, three statements: one pass down the rows, three tallies.' },
+      { t: 6, say: `(a) is a Physics column tally: ${P70} of ${N}.` },
+      { t: 12, say: `(b) needs Maths and Physics both at least 80: ${MP80} of ${N}. That goes last.`, slip: true },
+      { t: 18, say: `Wait: "among students with at least 80 in Physics" picks inside that group. ${P80.length} students, ${M80gP80} of them with Maths ≥ 80: ${M80gP80}/${P80.length}.` },
+      { t: 27, say: `(c): average ≥ 75 means sum ≥ 225. ${AVA.name}'s sum is exactly 225, and "at least" keeps ${AVA.name}. ${AVG75} of ${N}.` },
+      { t: 35, say: `${dp(TL.b, 2)} > ${dp(TL.a, 2)} > ${dp(TL.c, 2)}: (b) > (a) > (c), with ${LL.exam.perItemSeconds - 35} seconds left for a recount.` },
+    ] },
+    { type: 'check', scope: 'the think-aloud routine with new thresholds', questions: [
+      { make: (rng) => again(() => { const [x, y] = rng.shuffle(SUB), v = rng.pick([65, 70, 75]), a = rng.pick([75, 80]), b = rng.pick([70, 75, 80]), w = rng.pick([65, 70, 75]); const g = st.filter(ge(x, a)); if (g.length < 2) return null; const k = cnt(ge(y, b), g);
+        return rank(rng, 'Using the same table, rank from most to least likely.', [[`A random student scored at least ${v} in ${y}.`, cnt(ge(y, v)) / N], [`Among students with at least ${a} in ${x}, a random one scored at least ${b} in ${y}.`, k / g.length], [`A random student averaged at least ${w}.`, cnt((r) => r.Maths + r.Physics + r.Economics >= 3 * w) / N]], `${y} ≥ ${v}: ${cnt(ge(y, v))}/${N}. The conditional: ${k} of the ${g.length} with ${x} ≥ ${a}. Average ≥ ${w} is sum ≥ ${3 * w}: ${cnt((r) => r.Maths + r.Physics + r.Economics >= 3 * w)}/${N}.`, { gap: 0.02 }); }) },
+    ] },
+
     S('rule'),
     { type: 'callout', tone: 'rule', text: 'Score table → qualifying rows / rows in scope; both = min ≥ v, either = max ≥ v, average ≥ v ⇔ sum ≥ 3v; order nested conditions by containment; "among ..." divides by the subgroup.' },
 
@@ -143,6 +183,22 @@ export default {
     { type: 'check', scope: 'the contrast table and edge cases', questions: [
       mc(null, 'Only one student has at least 90 in Maths, and she has 85 in Physics. P(at least 80 in Physics | at least 90 in Maths)?', '1', [['1/10', 'divided by the class instead of the one-student subgroup'], ['0', 'mixed up the thresholds: 85 is at least 80'], ['1/2', 'treated the one student as a coin flip']], 'The subgroup has one student, and she qualifies: 1/1.', { at: 0 }),
     ] },
+
+    { type: 'variation', base: `The challenge: (a) at least 70 in Maths (${M70}/${N}), (b) at least 70 in both Maths and Physics (${MP70}/${N}), (c) among Maths ≥ 80, Physics ≥ 80 (${P80gM80}/${M80.length}). Order (c) > (a) > (b).`, rows: [
+      { same: true, change: 'Sort the table by Physics score instead of by name', effect: 'No change. A random pick treats every row alike, so the order of the rows changes no count.' },
+      { change: 'Change (b) from "both" to "either"', effect: `Either tests the larger score: ${EI70}/${N}. It moves from inside (a) to around it, so from last to first, even above (c) (${dp(P80gM80 / M80.length, 2)}).` },
+      { change: 'Raise the threshold in (a) from 70 to 90', effect: `Only ${M90} of ${N}, now below (b) (${MP70}/${N}). Containment needs the same threshold: "both ≥ 70" does not sit inside "Maths ≥ 90".` },
+      { fusion: true, change: 'In (c), pick among Maths ≥ 70 and ask for Physics ≥ 70', effect: `The group is now (a)'s ${M70} rows and the target is (b)'s ${MP70}: ${MP70}/${M70} = ${dp(CgA, 2)}. Together the two changes make (c) = (b) divided by (a), so it can never fall below (b).` },
+    ] },
+    { type: 'transfer',
+      near: { make: nearT },
+      far: { make: farT },
+      principle: mc(null, 'Which idea carried over from the score table to the two dice?', 'Count qualifying outcomes, divided by the outcomes left in the stated scope', [
+        ['Divide by every outcome, whatever group the statement picks from', 'forgot the scope: "given the first die is at least ..." keeps only those rows'],
+        ['A statement with two conditions is always the least likely one', 'true for AND over the same scope; a conditional also shrinks the denominator'],
+        ['Average the numbers in the group and compare them with the threshold', 'a probability counts qualifying outcomes; an average answers a different question'],
+      ], 'Rows of a table and pairs of dice are both equally likely outcomes: count those that qualify, over those in scope.'),
+    },
 
     S('tryit'),
     { type: 'tryit', section: 'll', family: 'score-table', count: 3 },

@@ -19,6 +19,16 @@ const S4 = strings(4);
 const cellOf = (i) => [Math.floor(i / 4), i % 4];
 const CH = [['(a) HT appears', P.HT(5), `${2 ** 5 - (5 + 1)}/32`], ['(b) HH appears', P.HH(5), `${2 ** 5 - fib(7)}/32`], ['(c) exactly 3 heads', P.exact(5, 3), `${C(5, 3)}/32`]].sort((a, b) => b[1] - a[1]);
 
+// Think-aloud: HH in 4 flips (exactly 1/2), more heads than tails in 6, first head on flip 2.
+if (!(P.HH(4) === 0.5 && P.more(6) > P.first(2) && P.HHH(5) < P.exact(5, 3) && P.HH(8) > P.HT(4) && P.HT(4) > P.exact(5, 3))) throw new Error('coin-patterns: prose orders no longer hold');
+
+// Transfer: near = up/down days; far = two sixes in a row (avoiders follow a(n) = 5a(n − 1) + 5a(n − 2)).
+const nearT = (rng) => again(() => { const n = rng.int(4, 8), k = rng.int(1, n - 1);
+  return rank(rng, `A desk logs each trading day as Up (U) or Down (D), each with probability 1/2, independently. Over ${n} days, rank from most to least likely.`, [[`UD appears somewhere in the ${n}-day log.`, P.HT(n)], [`UU appears somewhere in the ${n}-day log.`, P.HH(n)], [`Exactly ${k} up days.`, P.exact(n, k)]], `Avoiders: ${n + 1} for UD, ${fib(n + 2)} for UU, out of ${2 ** n}. Exactly ${k}: C(${n}, ${k}) = ${C(n, k)}.`, { gap: 0.02 }); });
+const noSixSix = (n) => { let a = 1, b = 6; for (let i = 1; i < n; i++) [a, b] = [b, 5 * b + 5 * a]; return b; };
+const farT = (rng) => { const n = rng.int(3, 5), v = 1 - noSixSix(n) / 6 ** n;
+  return { type: 'number', q: `A die is rolled ${n} times. P(two sixes in a row appear somewhere)? (3 decimals)`, answer: v, tolerance: 0.0015, hints: ['Count the roll sequences that never have a six followed by a six.', 'a(n) = 5 × a(n − 1) + 5 × a(n − 2), with a(1) = 6 and a(2) = 35: end on a non-six, or on a non-six then a six.'], explain: `${noSixSix(n)} of ${6 ** n} sequences avoid it: 1 − ${noSixSix(n)}/${6 ** n} = ${dp(v)}.` }; };
+
 // Pool for the ranking checks.
 const POOL = {
   HT: (r) => { const n = r.int(4, 8); return [`HT appears somewhere in ${n} flips.`, P.HT(n)]; },
@@ -46,7 +56,12 @@ export default {
   ],
   blocks: [
     S('recognise'),
-    { type: 'challenge', q: 'Before any teaching: a fair coin is flipped 5 times. Rank: (a) HT appears somewhere in the string, (b) HH appears somewhere, (c) exactly 3 heads. Two approaches, then an order.', answer: CH.map(([t, p, x]) => `${t} ${x} ≈ ${dp(p)}`).join(' > '), explain: `HH and HT each have chance 1/4 at any given pair of spots, so many people call (a) and (b) equal. They are not: after a miss, HT can restart at once, HH cannot. Count the strings that avoid each pattern: ${5 + 1} avoid HT, ${fib(7)} avoid HH.` },
+    { type: 'challenge', q: 'Before any teaching: a fair coin is flipped 5 times. Rank: (a) HT appears somewhere in the string, (b) HH appears somewhere, (c) exactly 3 heads. Two approaches, then an order.', answer: CH.map(([t, p, x]) => `${t} ${x} ≈ ${dp(p)}`).join(' > '), explain: `HH and HT each have chance 1/4 at any given pair of spots, so many people call (a) and (b) equal. They are not: after a miss, HT can restart at once, HH cannot. Count the strings that avoid each pattern: ${5 + 1} avoid HT, ${fib(7)} avoid HH.`,
+      attempts: [
+        { id: 'half', label: 'Exactly 3 is about half', approach: 'You put (c) near 1/2 because 3 heads is close to the middle of 5.', breaksAt: `Exactly 3 is one head count among six: C(5, 3) = ${C(5, 3)} of 32 strings.` },
+        { id: 'addspots', label: 'Add the chance per spot', approach: 'You priced (a) as 4 × 1/4 = 1, one chance for each place the pattern could start.', breaksAt: 'Adding spots counts strings with several HTs more than once; count the strings that avoid HT instead.' },
+        { id: 'samespot', label: 'HH and HT are a tie', approach: 'You gave (a) and (b) the same value: each pattern has chance 1/4 at any pair of spots.', breaksAt: 'Equal at a fixed spot is not equal somewhere: after a miss HT restarts at once, HH must start over.' },
+      ] },
     { type: 'text', text: 'There is **no picture**: statements about a fixed number of fair flips. Some ask whether a pattern (HH, HT, HHH) **appears somewhere**; others ask for exactly k heads, perfect alternation, the first head on flip j, or more heads than tails.' },
     { type: 'text', text: 'Not this lesson: flipping **until** a pattern appears (waiting times in Beat the Odds) and large samples of flips (proportions and the law of large numbers). Here n is small and fixed, and every string of n flips is equally likely.' },
     { type: 'check', scope: 'the recognition cues above', questions: [
@@ -82,19 +97,19 @@ export default {
     S('derivation'),
     { type: 'text', text: 'Four moves: the base count, the two avoider counts, and the comparison that ranks them. Each count is short enough to redo from scratch in the exam.' },
     { type: 'steps', steps: [
-      { say: 'n fair flips give 2^n equally likely strings; every statement is (strings that qualify) / 2^n. Exactly k heads: choose the k head positions, C(n, k).', why: 'Each flip doubles the strings, and a string is fixed once you say where the heads are.',
+      { answers: 'half', say: 'n fair flips give 2^n equally likely strings; every statement is (strings that qualify) / 2^n. Exactly k heads: choose the k head positions, C(n, k).', why: 'Each flip doubles the strings, and a string is fixed once you say where the heads are.',
         checks: [{ make: (rng) => { const n = rng.int(4, 8), k = rng.int(1, n - 1); return { type: 'number', q: `P(exactly ${k} heads in ${n} flips)? (3 decimals)`, answer: P.exact(n, k), tolerance: 0.0015, hints: [`C(${n}, ${k}) strings.`, `Divide by ${2 ** n}.`], explain: `${C(n, k)}/${2 ** n} = ${dp(P.exact(n, k))}.` }; } }] },
-      { say: 'Avoid HT: after the first H, every flip must be H (a T would make HT). So the string is T…TH…H, fixed by where the heads start: n + 1 strings.', why: 'The first H can sit at any of n spots, or not appear at all.',
+      { answers: 'addspots', say: 'Avoid HT: after the first H, every flip must be H (a T would make HT). So the string is T…TH…H, fixed by where the heads start: n + 1 strings.', why: 'The first H can sit at any of n spots, or not appear at all.',
         checks: [{ make: (rng) => { const n = rng.int(4, 9); return { type: 'number', q: `P(HT appears somewhere in ${n} flips)? (3 decimals)`, answer: P.HT(n), tolerance: 0.0015, hints: [`${n + 1} strings avoid HT.`], explain: `1 − ${n + 1}/${2 ** n} = ${dp(P.HT(n))}.` }; } }] },
       { say: 'Avoid HH: split on the first flip. T, then any HH-avoider of length n − 1; or H, which must be followed by T, then any avoider of length n − 2. So a(n) = a(n − 1) + a(n − 2): Fibonacci, a(n) = F(n + 2).', why: 'Every H has to be followed by T (or end the string), which ties each length to the two before it.',
         checks: [{ make: (rng) => { const n = rng.int(3, 8); return { type: 'number', q: `How many strings of ${n} flips contain no HH? (a(1) = 2, a(2) = 3)`, answer: fib(n + 2), hints: ['a(n) = a(n − 1) + a(n − 2).', 'Build up: 2, 3, 5, 8, …'], explain: `a(${n}) = ${fib(n + 2)}.` }; } }] },
-      { say: 'Compare: n + 1 strings avoid HT, F(n + 2) avoid HH, and F grows much faster. So HT appears far more often, although each pattern has chance 1/4 at any fixed spot.', why: 'After an H that fails (HT when you wanted HH), HH must restart from scratch; after a T that fails, HT just needs an H and is halfway there.',
+      { answers: 'samespot', say: 'Compare: n + 1 strings avoid HT, F(n + 2) avoid HH, and F grows much faster. So HT appears far more often, although each pattern has chance 1/4 at any fixed spot.', why: 'After an H that fails (HT when you wanted HH), HH must restart from scratch; after a T that fails, HT just needs an H and is halfway there.',
         checks: [{ hinge: true, make: (rng) => { const n = rng.int(4, 8); return mc(rng, `Why is "HT somewhere in ${n} flips" more likely than "HH somewhere"?`, 'Fewer strings avoid HT than avoid HH', [['HT has a higher chance at each pair of spots', 'both have exactly 1/4 at any fixed pair'], ['Heads are more likely after tails', 'flips are independent: the coin has no memory'], ['HT can overlap with itself', 'reversed: HH overlaps with itself (HHH holds two), which is exactly why it appears in fewer strings']], `${n + 1} avoid HT against ${fib(n + 2)} avoiding HH.`); } }] },
     ] },
     { type: 'explain', prompt: 'Explain why HT appears somewhere in 6 flips more often than HH, even though P(HT at flips 1-2) = P(HH at flips 1-2) = 1/4.', model: `Appearing somewhere is about the strings that never contain the pattern. To avoid HT the string must be all its tails first and all its heads after: only ${6 + 1} strings of 64. To avoid HH it only needs every head followed by a tail, which ${fib(8)} strings manage. Fewer avoiders means the pattern appears more often: HT in ${64 - 7} strings, HH in ${64 - fib(8)}.`, points: ['"Somewhere" = 1 − (avoiders)/2^n', 'HT-avoiders are forced into T…TH…H: n + 1', 'HH-avoiders grow like Fibonacci, so HH appears less'] },
 
     S('worked'),
-    { type: 'worked', section: 'll', family: 'coin-patterns', difficulty: 2, seed: 'a', intro: 'Exact counts, first head, alternation, more heads. One line each. Try it first.' },
+    { type: 'worked', section: 'll', family: 'coin-patterns', difficulty: 2, seed: 'a', explainAt: [0], intro: 'Exact counts, first head, alternation, more heads. One line each. Try it first.' },
     { type: 'worked', section: 'll', family: 'coin-patterns', difficulty: 4, seed: 'b', fade: 1, intro: 'HH, HT and HHH somewhere. The avoider counts are given; the ordering is yours.' },
 
     S('predict'),
@@ -125,6 +140,18 @@ export default {
       { make: (rng) => again(() => { const keys = rng.shuffle(Object.keys(POOL)).slice(0, 3); return rank(rng, 'A fair coin. Rank from most to least likely.', keys.map((k) => POOL[k](rng)), 'Avoider counts for patterns, one-line formulas for the rest.', { gap: 0.02 }); }) },
     ] },
 
+    { type: 'thinkaloud', problem: 'A fair coin. Rank: (a) HH appears somewhere in 4 flips, (b) strictly more heads than tails in 6 flips, (c) the first head comes on flip 2.', lines: [
+      { t: 0, say: 'Coin strings, no picture: one count per statement.' },
+      { t: 5, say: `(a) HH in 4 flips: ${fib(6)} strings avoid it, so 1 − ${fib(6)}/16 = ${dp(P.HH(4), 2)}.` },
+      { t: 12, say: '(b) more heads than tails: heads and tails are symmetric, so 1/2. A tie with (a).', slip: true },
+      { t: 17, say: `No: 6 is even, so ties take ${C(6, 3)}/64. (1 − ${C(6, 3)}/64)/2 = ${dp(P.more(6))}, well below 1/2.` },
+      { t: 24, say: '(c) first head on flip 2: a tail, then a head, 1/4.' },
+      { t: 28, say: `Order (a) > (b) > (c), with ${LL.exam.perItemSeconds - 28} seconds left.` },
+    ] },
+    { type: 'check', scope: 'the think-aloud routine on fresh statements', questions: [
+      { make: (rng) => again(() => rank(rng, 'A fair coin. Rank from most to least likely.', [POOL.more(rng), POOL.HH(rng), POOL[rng.pick(['first', 'alt', 'exact', 'HT', 'HHH'])](rng)], 'Ties for "more heads" with an even n; avoider counts for patterns; one-line counts for the rest.', { gap: 0.02 })) },
+    ] },
+
     S('rule'),
     { type: 'text', text: 'One habit covers the family: for "somewhere", count what avoids it; for everything else, write the one-line count. Never add chances over positions.' },
     { type: 'callout', tone: 'rule', text: 'Coin strings → 2^n strings. "Pattern somewhere" = 1 − avoiders/2^n; HT-avoiders n + 1, HH-avoiders F(n + 2). Exactly k: C(n, k); more heads: (1 − tie)/2.' },
@@ -142,6 +169,22 @@ export default {
     { type: 'check', scope: 'the contrast table and edge cases', questions: [
       { make: (rng) => { const n = rng.pick([3, 5, 7, 9]); return mc(rng, `P(strictly more heads than tails in ${n} flips)?`, '1/2', [[dp(P.more(n + 1)), `used the even-n formula; with ${n} flips a tie is impossible`], ['less than 1/2, because of ties', 'ties need an even number of flips'], ['more than 1/2', 'heads and tails are symmetric']], 'Odd n: no ties, and heads/tails symmetry splits the rest equally.'); } },
     ] },
+
+    { type: 'variation', base: `Five flips: (a) HT somewhere ${2 ** 5 - 6}/32 > (b) HH somewhere ${2 ** 5 - fib(7)}/32 > (c) exactly 3 heads ${C(5, 3)}/32.`, rows: [
+      { same: true, change: 'Swap heads and tails everywhere: TH, TT, exactly 3 tails', effect: 'No change. A fair coin is symmetric, so every string and its mirror image are equally likely.' },
+      { change: 'Ask (b) for HHH instead of HH', effect: `${noRun(5, 3)} strings avoid HHH: 1 − ${noRun(5, 3)}/32 = ${dp(P.HHH(5))}. A longer run is harder to hit, and (b) drops to last.` },
+      { change: 'Ask (a) for "HT at flips 1 and 2"', effect: 'A fixed spot is 1/4 exactly: the restart advantage only helps "somewhere", so (a) falls to last.' },
+      { fusion: true, change: 'Ask (a) for HT in 4 flips and (b) for HH in 8 flips', effect: `Fewer flips pull HT down (${dp(P.HT(4))}), more flips push HH up (${dp(P.HH(8))}). Together HH overtakes: the HT advantage holds only at equal length.` },
+    ] },
+    { type: 'transfer',
+      near: { make: nearT },
+      far: { make: farT },
+      principle: mc(null, 'Which idea carried over from coin strings to the dice rolls?', 'Count the sequences that avoid the pattern, then take 1 minus', [
+        ['Add the chance of the pattern at each starting position', 'adding spots counts sequences with several hits more than once'],
+        ['Two patterns with equal chance at one spot are equally likely', 'equal at a fixed spot is not equal somewhere'],
+        ['Multiply the chance of the pattern by the number of rolls', 'that is the same overcount as adding spots'],
+      ], 'Sequences that never contain the pattern follow a short recursion, for coins and for dice alike.'),
+    },
 
     S('tryit'),
     { type: 'tryit', section: 'll', family: 'coin-patterns', count: 3 },

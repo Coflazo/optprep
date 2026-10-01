@@ -57,13 +57,18 @@ function hingeQ(rng) {
     explain: `A + B: edge ${px(badEdge)} (a decoy). ${genuine.name}: ${rich ? `bid ${px(genuine.bid)} − legs' ask ${px(buyCost(gl))}` : `legs' bid ${px(sellValue(gl))} − ask ${px(genuine.ask)}`} = ${px(e)}.` }, rng);
 }
 
+// Half the time the wide card is a decoy, half the time it is genuinely mispriced: only the
+// executable edge tells them apart, so the answer cannot be guessed from the lesson's theme.
 function candidateEdgeQ(rng) {
   const { decoy, dl, decoyRich, cs } = decoyBoard(rng, 3);
-  const ed = decoyRich ? edgeSell(decoy, dl) : edgeBuy(decoy, dl);
-  return mc({ q: `A ${quote(cs[0])}, B ${quote(cs[1])}, A + B ${quote(decoy)}. A + B's mid (${px(mid(decoy))}) ${decoyRich ? 'is above' : 'is below'} the legs' mids (${px(midsOf(dl))}). Is ${decoyRich ? 'selling A + B and buying the legs' : 'buying A + B and selling the legs'} a solution?`,
-    right: `No: the executable edge is ${px(ed)}`,
-    wrong: [[`Yes: it locks in the mid gap, ${px(Math.abs(mid(decoy) - midsOf(dl)))}`, 'profit comes from bids and asks, not mids']],
-    explain: decoyRich ? `Bid ${px(decoy.bid)} − legs' ask ${px(buyCost(dl))} = ${px(ed)}.` : `Legs' bid ${px(sellValue(dl))} − ask ${px(decoy.ask)} = ${px(ed)}.` }, rng);
+  const real = rng.chance(0.5);
+  const X = real ? mispriced('A + B', decoy.legs, dl, decoyRich, rng.pick([0.5, 1]), rng.pick([1, 1.5])) : decoy;
+  const ed = decoyRich ? edgeSell(X, dl) : edgeBuy(X, dl), gap = r6(Math.abs(mid(X) - midsOf(dl)));
+  const yes = 'Yes: it locks in a profit', no = 'No: the spreads eat the whole gap';
+  return mc({ q: `A ${quote(cs[0])}, B ${quote(cs[1])}, A + B ${quote(X)}. A + B's mid (${px(mid(X))}) ${decoyRich ? 'is above' : 'is below'} the legs' mids (${px(midsOf(dl))}). Is ${decoyRich ? 'selling A + B and buying the legs' : 'buying A + B and selling the legs'} a solution?`,
+    right: real ? yes : no,
+    wrong: [[real ? no : yes, real ? `the executable edge is ${px(ed)}, above 0: the gap survives the spreads` : `the executable edge is ${px(ed)}: nothing is locked in`], [`Yes: it locks in the mid gap, ${px(gap)}`, 'profit is bids received minus asks paid, never the mid gap']],
+    explain: `${decoyRich ? `Bid ${px(X.bid)} − legs' ask ${px(buyCost(dl))}` : `Legs' bid ${px(sellValue(dl))} − ask ${px(X.ask)}`} = ${px(ed)}: ${ed > 0 ? 'positive, so trade it.' : 'not positive, a decoy.'}` }, rng);
 }
 
 export default {
@@ -82,7 +87,11 @@ export default {
   ],
   blocks: [
     sec('recognise'),
-    { type: 'challenge', q: `Before any teaching: board (bid / ask) ${boardText([A, B, AB, C, BC])}. A + B's mid is ${px(mid(AB))}, the legs' mids add to ${px(midsOf(lAB))}. Find a flat, profitable set of trades. Two approaches, then the trades and the profit.`, answer: `${cap(tradeText(pkg))}: +${px(outcome(pkg, 3).cash)}.`, explain: `A + B is the bait: selling it at ${px(AB.bid)} and buying the legs at ${px(A.ask)} + ${px(B.ask)} = ${px(buyCost(lAB))} loses ${px(-edgeSell(AB, lAB))}. The real trade is B + C: its ask ${px(BC.ask)} is below the legs' bids ${px(B.bid)} + ${px(C.bid)} = ${px(sellValue(lBC))}.` },
+    { type: 'challenge', q: `Before any teaching: board (bid / ask) ${boardText([A, B, AB, C, BC])}. A + B's mid is ${px(mid(AB))}, the legs' mids add to ${px(midsOf(lAB))}. Find a flat, profitable set of trades. Two approaches, then the trades and the profit.`, answer: `${cap(tradeText(pkg))}: +${px(outcome(pkg, 3).cash)}.`, explain: `A + B is the bait: selling it at ${px(AB.bid)} and buying the legs at ${px(A.ask)} + ${px(B.ask)} = ${px(buyCost(lAB))} loses ${px(-edgeSell(AB, lAB))}. The real trade is B + C: its ask ${px(BC.ask)} is below the legs' bids ${px(B.bid)} + ${px(C.bid)} = ${px(sellValue(lBC))}.`,
+      attempts: [
+        { id: 'midGap', label: 'Traded the mid gap', approach: `Sold A + B because its mid ${px(mid(AB))} is ${px(gapAB)} above the legs' mids.`, breaksAt: `Selling at the bid and buying the legs at their asks loses ${px(-edgeSell(AB, lAB))}: the half-spreads crossed (${px(halvesAB)}) are bigger than the gap.` },
+        { id: 'stopEarly', label: 'Stopped after A + B', approach: 'Priced A + B at bid and ask, found no trade, and skipped the board.', breaksAt: `B + C was never checked, and it pays ${px(edgeBuy(BC, lBC))}.` },
+      ] },
     { type: 'text', text: 'The cue: **two or more bundles** on one board, and one of them looks obviously off: a wide quote whose middle sits far from its legs. That card is often the decoy. The real arbitrage is usually a quieter card with a tight quote.' },
     { type: 'list', items: [`"${boardText([A, B, AB, C, BC])}"`, 'Four products, A + B and C + D: one looks rich at mid, the other pays', 'A decoy with an edge of exactly 0: it looks like a trade and earns nothing'] },
     { type: 'check', scope: 'spotting a decoy board', questions: [{ make: candidateEdgeQ }] },
@@ -117,24 +126,25 @@ export default {
         checks: [{ make: (rng) => { const [a] = singles(rng, ['A'], 20, 150, [0.5, 1, 1.5, 2]); return { type: 'number', q: `A ${quote(a)}. What is its half-spread h?`, answer: half(a), hints: ['Half of ask − bid.', `(${px(a.ask)} − ${px(a.bid)}) ÷ 2.`], explain: `(${px(a.ask)} − ${px(a.bid)}) ÷ 2 = ${px(half(a))}.` }; } }] },
       { say: 'Selling the bundle receives its bid: bundle mid − h(bundle). Buying each leg pays its ask: leg mid + h(leg).', why: 'Each trade gives up half a spread against the mid, in the direction that hurts you.',
         checks: [mc({ q: 'Against its mid, what does selling a card at its bid cost you?', right: 'Half its spread', wrong: [['Its whole spread', 'the whole spread is a round trip: buy and sell'], ['Nothing', 'the bid sits below the mid'], ['Half its spread, but it is a gain', 'selling below the mid is a loss against the mid']], explain: 'bid = mid − h.' })] },
-      { say: 'Edge = bundle bid − leg asks = (bundle mid − legs\' mids) − (h(bundle) + every h(leg)) = mid gap − half-spreads crossed.', why: 'Collect the mids into the gap and the half-spreads into the crossing cost.',
+      { answers: 'midGap', say: 'Edge = bundle bid − leg asks = (bundle mid − legs\' mids) − (h(bundle) + every h(leg)) = mid gap − half-spreads crossed.', why: 'Collect the mids into the gap and the half-spreads into the crossing cost.',
         checks: [{ make: gapEdgeQ }] },
-      { say: 'So a card is tradable only when its mid gap is bigger than all the half-spreads it crosses. Price every candidate at bid and ask; trade only a positive edge.', why: 'A wide card, or one with many legs, needs a large gap before anything is left.',
+      { answers: 'stopEarly', say: 'So a card is tradable only when its mid gap is bigger than all the half-spreads it crosses. Price every candidate on the board at bid and ask; trade only a positive edge.', why: 'A wide card, or one with many legs, needs a large gap before anything is left.',
         checks: [{ hinge: true, make: hingeQ }] },
     ] },
     { type: 'explain', prompt: 'A card looks rich by 1.0 at mid. In your own words, why can that still be a losing trade?', model: 'Selling it gives me its bid, which is half its spread below the mid, and buying each leg costs its ask, half that leg\'s spread above its mid. Those half-spreads are subtracted from the 1.0 gap. If they add to more than 1.0, the executable edge is negative, whatever the mids say.', points: ['Trades happen at bid and ask, each half a spread from the mid', 'Executable edge = mid gap − half-spreads crossed', 'A wide card or many legs can swallow the whole gap'] },
 
     sec('worked'),
-    { type: 'text', text: 'First an expert solves the challenge board at exam pace, then two live boards. On each, list every bundle, compute both executable edges for each one, and trade the positive edge. Notice that the think-aloud never computes a single mid.' },
+    { type: 'text', text: 'First an expert solves the challenge board at exam pace, then two live boards. On each, list every bundle, compute both executable edges for each one, and trade the positive edge. Notice that the think-aloud never trades on a mid: the moment it reaches for one, it stops and prices the card at bid and ask.' },
     { type: 'thinkaloud', problem: `Board (bid / ask): ${boardText([A, B, AB, C, BC])}.`, lines: [
       { t: 0, say: 'Five cards, two bundles: A + B and B + C. Check both, both directions, at bid and ask only.' },
-      { t: 4, say: `A + B: bid ${px(AB.bid)} against leg asks ${px(buyCost(lAB))}: ${px(edgeSell(AB, lAB))}. Ask ${px(AB.ask)} against leg bids ${px(sellValue(lAB))}: no. Looks rich on mids, is not.` },
+      { t: 3, say: 'A + B is wide and sits well above its legs: that is the rich one. Sell it.', slip: true },
+      { t: 5, say: `Hold on, "sits above" is a mid feeling. Bid ${px(AB.bid)} against leg asks ${px(buyCost(lAB))}: ${px(edgeSell(AB, lAB))}. Ask ${px(AB.ask)} against leg bids ${px(sellValue(lAB))}: no.` },
       { t: 10, say: `B + C: ask ${px(BC.ask)} against leg bids ${px(B.bid)} + ${px(C.bid)} = ${px(sellValue(lBC))}. Positive, ${px(edgeBuy(BC, lBC))}.` },
       { t: 14, say: 'Buy B + C, sell B, sell C. A is untouched.' },
       { t: 18, say: `Net row: A 0, B 0, C 0, cash +${px(outcome(pkg, 3).cash)}. Submit.` },
     ] },
     { type: 'check', scope: 'the same scan on a fresh board', questions: [{ make: hingeQ }] },
-    { type: 'worked', section: 'ob', family: 'decoy', difficulty: 3, seed: 'a', intro: 'Three products, a decoy and a genuine bundle. Check both before you tap.' },
+    { type: 'worked', section: 'ob', family: 'decoy', difficulty: 3, seed: 'a', explainAt: [0], intro: 'Three products, a decoy and a genuine bundle. Check both before you tap.' },
     { type: 'worked', section: 'ob', family: 'decoy', difficulty: 5, seed: 'b', fade: 3, intro: 'Four products. The decoy is taken apart for you; finding and trading the genuine card is yours.' },
 
     sec('predict'),
@@ -178,8 +188,21 @@ export default {
     { type: 'variation', base: `Base: ${boardText([A, B, AB])}. A + B looks rich by ${px(gapAB)} at mid; selling it earns ${px(edgeSell(AB, lAB))}.`, rows: [
       { change: `The whole A + B quote moves up ${px(shiftUp)} (now ${quote(ABup)})`, effect: `The bid clears the legs' ask: edge ${px(edgeSell(ABup, lAB))}. No longer a decoy.` },
       { change: `A + B narrows to ${quote(ABnarrow)} (same mid)`, effect: `Less spread to cross, but still not enough: edge ${px(edgeSell(ABnarrow, lAB))}.` },
-      { change: `A + B's ask rises by ${px(1)}`, effect: `Nothing for the sell check: it uses the bid. Edge stays ${px(edgeSell(ABask, lAB))}, although the mid gap grew.` },
+      { same: true, change: `A + B's ask rises by ${px(1)}`, effect: `Nothing for the sell check: it uses the bid. Edge stays ${px(edgeSell(ABask, lAB))}, although the mid gap grew.` },
+      { fusion: true, change: `A + B moves up ${px(shiftUp)} and widens by ${px(1)} on each side`, effect: `The move adds ${px(shiftUp)} to the bid and the widening takes ${px(1)} back: edge ${px(edgeSell(card('A + B', AB.legs, AB.bid + shiftUp - 1, AB.ask + shiftUp + 1), lAB))}, still a decoy, although the mid gap grew by ${px(shiftUp)}.` },
     ] },
+    { type: 'transfer',
+      near: { make: (rng) => { const { cards, genuine, gl, rich, e } = decoyBoard(rng, 4); return { type: 'number', q: `Board (bid / ask): ${boardText(cards)}. One package locks in a profit. How much?`, answer: e,
+        hints: ['Price every bundle at bid and ask, both directions; the wide one is the likely decoy.', `${genuine.name}: ${rich ? `bid ${px(genuine.bid)} against legs' ask ${px(buyCost(gl))}` : `legs' bid ${px(sellValue(gl))} against ask ${px(genuine.ask)}`}.`],
+        explain: `${genuine.name}: ${rich ? `${px(genuine.bid)} − ${px(buyCost(gl))}` : `${px(sellValue(gl))} − ${px(genuine.ask)}`} = ${px(e)}. A + B is the decoy.` }; } },
+      far: { make: (rng) => { const m1 = rng.int(20, 40), s1 = rng.pick([3, 4, 5]), G = rng.pick([2, 3, 4, 5]), s2 = rng.pick([2, 3]), m2 = m1 + G, ans = G - s1 - s2, sg = (x) => (x < 0 ? `−${-x}` : String(x));
+        return { type: 'number', q: `A used textbook: a shop buys copies for €${m1 - s1} and sells them for €${m1 + s1}; a website buys them for €${m2 - s2} and sells them for €${m2 + s2}. The website's middle price is €${G} higher. Per book, what does buying at the shop and selling to the website lock in, in euros (negative for a loss)?`, answer: ans,
+          hints: ['You buy at the shop\'s selling price and sell at the website\'s buying price.', `${m2 - s2} − ${m1 + s1}.`],
+          explain: `€${m2 - s2} − €${m1 + s1} = ${sg(ans)}: the €${G} gap between middle prices, minus €${s1} crossed at the shop and €${s2} at the website.` }; } },
+      principle: mc({ q: 'Which idea carried over from the decoy board to the bookshops?', right: 'A gap between mids pays only if it beats every half-spread crossed',
+        wrong: [['A bigger gap between mids always means a bigger profit', 'a wide quote can swallow a big gap'], ['Wide quotes are where the arbitrage usually hides', 'wide quotes need the biggest gap, so they are the likeliest decoys'], ['Profit is the mid gap minus one full spread', 'each trade costs half its own spread, not one spread in total']],
+        explain: 'Executable edge = mid gap − the half-spreads crossed, at a market or in a bookshop.' }),
+    },
 
     sec('tryit'),
     { type: 'tryit', section: 'ob', family: 'decoy', count: 3 },

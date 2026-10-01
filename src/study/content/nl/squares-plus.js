@@ -23,6 +23,10 @@ const d1 = (rng, n) => { const s = rng.int(1, 8), k = nz(rng, -6, 6); return { c
 const odd = (rng, n) => { const s = rng.int(0, 5) * 2 + 1, k = nz(rng, -4, 4); return { c: 1, s, m: 2, k, xs: sq(1, s, 2, k, n) }; };
 const scaled = (rng, n) => { const s = rng.int(2, 10), k = nz(rng, -5, 5), c = rng.pick([2, 3]); return { c, s, m: 1, k, xs: sq(c, s, 1, k, n) }; };
 const anyP = (rng, n) => [d1, odd, scaled][rng.int(0, 2)](rng, n);
+const TA = sq(1, 5, 2, -2, 6), TAg = g(TA), TAb = bases(5, 2, 6), TAk = TAb[0] ** 2 - TA[0], TAs = TAg[1] - TAg[0];
+const E15 = E1.slice(0, 5), KUP = sq(1, E1s, 1, 5, 6), OB = sq(1, E1s, 2, E1k, 6), SC2 = sq(2, E1s, 1, E1k, 6), OS2 = sq(2, E1s, 2, E1k, 6);
+const READS = [[2, 'b² with the bases stepping by 1'], [8, 'b² with the bases stepping by 2'], [4, '2b² with the bases stepping by 1'], [6, '3b² with the bases stepping by 1']];
+const READ_TRAP = { 2: 'bases stepping by 1 give a second row of 2', 8: 'bases two apart give a second row of 8', 4: 'a scale of 2 doubles the 2 to 4', 6: 'a scale of 3 triples the 2 to 6' };
 const form = ({ c, k }) => `${c === 1 ? '' : `${c} × `}b² ${k < 0 ? '−' : '+'} ${Math.abs(k)}`;
 
 export default {
@@ -41,7 +45,12 @@ export default {
   ],
   blocks: [
     S('recognise'),
-    { type: 'challenge', q: `Before any teaching: ${seq(CH.slice(0, 5))}, ? What comes next? Try two ways: the two-row ladder, and comparing each term with a perfect square.`, answer: String(CH[5]), explain: `Ladder: gaps ${seq(g(CH.slice(0, 5)))}, second difference ${g(g(CH))[0]}, next gap ${g(CH)[4]}, so ${CH[4]} + ${g(CH)[4]} = ${CH[5]}. Squares: every term is ${CHk} more than ${seq(bases(CHs, 1, 5).map((b) => b * b))}, so the next is ${CHs + 5}² + ${CHk} = ${CH[5]}. Both work; the square read is faster once you see it.` },
+    { type: 'challenge', q: `Before any teaching: ${seq(CH.slice(0, 5))}, ? What comes next? Try two ways: the two-row ladder, and comparing each term with a perfect square.`, answer: String(CH[5]), explain: `Ladder: gaps ${seq(g(CH.slice(0, 5)))}, second difference ${g(g(CH))[0]}, next gap ${g(CH)[4]}, so ${CH[4]} + ${g(CH)[4]} = ${CH[5]}. Squares: every term is ${CHk} more than ${seq(bases(CHs, 1, 5).map((b) => b * b))}, so the next is ${CHs + 5}² + ${CHk} = ${CH[5]}. Both work; the square read is faster once you see it.`,
+      attempts: [
+        { id: 'one-term', label: 'Match one term to a square', approach: `Noticed ${CH[3]} is close to 36 and built a guess on that one term.`, breaksAt: 'One term near a square proves nothing: the offset must be the same for every term before you trust the reading.' },
+        { id: 'unshift', label: 'Shift the wrong way', approach: `Added ${CHk} to every term (${seq(CH.slice(0, 3).map((v) => v + CHk))}, …) and found no squares.`, breaksAt: `The terms sit ${CHk} above the squares, so take it off: ${CH[0]} − ${CHk} = ${CH[0] - CHk} = ${CHs}².` },
+        { id: 'next-square', label: 'Answer the next square', approach: `Read the bases ${seq(bases(CHs, 1, 5))} and answered ${CHs + 5}² = ${(CHs + 5) ** 2}.`, breaksAt: `The constant belongs to every term, the next one included: ${(CHs + 5) ** 2} + ${CHk} = ${CH[5]}.` },
+      ] },
     { type: 'text', text: `Every term is a perfect square **plus the same constant k**, or c times a square plus k. The bases of the squares count up by 1, or run through the odd numbers only. The shift is what hides them: ${seq(CH.slice(0, 3))} do not look square until you take ${CHk} off each.` },
     { type: 'list', items: [`What number comes next?  ${seq(E1.slice(0, 5))}, ?`, `What number comes next?  ${seq(ODD.slice(0, 5))}, ?`, `What number comes next?  ${seq(SC.slice(0, 5))}, ?`] },
     { type: 'text', text: `Not this lesson: products of two neighbours like ${seq(PRON.slice(0, 4))} (factor them), cubes, which outgrow squares fast (${seq(CUBE.slice(0, 4))}), and squares of primes or of Fibonacci numbers, which have their own lessons.` },
@@ -68,11 +77,11 @@ export default {
 
     S('derivation'),
     { type: 'steps', steps: [
-      { say: 'Compare each term with the nearest perfect square. If every term sits the same distance k from a square, and the bases rise steadily, the shape is squares.', why: 'One term near a square proves nothing; a shared offset across all terms is the fingerprint.',
+      { answers: 'one-term', say: 'Compare each term with the nearest perfect square. If every term sits the same distance k from a square, and the bases rise steadily, the shape is squares.', why: 'One term near a square proves nothing; a shared offset across all terms is the fingerprint.',
         checks: [
           { make: (rng) => { const p = d1(rng, 5); return num(`${seq(p.xs)}: what is k in "square + k"?`, p.k, `k = ${neg(p.xs[0])} − ${p.s}² = ${neg(p.k)}, and the same for every term.`, ['Subtract the nearest square from the first term.', 'Check the same k works for the others.']); } },
         ] },
-      { say: 'Subtract k from every term to reveal the squares, then read their bases.', why: 'Undoing the shift turns an unfamiliar list into a list you know by sight.',
+      { answers: 'unshift', say: 'Subtract k from every term to reveal the squares, then read their bases.', why: 'Undoing the shift turns an unfamiliar list into a list you know by sight.',
         checks: [
           { make: (rng) => { const p = d1(rng, 5); return num(`${seq(p.xs)} is b² ${p.k < 0 ? '−' : '+'} ${Math.abs(p.k)}. What is the base b of the **last** term?`, p.s + 4, `${neg(p.xs[4])} ${p.k < 0 ? '+' : '−'} ${Math.abs(p.k)} = ${(p.s + 4) ** 2} = ${p.s + 4}².`); } },
         ] },
@@ -80,7 +89,7 @@ export default {
         checks: [
           { make: (rng) => { const p = odd(rng, 5); return num(`${seq(p.xs)} is b² ${p.k < 0 ? '−' : '+'} ${Math.abs(p.k)}. What is the next base?`, p.s + 10, `Bases ${seq(bases(p.s, 2, 5))} step by 2 (odd numbers): next ${p.s + 10}.`, [`Subtract ${neg(p.k)} and take square roots.`, 'How far apart are neighbouring bases?']); } },
         ] },
-      { say: 'Next term = (next base)² + k.', why: 'Both parts continue independently: the base list by its step, the constant unchanged.',
+      { answers: 'next-square', say: 'Next term = (next base)² + k.', why: 'Both parts continue independently: the base list by its step, the constant unchanged.',
         checks: [
           { make: (rng) => { const p = rng.chance(0.5) ? d1(rng, 6) : odd(rng, 6); return num(nextQ(p.xs.slice(0, 5)), p.xs[5], `${form(p)} for b = ${seq(bases(p.s, p.m, 5))}: next ${p.s + 5 * p.m}² ${sgn(p.k)} = ${neg(p.xs[5])}.`, ['Remove the constant and read the bases.', 'Square the next base, then put the constant back.']); } },
         ] },
@@ -98,7 +107,7 @@ export default {
     { type: 'explain', prompt: 'Why does subtracting the same k from every term leave the gaps unchanged, and why is the second difference of b² always 2?', model: 'A constant shift moves every term equally, so every difference between neighbours stays the same. The gap from b² to (b + 1)² is 2b + 1, which grows by 2 each time b grows by 1, so the second row is 2.', points: ['A shift cancels in every subtraction', 'Consecutive squares differ by 2b + 1', 'That gap grows by 2 per step, so the second difference is 2 (8 for odd bases, 2c for c·b²)'] },
 
     S('worked'),
-    { type: 'worked', family: 'squares-plus', section: 'nl', difficulty: 1, seed: 'a', intro: 'Consecutive squares with a shift. Find k before opening the solution.' },
+    { type: 'worked', family: 'squares-plus', section: 'nl', difficulty: 1, seed: 'a', explainAt: [0], intro: 'Consecutive squares with a shift. Find k before opening the solution.' },
     { type: 'worked', family: 'squares-plus', section: 'nl', difficulty: 2, seed: 'b', fade: 1, intro: 'Odd bases or a scale factor. The reading is given; the final step is yours.' },
 
     S('predict'),
@@ -123,6 +132,16 @@ export default {
     S('speed'),
     { type: 'callout', tone: 'speed', text: 'Learn 11² to 30² cold (table below). To build one you forgot: (10a + b)² = 100a² + 20ab + b², so ' + `${EXPv}² = ${100 * EXP.a ** 2} + ${20 * EXP.a * EXP.b} + ${EXP.b ** 2} = ${EXPv ** 2}.` },
     { type: 'callout', tone: 'speed', text: `Neighbouring squares differ by 2b + 1: the next square is last square + 2 × last base + 1. From 24² = ${24 * 24}, 25² = ${24 * 24} + ${2 * 24 + 1} = ${25 * 25}. That is also the next gap of any "square + k" sequence.` },
+    { type: 'thinkaloud', problem: nextQ(TA.slice(0, 5)), lines: [
+      { t: 0, say: `Gaps ${seq(TAg.slice(0, 4))} grow; second row ${seq(diffs(TAg.slice(0, 4)))}. Squares, bases two apart.` },
+      { t: 6, say: `Near squares: ${seq(TAb.slice(0, 5).map((b) => b * b))}, each ${TAk} more than the term. So term = b² − ${TAk} with b = ${seq(TAb.slice(0, 5))}.` },
+      { t: 12, say: `Next base ${TAb[4] + 1}: ${TAb[4] + 1}² − ${TAk} = ${(TAb[4] + 1) ** 2 - TAk}.`, slip: true },
+      { t: 15, say: `No: the bases are odd, two apart, as the ${TAs} said. Next base ${TAb[5]}.` },
+      { t: 19, say: `${TAb[5]}² = ${TAb[5] ** 2}, minus ${TAk} is ${TA[5]}. Gap check: ${TA[5]} − ${TA[4]} = ${TAg[4]} = ${TAg[3]} + ${TAs}. Answer ${TA[5]}.` },
+    ] },
+    { type: 'check', scope: 'the think-aloud: let the second row choose the reading', questions: [
+      { make: (rng) => { const t = rng.int(0, 3), [v, right] = READS[t]; return pick(rng, `A list of squares plus a constant has second row ${v}, ${v}, ${v}. Which reading fits?`, right, READS.filter((_, i) => i !== t).map(([w, r]) => [r, READ_TRAP[w]]), `Consecutive squares give 2; bases two apart give 8; a scale c multiplies the 2 by c. So ${v} means ${right}.`); } },
+    ] },
     { type: 'diagram', diagram: 'table', spec: { columns: ['b', 'b²', 'b', 'b²'], rows: B10.map((b) => [String(b), String(b * b), String(b + 10), String((b + 10) ** 2)]) }, caption: 'Squares from 11² to 30². Knowing these by sight turns most items in this family into a subtraction.' },
     { type: 'check', scope: 'the next square = square + 2b + 1', questions: [
       { make: (rng) => { const b = rng.int(15, 29); return num(`${b}² = ${b * b}. What is ${b + 1}²?`, (b + 1) ** 2, `${b * b} + 2 × ${b} + 1 = ${(b + 1) ** 2}.`, ['Neighbouring squares differ by 2b + 1.', `Add ${2 * b + 1}.`]); } },
@@ -141,10 +160,28 @@ export default {
     ] },
     { type: 'callout', tone: 'edge', text: `Edge cases: k can be negative and a term can be 0 (0 = 1² − 1). b(b + 2) is (b + 1)² − 1, so ${seq(Array.from({ length: 4 }, (_, i) => (i + 1) * (i + 3)))} can be read either way and gives the same answer. A scale c shows up as second difference 2c.` },
     { type: 'callout', tone: 'transfer', text: `Same idea elsewhere: subtract a constant to reveal a famous list. The same move uncovers powers of 2 (${seq(geo(2, 2, 4).map((v) => v + 1))} is 2ⁿ + 1), cubes and primes shifted by a constant.` },
+    { type: 'variation', base: `${seq(E15)}, ?  b² − ${-E1k} for b = ${seq(bases(E1s, 1, 5))}; next ${E1s + 5}² − ${-E1k} = ${E1[5]}.`, rows: [
+      { same: true, change: `Drop the first term: ${seq(E15.slice(1))}, ?`, effect: `Still ${E1[5]}. Every remaining term is still b² − ${-E1k}, and the next base is still ${E1s + 5}.` },
+      { change: `Shift by +5 instead of −${-E1k}: ${seq(KUP.slice(0, 5))}, ?`, effect: `${KUP[5]}. Same bases, same squares; only the constant you put back changes.` },
+      { change: `Odd bases ${seq(bases(E1s, 2, 5))}: ${seq(OB.slice(0, 5))}, ?`, effect: `${OB[5]}. The second row becomes ${g(g(OB))[0]} and the next base is ${E1s + 10}, not ${E1s + 5}.` },
+      { change: `Scale by 2: ${seq(SC2.slice(0, 5))}, ?`, effect: `${SC2[5]}. The second row doubles to ${g(g(SC2))[0]}; next = 2 × ${(E1s + 5) ** 2} − ${-E1k}.` },
+      { fusion: true, change: `Odd bases and scale 2: ${seq(OS2.slice(0, 5))}, ?`, effect: `${OS2[5]}. The two changes multiply in the second row: bases two apart give 8, the scale doubles it to ${g(g(OS2))[0]}; next = 2 × ${E1s + 10}² − ${-E1k}.` },
+    ] },
     { type: 'check', scope: 'the contrast table and edge cases', questions: [
       { make: (rng) => { const t = rng.int(0, 2), s = rng.int(2, 6), k = nz(rng, -4, 4); const xs = t === 0 ? sq(1, s, 1, k, 5) : t === 1 ? sq(1, s * 2 - 1, 2, k, 5) : Array.from({ length: 5 }, (_, i) => (i + s) ** 3 + k); const names = ['consecutive squares + k', 'odd-base squares + k', 'cubes + k']; const tr = [[null, 'the bases count by 1: second difference 2, not 8', 'the growth is too slow for cubes'], ['the second difference is 8, so the bases step by 2', null, 'the growth is too slow for cubes'], ['the gaps grow faster than squares allow', 'the second row is not constant', null]]; return pick(rng, `${seq(xs)}: which reading fits?`, names[t], names.map((nm, i) => [nm, tr[t][i]]).filter((_, i) => i !== t), `Second row: ${seq(g(g(xs)))}.`); } },
       { make: (rng) => { const p = odd(rng, 6); return num(nextQ(p.xs.slice(0, 5)), p.xs[5], `Odd bases ${seq(bases(p.s, 2, 5))}: next ${p.s + 10}² ${sgn(p.k)} = ${neg(p.xs[5])}.`, ['Remove the constant: which squares?', 'The bases step by 2.']); } },
     ] },
+
+    { type: 'transfer',
+      near: { make: (rng) => { const s = rng.int(18, 24), k = nz(rng, -9, 9), xs = sq(1, s, 1, k, 6); return num(nextQ(xs.slice(0, 5)), xs[5], `These are ${s}² to ${s + 4}² ${k < 0 ? 'minus' : 'plus'} ${Math.abs(k)}. The next gap is 2 × ${s + 4} + 1 = ${2 * (s + 4) + 1}, so ${xs[4]} + ${2 * (s + 4) + 1} = ${xs[5]} = ${s + 5}² ${k < 0 ? '−' : '+'} ${Math.abs(k)}.`, ['Which squares sit a fixed distance from these terms?', 'The next gap between squares is 2 × last base + 1.']); } },
+      far: { make: (rng) => { const k = rng.int(3, 6); return num(`Two fair dice are thrown. The larger of the two faces is at most ${k} in ${k}² = ${k * k} of the 36 outcomes. In how many outcomes is the larger face exactly ${k}?`, 2 * k - 1, `Exactly ${k} = at most ${k} minus at most ${k - 1}: ${k * k} − ${(k - 1) ** 2} = ${2 * k - 1}, which is 2 × ${k - 1} + 1, the gap between neighbouring squares.`, [`"Exactly ${k}" = "at most ${k}" minus "at most ${k - 1}".`, `${k}² − ${k - 1}².`]); } },
+      principle: { type: 'choice', q: 'Which idea carried over from the shifted squares to the dice?', options: [
+        'neighbouring squares differ by 2b + 1',
+        'neighbouring squares differ by the same amount',
+        'the next square is the last square plus b',
+        'each square is the sum of the two squares before it',
+      ], answer: 0, traps: { 1: 'the gap 2b + 1 grows with b; only the second difference is constant', 2: 'you add 2b + 1, not b: 5² − 4² is 9, not 5', 3: 'that is the Fibonacci rule; squares grow by the odd numbers' }, explain: 'The next gap of a "square + k" list and the count of "larger face exactly k" are both (b + 1)² − b² = 2b + 1.' },
+    },
 
     S('tryit'),
     { type: 'tryit', family: 'squares-plus', section: 'nl', count: 3 },

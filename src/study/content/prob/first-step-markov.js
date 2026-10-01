@@ -54,11 +54,15 @@ export default {
   ],
   blocks: [
     sec('recognise'),
-    { type: 'challenge', q: 'Before any teaching: you toss a fair coin until you see two heads in a row. How many tosses do you expect? Two approaches, then an answer.', answer: String(HH), explain: `A tree never ends. Name two situations: "start" (no progress) and "last toss was H". From each, one toss leads back to a named situation, giving two equations whose solution is ${HH}. If you said 4 (= 2 × 2), you treated the two heads as separate waits and missed that a T wipes out your progress.` },
+    { type: 'challenge', q: 'Before any teaching: you toss a fair coin until you see two heads in a row. How many tosses do you expect? Two approaches, then an answer.', answer: String(HH), explain: `A tree never ends. Name two situations: "start" (no progress) and "last toss was H". From each, one toss leads back to a named situation, giving two equations whose solution is ${HH}. If you said 4 (= 2 × 2), you treated the two heads as separate waits and missed that a T wipes out your progress.`,
+      attempts: [
+        { id: 'double', label: 'Two waits of 2 tosses', approach: 'Each head takes 2 tosses on average, so two heads in a row take 4.', breaksAt: 'A T after the first H wipes out the progress, so the second wait is not a fresh 2 tosses.' },
+        { id: 'noPlusOne', label: 'Left out the +1', approach: 'Wrote e_{0} = ½ e_{1} + ½ e_{0}, without counting the toss just made.', breaksAt: 'Every toss costs 1: without it the equations are solved by 0 tosses.' },
+      ] },
     { type: 'text', text: 'Trigger: a process that runs **until** something happens ("toss until", "first time", "keeps walking", "who reaches k first"), with the same rules at every step. You name the situations (**states**), then write one equation per state by looking one step ahead.' },
     { type: 'check', scope: 'spotting a first-step question', questions: [
-      mc({ q: 'Which question calls for first-step analysis?', right: 'Expected tosses of a coin until two heads in a row', at: 2,
-        wrong: [['P(exactly two heads in 5 tosses)', 'a fixed number of tosses: binomial'], ['P(the 5th card is an ace)', 'symmetry: any position is a uniform card'], ['Expected number of sixes in 12 rolls', 'linearity: 12 × 1/6']],
+      mc({ q: 'Which question calls for first-step analysis?', right: 'Expected tosses until two heads in a row', at: 2,
+        wrong: [['P(exactly two heads in 5 tosses)', 'a fixed number of tosses: binomial'], ['P(the 5th card dealt is an ace)', 'symmetry: any position is a uniform card'], ['Expected number of sixes in 12 rolls', 'linearity: 12 × 1/6']],
         explain: '"Until" plus progress that can be lost: states and first-step equations.' }),
     ] },
 
@@ -86,8 +90,8 @@ export default {
     { type: 'diagram', diagram: 'graph', spec: { markov: true, title: '6 before an odd number', nodes: [{ id: 'S', label: 'start', x: 0.5, y: 0.2 }, { id: 'W', label: 'win', x: 0.1, y: 0.85 }, { id: 'L', label: 'lose', x: 0.9, y: 0.85 }], edges: [{ from: 'S', to: 'W', p: 1 / 6, label: '1/6' }, { from: 'S', to: 'L', p: 1 / 2, label: '3/6' }, { from: 'S', to: 'S', p: 1 / 3, label: '2/6' }, { from: 'W', to: 'W', p: 1, label: '1' }, { from: 'L', to: 'L', p: 1, label: '1' }] }, caption: 'One unfinished state (start) and two absorbing ones. The loop on start is the 2 or 4 that changes nothing.' },
     { type: 'steps', steps: [
       { say: 'Name the unknown: p = P(win from the start).', why: 'There is only one unfinished situation, so one unknown.',
-        checks: [mc({ q: 'You roll a 2. What is your chance of winning from here?', right: 'p again: nothing has changed', at: 1,
-          wrong: [['0', 'a 2 does not lose'], ['1/6', 'that is the chance of winning on the very next roll only'], ['1', 'a 2 does not win']],
+        checks: [mc({ q: 'You roll a 2. What is your chance of winning from here?', right: 'p, the same as at the start', at: 1,
+          wrong: [['0, since the roll was not a 6', 'a 2 does not lose'], ['1/6, the chance the next roll is a 6', 'that is the chance of winning on the very next roll only'], ['1, since the roll was not odd', 'a 2 does not win']],
           explain: 'The process has no memory: after a 2 you face exactly the starting situation.' })] },
       { say: 'Split on the first roll: a 6 wins (1/6), an odd number loses (3/6), a 2 or 4 returns to the start (2/6).', why: 'The three cases cover every face and do not overlap.',
         checks: [mc({ q: 'In this race, what is P(the first roll sends you back to the start)?', right: frac(2, 6), at: 2, wrong: [[frac(1, 6), 'only counted one of the two neutral faces'], [frac(3, 6), 'that is P(lose on the first roll)'], [frac(5, 6), 'counted every non-winning roll as a return']], explain: 'Faces 2 and 4: 2/6 = 1/3.' })] },
@@ -107,11 +111,11 @@ export default {
         checks: [mc({ q: 'How many unknowns does "toss until HHH" need?', right: '3', at: 2,
           wrong: [['1', 'every partial run is its own state'], ['2', 'the unfinished states are start, H and HH: three'], ['4', 'HHH is absorbing: its value is 0, not an unknown']],
           explain: 'Start, "H", "HH": three unfinished states.' })] },
-      { say: 'From start: one toss, then H (1/2) moves you to e_{1} and T (1/2) keeps you at start: e_{0} = 1 + ½ e_{1} + ½ e_{0}.', why: 'The +1 pays for the toss just made; the rest is the weighted value of where you land.',
+      { answers: 'noPlusOne', say: 'From start: one toss, then H (1/2) moves you to e_{1} and T (1/2) keeps you at start: e_{0} = 1 + ½ e_{1} + ½ e_{0}.', why: 'The +1 pays for the toss just made; the rest is the weighted value of where you land.',
         checks: [mc({ q: 'Roll a die until a 6. Which equation for e = expected rolls is right?', right: 'e = 1 + (5/6) e', at: 1,
           wrong: [['e = (5/6) e', 'forgot the +1 for the roll just made'], ['e = 1 + (1/6) e', 'a 6 ends the game; it is the misses that repeat'], ['e = 6 + (5/6) e', 'each roll costs 1, not 6']],
           explain: 'One roll, then with chance 5/6 you face the same situation again.' })] },
-      { say: 'From "last toss H": one toss, then H (1/2) finishes and T (1/2) sends you to start: e_{1} = 1 + ½ × 0 + ½ e_{0}.', why: 'A T breaks the run, so you are back at the start, not at "H".',
+      { answers: 'double', say: 'From "last toss H": one toss, then H (1/2) finishes and T (1/2) sends you to start: e_{1} = 1 + ½ × 0 + ½ e_{0}.', why: 'A T breaks the run, so you are back at the start, not at "H".',
         checks: [{ make: (rng) => { const k = rng.pick([2, 3, 4, 6, 10]); return { type: 'number', q: `Solve e = 1 + (1 − 1/${k}) e: the expected number of trials until a success with chance 1/${k}.`, answer: k, hints: ['Move the e terms to one side: e × (1/k) = 1.'], explain: `e/${k} = 1, so e = ${k}. This proves the geometric mean 1/p.` }; } }] },
       { say: `Substitute: the first equation gives e_{0} = 2 + e_{1}; with the second, e_{0} = 2 + 1 + ½ e_{0}, so e_{0} = ${HH}.`, why: 'Two linear equations, solved by substitution.',
         checks: [{ make: twoInRowQ }] },

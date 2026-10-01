@@ -41,12 +41,16 @@ export default {
   ],
   blocks: [
     S('recognise'),
-    { type: 'challenge', q: 'Before any teaching: a shuffled 52-card deck has its top 10 cards thrown away face down, unseen. What is the probability that the next card is red? Try two different arguments.', answer: '1/2', explain: 'The 11th card is as random as the first. If you got 26/42 you kept all the reds but shrank the deck; if you got 16/42 you assumed every discard was red. Unseen cards teach you nothing, so nothing changes.' },
+    { type: 'challenge', q: 'Before any teaching: a shuffled 52-card deck has its top 10 cards thrown away face down, unseen. What is the probability that the next card is red? Try two different arguments.', answer: '1/2', explain: 'The 11th card is as random as the first. If you got 26/42 you kept all the reds but shrank the deck; if you got 16/42 you assumed every discard was red. Unseen cards teach you nothing, so nothing changes.', attempts: [
+      { id: 'enumerate', label: 'Split on the discarded reds', approach: 'Started listing how many of the 10 discards were red, 0 to 10, each with its own weight.', breaksAt: 'Eleven weighted cases will not fit in 90 seconds, and they are not needed: the 11th card is as random as the first.' },
+      { id: 'shrink', label: '26 reds among 42 cards', approach: 'Kept all 26 reds and shrank the deck to 42: 26/42.', breaksAt: 'The discards removed reds as well, about half of them. Shrinking the deck alone overstates red.' },
+      { id: 'all-red', label: 'Assume the discards were red', approach: 'Took the worst case, all 10 discards red: 16/42.', breaksAt: 'Nobody saw the discards. Removing cards from a group is only allowed for cards you actually see.' },
+    ] },
     { type: 'text', text: 'A deck is shuffled and the question points at a **position** (the 11th card, the bottom card), at cards **thrown away unseen**, at a card you **did** see, or at the **order** in which special cards appear ("the first ace before the first king").' },
     { type: 'list', items: ['"The top 10 cards are discarded face down. Probability the next card is red?"', '"Probability the 15th card has the same suit as the top card?"', '"You see the top card is a heart. Probability the bottom card is a heart?"', '"Cards are turned over one by one. Probability the first ace comes before the first king?"'] },
     { type: 'text', text: 'Not this lesson: hands of several cards dealt at once, like "two aces in two cards" (bto/card-draws). Here the question is about one position or about relative order, and symmetry answers it without a product.' },
     { type: 'check', scope: 'the recognition cues above', questions: [
-      { type: 'choice', q: 'Which question belongs to this lesson?', options: ['Probability the 30th card of a shuffled deck is a spade', 'Probability a 5-card hand is a flush', 'Probability two drawn cards are both aces', 'Probability of at least one ace in 4 cards'], answer: 0, traps: { 1: 'a hand: bto/card-draws', 2: 'two cards together: bto/card-draws', 3: 'an at-least-one hand: bto/card-draws' }, explain: 'A single position: symmetry says 13/52.' },
+      { type: 'choice', q: 'Which question belongs to this lesson?', options: ['Probability the 30th card dealt is a spade', 'Probability a 5-card hand is a flush', 'Probability two drawn cards are both aces', 'Probability of at least one ace in 4 cards'], answer: 0, traps: { 1: 'a hand: bto/card-draws', 2: 'two cards together: bto/card-draws', 3: 'an at-least-one hand: bto/card-draws' }, explain: 'A single position: symmetry says 13/52.' },
     ] },
 
     S('why'),
@@ -80,15 +84,15 @@ export default {
 
     S('derivation'),
     { type: 'steps', steps: [
-      { say: 'A fair shuffle makes all 52! orderings equally likely, so the card in any fixed position is each of the 52 cards with probability 1/52.', why: 'For a given card c and position k, the orderings with c at k are 51! of 52!, whatever k is.',
+      { answers: 'enumerate', say: 'A fair shuffle makes all 52! orderings equally likely, so the card in any fixed position is each of the 52 cards with probability 1/52.', why: 'For a given card c and position k, the orderings with c at k are 51! of 52!, whatever k is.',
         checks: [
-          { type: 'choice', q: 'Why is P(the bottom card is the ace of spades) = 1/52?', options: ['51! of the 52! orderings put it at the bottom', 'The bottom card is special', 'Because 51 cards are above it'], answer: 0, traps: { 1: 'no position is special in a fair shuffle', 2: 'the cards above it are not seen, so they do not condition anything' }, explain: 'Fix the ace at the bottom and order the other 51 freely: 51!/52! = 1/52.' },
+          { type: 'choice', q: 'Why is P(the bottom card is the ace of spades) = 1/52?', options: ['51! of the 52! orderings put it at the bottom', 'The bottom card is dealt last, so it is special', 'The 51 cards above it shrink the chances to 1/52'], answer: 0, traps: { 1: 'no position is special in a fair shuffle', 2: 'the cards above it are not seen, so they do not condition anything' }, explain: 'Fix the ace at the bottom and order the other 51 freely: 51!/52! = 1/52.' },
         ] },
-      { say: 'Cards removed unseen give no information. Averaging over everything they could have been returns the starting probability.', why: 'Probabilities move only when you learn something. The unseen-discard tree cancels exactly, for any number of discards.',
+      { answers: 'shrink', say: 'Cards removed unseen give no information. Averaging over everything they could have been returns the starting probability.', why: 'Probabilities move only when you learn something. The unseen-discard tree cancels exactly, for any number of discards.',
         checks: [
           { make: (rng) => { const d = rng.int(3, 20); return mc(rng, `The top ${d} cards are discarded unseen. P(the next card is red)?`, '1/2', [[fr(26, 52 - d), `kept all 26 reds in a deck of ${52 - d}`], [fr(Math.max(26 - d, 0), 52 - d), 'assumed every discard was red'], [fr(1, 4), 'used a suit instead of a colour']], 'Unseen discards change nothing: 1/2.'); } },
         ] },
-      { say: 'A card you **see** is information. Remove it from the deck and from its group: after seeing a heart on top, 12 hearts remain among 51 cards.', why: 'Seeing the top card fixes it, so every other position is a uniform card from the 51 that are left.',
+      { answers: 'all-red', say: 'A card you **see** is information. Remove it from the deck and from its group: after seeing a heart on top, 12 hearts remain among 51 cards.', why: 'Seeing the top card fixes it, so every other position is a uniform card from the 51 that are left.',
         checks: [
           { make: (rng) => { const k = rng.int(2, 52); return mc(rng, `You see the top card is a heart. P(the ${k === 52 ? 'bottom' : ord(k)} card is a heart)?`, fr(12, 51), [[fr(13, 52), 'ignored the seen card'], [fr(13, 51), 'removed the heart from the deck but not from the hearts'], [fr(12, 52), 'removed it from the hearts but not from the deck'], [fr(1, 16), 'multiplied 1/4 × 1/4 as if the top card were still unknown']], '12 hearts among the 51 other cards.'); } },
         ] },
@@ -104,8 +108,16 @@ export default {
     { type: 'explain', prompt: 'In your own words: why do unseen discards leave P(next card is red) at 1/2, while seeing the top card changes P(next is a heart)?', model: 'Unseen discards are equally likely to be any cards, so the cases where they were mostly red and mostly black balance out; averaging over them gives back 26/52. A card you see is fixed, so it is no longer a possibility for the other positions: it leaves the deck and, if it is a heart, it leaves the hearts too, giving 12/51.', points: ['probabilities change only with information', 'averaging over unseen discards returns the prior', 'a seen card is removed from the deck and from its group'] },
 
     S('worked'),
-    { type: 'worked', family: 'card-symmetry', section: 'bto', difficulty: 1, seed: 'b', intro: 'Unseen discards. Try it before opening the solution.' },
+    { type: 'worked', family: 'card-symmetry', section: 'bto', difficulty: 1, seed: 'b', explainAt: [1], intro: 'Unseen discards. Try it before opening the solution.' },
     { type: 'worked', family: 'card-symmetry', section: 'bto', difficulty: 2, seed: 'c', fade: 1, intro: 'Matching the top card. The first steps are given; the last one and the answer are yours.' },
+
+    { type: 'thinkaloud', problem: 'A deck is shuffled. The top card is turned face up: a heart. The next 3 cards are discarded face down. What is the probability that the 5th card is a heart?', lines: [
+      { t: 0, say: 'One position, some cards seen, some unseen: a symmetry question. First I sort the cards into seen and unseen.' },
+      { t: 4, say: `Four cards are gone, one of them a heart, so ${12} hearts in ${52 - 4} cards: ${fr(12, 48)}?`, slip: true },
+      { t: 8, say: 'Wait: the three face-down cards are unseen, so they change nothing. Only the seen heart leaves the deck and the hearts.' },
+      { t: 12, say: `12 hearts among the 51 other cards: ${fr(12, 51)}.` },
+      { t: 15, say: `Check: a little under 1/4, because one heart is already gone. Answer ${fr(12, 51)}, most of the ${SECTIONS.bto.exam.perItemSeconds} seconds left.` },
+    ] },
 
     S('predict'),
     { type: 'predict', question: 'You burn 51 cards unseen. What is the chance the last card is the ace of spades?', answer: '1/52, exactly as for the top card.', explain: 'Nothing was seen, so the last card is still a uniform card.' },
@@ -123,7 +135,7 @@ export default {
       'About 0.095.',
     ], errorStep: 1, explain: `"Unseen" does not mean "not an ace": some discards may be aces. Averaging over what they could be gives 4/52 = ${fr(4, 52)}.` },
     { type: 'check', scope: 'the named traps', questions: [
-      { type: 'choice', q: 'After 10 unseen discards, a candidate answers P(next card red) = 26/42. Which belief?', options: ['Unseen discards only shrink the deck', 'All discards were red', 'A seen card changes nothing'], answer: 0, explain: 'The discards remove reds as often as blacks on average: 1/2.' },
+      { type: 'choice', q: 'After 10 unseen discards, a candidate answers P(next card red) = 26/42. Which belief?', options: ['Unseen discards only shrink the deck', 'All ten of the discards were red', 'A card you see changes nothing'], answer: 0, explain: 'The discards remove reds as often as blacks on average: 1/2.' },
       { type: 'choice', q: 'The top card is shown: a heart. A candidate answers P(bottom card heart) = 1/4. Which belief?', options: ['A seen card changes nothing', 'Unseen cards shrink the deck', 'Only special cards matter'], answer: 0, explain: 'The seen heart leaves the deck and the hearts: 12/51.' },
     ] },
 
@@ -150,6 +162,19 @@ export default {
     { type: 'check', scope: 'the contrast table and edge cases', questions: [
       { type: 'choice', q: 'You see the top card is a spade. P(the bottom card is a heart)?', options: [fr(13, 51), fr(12, 51), fr(13, 52), fr(12, 52)], answer: 0, traps: { 1: 'removed a heart, but the seen card was a spade', 2: 'ignored the seen card', 3: 'removed a heart and ignored the deck shrinking' }, explain: 'The spade leaves the deck but not the hearts: 13/51.' },
     ] },
+
+    { type: 'variation', base: 'Shuffled deck, top 10 cards discarded face down. P(the 11th card is red) = 1/2.', rows: [
+      { change: 'Discard 30 cards instead of 10', effect: 'No change: 1/2. More unseen cards are still no information.', same: true },
+      { change: 'Ask about the bottom card instead of the 11th', effect: 'No change: every position of a fair shuffle is a uniform card.', same: true },
+      { change: 'Turn the top card face up: it is red', effect: `Now there is information: ${fr(25, 51)}. The seen red leaves the deck and the reds; the unseen discards still do nothing.` },
+      { change: 'Ask for a heart instead of red', effect: `The group shrinks, the symmetry stays: ${fr(13, 52)}.` },
+      { change: 'Ask for a heart and turn the top card up: a heart', effect: `The group sets the start (13 of 52) and the seen heart removes one from both: ${fr(12, 51)}. Each change touches a different part of the fraction.`, fusion: true },
+    ] },
+    { type: 'transfer',
+      near: { make: (rng) => { const n = rng.pick([20, 30, 40]); const r = rng.int(3, 8); const d = rng.int(2, 6); return mc(rng, `A shuffled pile of ${n} raffle tickets holds ${r} winners. The top ${d} tickets are removed without anyone looking. P(the next ticket is a winner)?`, fr(r, n), [[fr(r, n - d), `kept all ${r} winners in a pile of ${n - d}`], [fr(Math.max(r - d, 0), n - d), 'assumed every removed ticket was a winner'], [fr(1, n), 'answered for one specific ticket']], `Unseen removals change nothing: ${r}/${n} = ${fr(r, n)}.`); } },
+      far: { type: 'choice', q: 'Twelve candidates are interviewed in random order; 3 are strong. A colleague ran the first 4 interviews and has told you nothing. P(the 5th candidate is strong)?', options: [fr(3, 12), fr(3, 8), fr(1, 12), fr(3, 11)], answer: 0, traps: { 1: 'shrank the pool by the 4 interviews you know nothing about', 2: 'answered for one named candidate', 3: 'removed one candidate as if you had seen who it was' }, explain: 'The 5th slot of a random order is a uniform candidate: 3 of 12.' },
+      principle: { type: 'choice', q: 'Which idea carried over from cards to tickets and candidates?', options: ['Unseen removals leave every position a uniform draw', 'Removed items shrink the pool, so divide by fewer', 'Removed items were probably the common kind', 'Later positions have different odds from the first'], answer: 0, traps: { 1: 'they also remove good items on average; the effects cancel', 2: 'unseen items could be anything; assuming a kind invents information', 3: 'a fair shuffle treats every position alike' }, explain: 'Probabilities change only with information. Unseen removals average out; only seen items are removed from their group.' },
+    },
 
     S('tryit'),
     { type: 'tryit', family: 'card-symmetry', section: 'bto', count: 3 },

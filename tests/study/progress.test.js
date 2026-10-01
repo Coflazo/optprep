@@ -41,3 +41,23 @@ test('units: a missed unit is weak until its next first attempt is right', async
   recordUnit(store, 'bto/x', 'reading the grid', true, 3);
   assert.deepEqual(weakUnits(store), []);
 });
+
+test('exam pace, scaffolds and the belief log', async () => {
+  const P = await import('../../src/study/progress.js');
+  const store = makeStore(memoryBackend());
+  assert.ok(P.recordTry(store, 'bto/x', { n: 3, clean: 3, ms: [40e3, 80e3, 95e3], budgetMs: 90e3 }, 1));
+  assert.ok(!P.pacedOf(store, 'bto/x'), 'one item over budget');
+  assert.ok(P.scaffoldsOff(store, 'bto/x'));
+  P.recordTry(store, 'bto/x', { n: 3, clean: 2 }, 2);
+  assert.ok(!P.scaffoldsOff(store, 'bto/x'), 'a failed review brings the scaffolds back');
+  P.recordTry(store, 'bto/x', { n: 3, clean: 3, ms: [40e3, 50e3, 60e3], budgetMs: 90e3 }, 3);
+  assert.ok(P.pacedOf(store, 'bto/x'));
+  P.recordMiss(store, { belief: 'Divided by 11 sums', lesson: 'bto/x', type: 'idea' }, 10);
+  const [b] = P.openBeliefs(store);
+  assert.equal(b.count, 1);
+  const day = 24 * 3600e3;
+  assert.ok(!P.recordRetest(store, b.key, true, 10 * day));
+  assert.ok(!P.recordRetest(store, b.key, true, 10 * day + 60e3), 'same day does not count twice');
+  assert.ok(P.recordRetest(store, b.key, true, 11 * day), 'clean on a second day clears it');
+  assert.deepEqual(P.openBeliefs(store), []);
+});

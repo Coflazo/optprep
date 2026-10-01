@@ -31,6 +31,7 @@ const PS = [Q.of(3, 5), Q.of(2, 3), Q.of(2, 5), Q.of(3, 4)];
 const seqs3 = ['AAA', 'AAB', 'ABA', 'ABB', 'BAA', 'BAB', 'BBA', 'BBB'];
 const realStop = (s) => { let a = 0, b = 0; for (let i = 0; i < s.length; i++) { if (s[i] === 'A') a++; else b++; if (a === 2 || b === 2) return s.slice(0, i + 1); } return s; };
 const GRID = Array.from({ length: 21 }, (_, i) => i / 20);
+const P23 = Q.of(2, 3);
 
 export default {
   id: 'bto/race-to-k',
@@ -48,7 +49,10 @@ export default {
   ],
   blocks: [
     S('recognise'),
-    { type: 'challenge', q: 'Before any teaching: two evenly matched teams play a best-of-7 series (first to 4 wins). What is the probability that it goes to a seventh game? Try two approaches.', answer: `C(6,3)/2⁶ = ${fullLength(HALF, 4)}`, explain: `Game 7 happens exactly when the first 6 games split 3-3: C(6,3) = ${C(6, 3)} of the 64 equally likely win/loss strings. If you got 1/64 you counted one order; if you got 1/4 you treated the four possible lengths as equally likely.` },
+    { type: 'challenge', q: 'Before any teaching: two evenly matched teams play a best-of-7 series (first to 4 wins). What is the probability that it goes to a seventh game? Try two approaches.', answer: `C(6,3)/2⁶ = ${fullLength(HALF, 4)}`, explain: `Game 7 happens exactly when the first 6 games split 3-3: C(6,3) = ${C(6, 3)} of the 64 equally likely win/loss strings. If you got 1/64 you counted one order; if you got 1/4 you treated the four possible lengths as equally likely.`, attempts: [
+      { id: 'equal-lengths', label: 'Four lengths, one each', approach: 'The series can last 4, 5, 6 or 7 games, so answered 1/4.', breaksAt: 'Lengths are not equally likely outcomes: each is made of a different number of equally likely win/loss strings, and a sweep is the rarest.' },
+      { id: 'one-order', label: 'One 3-3 order', approach: 'Took one order that reaches 3-3, such as ABABAB: (1/2)⁶ = 1/64.', breaksAt: `Any order with three wins each reaches game 7: C(6,3) = ${C(6, 3)} of them.` },
+    ] },
     { type: 'text', text: 'Two sides play repeated independent games, and the contest ends as soon as one side has **k wins**: "best of 5" is first to 3, "best of 7" is first to 4. The question asks who wins the series, or whether it goes the full distance.' },
     { type: 'list', items: ['"Two equally strong teams play a best-of-seven series. What is the chance it goes to a seventh game?"', '"Team A wins each game with probability 3/5. What is the chance it wins a best-of-five?"', '"First to 3 wins: a player who wins each point with 2/3. Probability she wins the match?"'] },
     { type: 'text', text: 'Not this lesson: a fixed number of games counted afterwards (bto/coin-sequences), and races to a single success like "first to throw a six" (bto/first-success).' },
@@ -77,7 +81,7 @@ export default {
     { type: 'text', text: 'Now play all 3 games **every time**, even when the series is already decided. Each full string still has an obvious series winner, and the extra games never change it: once A has 2 wins, B can have at most 1 of the 3.' },
     { type: 'diagram', diagram: 'table', spec: { columns: ['all 3 games', 'real series stops at', 'series winner', 'A wins ≥ 2 of 3?'], rows: seqs3.map((s) => [s, realStop(s), realStop(s).split('A').length - 1 >= 2 ? 'A' : 'B', [...s].filter((c) => c === 'A').length >= 2 ? 'yes' : 'no']) }, caption: 'Every row agrees: A wins the real series exactly when A wins at least 2 of the 3 imagined games. The stop only hides games that cannot matter.' },
     { type: 'check', scope: 'the imagine-all-games equivalence', questions: [
-      { type: 'choice', q: 'Best of 7. Which event is the same as "A wins the series"?', options: ['A wins at least 4 of 7 imagined games', 'A wins exactly 4 of 7 games', 'A wins the first 4 games', 'A wins game 7'], answer: 0, traps: { 1: 'A also wins the series with 5, 6 or 7 of the 7 imagined games', 2: 'that is one way to win, not all of them', 3: 'game 7 often never matters' }, explain: 'Exactly one side can win 4 or more of 7, and that side reached 4 first.' },
+      { type: 'choice', q: 'Best of 7. Which event is the same as "A wins the series"?', options: ['A wins at least 4 of 7 imagined games', 'A wins exactly 4 of the 7 imagined games', 'A wins the first 4 games in a row', 'A wins the deciding game 7'], answer: 0, traps: { 1: 'A also wins the series with 5, 6 or 7 of the 7 imagined games', 2: 'that is one way to win, not all of them', 3: 'game 7 often never matters' }, explain: 'Exactly one side can win 4 or more of 7, and that side reached 4 first.' },
     ] },
     { type: 'diagram', diagram: 'plot', spec: { x: { min: 0, max: 1, label: 'p = chance A wins one game' }, y: { min: 0, max: 1, label: 'P(A wins)' }, curves: [
       { label: 'one game', points: GRID.map((p) => [p, p]) },
@@ -90,9 +94,9 @@ export default {
 
     S('derivation'),
     { type: 'steps', steps: [
-      { say: 'Pretend all 2k − 1 games are played, even after the series is decided.', why: 'Extra games are independent of the real ones and do not change which side reached k first. They are a bookkeeping device, not a new game.',
+      { answers: 'equal-lengths', say: 'Pretend all 2k − 1 games are played, even after the series is decided.', why: 'Extra games are independent of the real ones and do not change which side reached k first. They are a bookkeeping device, not a new game. Every outcome is now a full win/loss string; for even teams all of them are equally likely, while the lengths are not.',
         checks: [
-          { type: 'choice', q: 'Best of 5 (first to 3). A leads 3-0. How many of the two imagined extra games can B win?', options: ['both, and A is still the series winner', 'at most one', 'none: they are not played'], answer: 0, traps: { 1: 'B can win both: 3-2, still A', 2: 'they are imagined for counting; the point is they never change the winner' }, explain: 'A has 3 of 5; B can reach at most 2.' },
+          { type: 'choice', q: 'Best of 5 (first to 3). A leads 3-0. How many of the two imagined extra games can B win?', options: ['both, and A still wins the series', 'at most one, or the series would change', 'none: imagined games are never played'], answer: 0, traps: { 1: 'B can win both: 3-2, still A', 2: 'they are imagined for counting; the point is they never change the winner' }, explain: 'A has 3 of 5; B can reach at most 2.' },
         ] },
       { say: 'Exactly one side wins at least k of the 2k − 1 games, and that side is the series winner.', why: 'k + k > 2k − 1, so both sides cannot reach k; and k − 1 + k − 1 < 2k − 1, so one of them must.',
         checks: [
@@ -102,7 +106,7 @@ export default {
         checks: [
           { make: (rng) => { const p = rng.pick(PS); return mc(rng, `A wins each game with ${p}. P(A wins a best-of-3)?`, winSeries(p, 2).toString(), [[p.toString(), 'used the single-game chance'], [qpow(p, 2).toString(), 'required A to win the first 2 games straight'], [exactlyK(p, 2).toString(), 'computed exactly 2 of 3, leaving out 3 of 3'], [one.sub(winSeries(p, 2)).toString(), 'answered B']], `p²(3 − 2p) with p = ${p}: ${winSeries(p, 2)}.`); } },
         ] },
-      { say: 'Full length: the last game is played exactly when the first 2k − 2 games split k − 1 each. P = C(2k − 2, k − 1)(pq)^(k−1).', why: 'If either side had k wins earlier, the series would already be over; a (k − 1)-(k − 1) split is the only way to reach the decider.',
+      { answers: 'one-order', say: 'Full length: the last game is played exactly when the first 2k − 2 games split k − 1 each. P = C(2k − 2, k − 1)(pq)^(k−1).', why: 'If either side had k wins earlier, the series would already be over; a (k − 1)-(k − 1) split is the only way to reach the decider.',
         checks: [
           { make: (rng) => { const k = rng.int(2, 4); return mc(rng, `Even teams, first to ${k} (best of ${2 * k - 1}). P(all ${2 * k - 1} games are played)?`, fullLength(HALF, k).toString(), [[qpow(HALF, 2 * k - 2).toString(), 'counted one alternating order only'], [Q.of(1, k).toString(), `treated the ${k} possible lengths as equally likely`], [one.sub(fullLength(HALF, k)).toString(), 'answered "ends early"']], `C(${2 * k - 2},${k - 1}) × (1/4)^${k - 1} = ${fullLength(HALF, k)}.`); } },
         ] },
@@ -114,8 +118,16 @@ export default {
     { type: 'explain', prompt: 'In your own words: why can you pretend every series runs its full length, and what does that buy you?', model: 'Once one side has k wins, the other side cannot also reach k within 2k − 1 games, so playing the remaining games never changes the winner. Pretending they are played turns a series with a random stopping time into a fixed number of independent games, and then "A wins" is just "A wins at least k of 2k − 1", a binomial tail.', points: ['extra games cannot change who reached k first', 'the series becomes a fixed number of independent games', 'A wins ⇔ at least k of 2k − 1: binomial tail'] },
 
     S('worked'),
-    { type: 'worked', family: 'race-to-k', section: 'bto', difficulty: 2, seed: 'b', intro: 'Even teams, full length. Try it before opening the solution.' },
+    { type: 'worked', family: 'race-to-k', section: 'bto', difficulty: 2, seed: 'b', explainAt: [0], intro: 'Even teams, full length. Try it before opening the solution.' },
     { type: 'worked', family: 'race-to-k', section: 'bto', difficulty: 3, seed: 'e', fade: 1, intro: 'An uneven series. The first steps are given; the last one and the answer are yours.' },
+
+    { type: 'thinkaloud', problem: `A wins each game with probability ${P23}. What is the probability that A wins a best-of-3 series?`, lines: [
+      { t: 0, say: 'First to 2: I imagine all 3 games are played. A wins the series exactly when A wins at least 2 of the 3.' },
+      { t: 4, say: `Two wins of three: 3 × (${P23})² × ${one.sub(P23)} = ${exactlyK(P23, 2)}.`, slip: true },
+      { t: 8, say: `Wait, "at least 2" also includes a clean 3 of 3. Add (${P23})³ = ${qpow(P23, 3)}.` },
+      { t: 12, say: `${exactlyK(P23, 2)} + ${qpow(P23, 3)} = ${winSeries(P23, 2)}. The shortcut p²(3 − 2p) gives the same.` },
+      { t: 16, say: `${winSeries(P23, 2)} ≈ ${d3(winSeries(P23, 2))}, between ${P23} and 1, as a series for the stronger side must be. Answer ${winSeries(P23, 2)}.` },
+    ] },
 
     S('predict'),
     { type: 'predict', question: 'A team wins each game with 60%. In a best-of-7, is its series chance above or below 60%, and roughly what?', answer: `Above: about ${pct(winNum(0.6, 4))}.`, explain: 'The S-curve: a longer contest lets the better side\'s edge show.' },
@@ -133,8 +145,8 @@ export default {
       'About 6%.',
     ], errorStep: 1, explain: `(1/2)⁴ is one order, such as ABAB. There are C(4,2) = ${C(4, 2)} orders with two wins each: ${fullLength(HALF, 3)}.` },
     { type: 'check', scope: 'the named traps', questions: [
-      { type: 'choice', q: `Even teams, best of 7. A candidate answers P(game 7) = 1/4. Which belief?`, options: ['The four possible lengths are equally likely', 'Only one order counted', 'Exactly k instead of at least k'], answer: 0, explain: `Lengths 4 to 7 are not equally likely. Correct: ${fullLength(HALF, 4)}.` },
-      { type: 'choice', q: `A 3/5 team, best of 3. A candidate answers ${exactlyK(P35, 2)}. Which belief?`, options: ['Exactly 2 of 3 instead of at least 2', 'Single-game chance', 'Only one order'], answer: 0, explain: `3 × (3/5)² × 2/5 = ${exactlyK(P35, 2)} misses the 3-0 imagined strings. Correct: ${winSeries(P35, 2)}.` },
+      { type: 'choice', q: `Even teams, best of 7. A candidate answers P(game 7) = 1/4. Which belief?`, options: ['The four possible lengths are equally likely', 'Only one order of the 3-3 split counted', 'Exactly k wins instead of at least k'], answer: 0, explain: `Lengths 4 to 7 are not equally likely. Correct: ${fullLength(HALF, 4)}.` },
+      { type: 'choice', q: `A 3/5 team, best of 3. A candidate answers ${exactlyK(P35, 2)}. Which belief?`, options: ['Exactly 2 of 3 instead of at least 2', 'Used the single-game chance 3/5', 'Counted only one order of the wins'], answer: 0, explain: `3 × (3/5)² × 2/5 = ${exactlyK(P35, 2)} misses the 3-0 imagined strings. Correct: ${winSeries(P35, 2)}.` },
     ] },
 
     S('speed'),
@@ -160,6 +172,19 @@ export default {
     { type: 'check', scope: 'the contrast table and edge cases', questions: [
       { type: 'choice', q: 'Evenly matched, best of 9. P(A wins)?', options: ['1/2', 'more than 1/2', 'less than 1/2'], answer: 0, traps: { 1: 'length helps the stronger side; there is none here', 2: 'no side is weaker' }, explain: 'Swapping A and B maps every A-win onto a B-win.' },
     ] },
+
+    { type: 'variation', base: `Even teams, best of 7. P(it goes to game 7) = C(6,3)/64 = ${fullLength(HALF, 4)}.`, rows: [
+      { change: 'Ask instead for "3-3 after six games"', effect: 'No change: it is the same event in other words. Game 7 is played exactly when the first six split 3-3.', same: true },
+      { change: 'Best of 5 instead of 7', effect: `The decider needs a 2-2 split of 4 games: C(4,2)/16 = ${fullLength(HALF, 3)}. Shorter series reach the decider more often.` },
+      { change: 'A wins each game with 3/5', effect: `C(6,3)(pq)³ with pq = 6/25 < 1/4: ${fullLength(P35, 4)} ≈ ${d3(fullLength(P35, 4))}. Uneven teams finish sooner.` },
+      { change: 'Ask who wins the series (even teams)', effect: 'By symmetry 1/2, whatever the length.' },
+      { change: 'Best of 3 and a 3/5 team, both at once', effect: `A shorter series pushes the decider chance up and uneven teams pull it down: C(2,1) × 6/25 = ${fullLength(P35, 2)}, just under the even best-of-3 value ${fullLength(HALF, 2)}. The length sets C(2k − 2, k − 1), the teams set pq.`, fusion: true },
+    ] },
+    { type: 'transfer',
+      near: { make: (rng) => { const p = rng.pick(PS); return mc(rng, `A tennis player wins each set with probability ${p}, independently. The match is best of 3 sets. P(she wins the match)?`, winSeries(p, 2).toString(), [[p.toString(), 'used the single-set chance'], [qpow(p, 2).toString(), 'required two straight sets'], [exactlyK(p, 2).toString(), 'computed exactly 2 of 3 imagined sets']], `Imagine all 3 sets: at least 2 of 3, p²(3 − 2p) = ${winSeries(p, 2)}.`); } },
+      far: { type: 'choice', q: `A market maker needs 3 fills before the price moves against it 3 times. Each event is independently a fill with probability ${P23}. P(it gets its 3 fills first)?`, options: [winSeries(P23, 3).toString(), P23.toString(), exactlyK(P23, 3).toString(), qpow(P23, 3).toString()], answer: 0, traps: { 1: 'used the single-event chance', 2: 'counted exactly 3 fills in 5 imagined events, leaving out 4 and 5', 3: 'required the first three events to be fills' }, explain: `A first-to-3 race: imagine 5 events, at least 3 fills: ${winSeries(P23, 3)} ≈ ${d3(winSeries(P23, 3))}.` },
+      principle: { type: 'choice', q: 'Which idea carried over from series to sets and fills?', options: ['Pretend every round is played; the winner has at least k', 'The contest chance equals the single-round chance', 'The winner needs exactly k of the imagined rounds', 'Every possible length of the contest is equally likely'], answer: 0, traps: { 1: 'a longer contest amplifies the edge', 2: 'the winner can take more than k of the imagined rounds', 3: 'short and long endings are made of different numbers of strings' }, explain: 'First to k is "at least k of 2k − 1 imagined rounds": a binomial tail over a fixed number of trials.' },
+    },
 
     S('tryit'),
     { type: 'tryit', family: 'race-to-k', section: 'bto', count: 3 },

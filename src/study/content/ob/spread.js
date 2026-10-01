@@ -87,7 +87,12 @@ export default {
   ],
   blocks: [
     sec('recognise'),
-    { type: 'challenge', q: `Before any teaching: board (bid / ask) ${boardText([A, B, AB])}. Find a flat, profitable set of trades. Two approaches, then the trades and the profit.`, answer: `${cap(tradeText(pkg))}: +${px(outcome(pkg, 2).cash)}.`, explain: `Selling A − B leaves you short A and **long** B. You close that by buying A (at ${px(A.ask)}) and selling B (at ${px(B.bid)}), so the copy costs ${px(A.ask)} − ${px(B.bid)} = ${px(buyCost(rAB))}, below the spread bid ${px(AB.bid)}. If you bought both legs, your net row showed B +2.` },
+    { type: 'challenge', q: `Before any teaching: board (bid / ask) ${boardText([A, B, AB])}. Find a flat, profitable set of trades. Two approaches, then the trades and the profit.`, answer: `${cap(tradeText(pkg))}: +${px(outcome(pkg, 2).cash)}.`, explain: `Selling A − B leaves you short A and **long** B. You close that by buying A (at ${px(A.ask)}) and selling B (at ${px(B.bid)}), so the copy costs ${px(A.ask)} − ${px(B.bid)} = ${px(buyCost(rAB))}, below the spread bid ${px(AB.bid)}. If you bought both legs, your net row showed B +2.`,
+      attempts: [
+        { id: 'bothBuy', label: 'Bought both legs', approach: 'Sold A − B, then bought A and bought B.', breaksAt: `Selling A − B already makes you long B, so buying B as well leaves ${posText(['A', 'B'], outcome([[AB, 'sell'], [A, 'buy'], [B, 'buy']], 2).net)}: not flat.` },
+        { id: 'askAsk', label: 'Priced B at its ask', approach: `Priced the copy as ask(A) − ask(B) = ${px(A.ask)} − ${px(B.ask)} = ${px(A.ask - B.ask)}.`, breaksAt: `The copy sells B, so B earns its bid: ${px(A.ask)} − ${px(B.bid)} = ${px(buyCost(rAB))}.` },
+        { id: 'buySpread', label: 'Bought the spread', approach: `Bought A − B at ${px(AB.ask)} and sold the copy (sell A, buy B).`, breaksAt: `Selling the copy raises only ${px(sellValue(rAB))}, below the ask ${px(AB.ask)}: that side loses ${px(-edgeBuy(AB, rAB))}.` },
+      ] },
     { type: 'text', text: 'The cue: a card with a **minus sign**, such as A − B or B − C. It holds one unit of the first product and **minus** one of the second: owning it is being long A and short B at once. Traders call these spreads or pairs; its price can be negative when B is worth more than A.' },
     { type: 'list', items: [`"${boardText([A, B, AB])}"`, `"${boardText([An, Bn, ABn])}": a negative spread`, 'Three products with two spread cards, A − B and B − C: only one is mispriced'] },
     { type: 'check', scope: 'what a spread card holds', questions: [
@@ -111,20 +116,20 @@ export default {
     { type: 'check', scope: 'the spread package in a ledger', questions: [{ make: edgeQ }] },
     { type: 'diagram', diagram: 'numberline', spec: { min: -31.5, max: -27, step: 0.5, marks: [{ x: sellValue(rN), label: 'copy sells' }, { x: buyCost(rN), label: 'copy costs' }, { x: ABn.bid, label: 'spread bid' }, { x: ABn.ask, label: 'spread ask' }] }, caption: `A negative spread: A ${quote(An)}, B ${quote(Bn)}, A − B ${quote(ABn)}. The copy costs ${px(buyCost(rN))} and sells for ${px(sellValue(rN))}. The spread bid ${px(ABn.bid)} is to the right of the copy's cost: sell the spread, +${px(edgeSell(ABn, rN))}. The picture is the same as for positive prices.` },
     { type: 'check', scope: 'negative prices', questions: [
-      mc({ q: `You sell one A − B at its bid of ${px(ABn.bid)}. What happens to your cash?`, right: `It falls by ${px(-ABn.bid)}: selling at a negative price means paying`, wrong: [[`It rises by ${px(-ABn.bid)}`, 'a sale adds the bid, and this bid is negative'], ['Nothing: negative prices cannot trade', 'spread cards trade at negative prices whenever B is worth more than A']], explain: `Cash changes by +bid = ${px(ABn.bid)}.` }),
+      mc({ q: `You sell one A − B at its bid of ${px(ABn.bid)}. What happens to your cash?`, right: `It falls by ${px(-ABn.bid)}`, wrong: [[`It rises by ${px(-ABn.bid)}`, 'a sale adds the bid, and this bid is negative'], ['Nothing: negative prices cannot trade', 'spread cards trade at negative prices whenever B is worth more than A']], explain: `Cash changes by +bid = ${px(ABn.bid)}: selling at a negative price means paying.` }),
       { type: 'number', q: `Board: ${boardText([An, Bn, ABn])}. Cash after selling A − B, buying A and selling B?`, answer: outcome(pkgN, 2).cash, hints: ['Sells add the bid (even a negative one), buys subtract the ask.', `${px(ABn.bid)} − ${px(An.ask)} + ${px(Bn.bid)}.`], explain: `${px(ABn.bid)} − ${px(An.ask)} + ${px(Bn.bid)} = ${px(outcome(pkgN, 2).cash)}.` },
     ] },
 
     sec('derivation'),
     { type: 'text', text: 'The method is the bundle method with one extra move at the start: turn the card into trades. Once each leg has a side (buy or sell), its price follows from the side, and the rest is the usual comparison in both directions.' },
     { type: 'steps', steps: [
-      { say: 'Write the card as legs: A − B = +1 A and −1 B. Buying it copies as "buy A, sell B"; selling it copies as "sell A, buy B".', why: 'Each + leg is traded the same way as the card, each − leg the opposite way.',
+      { answers: 'bothBuy', say: 'Write the card as legs: A − B = +1 A and −1 B. Buying it copies as "buy A, sell B"; selling it copies as "sell A, buy B".', why: 'Each + leg is traded the same way as the card, each − leg the opposite way.',
         checks: [mc({ q: 'Which trades copy selling one B − C?', right: 'Sell B, buy C', wrong: [['Sell B, sell C', 'the minus sign flips C'], ['Buy B, sell C', 'that copies buying B − C'], ['Buy B, buy C', 'that copies buying B + C']], explain: 'Selling B − C gives −1 B and +1 C.' })] },
-      { say: 'Cost of buying the copy: you pay A\'s ask and receive B\'s bid, so ask(A) − bid(B).', why: 'The sale of B brings money in, which lowers the cost.',
+      { answers: 'askAsk', say: 'Cost of buying the copy: you pay A\'s ask and receive B\'s bid, so ask(A) − bid(B).', why: 'The sale of B brings money in, which lowers the cost.',
         checks: [{ make: (rng) => { const [a, b] = singles(rng, ['A', 'B'], 30, 140); const p = repl(a, b); return { type: 'number', q: `A ${quote(a)}, B ${quote(b)}. What does buying A and selling B cost, net?`, answer: buyCost(p), hints: ['Pay the ask on A, receive the bid on B.', `${px(a.ask)} − ${px(b.bid)}.`], explain: `${px(a.ask)} − ${px(b.bid)} = ${px(buyCost(p))}.` }; } }] },
       { say: 'Value of selling the copy: you receive A\'s bid and pay B\'s ask, so bid(A) − ask(B).', why: 'Mirror image: every side flips.',
         checks: [{ make: (rng) => { const [a, b] = singles(rng, ['A', 'B'], 30, 140); const p = repl(a, b); return { type: 'number', q: `A ${quote(a)}, B ${quote(b)}. What does selling A and buying B raise, net?`, answer: sellValue(p), hints: ['Receive the bid on A, pay the ask on B.', `${px(a.bid)} − ${px(b.ask)}.`], explain: `${px(a.bid)} − ${px(b.ask)} = ${px(sellValue(p))}.` }; } }] },
-      { say: 'Compare with the spread\'s quote: bid above the copy\'s cost → sell the spread and buy the copy; ask below the copy\'s value → buy the spread and sell the copy.', why: 'The same two checks as every bundle; only the copy\'s price changed.',
+      { answers: 'buySpread', say: 'Compare with the spread\'s quote: bid above the copy\'s cost → sell the spread and buy the copy; ask below the copy\'s value → buy the spread and sell the copy.', why: 'The same two checks as every bundle; only the copy\'s price changed.',
         checks: [{ hinge: true, make: packageQ }] },
     ] },
     { type: 'explain', prompt: 'Why does buying the copy of A − B use B\'s bid, when for A + B it used B\'s ask?', model: 'For A + B the copy needs +1 B, so I buy B and pay its ask. For A − B the copy needs −1 B, so I sell B and receive its bid. The minus sign turns the B trade from a purchase into a sale, and a sale always happens at the bid.', points: ['A + B needs +1 B (a purchase); A − B needs −1 B (a sale)', 'Purchases pay the ask, sales receive the bid', 'The received bid comes off the cost of the copy'] },
@@ -132,14 +137,15 @@ export default {
     sec('worked'),
     { type: 'text', text: 'Two live boards. Before pricing anything, write the copy as trades ("buy A, sell B" or "sell A, buy B") and read each price off its trade. The second board has three products and two spread cards; only one of them pays.' },
     { type: 'thinkaloud', problem: `Board (bid / ask): ${boardText([A, B, AB])}.`, lines: [
-      { t: 0, say: 'A − B: a minus sign. Long A, short B. The B leg flips side.' },
-      { t: 3, say: `Copy of a long A − B: buy A at ${px(A.ask)}, sell B at ${px(B.bid)}. Cost ${px(buyCost(rAB))}.` },
-      { t: 7, say: `Spread bid ${px(AB.bid)} is above ${px(buyCost(rAB))}: sell the spread, buy the copy.` },
-      { t: 10, say: `Other side, to be sure: sell A at ${px(A.bid)}, buy B at ${px(B.ask)} raises ${px(sellValue(rAB))}, below the ask ${px(AB.ask)}. Only one side pays.` },
-      { t: 14, say: `Sell A − B, buy A, sell B. Net: A 0, B 0. Cash +${px(outcome(pkg, 2).cash)}. Submit.` },
+      { t: 0, say: 'A − B: a minus sign. Long A, short B.' },
+      { t: 3, say: `Copy of a long A − B: A's ask ${px(A.ask)} minus B's ask ${px(B.ask)} = ${px(A.ask - B.ask)}.`, slip: true },
+      { t: 5, say: `No: the copy sells B, and a sale gets the bid. ${px(A.ask)} − ${px(B.bid)} = ${px(buyCost(rAB))}.` },
+      { t: 8, say: `Spread bid ${px(AB.bid)} is above ${px(buyCost(rAB))}: sell the spread, buy the copy.` },
+      { t: 11, say: `Other side, to be sure: sell A at ${px(A.bid)}, buy B at ${px(B.ask)} raises ${px(sellValue(rAB))}, below the ask ${px(AB.ask)}. Only one side pays.` },
+      { t: 15, say: `Sell A − B, buy A, sell B. Net: A 0, B 0. Cash +${px(outcome(pkg, 2).cash)}. Submit.` },
     ] },
     { type: 'check', scope: 'the same method on a fresh board', questions: [{ make: edgeQ }] },
-    { type: 'worked', section: 'ob', family: 'spread', difficulty: 2, seed: 'a', intro: 'One spread card, two products. Try it before opening the solution.' },
+    { type: 'worked', section: 'ob', family: 'spread', difficulty: 2, seed: 'a', explainAt: [0], intro: 'One spread card, two products. Try it before opening the solution.' },
     { type: 'worked', section: 'ob', family: 'spread', difficulty: 4, seed: 'b', fade: 2, intro: 'Two spread cards. The pricing and the decision are given; the taps and the net check are yours.' },
 
     sec('predict'),
@@ -182,10 +188,24 @@ export default {
 
     { type: 'variation', base: `Base: ${boardText([A, B, AB])}. Sell A − B, buy A, sell B: +${px(edgeSell(AB, rAB))}.`, rows: [
       { change: `B's bid and ask both rise by ${px(bumpB)}`, effect: `You sell B at its bid, which is now higher, so the copy gets cheaper: profit ${px(edgeSell(AB, repl(A, card('B', [0, 1], B.bid + bumpB, B.ask + bumpB))))}.` },
-      { change: `B's ask rises by ${px(1)}`, effect: `Nothing: this package sells B, at its bid. Profit stays ${px(edgeSell(AB, repl(A, card('B', [0, 1], B.bid, B.ask + 1))))}.` },
-      { change: `Every A and B price rises by ${px(10)}`, effect: `Nothing: the copy is a difference, so a shift in both legs cancels. Profit stays ${px(edgeSell(AB, repl(card('A', [1, 0], A.bid + 10, A.ask + 10), card('B', [0, 1], B.bid + 10, B.ask + 10))))}.` },
+      { same: true, change: `B's ask rises by ${px(1)}`, effect: `Nothing: this package sells B, at its bid. Profit stays ${px(edgeSell(AB, repl(A, card('B', [0, 1], B.bid, B.ask + 1))))}.` },
+      { same: true, change: `Every A and B price rises by ${px(10)}`, effect: `Nothing: the copy is a difference, so a shift in both legs cancels. Profit stays ${px(edgeSell(AB, repl(card('A', [1, 0], A.bid + 10, A.ask + 10), card('B', [0, 1], B.bid + 10, B.ask + 10))))}.` },
       { change: `The spread bid falls to ${px(buyCost(rAB))}`, effect: 'It now equals the copy\'s cost: profit 0, no trade.' },
+      { fusion: true, change: `The whole A − B quote rises by ${px(0.5)} and A's ask rises by ${px(1)}`, effect: `Both enter: +${px(0.5)} on the spread bid you sell at, −${px(1)} on the A you buy. Profit ${px(edgeSell(spreadCard(A, B, AB.bid + 0.5, AB.ask + 0.5), repl(card('A', [1, 0], A.bid, A.ask + 1), B)))}: no trade.` },
     ] },
+    { type: 'transfer',
+      near: { make: (rng) => { const [c, d] = singles(rng, ['C', 'D'], 30, 140); const rich = rng.chance(0.5), p = repl(c, d); const X = mispriced('C − D', [1, -1], p, rich, rng.pick([0.5, 1, 1.5]), rng.pick([0.5, 1])); const e = rich ? edgeSell(X, p) : edgeBuy(X, p);
+        return { type: 'number', q: `Board (bid / ask): ${boardText([c, d, X])}. Profit of the one package that pays?`, answer: e,
+          hints: ['Copy C − D both ways: ask(C) − bid(D) to buy it, bid(C) − ask(D) to sell it.', rich ? `Buying the copy costs ${px(buyCost(p))}; compare with the spread bid.` : `Selling the copy raises ${px(sellValue(p))}; compare with the spread ask.`],
+          explain: rich ? `Sell C − D at ${px(X.bid)}, buy C, sell D: ${px(X.bid)} − ${pxp(buyCost(p))} = ${px(e)}.` : `Buy C − D at ${px(X.ask)}, sell C, buy D: ${px(sellValue(p))} − ${pxp(X.ask)} = ${px(e)}.` }; } },
+      far: { make: (rng) => { const oa = rng.int(80, 200), ob = oa - rng.int(10, 30), nb = oa + rng.int(300, 600), na = nb + rng.int(20, 60);
+        return { type: 'number', q: `A phone shop offers an upgrade: hand in an old phone, pay a fee and get a new phone. A dealer buys new phones for €${nb} and sells them for €${na}; it buys old phones for €${ob} and sells them for €${oa}. "Buy an old phone from the dealer, take the upgrade, sell the new phone to the dealer" makes money for any fee below how many euros?`, answer: nb - oa,
+          hints: ['You buy the old phone (the dealer\'s selling price) and sell the new one (the dealer\'s buying price).', `${nb} − ${oa}.`],
+          explain: `Selling the new phone raises €${nb}; buying the old one costs €${oa}. The round trip pays while the fee is below ${nb} − ${oa} = €${nb - oa}. The upgrade is a spread card: new − old.` }; } },
+      principle: mc({ q: 'Which idea carried over from spread cards to the phone upgrade?', right: 'A swap is a spread: the part you give up trades the other way',
+        wrong: [['Compare the fee with the gap between the two phones\' mids', 'mids are never traded: buy the old phone at its ask, sell the new one at its bid'], ['Price both phones at their asks, since both change hands', 'the new phone is sold, so it fetches its bid'], ['Any fee below the new phone\'s price pays', 'you must also buy the old phone you hand in, and its ask comes off']],
+        explain: 'Upgrade = +1 new, −1 old: a spread. Copy it by selling the new phone at its bid and buying the old one at its ask.' }),
+    },
 
     sec('tryit'),
     { type: 'tryit', section: 'ob', family: 'spread', count: 3 },

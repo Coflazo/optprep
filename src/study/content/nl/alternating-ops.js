@@ -25,15 +25,23 @@ const ERo = [['add', 3], ['mul', 2]], ER = run(5, ERo, 7);
 const IL = weave(arith(3, 4, 4), arith(30, -3, 4), 6);
 const AF = affine(2, 2, 3, 6);
 const GN = geo(3, -2, 6);
+const TAo = [['mul', 3], ['sub', 5]], TA = run(4, TAo, 7);
+const E16 = E1.slice(0, 6), ADD7 = run(3, [['mul', 2], ['add', 7]], 7), SWAP = run(3, [['add', 5], ['mul', 2]], 8);
+const sp = (t) => t.replace(/^([+−×])/, '$1 ');
+const pile = (a, r, moves) => run(a, [['mul', 2], ['sub', r]], moves + 1)[moves];
 
-// Level 2 and level 3 operation pairs, as in the generator; lists with a 0 are redrawn.
+// Level 2 and level 3 operation pairs, as in the generator. Lists with a term of size 0 or 1 are
+// redrawn: tiny terms let a second rule fit (1, 2, 3, 6, 7, 14 also fits a counting multiplier plus a
+// leftover, checked with the rule finder in src/sections/nl/solver.js).
 const pairFor = (rng, d) => (d === 2
   ? rng.pick([[['add', rng.int(1, 9)], ['mul', rng.pick([2, 3])]], [['mul', 2], ['add', rng.int(1, 9)]]])
   : rng.pick([[['mul', rng.pick([2, 3])], ['sub', rng.int(1, 9)]], [['sub', rng.int(1, 6)], ['mul', rng.pick([2, 3])]], [['mul', 3], ['add', rng.int(2, 9)]]]));
 function draw(rng, n, d = rng.pick([2, 3])) {
   for (;;) {
     const ops = pairFor(rng, d), xs = run(rng.int(1, 9), ops, n + 2);
-    if (xs.every((v) => v !== 0) && new Set(xs).size === xs.length) return { ops, xs };
+    // Also redrawn: a step that both operations explain (6 → 12 is +6 and ×2), which blurs the labels.
+    const clear = xs.every((v, i) => i === 0 || mk(ops[i % 2]).f(xs[i - 1]) !== v);
+    if (clear && xs.every((v) => Math.abs(v) >= 2) && new Set(xs).size === xs.length) return { ops, xs };
   }
 }
 
@@ -53,7 +61,12 @@ export default {
   ],
   blocks: [
     S('recognise'),
-    { type: 'challenge', q: `Before any teaching: ${seq(CH.slice(0, 6))}, ? What comes next? Try two ways: once with the gaps, once by describing each step in words.`, answer: String(CH[6]), explain: `Gaps ${seq(g(CH.slice(0, 6)))}: every other gap is ${CH[1] - CH[0]}, the rest grow. In words the steps are ${steps(CH.slice(0, 6), CHo).join(', ')}. The last step was ${due(CHo, 5).t}, so the next is ${due(CHo, 6).t}: ${CH[5]} ${due(CHo, 6).t.replace('×', '× ')} = ${CH[6]}.` },
+    { type: 'challenge', q: `Before any teaching: ${seq(CH.slice(0, 6))}, ? What comes next? Try two ways: once with the gaps, once by describing each step in words.`, answer: String(CH[6]), explain: `Gaps ${seq(g(CH.slice(0, 6)))}: every other gap is ${CH[1] - CH[0]}, the rest grow. In words the steps are ${steps(CH.slice(0, 6), CHo).join(', ')}. The last step was ${due(CHo, 5).t}, so the next is ${due(CHo, 6).t}: ${CH[5]} ${due(CHo, 6).t.replace('×', '× ')} = ${CH[6]}.`,
+      attempts: [
+        { id: 'gaps', label: 'Hunt a gap pattern', approach: `Wrote the gaps ${seq(g(CH.slice(0, 6)))} and looked for one pattern in them.`, breaksAt: 'Every other gap is flat and the rest grow with the term: the gaps mix two kinds of step, so name each step instead.' },
+        { id: 'same-op', label: 'Repeat the last operation', approach: `The last step was ${other(CHo, 6).t}, so did it again: ${CH[5]} ${sp(other(CHo, 6).t)} = ${other(CHo, 6).f(CH[5])}.`, breaksAt: 'The operations take turns: the one that made the last term is exactly the one that is not next.' },
+        { id: 'both', label: 'Apply both operations', approach: `Did ${mk(CHo[0]).t} and ${mk(CHo[1]).t} in one go: (${CH[5]} ${sp(mk(CHo[0]).t)}) ${sp(mk(CHo[1]).t)} = ${mk(CHo[1]).f(mk(CHo[0]).f(CH[5]))}.`, breaksAt: `One step, one operation. Test it on a shown step: ${CH[0]} done that way gives ${mk(CHo[1]).f(mk(CHo[0]).f(CH[0]))}, not ${CH[1]}.` },
+      ] },
     { type: 'text', text: 'Two operations take turns on the **previous term**: add 3, multiply by 2, add 3, multiply by 2. The gap list alternates between a fixed number (the addition or subtraction) and a gap that grows with the term (the multiplication). That mixture of flat and growing gaps is the signature.' },
     { type: 'list', items: [`What number comes next?  ${seq(E1.slice(0, 6))}, ?`, `What number comes next?  ${seq(E2.slice(0, 7))}, ?`, `What number comes next?  ${seq(E3.slice(0, 7))}, ?`] },
     { type: 'text', text: `Not this lesson: two separate sequences written alternately (${seq(IL)} is ${seq(IL.filter((_, i) => i % 2 === 0))} beside ${seq(IL.filter((_, i) => i % 2 === 1))}). There the odd-position terms never touch the even ones. Here every term is built from the one right before it.` },
@@ -80,7 +93,7 @@ export default {
 
     S('derivation'),
     { type: 'steps', steps: [
-      { say: 'Describe each step on its own: is it "+ c" or "− c" (the same gap every time it appears) or "× m" (next ÷ previous is the same whole number)?', why: 'A fixed addition gives the same gap whatever the term; a multiplication gives a gap that grows with the term. Testing each step separately exposes which is which.',
+      { answers: 'gaps', say: 'Describe each step on its own: is it "+ c" or "− c" (the same gap every time it appears) or "× m" (next ÷ previous is the same whole number)?', why: 'A fixed addition gives the same gap whatever the term; a multiplication gives a gap that grows with the term. Testing each step separately exposes which is which.',
         checks: [
           { make: (rng) => { const { ops, xs } = draw(rng, 6), op = mk(ops[1]), o0 = mk(ops[0]); return pick(rng, `${seq(xs.slice(0, 6))}: which operation takes term 2 to term 3?`, op.t, [[o0.t, `that is the first step's operation: ${neg(xs[1])} ${o0.t.replace('×', '× ')} is ${o0.f(xs[1])}, not ${neg(xs[2])}`], ...falseOps(xs[1], xs[2], [op.t, o0.t]).slice(0, 2).map((o) => [o.t, `${neg(xs[1])} ${o.t.replace('×', '× ')} is ${o.f(xs[1])}, not ${neg(xs[2])}`])], `${neg(xs[1])} ${op.t.replace('×', '× ')} = ${neg(xs[2])}.`); } },
         ] },
@@ -88,11 +101,11 @@ export default {
         checks: [
           { make: (rng) => { const yes = rng.chance(0.5), { ops, xs } = draw(rng, 6); const ys = xs.slice(0, 6); if (!yes) ys[5] += rng.pick([1, 2, -1]); return pick(rng, `Do the steps of ${seq(ys)} alternate between just two operations (${mk(ops[0]).t} and ${mk(ops[1]).t})?`, yes ? 'Yes' : 'No', [[yes ? 'No' : 'Yes', yes ? 'every odd step and every even step matches' : `the last step does not match: ${neg(ys[4])} ${mk(ops[0]).t.replace('×', '× ')} is ${mk(ops[0]).f(ys[4])}, not ${neg(ys[5])}`]], `Steps: ${ys.slice(1).map((v, i) => `${neg(ys[i])} → ${neg(v)}`).join(', ')}.`); } },
         ] },
-      { say: 'Find which operation is due: with n terms shown there are n − 1 steps, so the next is step n. Odd step → the first operation; even step → the second. Quicker: the next operation is the one that did **not** make the last term.', why: 'The operations alternate strictly, so the last step decides the next one.',
+      { answers: 'same-op', say: 'Find which operation is due: with n terms shown there are n − 1 steps, so the next is step n. Odd step → the first operation; even step → the second. Quicker: the next operation is the one that did **not** make the last term.', why: 'The operations alternate strictly, so the last step decides the next one.',
         checks: [
           { make: (rng) => { const n = rng.pick([6, 7]), { ops, xs } = draw(rng, n); return pick(rng, `${seq(xs.slice(0, n))}, ? Which operation makes the next term?`, due(ops, n).t, [[other(ops, n).t, `that operation made the last term (${neg(xs[n - 2])} → ${neg(xs[n - 1])}); they take turns`]], `The last step was ${other(ops, n).t}, so the next is ${due(ops, n).t}.`); } },
         ] },
-      { say: 'Apply only that operation to the last term.', why: 'One step, one operation. Applying both at once is a classic slip.',
+      { answers: 'both', say: 'Apply only that operation to the last term.', why: 'One step, one operation. Applying both at once is a classic slip.',
         checks: [
           { make: (rng) => { const n = rng.pick([6, 7]), { ops, xs } = draw(rng, n); return num(nextQ(xs.slice(0, n)), xs[n], `Next step ${due(ops, n).t}: ${neg(xs[n - 1])} ${due(ops, n).t.replace('×', '× ')} = ${neg(xs[n])}.`, ['Label each step with its operation.', 'Which operation made the last term? Use the other one.']); } },
         ] },
@@ -101,7 +114,7 @@ export default {
     { type: 'explain', prompt: 'Why do the gaps alternate between flat and growing, and how is this different from two interleaved strands?', model: 'An addition adds the same amount whatever the term, so its gaps are flat; a multiplication adds (m − 1) × the term, so its gaps grow as the terms grow. With interleaving, each term comes from the term two places back in its own strand; here each term comes from the term right before it.', points: ['Addition: same gap every time', 'Multiplication: gap = (m − 1) × the term, so it grows', 'Here each term comes from its neighbour, not from two places back'] },
 
     S('worked'),
-    { type: 'worked', family: 'alternating-ops', section: 'nl', difficulty: 2, seed: 'a', intro: 'An addition and a multiplication taking turns. Label the steps before opening the solution.' },
+    { type: 'worked', family: 'alternating-ops', section: 'nl', difficulty: 2, seed: 'a', explainAt: [1], intro: 'An addition and a multiplication taking turns. Label the steps before opening the solution.' },
     { type: 'worked', family: 'alternating-ops', section: 'nl', difficulty: 3, seed: 'b', fade: 1, intro: 'A subtraction in the mix. The labels are given; the last step is yours.' },
 
     S('predict'),
@@ -125,6 +138,16 @@ export default {
 
     S('speed'),
     { type: 'callout', tone: 'speed', text: 'Only the last two steps matter for the answer: name the step that made the last term, then apply the other operation. Check one earlier pair of steps and answer.' },
+    { type: 'thinkaloud', problem: nextQ(TA.slice(0, 6)), lines: [
+      { t: 0, say: `Gaps ${seq(g(TA.slice(0, 6)))}: a flat ${neg(g(TA)[1])} every other step, the rest grow. Two operations taking turns.` },
+      { t: 5, say: `Label the steps: ${steps(TA.slice(0, 6), TAo).join(', ')}.` },
+      { t: 9, say: `It is climbing fast, so multiply again: ${TA[5]} × 3 = ${TA[5] * 3}.`, slip: true },
+      { t: 12, say: `No: ${TA[4]} → ${TA[5]} was the ×3. They take turns, so this step is ${due(TAo, 6).t}.` },
+      { t: 15, say: `${TA[5]} − ${TA[5] - TA[6]} = ${TA[6]}. Check an earlier pair: ${TA[3]} − ${TA[3] - TA[4]} = ${TA[4]}. Answer ${TA[6]}.` },
+    ] },
+    { type: 'check', scope: 'the think-aloud: read the last step, apply the other', questions: [
+      { make: (rng) => { const n = rng.pick([6, 7]), { ops, xs } = draw(rng, n, 3); return num(nextQ(xs.slice(0, n)), xs[n], `The last step ${neg(xs[n - 2])} → ${neg(xs[n - 1])} was ${other(ops, n).t}, so this one is ${due(ops, n).t}: ${neg(xs[n - 1])} ${due(ops, n).t.replace('×', '× ')} = ${neg(xs[n])}.`, ['Which operation made the last term?', 'Apply the other one, once.']); } },
+    ] },
     { type: 'callout', tone: 'speed', text: 'Spot a multiplication from the gap alone: under ×m the gap equals (m − 1) × the term before. A gap equal to the previous term is ×2; a gap of twice the previous term is ×3.' },
     { type: 'check', scope: 'gap = (m − 1) × the term', questions: [
       { make: (rng) => { const x = rng.int(4, 40), m = rng.pick([2, 3]); return num(`A step takes ${x} to ${x * m}. The gap is ${x * m - x}. If this is a multiplication, by what?`, m, `Gap ${x * m - x} = ${m - 1} × ${x}, so m − 1 = ${m - 1} and m = ${m}.`, ['Under ×m the gap is (m − 1) × the term.', `Divide the gap by ${x}, then add 1.`]); } },
@@ -157,9 +180,27 @@ export default {
     ] },
     { type: 'callout', tone: 'edge', text: 'Edge cases: with ×3 and −4 the terms still rise, so the direction proves nothing. The pattern can start with either operation, so read the first step rather than assuming "add first". And a subtraction can take a small term below zero, where the multiplication then pushes it further down.' },
     { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: any process of two alternating actions (a move and a reply, a deposit and a fee) is simulated step by step, and the one thing to track is whose turn it is.' },
-    { type: 'check', scope: 'the edge cases', questions: [
-      { make: (rng) => { const s = rng.int(1, 6), m = rng.pick([2, 3]), ops = [['mul', m], ['sub', s]], xs = run(rng.int(3, 9), ops, 8); return num(nextQ(xs.slice(0, 7)), xs[7], `Steps ${steps(xs.slice(0, 7), ops).join(', ')}: the next is ${due(ops, 7).t}, so ${xs[6]} ${due(ops, 7).t.replace('×', '× ')} = ${xs[7]}.`, ['The terms rise, but one step subtracts.', 'Which operation made the last term?']); } },
+    { type: 'variation', base: `${seq(E16)}, ?  The last step was ${other(E1o, 6).t}, so ${due(E1o, 6).t}: ${E1[6]}.`, rows: [
+      { same: true, change: `Drop the first term: ${seq(E16.slice(1))}, ?`, effect: `Still ${E1[6]}. The last step is still ${E1[4]} → ${E1[5]}, a ${other(E1o, 6).t}, so ${due(E1o, 6).t} is due. Read the last step, not the count from the start.` },
+      { change: `Show one more term: ${seq(E1.slice(0, 7))}, ?`, effect: `${mk(E1o[0]).f(E1[6])}. The last step is now ${due(E1o, 6).t}, so ${other(E1o, 6).t} is due.` },
+      { change: `Add 7 instead of 5: ${seq(ADD7.slice(0, 6))}, ?`, effect: `${ADD7[6]}. Same turn order; the flat gap is 7 now.` },
+      { change: `Start with the addition: ${seq(SWAP.slice(0, 6))}, ?`, effect: `${SWAP[6]}. The order flips, so after six terms the ×2 is due.` },
+      { fusion: true, change: `Start with the addition and show one more term: ${seq(SWAP.slice(0, 7))}, ?`, effect: `${SWAP[7]}. Each change flips which operation is due, so together they cancel: +5 is due again, as in the base.` },
     ] },
+    { type: 'check', scope: 'the edge cases', questions: [
+      { make: (rng) => { let s, m, ops, xs; do { s = rng.int(1, 6); m = rng.pick([2, 3]); ops = [['mul', m], ['sub', s]]; xs = run(rng.int(3, 9), ops, 8); } while (xs.some((v) => Math.abs(v) < 2) || new Set(xs).size < xs.length); return num(nextQ(xs.slice(0, 7)), xs[7], `Steps ${steps(xs.slice(0, 7), ops).join(', ')}: the next is ${due(ops, 7).t}, so ${xs[6]} ${due(ops, 7).t.replace('×', '× ')} = ${xs[7]}.`, ['The terms rise, but one step subtracts.', 'Which operation made the last term?']); } },
+    ] },
+
+    { type: 'transfer',
+      near: { make: (rng) => { const { ops, xs } = draw(rng, 6, 3), o1 = due(ops, 6), o2 = other(ops, 6); return num(`${seq(xs.slice(0, 6))}, ?, ? What is the **second** missing term?`, xs[7], `The last step was ${o2.t}, so first ${o1.t}: ${neg(xs[5])} → ${neg(xs[6])}; then ${o2.t}: ${neg(xs[6])} → ${neg(xs[7])}.`, ['Which operation is due first?', 'Apply it, then the other one.']); } },
+      far: { make: (rng) => { const a = rng.int(4, 9), r = rng.int(2, 5), m = rng.int(5, 7); return num(`A pile starts with ${a} chips. You and an opponent take turns, you first: on your turn the pile doubles, on the opponent's turn ${r} chips are removed. How many chips are in the pile after ${m} turns in total?`, pile(a, r, m), `Turns alternate ×2 and −${r}: ${run(a, [['mul', 2], ['sub', r]], m + 1).join(' → ')}.`, ['Write the pile after each turn.', 'Odd turns double, even turns remove chips.']); } },
+      principle: { type: 'choice', q: 'Which idea carried over from the sequences to the chip game?', options: [
+        'track whose turn it is and apply only that action',
+        'repeat whichever action was used most recently',
+        'apply both actions together on every single turn',
+        'split the record into two separate lists to continue',
+      ], answer: 0, traps: { 1: 'the actions take turns, so the last one used is not the next one', 2: 'each turn is one action; doing both overshoots a shown turn', 3: 'each value is built from the one right before it, not from two places back' }, explain: 'The chip game and the sequences both alternate two actions on the current value: the only bookkeeping is whose turn it is.' },
+    },
 
     S('tryit'),
     { type: 'tryit', family: 'alternating-ops', section: 'nl', count: 3 },

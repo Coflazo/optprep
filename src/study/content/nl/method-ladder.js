@@ -2,7 +2,7 @@
 // ratios, recurrences, strands, known lists) and the order to test them under time pressure.
 // It also exports the small helpers every NumberLogic part-A lesson uses, so all numbers in
 // prose and diagrams are computed, never typed.
-import { SECTION_TITLES } from '../../schema.js';
+import { SECTION_TITLES, validateBlock } from '../../schema.js';
 import { SECTIONS } from '../../../../config/sections.js';
 import { Q } from '../../../core/rational.js';
 
@@ -42,6 +42,9 @@ export function pick(rng, q, correct, wrong, explain, extra = {}) {
   order.forEach((o, i) => { if (!o.ok) traps[i] = o.t; });
   return { type: 'choice', q, options: order.map((o) => o.v), answer: order.findIndex((o) => o.ok), traps, explain, ...extra };
 }
+// Redraw a generated choice question until the validator is happy with it (for options that
+// are whole sequences, a longer right option is a length cue by accident, not by design).
+export const fair = (build) => (rng) => { let x; for (let i = 0; i < 40; i++) { x = build(rng); if (!validateBlock({ type: 'check', questions: [x] }).length) break; } return x; };
 export const num = (q, answer, explain, hints) => ({ type: 'number', q, answer, explain, ...(hints ? { hints } : {}) });
 
 // ---- sequence builders used by the checks ----
@@ -75,7 +78,7 @@ const CH = Array.from({ length: 6 }, (_, i) => (i + 1) ** 2 + 1);
 const N8 = Array.from({ length: 8 }, (_, i) => i + 1);
 
 // Four sequence types for the "which test" hinge.
-const TESTS = ['first differences (gaps)', 'second differences (gaps of gaps)', 'ratios', 'split into two strands'];
+const TESTS = ['first differences (the gaps)', 'second differences (gaps of gaps)', 'ratios (term ÷ previous term)', 'two strands (odd and even places)'];
 const WHY_NOT = [
   // true type 0: arithmetic
   [null, 'the gaps are already constant: the first layer settles it', 'a constant gap is addition; the ratios drift, they are not constant', 'the gaps do not zigzag; one sequence explains every step'],
@@ -212,9 +215,9 @@ export default {
     { type: 'check', scope: 'the known lists', questions: [
       { make: (rng) => { const s = rng.int(2, 8), c = nz(rng, -6, 6), xs = Array.from({ length: 6 }, (_, i) => (i + s) ** 2 + c); return num(nextQ(xs.slice(0, 5)), xs[5], `Each term is a square ${c < 0 ? 'minus' : 'plus'} ${Math.abs(c)}: ${seq(xs.slice(0, 5).map((v) => v - c))}. Next: ${s + 5}² ${c < 0 ? '−' : '+'} ${Math.abs(c)} = ${xs[5]}.`, ['Are these close to perfect squares?', 'Subtract the same constant from every term and read the squares.']); } },
       { make: (rng) => {
-        const lists = [['squares', (i) => (i + 2) ** 2, 'gaps are the odd numbers'], ['cubes', (i) => (i + 2) ** 3, 'gaps grow far faster than odd numbers'], ['triangular numbers', (i) => tri(i + 2), 'gaps count up by 1'], ['powers of 2', (i) => 2 ** (i + 1), 'gaps double'], ['primes', (i) => PRIMES[i + 2], 'gaps are irregular']];
+        const lists = [['squares', (i) => (i + 2) ** 2, 'gaps are the odd numbers', 'squares (n²)'], ['cubes', (i) => (i + 2) ** 3, 'gaps grow far faster than odd numbers', 'cubes (n³)'], ['triangular numbers', (i) => tri(i + 2), 'gaps count up by 1', 'triangular (n(n + 1)/2)'], ['powers of 2', (i) => 2 ** (i + 1), 'gaps double', 'powers of 2 (2, 4, 8, …)'], ['primes', (i) => PRIMES[i + 2], 'gaps are irregular', 'primes (2, 3, 5, 7, …)']];
         const t = rng.int(0, 4), c = rng.int(1, 9), xs = Array.from({ length: 5 }, (_, i) => lists[t][1](i) + c);
-        return pick(rng, `Each term of ${seq(xs)} is a known list plus the same constant. Which list?`, lists[t][0], lists.filter((_, i) => i !== t).map((l) => [l[0], `that list's ${l[2]}; these gaps are ${seq(diffs(xs))}`]), `The gaps ${seq(diffs(xs))} match the ${lists[t][0]}: their ${lists[t][2]}. A constant shift never changes the gaps.`);
+        return pick(rng, `Each term of ${seq(xs)} is a known list plus the same constant. Which list?`, lists[t][3], lists.filter((_, i) => i !== t).map((l) => [l[3], `that list's ${l[2]}; these gaps are ${seq(diffs(xs))}`]), `The gaps ${seq(diffs(xs))} match the ${lists[t][0]}: their ${lists[t][2]}. A constant shift never changes the gaps.`);
       } },
     ] },
 

@@ -8,7 +8,7 @@ export const SECTION_TITLES = {
   derivation: 'Derivation, one move at a time', worked: 'Worked examples', predict: 'Predict before you look',
   traps: 'Traps', speed: 'Speed', rule: 'Rule', contrast: 'Contrast and edge cases', tryit: 'Try it',
 };
-export const BLOCK_TYPES = ['section', 'text', 'callout', 'diagram', 'steps', 'predict', 'worked', 'traps', 'compare', 'list', 'formula', 'tryit', 'recognize', 'check', 'challenge', 'explain', 'erroneous', 'thinkaloud', 'variation'];
+export const BLOCK_TYPES = ['section', 'text', 'callout', 'diagram', 'steps', 'predict', 'worked', 'traps', 'compare', 'list', 'formula', 'tryit', 'recognize', 'check', 'challenge', 'explain', 'erroneous', 'thinkaloud', 'variation', 'transfer'];
 // Sections that teach something get micro-checks; these do not (motivation, examples, summaries, the final test).
 export const CHECK_EXEMPT = ['why', 'worked', 'predict', 'rule', 'tryit'];
 export const CALLOUT_TONES = ['idea', 'trap', 'speed', 'rule', 'contrast', 'edge', 'transfer'];
@@ -34,13 +34,19 @@ export function validateBlock(b, where = '') {
       break;
     case 'check': e.push(...checkList(b.questions, where)); break;
     case 'predict': if (!str(b.question) || !str(b.answer)) at('needs question and answer'); break;
-    case 'worked': if (!str(b.family) || !Number.isInteger(b.difficulty)) at('needs family and difficulty'); break;
+    case 'worked':
+      if (!str(b.family) || !Number.isInteger(b.difficulty)) at('needs family and difficulty');
+      if (b.explainAt && !(Array.isArray(b.explainAt) && b.explainAt.length >= 1 && b.explainAt.length <= 2 && b.explainAt.every((i) => Number.isInteger(i) && i >= 0))) at('explainAt: 1-2 step indexes');
+      break;
     case 'traps': if (!str(b.family) && !(Array.isArray(b.extra) && b.extra.length)) at('needs family or extra traps'); break;
     case 'compare': if (!Array.isArray(b.columns) || !Array.isArray(b.rows) || !b.rows.every((r) => Array.isArray(r) && r.length === b.columns.length)) at('rows must match columns'); break;
     case 'list': if (!Array.isArray(b.items) || !b.items.length || !b.items.every(strOrFn)) at('needs items'); break;
     case 'tryit': if (!str(b.family) && !str(b.game)) at('needs family or game'); break;
     // productive failure: attempt with two approaches before any teaching
-    case 'challenge': if (!str(b.q) || !str(b.answer) || !str(b.explain)) at('needs q, answer, explain'); break;
+    case 'challenge':
+      if (!str(b.q) || !str(b.answer) || !str(b.explain)) at('needs q, answer, explain');
+      if (b.attempts && !(Array.isArray(b.attempts) && b.attempts.every((a) => str(a.id) && str(a.label) && str(a.approach) && str(a.breaksAt)) && new Set(b.attempts.map((a) => a.id)).size === b.attempts.length)) at('attempts need unique id, label, approach, breaksAt');
+      break;
     // self-explanation / elaborative interrogation / teach-back: write it, then compare with key points
     case 'explain': if (!str(b.prompt) || !str(b.model) || !Array.isArray(b.points) || b.points.length < 2) at('needs prompt, model and >= 2 key points'); break;
     // erroneous example: find the broken step
@@ -53,6 +59,11 @@ export function validateBlock(b, where = '') {
       if (!str(b.problem) || !Array.isArray(b.lines) || b.lines.length < 3 || !b.lines.every((l) => Number.isFinite(l.t) && str(l.say))) at('needs problem and >= 3 lines of { t (seconds), say }');
       else if (b.lines.some((l, i) => i && l.t < b.lines[i - 1].t)) at('line times must not go backwards');
       else if (b.lines.some((l) => l.say.split(/\s+/).length > 40)) at('a think-aloud line is a thought, not a paragraph (max 40 words)');
+      break;
+    // transfer: near (same type, new surface), far (same structure elsewhere), then the principle that carried over
+    case 'transfer':
+      if (!['near', 'far', 'principle'].every((k) => b[k] && (typeof b[k].make === 'function' || validateQuestion(b[k]).length === 0))) at('needs near, far and principle questions');
+      else if (b.principle.type && b.principle.type !== 'choice') at('principle must be a choice question');
       break;
     // variation theory: one feature of a base problem changes per row; predict the effect, then reveal it
     case 'variation':
@@ -101,6 +112,20 @@ function pedagogy(L) {
   if (!['derivation', 'rule'].some((k) => inSection(k).some((b) => b.type === 'explain'))) e.push(`${L.id}: needs an explain block in derivation or rule (self-explanation)`);
   if (!inSection('traps').some((b) => b.type === 'erroneous')) e.push(`${L.id}: traps need an erroneous example (find the error)`);
   if (!inSection('contrast').some((b) => b.type === 'callout' && b.tone === 'transfer')) e.push(`${L.id}: contrast needs a transfer callout`);
+  const variation = inSection('contrast').find((b) => b.type === 'variation');
+  if (!variation) e.push(`${L.id}: contrast needs a variation block (change one feature at a time)`);
+  else if (!variation.rows.some((r) => r.same) || !variation.rows.some((r) => r.fusion)) e.push(`${L.id}: variation needs a row that changes nothing (same: true) and a row that changes two things at once (fusion: true)`);
+  const think = ['worked', 'speed'].flatMap((k) => inSection(k)).find((b) => b.type === 'thinkaloud');
+  if (!think) e.push(`${L.id}: needs a thinkaloud in worked or speed (an expert solving it at exam pace)`);
+  else if (!think.lines.some((l, i) => l.slip && i < think.lines.length - 1)) e.push(`${L.id}: thinkaloud needs a wrong turn (slip: true) followed by the recovery`);
+  if (!inSection('contrast').some((b) => b.type === 'transfer')) e.push(`${L.id}: contrast needs a transfer block (near, far, principle)`);
+  const challenge = inSection('recognise').find((b) => b.type === 'challenge');
+  if (challenge && !(challenge.attempts?.length >= 2)) e.push(`${L.id}: challenge needs >= 2 typical first attempts (attempts)`);
+  else if (challenge) {
+    const answered = L.blocks.filter((b) => b.type === 'steps').flatMap((b) => b.steps.map((st) => st.answers).filter(Boolean));
+    for (const a of challenge.attempts) { const n = answered.filter((x) => x === a.id).length; if (n !== 1) e.push(`${L.id}: attempt "${a.id}" must be answered by exactly one step (answers: '${a.id}'), found ${n}`); }
+  }
+  if (L.kind === 'family' && !(L.blocks.find((b) => b.type === 'worked')?.explainAt?.length)) e.push(`${L.id}: first worked example needs explainAt (1-2 steps the learner explains)`);
   if (L.kind === 'family') {
     const worked = L.blocks.filter((b) => b.type === 'worked');
     if (!(worked[1]?.fade >= 1)) e.push(`${L.id}: second worked example must be faded (fade >= 1)`);

@@ -67,7 +67,11 @@ export default {
   ],
   blocks: [
     sec('recognise'),
-    { type: 'challenge', q: `Before any teaching: a whole number is picked uniformly from 1 to ${N0}. What is P(it is divisible by 4 or by 6)? Two approaches, then an answer.`, answer: `${U0}/${N0} = ${frac(U0, N0)}`, explain: `Divisible by 4: ${A0}. By 6: ${B0}. Adding gives ${A0 + B0}, but the multiples of 12 (${AB0} of them) were counted in both lists. ${A0} + ${B0} − ${AB0} = ${U0}.` },
+    { type: 'challenge', q: `Before any teaching: a whole number is picked uniformly from 1 to ${N0}. What is P(it is divisible by 4 or by 6)? Two approaches, then an answer.`, answer: `${U0}/${N0} = ${frac(U0, N0)}`, explain: `Divisible by 4: ${A0}. By 6: ${B0}. Adding gives ${A0 + B0}, but the multiples of 12 (${AB0} of them) were counted in both lists. ${A0} + ${B0} − ${AB0} = ${U0}.`,
+      attempts: [
+        { id: 'added', label: 'Added the two counts', approach: `Counted ${A0} + ${B0} = ${A0 + B0} numbers.`, breaksAt: `The ${AB0} multiples of 12 are in both lists, so they were counted twice.` },
+        { id: 'twice', label: 'Removed the overlap twice', approach: `Counted ${A0} + ${B0} − 2 × ${AB0} = ${A0 + B0 - 2 * AB0}.`, breaksAt: 'That drops the numbers divisible by both completely, but they belong to the union too.' },
+      ] },
     { type: 'text', text: 'The trigger is **or** (also "either", "at least one of A and B"). The question joins two events, and the danger is the outcomes that belong to both.' },
     { type: 'check', scope: 'disjoint or overlapping', questions: [
       mc({ q: 'One card is drawn from a deck. Which pair of events can never happen together (disjoint)?', right: 'a heart / a spade', at: 2,
@@ -111,11 +115,11 @@ export default {
         checks: [{ make: (rng) => { const both = rng.int(3, 8), f = both + rng.int(5, 12); return { type: 'number', q: `${f} students play football and ${both} of them also play tennis. How many play football only?`, answer: f - both, explain: `${f} − ${both} = ${f - both}.` }; } }] },
       { say: 'Each circle is its private piece plus the lens: football = football only + both, tennis = tennis only + both.', why: 'The lens belongs to both circles at once.',
         checks: [{ make: (rng) => { const x = rng.int(5, 15), y = rng.int(2, 8); return { type: 'number', q: `In a Venn diagram, "tennis only" holds ${x} students and the lens holds ${y}. How many play tennis?`, answer: x + y, explain: `The tennis circle is its private part plus the lens: ${x} + ${y} = ${x + y}.` }; } }] },
-      { say: 'Add the circles: football + tennis = football only + tennis only + 2 × both.', why: 'The lens sits inside both circles, so it arrives twice.',
+      { answers: 'added', say: 'Add the circles: football + tennis = football only + tennis only + 2 × both.', why: 'The lens sits inside both circles, so it arrives twice.',
         checks: [mc({ q: `${CL.f} + ${CL.t} = ${CL.f + CL.t} counts the ${CL.both} students who play both how many times?`, right: 'twice', at: 1,
           wrong: [['once', 'each circle contains the lens, so it is in both terms'], ['three times', 'only two circles contain it'], ['not at all', 'the lens is inside both circles']],
           explain: `Once inside the ${CL.f}, once inside the ${CL.t}.` })] },
-      { say: `Take the lens off once: football or tennis = ${CL.f} + ${CL.t} − ${CL.both} = ${CL.u}.`, why: 'Now every student in the union is counted exactly once. Divide by the class size for a probability.',
+      { answers: 'twice', say: `Take the lens off once: football or tennis = ${CL.f} + ${CL.t} − ${CL.both} = ${CL.u}.`, why: 'Now every student in the union is counted exactly once. Divide by the class size for a probability.',
         checks: [{ make: (rng) => { const n = rng.int(28, 40), both = rng.int(3, 7), f = both + rng.int(6, 12), t = both + rng.int(4, 10); return { type: 'number', q: `A class of ${n}: ${f} play football, ${t} play tennis, ${both} play both. How many play neither?`, answer: n - (f + t - both), hints: ['First the union: add and remove the overlap once.', 'Then everyone else plays neither.'], explain: `Union ${f} + ${t} − ${both} = ${f + t - both}; neither = ${n} − ${f + t - both} = ${n - (f + t - both)}.` }; } }] },
     ] },
     { type: 'diagram', diagram: 'venn', spec: { sets: ['football', 'tennis'], regions: { A: CL.f - CL.both, B: CL.t - CL.both, AB: CL.both, none: CL.n - CL.u }, total: CL.n }, caption: `The class as a Venn diagram: ${CL.f - CL.both} + ${CL.both} = ${CL.f} in the football circle, ${CL.t - CL.both} + ${CL.both} = ${CL.t} in the tennis circle, ${CL.u} in the union, ${CL.n - CL.u} outside.` },

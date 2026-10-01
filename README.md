@@ -17,13 +17,14 @@ It is an unofficial study tool. It is not made, endorsed or checked by Optiver, 
 - **Teaching built in:**
   - Learn mode runs purpose → anchor → derivation one move at a time → prediction before the reveal → compact rule → fresh test.
   - Every wrong multiple-choice option carries the false belief that produces it. A miss is answered with "your answer is what you get if you …", and then the solution unfolds step by step.
-- **Study guide.** A written course, separate from practice, with one lesson per question type (99 families and 9 games) plus probability foundations and assessment strategy. Each lesson:
-  - opens with a challenge to attempt before any teaching, then gives the picture (grid, tree, Venn, difference ladder, order book) before the algebra;
-  - derives the method one move at a time, and each move opens only after 1 to 3 questions that use nothing but that move;
-  - runs two worked examples generated live from the verified families (the second one faded), a prediction, named traps, a find-the-error solution, speed tricks, a one-line rule and a contrast table;
-  - counts as mastered after three fresh questions right at the first attempt without hints, then comes back for spaced review.
+- **Study guide.** A written course, separate from practice: 132 lessons in 8 books (assessment strategy, probability foundations, and one lesson per question type: 99 families and 9 Zap-N games). Each lesson:
+  - opens with a challenge to attempt before any teaching; afterwards you pick the attempt closest to yours and the derivation marks the step where it breaks;
+  - shows the picture (grid, tree, Venn, difference ladder, order book, game state) before the algebra;
+  - derives the method one move at a time, and each move opens only after 1 to 3 questions that use nothing but that move (at most three teaching blocks ever pass without a question);
+  - has an expert think-aloud that plays at exam pace (including a wrong turn and its recovery), worked examples revealed step by step with "why?" prompts, a faded example, named traps, a find-the-error solution, a variation table (change one thing, predict the effect), and near and far transfer questions;
+  - counts as mastered after three fresh questions right at the first attempt without hints, with a second badge for doing it inside the exam's time per question.
 
-  Each book has a method recognition tree, a printable cheat sheet, a recognition drill and interleaved mixed practice. Every diagram's numbers are checked by a validator in the test suite.
+  A wrong answer names the false belief and gives one more try before showing the answer; a miss in try-it asks you to find the first step you would not have written and name the error type. Multiple-choice options are shuffled (numbers sorted) so position never gives the answer away. Reviews start with writing the rule from memory; a failed review switches the scaffolds back on. A mistake log groups misses by the belief behind them, a weekly review asks you to read your own numbers before the app does, and the study home always shows one next step. Each book has a method recognition tree, a cheat sheet with a recall mode, a recognition drill and interleaved mixed practice. Every diagram's numbers are checked by a validator in the test suite.
 - **Adaptive practice.** It picks weak families more often, missed families come back through spaced repetition, and a calibration panel says when skipping beats guessing under the −1 rule.
 - **Zap-N:** all nine reported games (Balloon, Skyscraper, Shapeshift, CodeCompare, Pincode, NumberBox, Figure It Out, The Switch, Stock Master). Each has a coach, and the optimisers score you against the best possible play.
 - **Readiness gate.** A section turns Ready after three full exams in a row at a target set above the reported pass lines. A started portal task cannot be reset, so open it only when its row says Ready.

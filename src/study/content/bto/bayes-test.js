@@ -30,6 +30,10 @@ const A = { p: Q.of(1, 5), s: Q.of(4, 5), f: Q.of(1, 4) };
 const N = 1000;
 const PREVS = [0.001, 0.01, 0.05, 0.1, 0.5];
 const postNum = (p, s, f) => (p * s) / (p * s + (1 - p) * f);
+const FR = { p: Q.of(1, 50), s: Q.of(19, 20), f: Q.of(1, 50) }; // think-aloud: fraud filter
+const QU = { p: Q.of(1, 20), s: Q.of(4, 5), f: Q.of(1, 10) }; // far transfer: puzzle screen
+const M = 10000;
+const cnt = (x) => x.mul(Q.of(M)).toNumber();
 
 export default {
   id: 'bto/bayes-test',
@@ -47,7 +51,11 @@ export default {
   ],
   blocks: [
     S('recognise'),
-    { type: 'challenge', q: `Before any teaching: ${setup({ p: Q.of(1, 100), s: Q.of(99, 100), f: Q.of(1, 100) })} A random person tests positive. What is the probability they have the condition? Try two approaches.`, answer: `${post(Q.of(1, 100), Q.of(99, 100), Q.of(1, 100))}`, explain: 'Picture 10,000 people: 100 have it and 99 of them test positive; 9,900 do not and 99 of them test positive too. A positive is real 99 times out of 198. If you said 99%, you answered P(positive | condition), the other direction.' },
+    { type: 'challenge', q: `Before any teaching: ${setup({ p: Q.of(1, 100), s: Q.of(99, 100), f: Q.of(1, 100) })} A random person tests positive. What is the probability they have the condition? Try two approaches.`, answer: `${post(Q.of(1, 100), Q.of(99, 100), Q.of(1, 100))}`, explain: 'Picture 10,000 people: 100 have it and 99 of them test positive; 9,900 do not and 99 of them test positive too. A positive is real 99 times out of 198. If you said 99%, you answered P(positive | condition), the other direction.', attempts: [
+      { id: 'hit-rate', label: 'The test is 99% accurate', approach: 'Answered 99%: the test is right 99 times in 100.', breaksAt: '99% is P(positive | has it). The question asks P(has it | positive), the other direction.' },
+      { id: 'healthy', label: 'Only sick people test positive', approach: 'Treated a positive as near proof, close to 1.', breaksAt: '1% of the 9,900 healthy people test positive too: 99 false alarms, as many as the true positives.' },
+      { id: 'no-divide', label: 'Base rate times hit rate', approach: `Multiplied 1% × 99% = ${Q.of(1, 100).mul(Q.of(99, 100))}.`, breaksAt: 'That is P(has it and positive) among everyone. You were told the result is positive, so divide by P(positive).' },
+    ] },
     { type: 'text', text: 'Three numbers and one observation. A **base rate** (how common the condition is), a **hit rate** (how often the signal fires when the condition is there), a **false-alarm rate** (how often it fires when it is not). Then a signal is observed and you are asked how likely the condition now is. The context changes: medical tests, fraud filters, spam models, backtests.' },
     { type: 'list', items: ['"1% of people have a condition; the test is 99% accurate both ways. You test positive..."', '"A fraud filter flags 95% of fraud and 2% of legitimate transactions; 1 in 50 transactions is fraud..."', '"A backtest passes 90% of good strategies and 10% of bad ones; 1 in 10 ideas is good..."'] },
     { type: 'text', text: 'Not this lesson: evidence about which physical object you hold (a coin, a box, a card: bto/bayes-boxes), and plain facts about dice (bto/conditional-dice). The signal here is noisy and described by rates.' },
@@ -88,7 +96,7 @@ export default {
 
     S('derivation'),
     { type: 'steps', steps: [
-      { say: 'Label the numbers by role. Base rate P(H). Hit rate P(+ | H). False-alarm rate P(+ | not H). The question wants P(H | +).', why: 'Every error in this family is a role mix-up: the hit rate is about people who have it, the answer is about people who tested positive.',
+      { answers: 'hit-rate', say: 'Label the numbers by role. Base rate P(H). Hit rate P(+ | H). False-alarm rate P(+ | not H). The question wants P(H | +).', why: 'Every error in this family is a role mix-up: the hit rate is about people who have it, the answer is about people who tested positive.',
         checks: [
           { type: 'choice', q: '"The test is positive for 95% of those with the condition." This number is:', options: ['P(+ | H), the hit rate', 'P(H | +), the answer', 'P(H), the base rate', 'P(+), the share of positives'], answer: 0, traps: { 1: 'the wording starts from those with the condition, so it conditions on H', 2: 'the base rate is how common H is', 3: 'the share of positives mixes both groups' }, explain: '"Of those with the condition" fixes H; the 95% is about the result.' },
         ] },
@@ -96,11 +104,11 @@ export default {
         checks: [
           { make: (rng) => { const x = draw(rng); return { type: 'number', q: `${setup(x)} Out of 10,000 people, how many are true positives?`, answer: x.p.mul(x.s).mul(Q.of(10000)).toNumber(), tolerance: 0.5, hints: ['How many have it?', 'Of those, the hit rate test positive.'], explain: `10,000 × ${pct(x.p)} × ${pct(x.s)} = ${x.p.mul(x.s).mul(Q.of(10000)).toNumber()}.` }; } },
         ] },
-      { say: 'False positives: P(not H) × P(+ | not H).', why: 'Everyone else can also test positive, at the false-alarm rate, and there are many more of them when H is rare.',
+      { answers: 'healthy', say: 'False positives: P(not H) × P(+ | not H).', why: 'Everyone else can also test positive, at the false-alarm rate, and there are many more of them when H is rare.',
         checks: [
           { make: (rng) => { const x = draw(rng); return { type: 'number', q: `${setup(x)} Out of 10,000 people, how many are false positives?`, answer: one.sub(x.p).mul(x.f).mul(Q.of(10000)).toNumber(), tolerance: 0.5, hints: ['How many do not have it?', 'Of those, the false-alarm rate test positive.'], explain: `10,000 × ${pct(one.sub(x.p))} × ${pct(x.f)} = ${one.sub(x.p).mul(x.f).mul(Q.of(10000)).toNumber()}.` }; } },
         ] },
-      { say: 'P(H | +) = true positives / (true positives + false positives).', why: 'Conditioning on a positive keeps only the positives; the answer is the real share of them.',
+      { answers: 'no-divide', say: 'P(H | +) = true positives / (true positives + false positives).', why: 'Conditioning on a positive keeps only the positives; the answer is the real share of them.',
         checks: [
           { make: (rng) => { const x = draw(rng); const v = post(x.p, x.s, x.f); return mc(rng, `${setup(x)} A person tests positive. P(they have it)?`, v.toString(), [[x.s.toString(), 'base-rate neglect: answered the hit rate'], [x.p.toString(), 'ignored the result'], [x.p.mul(x.s).toString(), 'forgot to divide by P(positive)'], [one.sub(x.f).toString(), 'answered the true-negative rate']], `${x.p.mul(x.s)} / (${x.p.mul(x.s)} + ${one.sub(x.p).mul(x.f)}) = ${v} ≈ ${d3(v)}.`); } },
         ] },
@@ -116,8 +124,16 @@ export default {
     { type: 'explain', prompt: 'In your own words: why can a 99%-accurate test give a positive that is only about 50% likely to be real?', model: 'When the condition is rare, the healthy group is huge. A 1% false-alarm rate on that huge group produces about as many positives as a 99% hit rate on the tiny sick group. The answer is the real share of all positives, so it depends on the base rate as much as on the test.', points: ['name the roles: base rate, hit rate, false-alarm rate', 'false positives come from the large healthy group', 'answer = true positives / all positives'] },
 
     S('worked'),
-    { type: 'worked', family: 'bayes-test', section: 'bto', difficulty: 2, seed: 'b', intro: 'Round numbers. Try it before opening the solution.' },
+    { type: 'worked', family: 'bayes-test', section: 'bto', difficulty: 2, seed: 'b', explainAt: [1, 2], intro: 'Round numbers. Try it before opening the solution.' },
     { type: 'worked', family: 'bayes-test', section: 'bto', difficulty: 3, seed: 'b', fade: 1, intro: 'A rare condition. The first steps are given; the last one and the answer are yours.' },
+
+    { type: 'thinkaloud', problem: `${pct(FR.p)} of transactions are fraud. A filter flags ${pct(FR.s)} of fraud and ${pct(FR.f)} of legitimate transactions. A transaction is flagged. What is the probability it is fraud?`, lines: [
+      { t: 0, say: 'Base rate, hit rate, false-alarm rate and a signal: Bayes. I will use natural frequencies.' },
+      { t: 3, say: `The filter catches ${pct(FR.s)} of fraud, so a flag means about ${pct(FR.s)} fraud.`, slip: true },
+      { t: 6, say: `No: ${pct(FR.s)} is P(flag | fraud), the wrong direction. Count flags in ${M.toLocaleString('en')} transactions instead.` },
+      { t: 10, say: `${cnt(FR.p)} are fraud and ${cnt(FR.p.mul(FR.s))} of them are flagged. ${cnt(one.sub(FR.p)).toLocaleString('en')} are legitimate and ${cnt(one.sub(FR.p).mul(FR.f))} of them are flagged.` },
+      { t: 16, say: `${cnt(FR.p.mul(FR.s))}/(${cnt(FR.p.mul(FR.s))} + ${cnt(one.sub(FR.p).mul(FR.f))}) = ${post(FR.p, FR.s, FR.f)} ≈ ${d3(post(FR.p, FR.s, FR.f))}. About half, because legitimate transactions vastly outnumber fraud. Answer ${post(FR.p, FR.s, FR.f)}.` },
+    ] },
 
     S('predict'),
     { type: 'predict', question: 'Base rate 1 in 1,000. The test catches everyone who has it and has a 5% false-alarm rate. Before computing: is a positive more or less likely than 10% to be real?', answer: `Less: about ${d3(postNum(0.001, 1, 0.05))}, roughly 1 real case per 50 false alarms.`, explain: '1,000 people: 1 true positive, about 50 false ones.' },
@@ -135,7 +151,7 @@ export default {
       'Answer 9/10.',
     ], errorStep: 2, explain: `9/10 is P(positive | has it), the other direction. The positives are ${T.p.mul(T.s)} true and ${one.sub(T.p).mul(T.f)} false, so P(has it | positive) = ${post(T.p, T.s, T.f)}.` },
     { type: 'check', scope: 'the named traps', questions: [
-      { type: 'choice', q: 'Base rate 1/5, hit 4/5, false alarms 1/4. A candidate answers 4/25. Which belief?', options: ['P(H and +) instead of P(H | +)', 'Hit rate as the answer', 'Base rate as the answer'], answer: 0, explain: `4/25 = 1/5 × 4/5 is the true-positive share of everyone. Divide by P(+): ${post(A.p, A.s, A.f)}.` },
+      { type: 'choice', q: 'Base rate 1/5, hit 4/5, false alarms 1/4. A candidate answers 4/25. Which belief?', options: ['P(H and +) instead of P(H | +)', 'The hit rate 4/5 given as the answer', 'The base rate 1/5 given as the answer'], answer: 0, explain: `4/25 = 1/5 × 4/5 is the true-positive share of everyone. Divide by P(+): ${post(A.p, A.s, A.f)}.` },
     ] },
 
     S('speed'),
@@ -161,6 +177,19 @@ export default {
     { type: 'check', scope: 'the contrast table and edge cases', questions: [
       { type: 'choice', q: 'A test fires for 30% of those with the condition and 30% of those without. Base rate 1/8. P(has it | positive)?', options: ['1/8', '3/10', '1/2', '0'], answer: 0, traps: { 1: 'the hit rate', 2: 'a coin flip', 3: 'the signal is uninformative, not disproving' }, explain: 'Equal rates cancel: the posterior equals the prior.' },
     ] },
+
+    { type: 'variation', base: `Base rate ${T.p}, hit rate ${T.s}, false alarms ${T.f}. P(has it | positive) = ${post(T.p, T.s, T.f)}.`, rows: [
+      { change: 'Imagine 10,000 people instead of 1,000', effect: `No change: ${post(T.p, T.s, T.f)}. The population size cancels; it only makes the counts whole.`, same: true },
+      { change: 'Base rate 1/100 instead of 1/10', effect: `False alarms now swamp the real cases: ${post(Q.of(1, 100), T.s, T.f)}.` },
+      { change: 'False alarms 1/100 instead of 1/10', effect: `The false + block shrinks tenfold: ${post(T.p, T.s, Q.of(1, 100))}.` },
+      { change: 'The result is negative', effect: `Use the other leaves: ${postNeg(T.p, T.s, T.f)}. A negative almost rules it out.` },
+      { change: 'Base rate 1/100 and two independent positives', effect: `The rarer base rate cuts the prior odds about elevenfold, and the second positive multiplies them by 9 again: ${post(Q.of(1, 100), T.s.mul(T.s), T.f.mul(T.f))}, close to the base value. In odds form the two changes simply multiply.`, fusion: true },
+    ] },
+    { type: 'transfer',
+      near: { make: (rng) => { const x = draw(rng); const v = post(x.p, x.s, x.f); return mc(rng, `${pct(x.p)} of emails are spam. A filter flags ${pct(x.s)} of spam and ${pct(x.f)} of normal emails. An email is flagged. P(it is spam)?`, v.toString(), [[x.s.toString(), 'answered the hit rate'], [x.p.toString(), 'ignored the flag'], [x.p.mul(x.s).toString(), 'forgot to divide by P(flagged)']], `${x.p.mul(x.s)} / (${x.p.mul(x.s)} + ${one.sub(x.p).mul(x.f)}) = ${v}.`); } },
+      far: { type: 'choice', q: `${pct(QU.p)} of applicants are strong. An interview puzzle is solved by ${pct(QU.s)} of strong applicants and ${pct(QU.f)} of the others. An applicant solves it. P(the applicant is strong)?`, options: [post(QU.p, QU.s, QU.f).toString(), QU.s.toString(), QU.p.mul(QU.s).toString(), QU.p.toString()], answer: 0, traps: { 1: 'answered P(solve | strong), the hit rate', 2: 'forgot to divide by P(solve)', 3: 'ignored the evidence' }, explain: `Strong solvers ${QU.p.mul(QU.s)}, other solvers ${one.sub(QU.p).mul(QU.f)}: ${post(QU.p, QU.s, QU.f)}.` },
+      principle: { type: 'choice', q: 'Which idea carried over from tests to spam filters and interviews?', options: ['Real signals over all signals, weighted by the base rate', 'The hit rate is the chance the signal is real', 'Multiply base rate by hit rate and stop there', 'A strong signal makes the base rate irrelevant'], answer: 0, traps: { 1: 'the hit rate conditions on the cause, not on the signal', 2: 'that is P(cause and signal); divide by P(signal)', 3: 'a rare cause keeps false alarms in the majority' }, explain: 'P(cause | signal) = true signals / all signals; the base rate sets how many of each there are.' },
+    },
 
     S('tryit'),
     { type: 'tryit', family: 'bayes-test', section: 'bto', count: 3 },

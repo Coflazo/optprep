@@ -26,6 +26,8 @@ const d3 = (x) => (Math.round(x.toNumber() * 1000) / 1000).toFixed(3);
 const BALLS = ['R1', 'R2', 'R3', 'B1', 'B2'];
 const J4 = [0, 1, 2, 3, 4];
 const urn = (rng) => { const r = rng.int(3, 7), b = rng.int(3, 7); return { r, b, n: r + b }; };
+const CH_BIN = Q.of(C(3, 2)).mul(qpow(Q.of(5, 8), 2)).mul(Q.of(3, 8)).add(qpow(Q.of(5, 8), 3)); // challenge, binomial attempt
+const TA_BIN = binom(Q.of(3, 10), 4, 1); // think-aloud: binomial slip
 
 export default {
   id: 'bto/urn-draws',
@@ -43,7 +45,11 @@ export default {
   ],
   blocks: [
     S('recognise'),
-    { type: 'challenge', q: 'Before any teaching: a bag holds 5 red and 3 green counters. You draw 3 without replacement. What is the probability that at least two are red? Try two different approaches.', answer: `(C(5,2)C(3,1) + C(5,3)) / C(8,3) = ${atLeast(5, 3, 3, 2)}`, explain: `Hands: ${C(5, 2) * C(3, 1)} with exactly two red plus ${C(5, 3)} with three red, out of ${C(8, 3)}. If you used the binomial with p = 5/8 you got ${d3(Q.of(C(3, 2)).mul(qpow(Q.of(5, 8), 2)).mul(Q.of(3, 8)).add(qpow(Q.of(5, 8), 3)))}: that assumes each counter goes back.` },
+    { type: 'challenge', q: 'Before any teaching: a bag holds 5 red and 3 green counters. You draw 3 without replacement. What is the probability that at least two are red? Try two different approaches.', answer: `(C(5,2)C(3,1) + C(5,3)) / C(8,3) = ${atLeast(5, 3, 3, 2)}`, explain: `Hands: ${C(5, 2) * C(3, 1)} with exactly two red plus ${C(5, 3)} with three red, out of ${C(8, 3)}. If you used the binomial with p = 5/8 you got ${d3(Q.of(C(3, 2)).mul(qpow(Q.of(5, 8), 2)).mul(Q.of(3, 8)).add(qpow(Q.of(5, 8), 3)))}: that assumes each counter goes back.`, attempts: [
+      { id: 'binomial', label: 'Binomial with p = 5/8', approach: `Used C(3,2)(5/8)²(3/8) + (5/8)³ ≈ ${d3(CH_BIN)}.`, breaksAt: 'That puts each counter back. Without replacement the chance of red changes after every draw.' },
+      { id: 'exactly', label: 'Exactly two red only', approach: `Counted hands with two red: C(5,2)C(3,1)/C(8,3) = ${hyper(5, 3, 3, 2)}.`, breaksAt: `"At least two" also includes the ${C(5, 3)} all-red hands.` },
+      { id: 'one-order', label: 'Red, red, then green', approach: 'Multiplied 5/8 × 4/7 × 3/6 for red, red, green, then added the all-red chain.', breaksAt: 'The green can come 1st, 2nd or 3rd: three orders, each with the same product.' },
+    ] },
     { type: 'text', text: 'An urn (bag, box, batch) holds balls of two kinds, r red and b blue. You draw k of them **without replacement** and the question asks how many of one kind you got: exactly j, at least j, none.' },
     { type: 'list', items: ['"An urn has 5 red and 5 blue balls. Draw 2. Probability of one of each?"', '"A batch of 10 items has 3 defective. You test 4. Probability exactly one is defective?"', '"A committee of 3 is picked from 4 women and 6 men. Probability of at least 2 women?"'] },
     { type: 'text', text: 'Not this lesson: draws **with** replacement or independent trials (the binomial: bto/coin-sequences, bto/race-to-k), and card hands with many groups (bto/card-draws). Two kinds of ball, taken out and kept out, is this lesson.' },
@@ -81,7 +87,7 @@ export default {
 
     S('derivation'),
     { type: 'steps', steps: [
-      { say: 'For the colour count, order does not matter. Every subset of k balls is equally likely to be the hand, so there are C(r + b, k) equally likely hands.', why: 'Each ordered draw of k distinct balls is equally likely, and every hand is k! of them, the same number for every hand.',
+      { answers: 'binomial', say: 'For the colour count, order does not matter. Every subset of k balls is equally likely to be the hand, so there are C(r + b, k) equally likely hands.', why: 'Each ordered draw of k distinct balls is equally likely, and every hand is k! of them, the same number for every hand.',
         checks: [
           { make: (rng) => { const { r, b, n } = urn(rng); const k = rng.int(2, 4); return { type: 'number', q: `An urn holds ${r} red and ${b} blue. How many equally likely hands of ${k} balls are there?`, answer: C(n, k), hints: [`${n} balls in total.`, `C(${n}, ${k}).`], explain: `C(${n},${k}) = ${C(n, k)}.` }; } },
         ] },
@@ -93,11 +99,11 @@ export default {
         checks: [
           { make: (rng) => { const { r, b, n } = urn(rng); const k = 3, j = rng.int(1, 2); const v = hyper(r, b, k, j); return mc(rng, `${r} red, ${b} blue, draw 3 without replacement. P(exactly ${words[j]} red)?`, v.toString(), [[binom(Q.of(r, n), k, j).toString(), 'used the binomial, as if each ball went back'], [oneOrder(r, b, k, j).toString(), `computed one order only and forgot the C(3,${j}) = ${C(3, j)} orders`], [atLeast(r, b, k, j).toString(), `computed at least ${words[j]}`], [Q.of(j, k).toString(), 'used the fraction of the draws that are red']], `C(${r},${j})C(${b},${k - j})/C(${n},3) = ${C(r, j) * C(b, k - j)}/${C(n, 3)} = ${v}.`); } },
         ] },
-      { say: 'At least j: add the terms for j, j + 1, …, k. If "at least 1", use the complement: 1 − C(b, k)/C(r + b, k).', why: 'Different red counts are disjoint, so their probabilities add; the complement is shorter when only one term is excluded.',
+      { answers: 'exactly', say: 'At least j: add the terms for j, j + 1, …, k. If "at least 1", use the complement: 1 − C(b, k)/C(r + b, k).', why: 'Different red counts are disjoint, so their probabilities add; the complement is shorter when only one term is excluded.',
           checks: [
           { make: (rng) => { const { r, b, n } = urn(rng); const k = 3; const v = atLeast(r, b, k, 1); return mc(rng, `${r} red, ${b} blue, draw 3. P(at least one red)?`, v.toString(), [[hyper(r, b, k, 1).toString(), 'computed exactly one red'], [Q.of(1).sub(qpow(Q.of(b, n), 3)).toString(), 'used the with-replacement complement'], ...(3 * r <= n ? [[Q.of(3 * r, n).toString(), 'added r/n for each draw']] : [])], `1 − C(${b},3)/C(${n},3) = 1 − ${C(b, 3)}/${C(n, 3)} = ${v}.`); } },
         ] },
-      { say: 'Sequential route: the product for one order (reds first) times C(k, j), the number of orders. It gives the same answer.', why: 'Every order of the same colours has the same product (same factors, rearranged), so the total is one product times the count of orders.',
+      { answers: 'one-order', say: 'Sequential route: the product for one order (reds first) times C(k, j), the number of orders. It gives the same answer.', why: 'Every order of the same colours has the same product (same factors, rearranged), so the total is one product times the count of orders.',
         checks: [
           { type: 'choice', q: '4 red, 4 blue, draw 3. P(exactly 2 red) by the sequential route?', options: [`3 × 4/8 × 3/7 × 4/6 = ${Q.of(3).mul(oneOrder(4, 4, 3, 2))}`, `4/8 × 3/7 × 4/6 = ${oneOrder(4, 4, 3, 2)}`, `3 × (1/2)³ = ${Q.of(3, 8)}`], answer: 0, traps: { 1: 'forgot the C(3,2) = 3 orders', 2: 'with replacement' }, explain: `Check by hands: C(4,2)C(4,1)/C(8,3) = ${C(4, 2) * C(4, 1)}/${C(8, 3)} = ${hyper(4, 4, 3, 2)}.` },
         ] },
@@ -109,8 +115,16 @@ export default {
     { type: 'explain', prompt: 'In your own words: why do all orders of the same colours (like RRB, RBR, BRR) have the same probability when drawing without replacement?', model: 'Each order\'s probability is a product with denominators n, n − 1, n − 2 in every case, because one ball leaves per draw. The numerators are the reds r, r − 1 and the blue b, just met in a different order. Same factors, so the same product; that is why you can count orders with C(k, j) or count hands directly.', points: ['denominators fall n, n − 1, … whatever the colours', 'numerators are the same factors in a different order', 'so orders are equally likely: multiply one order by C(k, j), or count hands'] },
 
     S('worked'),
-    { type: 'worked', family: 'urn-draws', section: 'bto', difficulty: 2, seed: 'd', intro: 'Exactly j red. Try it before opening the solution.' },
+    { type: 'worked', family: 'urn-draws', section: 'bto', difficulty: 2, seed: 'd', explainAt: [0], intro: 'Exactly j red. Try it before opening the solution.' },
     { type: 'worked', family: 'urn-draws', section: 'bto', difficulty: 3, seed: 'b', fade: 1, intro: 'At least j red. The first steps are given; the last one and the answer are yours.' },
+
+    { type: 'thinkaloud', problem: 'A batch of 10 items has 3 defective. You test 4 of them, chosen at random. What is the probability that exactly one is defective?', lines: [
+      { t: 0, say: 'A fixed batch, sampled without putting back, counting one kind: an urn. Count hands.' },
+      { t: 3, say: `Exactly one of four at 3/10 each: C(4,1) × 3/10 × (7/10)³ ≈ ${d3(TA_BIN)}.`, slip: true },
+      { t: 7, say: `Wait, that is the binomial: it puts items back. Count hands instead: C(10,4) = ${C(10, 4)} in total.` },
+      { t: 11, say: `One defective and three good: C(3,1) × C(7,3) = ${C(3, 1)} × ${C(7, 3)} = ${C(3, 1) * C(7, 3)}.` },
+      { t: 15, say: `P = ${C(3, 1) * C(7, 3)}/${C(10, 4)} = ${hyper(3, 7, 4, 1)}. One is the central count and urns concentrate there, so beating ${d3(TA_BIN)} fits. Answer ${hyper(3, 7, 4, 1)}.` },
+    ] },
 
     S('predict'),
     { type: 'predict', question: 'Urn with 5 red and 5 blue; draw 2 without replacement. Is P(one of each) above or below the binomial 1/2?', answer: `Above: ${hyper(5, 5, 2, 1)} ≈ ${d3(hyper(5, 5, 2, 1))}.`, explain: 'Taking a red makes blue more likely next, which favours mixed hands.' },
@@ -153,6 +167,19 @@ export default {
     { type: 'check', scope: 'the contrast table and edge cases', questions: [
       { type: 'choice', q: 'An urn holds 2 red and 3 blue. Draw 4. P(no red)?', options: ['0', qpow(Q.of(3, 5), 4).toString(), '1/5'], answer: 0, traps: { 1: 'used the binomial (3/5)⁴, which allows the same blue ball twice', 2: 'guessed one of five balls' }, explain: 'Only 3 blues exist, so 4 draws must include a red.' },
     ] },
+
+    { type: 'variation', base: `Urn: 4 red, 4 blue. Draw 3 without replacement. P(exactly 2 red) = C(4,2)C(4,1)/C(8,3) = ${hyper(4, 4, 3, 2)}.`, rows: [
+      { change: 'Ask for exactly 2 blue instead', effect: `No change: ${hyper(4, 4, 3, 1)}. With as many blues as reds, swapping the colour names maps one event onto the other.`, same: true },
+      { change: 'Draw the 3 balls together instead of one by one', effect: 'No change. A handful is a uniformly random subset, the same as three draws kept out.', same: true },
+      { change: 'Put each ball back after drawing it', effect: `Binomial: C(3,2)(1/2)³ = ${binom(Q.of(1, 2), 3, 2)}. Lower, because replacement allows lopsided hands more often.` },
+      { change: 'Ask for at least 2 red', effect: `Add the all-red hands: (${C(4, 2) * C(4, 1)} + ${C(4, 3)})/${C(8, 3)} = ${atLeast(4, 4, 3, 2)}.` },
+      { change: 'Put the balls back and ask for at least 2 red', effect: `Each term changes (${binom(Q.of(1, 2), 3, 2)} + ${binom(Q.of(1, 2), 3, 3)}), yet the total is ${atLeast(4, 4, 3, 2).toString() === binom(Q.of(1, 2), 3, 2).add(binom(Q.of(1, 2), 3, 3)).toString() ? 'the same' : 'different'}: ${binom(Q.of(1, 2), 3, 2).add(binom(Q.of(1, 2), 3, 3))}. "At least 2 of 3" is a colour majority, and an evenly mixed urn gives either colour the majority equally often, with or without replacement.`, fusion: true },
+    ] },
+    { type: 'transfer',
+      near: { make: (rng) => { const w = rng.int(3, 6), m = rng.int(4, 7); const n = w + m; const v = hyper(w, m, 3, 2); return mc(rng, `A committee of 3 is picked at random from ${w} women and ${m} men. P(exactly 2 women)?`, v.toString(), [[binom(Q.of(w, n), 3, 2).toString(), 'used the binomial, as if a person could be picked twice'], [oneOrder(w, m, 3, 2).toString(), 'computed one order only'], [atLeast(w, m, 3, 2).toString(), 'computed at least 2 women']], `C(${w},2)C(${m},1)/C(${n},3) = ${C(w, 2) * m}/${C(n, 3)} = ${v}.`); } },
+      far: { type: 'choice', q: 'An auditor checks 4 of the 12 trades booked today, chosen at random. 2 of the 12 have booking errors. P(the audit finds no error)?', options: [hyper(2, 10, 4, 0).toString(), qpow(Q.of(10, 12), 4).toString(), Q.of(1).sub(hyper(2, 10, 4, 0)).toString(), Q.of(1).sub(Q.of(4 * 2, 12)).toString()], answer: 0, traps: { 1: 'used the binomial: a trade cannot be checked twice', 2: 'answered "finds at least one error"', 3: 'subtracted 2/12 for each checked trade' }, explain: `All 4 checked trades come from the 10 clean ones: C(10,4)/C(12,4) = ${C(10, 4)}/${C(12, 4)} = ${hyper(2, 10, 4, 0)}.` },
+      principle: { type: 'choice', q: 'Which idea carried over from urns to committees and audits?', options: ['Count equally likely subsets: C(r, j) C(b, k − j) / C(n, k)', 'Treat each pick as independent with the same chance', 'Multiply one order of the picks and stop there', 'Use the share of good items as the probability'], answer: 0, traps: { 1: 'that is the binomial: sampling with replacement', 2: 'every order of the same kinds has the same product; count them all', 3: 'a share of the population is not the chance of a count' }, explain: 'Without replacement every subset of size k is equally likely, so count the favourable subsets and divide.' },
+    },
 
     S('tryit'),
     { type: 'tryit', family: 'urn-draws', section: 'bto', count: 3 },

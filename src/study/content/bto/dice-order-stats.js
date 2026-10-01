@@ -47,12 +47,16 @@ export default {
   ],
   blocks: [
     S('recognise'),
-    { type: 'challenge', q: 'Before any teaching: you throw two fair dice. What is the probability that the larger of the two faces is exactly 4 (if both show 4, that counts)? Find two different ways to count it.', answer: `${maxEq(4)}/36`, explain: `The cells are (4,1), (4,2), (4,3), (4,4), (1,4), (2,4), (3,4): ${maxEq(4)} of 36. If you got 1/6 you assumed the larger face is uniform; if you got 8/36 you counted (4,4) twice. The lesson names both beliefs.` },
+    { type: 'challenge', q: 'Before any teaching: you throw two fair dice. What is the probability that the larger of the two faces is exactly 4 (if both show 4, that counts)? Find two different ways to count it.', answer: `${maxEq(4)}/36`, explain: `The cells are (4,1), (4,2), (4,3), (4,4), (1,4), (2,4), (3,4): ${maxEq(4)} of 36. If you got 1/6 you assumed the larger face is uniform; if you got 8/36 you counted (4,4) twice. The lesson names both beliefs.`, attempts: [
+      { id: 'one-arm', label: 'Only the first die is 4', approach: 'Fixed the first die at 4 and let the second run over 1 to 4: 4/36.', breaksAt: 'The larger face can sit on either die. The cells with the second die at 4 are missing.' },
+      { id: 'uniform', label: 'The larger face is uniform', approach: 'The larger face is one of 1 to 6, so answered 1/6.', breaksAt: 'Max 1 needs (1,1), a single cell, while max 4 has seven. The six values are not equally likely.' },
+      { id: 'both-arms', label: 'First die 4 plus second die 4', approach: 'Counted 4 cells with the first die at 4 and 4 with the second: 8/36.', breaksAt: 'The cell (4,4) is in both lists, so it was counted twice.' },
+    ] },
     { type: 'text', text: 'Two fair dice are thrown, and the question is **not** about the sum. It asks about the **larger** face (maximum), the **smaller** face (minimum), a **double**, the **difference** between the faces, or whether one die **beats** the other.' },
     { type: 'list', items: ['"Two dice are rolled. What is the probability that the higher of the two numbers is 5?"', '"What is the chance that the smaller die shows at least 3?"', '"You and a friend each roll a die. What is the chance yours is strictly higher?"', '"Two dice: probability the faces differ by exactly 2?"'] },
     { type: 'text', text: 'Not this lesson: the **sum** of two dice (bto/two-dice-sum) and anything with three dice (bto/three-dice). Same grid idea, different cells.' },
     { type: 'check', scope: 'the recognition cues above', questions: [
-      { type: 'choice', q: 'Which question belongs to this lesson?', options: ['Two dice: probability that at least one shows a 5 or 6', 'Two dice: probability the total is 9', 'Three dice: probability all three differ', 'One die thrown until a six: probability it takes 3 throws'], answer: 0, traps: { 1: 'a sum question (bto/two-dice-sum)', 2: 'a three-dice question', 3: 'a waiting question' }, explain: '"At least one shows 5 or more" is the same as "the larger face is at least 5": a maximum question.' },
+      { type: 'choice', q: 'Which question belongs to this lesson?', options: ['Two dice: probability the smaller face is 2 or less', 'Two dice: probability the total is 9 or more', 'Three dice: probability the largest face is 4', 'Two dice: probability the total is odd'], answer: 0, traps: { 1: 'a sum question (bto/two-dice-sum)', 2: 'a maximum, but on three dice: that is bto/three-dice', 3: 'a sum question: parity of the total' }, explain: 'The smaller face is the minimum of two dice: this lesson. Totals belong to the sums lesson, and three dice to their own lesson.' },
     ] },
 
     S('why'),
@@ -89,15 +93,15 @@ export default {
 
     S('derivation'),
     { type: 'steps', steps: [
-      { say: 'Translate the maximum into a statement about each die: the larger face is at most k exactly when both faces are at most k.', why: 'If either die showed more than k, the larger face would too. So one condition on the max becomes two conditions, one per die.',
+      { answers: 'one-arm', say: 'Translate the maximum into a statement about each die: the larger face is at most k exactly when both faces are at most k.', why: 'If either die showed more than k, the larger face would too. So one condition on the max becomes two conditions, one per die.',
         checks: [
           { type: 'choice', q: 'Two dice. "The larger face is at most 3" is the same event as:', options: ['both dice are at most 3', 'at least one die is at most 3', 'the first die is at most 3', 'the sum is at most 6'], answer: 0, traps: { 1: 'that is "the smaller face is at most 3"', 2: 'ignores the second die, which could be a 6', 3: '(1,4) has sum 5 but larger face 4' }, explain: 'Both dice must be at most 3, otherwise the larger face exceeds 3.' },
         ] },
-      { say: 'Both conditions hold together in k × k cells, so P(max ≤ k) = k²/36 = (k/6)².', why: 'Each die independently has k allowed faces; ordered pairs multiply.',
+      { answers: 'uniform', say: 'Both conditions hold together in k × k cells, so P(max ≤ k) = k²/36 = (k/6)².', why: 'Each die independently has k allowed faces; ordered pairs multiply.',
         checks: [
           { make: (rng) => { const k = rng.int(2, 5); return mc(rng, `Two dice. P(larger face ≤ ${k})?`, fr(maxLe(k), 36), [[fr(k, 6), 'used one die only'], [fr(2 * k, 36), 'added the two dice\'s counts instead of multiplying'], [fr(maxEq(k), 36), 'computed "exactly k", not "at most k"']], `(${k}/6)² = ${maxLe(k)}/36 = ${fr(maxLe(k), 36)}.`); } },
         ] },
-      { say: 'Exactly k = at most k, minus at most k − 1: k² − (k − 1)² = 2k − 1 cells.', why: 'The cells whose maximum is below k are the smaller square; removing them leaves the rim, where the maximum is exactly k. This subtraction is the new move.',
+      { answers: 'both-arms', say: 'Exactly k = at most k, minus at most k − 1: k² − (k − 1)² = 2k − 1 cells.', why: 'The cells whose maximum is below k are the smaller square; removing them leaves the rim, where the maximum is exactly k. This subtraction is the new move.',
         checks: [
           { make: (rng) => { const k = rng.int(2, 6); return { type: 'number', q: `Two dice. How many ordered pairs have larger face exactly ${k}?`, answer: maxEq(k), hints: [`Start from the ${k} × ${k} square.`, `Remove the ${k - 1} × ${k - 1} square inside it.`], explain: `${maxLe(k)} − ${maxLe(k - 1)} = ${maxEq(k)}, which is 2 × ${k} − 1.` }; } },
         ] },
@@ -117,8 +121,16 @@ export default {
     { type: 'explain', prompt: 'In your own words: why does the maximum of two dice pile up at 6 while the sum is symmetric around 7?', model: `The maximum is 6 whenever at least one die shows 6, which is ${maxEq(6)} cells, but it is 1 only when both dice show 1. Each value k gets the rim of a k × k square, and bigger squares have longer rims. The sum counts anti-diagonals, which are longest in the middle and shrink equally on both sides.`, points: ['max ≤ k is a k × k square, so max = k is a rim of 2k − 1 cells', 'rims grow with k, so the max is skewed up (and the min down)', 'sums count anti-diagonals, which are symmetric about 7'] },
 
     S('worked'),
-    { type: 'worked', family: 'dice-order-stats', section: 'bto', difficulty: 1, seed: 'c', intro: 'A maximum, a double or "who rolls higher". Try it before opening the solution.' },
+    { type: 'worked', family: 'dice-order-stats', section: 'bto', difficulty: 1, seed: 'c', explainAt: [0, 1], intro: 'A maximum, a double or "who rolls higher". Try it before opening the solution.' },
     { type: 'worked', family: 'dice-order-stats', section: 'bto', difficulty: 2, seed: 'g', fade: 1, intro: 'A minimum, a difference or an "at least one" threshold. The first steps are given; the last one and the answer are yours.' },
+
+    { type: 'thinkaloud', problem: 'Two fair dice are thrown. What is the probability that the larger face is exactly 5?', lines: [
+      { t: 0, say: 'Larger face on two dice: a maximum. I think in squares, not lists.' },
+      { t: 3, say: `First die 5 with the second at most 5: 5 cells. Second die 5: 5 more. So ${2 * 5}/36?`, slip: true },
+      { t: 7, say: `Wait, (5,5) sits in both lists. Square minus square instead: ${maxLe(5)} − ${maxLe(4)} = ${maxEq(5)}.` },
+      { t: 11, say: `Cross-check with the odd list 1, 3, 5, 7, 9, 11: max 5 is the fifth entry, ${maxEq(5)}. Same.` },
+      { t: 14, say: `${maxEq(5)}/36 = ${fr(maxEq(5), 36)}. Below max 6 (${maxEq(6)}/36), as a skewed-up max should be. Answer ${fr(maxEq(5), 36)}, with ${SECTIONS.bto.exam.perItemSeconds - 14} seconds spare.` },
+    ] },
 
     S('predict'),
     { type: 'predict', question: 'Without computing: two dice. Is P(max = 6) bigger or smaller than P(min = 6)? By what factor?', answer: `Bigger, ${maxEq(6)} times: ${maxEq(6)}/36 against 1/36.`, explain: 'max = 6 needs at least one six; min = 6 needs two.' },
@@ -167,6 +179,19 @@ export default {
       { type: 'choice', q: 'Two dice. P(faces differ by 0)?', options: ['1/6', '1/3', '0', '1/36'], answer: 0, traps: { 1: 'doubled the diagonal as if a zero difference had two orders', 2: 'forgot that equal faces have difference 0', 3: 'required one specific double' }, explain: `The ${diffEq(0)} doubles: 6/36 = 1/6.` },
       { make: (rng) => { const k = rng.int(2, 5); return mc(rng, `Three dice. P(largest face ≤ ${k})?`, fr(k ** 3, 216), [[fr(k * k, 36), 'used two dice: three dice need a third factor'], [fr(k, 6), 'used one die'], [fr(3 * k, 18), 'added the dice instead of multiplying']], `Every die at most ${k}: (${k}/6)³ = ${fr(k ** 3, 216)}.`); } },
     ] },
+
+    { type: 'variation', base: `Two fair dice. P(larger face = 4) = ${maxEq(4)}/36.`, rows: [
+      { change: 'Ask for the smaller face = 3 instead', effect: `No change: min = 3 has 13 − 6 = ${minEq(3)} cells. The minimum is the mirror image of the maximum, and 3 mirrors 4 (3 + 4 = 7).`, same: true },
+      { change: 'Paint one die red and one blue', effect: 'No change. The 36 cells were already ordered pairs; colour only shows which die is which.', same: true },
+      { change: 'Ask for "larger face at most 4"', effect: `No subtraction: the whole 4 × 4 square, ${maxLe(4)}/36 = ${fr(maxLe(4), 36)}.` },
+      { change: 'Throw three dice, larger face exactly 4', effect: `The square becomes a cube: 4³ − 3³ = ${4 ** 3 - 3 ** 3} of 216. Same subtraction, one more factor.` },
+      { change: 'Three dice and "at most 4" together', effect: `The cube removes nothing and the extra die adds a factor: (4/6)³ = ${fr(4 ** 3, 216)}. Each change acts on its own part of the formula: the exponent counts dice, the subtraction exists only for "exactly".`, fusion: true },
+    ] },
+    { type: 'transfer',
+      near: { make: (rng) => { const k = rng.int(3, 9); return mc(rng, `Two players each pick a whole number from 1 to 10, uniformly and independently. P(the larger of the two numbers is exactly ${k})?`, fr(2 * k - 1, 100), [[fr(2 * k, 100), `counted (${k},${k}) twice`], [fr(1, 10), 'assumed the larger number is uniform on 1 to 10'], [fr(k * k, 100), `counted "at most ${k}"`]], `${k}² − ${k - 1}² = ${2 * k - 1} of the 100 ordered pairs: ${fr(2 * k - 1, 100)}.`); } },
+      far: { type: 'choice', q: 'A web page loads once both of two independent servers have answered. Each answers after a whole number of milliseconds from 1 to 10, all equally likely. P(the page has loaded within 6 ms)?', options: [fr(36, 100), fr(6, 10), fr(11, 100), fr(100 - 16, 100)], answer: 0, traps: { 1: 'used one server: the page waits for the slower one', 2: 'computed "the slower server answers at exactly 6 ms"', 3: 'computed "at least one server has answered", the minimum, not the maximum' }, explain: `The page waits for the slower server: max ≤ 6 means both ≤ 6, (6/10)² = ${fr(36, 100)}.` },
+      principle: { type: 'choice', q: 'Which idea carried over from dice to numbers and servers?', options: ['The largest is at most k exactly when every piece is', 'The largest value is uniform over the possible values', 'Add the chances that each piece is k, then divide', 'Divide the values at most k by all possible values'], answer: 0, traps: { 1: 'the 1/6 and 1/10 answers: big maxima are more likely', 2: 'adding the arms counts the double twice', 3: 'that is one piece, not the largest of several' }, explain: 'Max ≤ k turns into "every piece ≤ k", a product of equal factors; "exactly k" is then a difference of two such products.' },
+    },
 
     S('tryit'),
     { type: 'tryit', family: 'dice-order-stats', section: 'bto', count: 3 },

@@ -29,6 +29,7 @@ const STR3 = ['HHH', 'HHT', 'HTH', 'HTT', 'THH', 'THT', 'TTH', 'TTT'];
 const ch = (s, i) => (s[i] !== s[i + 1] ? 1 : 0);
 const runs = (s) => 1 + ch(s, 0) + ch(s, 1);
 const FP5 = [0, 1, 2, 3, 4, 5].map((k) => nCr(5, k) * D(5 - k));
+const TK = 10; // think-aloud: 10 rolls
 const ROLLS = Array.from({ length: 21 }, (_, i) => i);
 
 export default {
@@ -47,7 +48,11 @@ export default {
   ],
   blocks: [
     S('recognise'),
-    { type: 'challenge', q: 'Before any teaching: 10 people drop their hats in a box and each takes one back at random. What is the expected number of people who get their own hat? Try two approaches.', answer: '1', explain: `If you started on the distribution (P(0 matches) ≈ ${f3(Q.of(D(10), fact(10)))}, P(1 match), …), you took the long road. Each person gets their own hat with 1/10, and 10 × 1/10 = 1. The lesson makes that one line work for every count.` },
+    { type: 'challenge', q: 'Before any teaching: 10 people drop their hats in a box and each takes one back at random. What is the expected number of people who get their own hat? Try two approaches.', answer: '1', explain: `If you started on the distribution (P(0 matches) ≈ ${f3(Q.of(D(10), fact(10)))}, P(1 match), …), you took the long road. Each person gets their own hat with 1/10, and 10 × 1/10 = 1. The lesson makes that one line work for every count.`, attempts: [
+      { id: 'distribution', label: 'Build the whole distribution', approach: 'Started on P(0 matches), P(1 match), P(2 matches), … to average them.', breaksAt: 'Correct, but it needs a derangement count for every k. The count is a sum of 10 yes/no pieces, and the mean only needs those pieces.' },
+      { id: 'at-least-one', label: 'P(at least one match)', approach: `Worked out P(someone gets their own hat) ≈ ${f3(one.sub(Q.of(D(10), fact(10))))} and gave that.`, breaksAt: 'That is a probability about the count, not its average. The count can be 2 or 3; its mean is built from each piece\'s own probability.' },
+      { id: 'dependent', label: 'Dependence blocks 10 × 1/10', approach: 'Saw that the matches are dependent and decided 10 × 1/10 could not be trusted.', breaksAt: 'Adding expectations needs no independence. Dependence changes how matches cluster, never the mean.' },
+    ] },
     { type: 'text', text: 'The question asks for an **expected number of** something: people who get their own hat, runs in a coin sequence, different faces seen, empty boxes, records, adjacent pairs of the same colour. The count could be complicated; its mean almost never is.' },
     { type: 'list', items: ['"A die is rolled 6 times. Expected number of different faces seen?"', '"10 balls into 4 boxes. Expected number of empty boxes?"', '"A deck is shuffled and laid out. Expected number of adjacent pairs of the same colour?"'] },
     { type: 'text', text: 'Not this lesson: the **probability** that the count is 0 or at least 1 (bto/derangements, bto/birthday). Those need the whole distribution or a complement; the mean needs neither.' },
@@ -83,15 +88,15 @@ export default {
 
     S('derivation'),
     { type: 'steps', steps: [
-      { say: 'Name what is counted and write count = I₁ + I₂ + … + I_m, one indicator per place, face, box or person.', why: 'Every count is a sum of yes/no questions: "is box 3 empty?", "does face 5 appear?". Choosing the right "one per" is the only creative step; pick the thing the question counts.',
+      { say: 'Name what is counted and write count = I₁ + I₂ + … + I_m, one indicator per place, face, box or person.', why: 'Every count is a sum of yes/no questions: "is box 3 empty?", "does face 5 appear?". Choosing the right "one per" is the only creative step; pick the thing the question counts.', answers: 'distribution',
         checks: [
           { type: 'choice', q: '"Expected number of empty boxes when m balls go into k boxes." One indicator per:', options: ['box', 'ball', 'pair of balls', 'ball-box pair'], answer: 0, traps: { 1: 'balls are never empty: the count is about boxes', 2: 'pairs count collisions, not empty boxes', 3: 'that counts placements, not empty boxes' }, explain: 'I_j = 1 if box j is empty; the count is Σ I_j over the k boxes.' },
         ] },
-      { say: 'Replace each expectation by a probability: E[I_j] = P(event j).', why: 'An indicator is 1 with probability P(event j) and 0 otherwise.',
+      { say: 'Replace each expectation by a probability: E[I_j] = P(event j).', why: 'An indicator is 1 with probability P(event j) and 0 otherwise.', answers: 'at-least-one',
         checks: [
           { make: (rng) => { const k = rng.int(3, 6), m = rng.int(3, 6); const v = qpow(Q.of(k - 1, k), m); return mc(rng, `${m} balls are thrown independently into ${k} boxes. P(box 1 is empty)?`, v.toString(), [[Q.of(1, k).toString(), 'used the chance a ball lands in box 1'], [one.sub(v).toString(), 'answered "box 1 is occupied"'], [qpow(Q.of(k - 1, k), m - 1).toString(), 'one factor short']], `Every ball misses box 1: (${k - 1}/${k})^${m} = ${v}.`); } },
         ] },
-      { say: 'Add them: E[count] = Σ P(event j). No independence is needed.', why: 'Expectation is a sum over outcomes, and sums can be regrouped in any order. Dependence changes the spread, never the mean.',
+      { say: 'Add them: E[count] = Σ P(event j). No independence is needed.', why: 'Expectation is a sum over outcomes, and sums can be regrouped in any order. Dependence changes the spread, never the mean.', answers: 'dependent',
         checks: [
           { make: (rng) => { const k = rng.int(3, 5), m = rng.int(3, 6); const v = empty(k, m); return mc(rng, `${m} balls into ${k} boxes. Expected number of empty boxes?`, v.toString(), [[String(Math.max(0, k - m)), 'assumed the balls spread perfectly'], [qpow(Q.of(k - 1, k), m).toString(), 'gave P(one box empty), not the count'], [Q.of(k).sub(v).toString(), 'counted occupied boxes']], `${k} × (${k - 1}/${k})^${m} = ${v} ≈ ${f3(v)}.`); } },
         ] },
@@ -111,7 +116,7 @@ export default {
     { type: 'explain', prompt: 'In your own words: the hat matches are clearly dependent. Why is the expected number of matches still exactly n × 1/n = 1?', model: 'The expected value of a sum is the sum of the expected values, because expectation is itself a sum over outcomes and sums can be regrouped. Dependence changes how the matches cluster (for example exactly n − 1 matches is impossible) but each person still gets their own hat with chance 1/n, so the total mean is n × 1/n.', points: ['count = sum of indicators', 'E[sum] = sum of E, with no independence needed', 'each indicator has expectation 1/n'] },
 
     S('worked'),
-    { type: 'worked', family: 'linearity', section: 'bto', difficulty: 2, seed: 'd', intro: 'Runs in a coin sequence. Try it before opening the solution.' },
+    { type: 'worked', family: 'linearity', section: 'bto', difficulty: 2, seed: 'd', explainAt: [0], intro: 'Runs in a coin sequence. Try it before opening the solution.' },
     { type: 'worked', family: 'linearity', section: 'bto', difficulty: 3, seed: 'c', fade: 1, intro: 'Different faces seen. The first steps are given; the last one and the answer are yours.' },
 
     S('predict'),
@@ -130,12 +135,20 @@ export default {
       'Answer: 3.',
     ], errorStep: 1, explain: `Adding 1/6 per roll double counts rolls that repeat face f. P(face f appears) = 1 − (5/6)³ = ${one.sub(qpow(Q.of(5, 6), 3))}, so E = ${distinct(6, 3)} ≈ ${f3(distinct(6, 3))}.` },
     { type: 'check', scope: 'the named traps', questions: [
-      { type: 'choice', q: '5 balls into 3 boxes. A candidate answers (2/3)⁵ for the expected number of empty boxes. Which belief?', options: ['Gave one indicator\'s probability, not the count', 'Assumed independence', 'Counted occupied boxes'], answer: 0, explain: `Multiply by the 3 boxes: 3 × (2/3)⁵ = ${empty(3, 5)}.` },
+      { type: 'choice', q: '5 balls into 3 boxes. A candidate answers (2/3)⁵ for the expected number of empty boxes. Which belief?', options: ['Gave one indicator\'s probability, not the count', 'Assumed the boxes fill independently of each other', 'Counted occupied boxes instead of empty ones'], answer: 0, traps: { 1: 'independence is not needed, and assuming it would not change the mean', 2: `occupied boxes average ${Q.of(3).sub(empty(3, 5))}, well above 1` }, explain: `Multiply by the 3 boxes: 3 × (2/3)⁵ = ${empty(3, 5)}.` },
     ] },
 
     S('speed'),
     { type: 'callout', tone: 'speed', text: 'Say the template out loud: "one indicator per ___, each with probability ___, times how many". If you can fill both blanks, you are done. Fixed points 1; runs (n + 1)/2; windows (n − L + 1)/2^L; records H_n.' },
     { type: 'callout', tone: 'speed', text: `Harmonic numbers to keep: H₃ = ${H(3)}, H₄ = ${H(4)}, H₅ = ${H(5)}, H₆ = ${H(6)} ≈ ${f3(H(6))}. They reappear in coupon collecting. An item like this should take 30 of your ${SECTIONS.bto.exam.perItemSeconds} seconds.` },
+    { type: 'thinkaloud', problem: `A fair die is rolled ${TK} times. What is the expected number of faces that never appear?`, lines: [
+      { t: 0, say: '"Expected number of": linearity. One indicator per face, 6 of them.' },
+      { t: 4, say: `Face f never appears with (5/6)^${TK}.` },
+      { t: 8, say: 'But the faces are dependent: if one is missing, the others are more likely to show. So I cannot just multiply by 6...', slip: true },
+      { t: 13, say: `No: linearity needs no independence. Dependence changes the spread, not the mean. E = 6 × (5/6)^${TK}.` },
+      { t: 19, say: `(5/6)^${TK} ≈ ${f3(qpow(Q.of(5, 6), TK))}, times 6 ≈ ${f3(Q.of(6).mul(qpow(Q.of(5, 6), TK)))}.` },
+      { t: 25, say: `Sanity: ${TK} rolls should show most faces, so about one missing face is plausible. Answer ≈ ${f3(Q.of(6).mul(qpow(Q.of(5, 6), TK)))}, ${SECTIONS.bto.exam.perItemSeconds - 25} seconds left.` },
+    ] },
     { type: 'check', scope: 'the template', questions: [
       { make: (rng) => { const n = rng.int(10, 40); return { type: 'number', q: `${n} fair flips. Expected number of times the pattern HT appears (as two consecutive flips)?`, answer: (n - 1) / 4, tolerance: 1e-9, hints: ['One indicator per window of two flips.', `${n - 1} windows, each HT with 1/4.`], explain: `(${n} − 1)/4 = ${(n - 1) / 4}.` }; } },
     ] },
@@ -155,6 +168,17 @@ export default {
     { type: 'check', scope: 'the contrast table and edge cases', questions: [
       { type: 'choice', q: 'Two fair dice. Which needs independence to compute as a product of means?', options: ['E[product of the faces]', 'E[sum of the faces]', 'E[number of sixes]', 'E[number of even faces]'], answer: 0, traps: { 1: 'sums split by linearity with no assumption', 2: 'a count of indicators: linearity', 3: 'also a count of indicators' }, explain: 'E[XY] = E[X]E[Y] holds for independent dice; sums and counts need nothing.' },
     ] },
+    { type: 'variation', base: '10 people take back their hats at random, one each. Expected number who get their own hat = 10 × 1/10 = 1.', rows: [
+      { change: 'Use 100 people instead of 10', effect: 'No change: 100 × 1/100 = 1. More indicators, each less likely, and the two cancel.', same: true },
+      { change: 'Each person grabs any hat, repeats allowed', effect: 'Still 1. The model changes and the events become independent, but each person still has chance 1/10.', same: true },
+      { change: 'Ask for P(at least one gets their own hat)', effect: `A probability, not a mean: 1 − D(10)/10! ≈ ${f3(one.sub(Q.of(D(10), fact(10))))}. It needs derangements, not linearity.` },
+      { change: 'Count pairs of people who swapped hats with each other', effect: `One indicator per pair: C(10,2) = ${nCr(10, 2)} pairs, each a swap with 1/(10 × 9). E = ${nCr(10, 2)}/90 = ${Q.of(nCr(10, 2), 90)}.` },
+      { change: '20 people in a circle, count those who get their own hat or their right neighbour\'s', effect: 'Two changes: n cancels as before, but each person now has 2 winning hats: 20 × 2/20 = 2.', fusion: true },
+    ] },
+    { type: 'transfer',
+      near: { make: (rng) => { const k = rng.pick([5, 8, 10]), m = rng.int(3, 6); const v = empty(k, m); return mc(rng, `${m} traders each pick a whole number from 1 to ${k} at random, independently. Expected number of values from 1 to ${k} that nobody picked, 3 decimals?`, f3(v), [[f3(qpow(Q.of(k - 1, k), m)), 'gave the chance that one value is unpicked, not the count'], [String(Math.max(0, k - m)), 'assumed the traders pick different numbers'], [f3(Q.of(k).sub(v)), 'counted the values that were picked']], `One indicator per value: ${k} × (${k - 1}/${k})^${m} ≈ ${f3(v)}.`); } },
+      far: { make: (rng) => { const n = rng.int(3, 6); const v = Q.of(2 * n, 2 * n - 1); return { type: 'number', q: `${n} couples (${2 * n} people) sit at random around a round table. Expected number of couples sitting next to each other? (Decimals are fine.)`, answer: v.toNumber(), tolerance: 0.005, hints: ['One indicator per couple.', `Seat one partner anywhere; the other takes one of the remaining ${2 * n - 1} seats, and 2 of them are adjacent.`], explain: `Each couple is together with 2/${2 * n - 1}; ${n} couples: ${n} × 2/${2 * n - 1} = ${v} ≈ ${v.toNumber().toFixed(3)}. The couples are dependent; linearity does not care.` }; } },
+      principle: { type: 'choice', q: 'Which idea carried over from hats to the traders and to the table?', options: ['Write the count as indicators and add their chances', 'Events are dependent, so find the distribution first', 'The expected count is P(at least one event happens)', 'The expected count is one indicator\'s probability'], answer: 0, traps: { 1: 'dependence never blocks adding expectations', 2: 'a mean of a count is not a probability', 3: 'multiply by the number of indicators' }, explain: 'Unpicked values and seated couples are counts. One indicator per value or couple, each probability once, then add.' } },
 
     S('tryit'),
     { type: 'tryit', family: 'linearity', section: 'bto', count: 3 },

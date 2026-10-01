@@ -24,6 +24,11 @@ const boxA = (a, b, c, d) => { const la = Q.of(a, a + b), lb = Q.of(c, c + d); r
 const cards = (rr, mx) => Q.of(2 * rr, 2 * rr + mx);
 const d3 = (x) => (Math.round((x instanceof Q ? x.toNumber() : x) * 1000) / 1000).toFixed(3);
 const KS = [0, 1, 2, 3, 4, 5, 6];
+// m dice, one with a 6 on every face, k sixes in a row: P(loaded die | evidence).
+const loaded = (m, k) => one.div(one.add(Q.of(m - 1, 6 ** k)));
+// Two desks picked by a coin flip; a sheet shows k winning days out of k.
+const deskA = (pa, pb, k) => { let la = one, lb = one; for (let i = 0; i < k; i++) { la = la.mul(pa); lb = lb.mul(pb); } return la.div(la.add(lb)); };
+const PA = Q.of(3, 4), PB = Q.of(1, 2);
 const box = (rng) => { let a, b, c, d; do { a = rng.int(1, 6); b = rng.int(1, 6); c = rng.int(1, 6); d = rng.int(1, 6); } while (a + b === c + d || a * (c + d) === c * (a + b)); return { a, b, c, d }; };
 
 export default {
@@ -42,7 +47,10 @@ export default {
   ],
   blocks: [
     S('recognise'),
-    { type: 'challenge', q: 'Before any teaching: three cards are in a hat, one red on both sides, one black on both sides, one red on one side and black on the other. You draw a card and look at a random side: it is red. What is the probability the other side is red? Try two approaches.', answer: `${cards(1, 1)}`, explain: 'Three red faces could be showing: two belong to the red-red card, one to the mixed card. Two of three have a red back. If you said 1/2, you counted cards instead of faces.' },
+    { type: 'challenge', q: 'Before any teaching: three cards are in a hat, one red on both sides, one black on both sides, one red on one side and black on the other. You draw a card and look at a random side: it is red. What is the probability the other side is red? Try two approaches.', answer: `${cards(1, 1)}`, explain: 'Three red faces could be showing: two belong to the red-red card, one to the mixed card. Two of three have a red back. If you said 1/2, you counted cards instead of faces.', attempts: [
+      { id: 'count-cards', label: 'Two cards could show red', approach: 'Two cards have a red side and one of them is red behind: 1/2.', breaksAt: 'The red-red card shows red every time, the mixed card only half the time. Faces, not cards, are equally likely.' },
+      { id: 'prior-only', label: 'One card in three', approach: 'The red-red card is one of three cards: 1/3.', breaksAt: 'That ignores the red face you saw: it rules out black-black and favours the card that shows red more often.' },
+    ] },
     { type: 'text', text: 'An object is picked at random from a few kinds (a fair or a double-headed coin, box A or box B, one of several two-sided cards). You observe something it produced (heads several times, a red ball, a red face) and are asked which object you are holding, or what its hidden side shows.' },
     { type: 'list', items: ['"One of 10 coins is double-headed. You pick one, flip it 3 times: 3 heads. Probability it is the double-headed coin?"', '"Box A has 2 red, 1 blue; box B has 1 red, 3 blue. Pick a box at random, draw red. Probability it was box A?"', '"Three two-sided cards; you see a red face. Probability the back is red?"'] },
     { type: 'text', text: 'Not this lesson: rates of a signal in a population (bto/bayes-test), and a host who chooses what to reveal (bto/monty-hall). Here the evidence is produced by the object itself.' },
@@ -84,11 +92,11 @@ export default {
         checks: [
           { type: 'choice', q: 'Box A has 2 balls, box B has 10. You pick a box by a coin flip. Prior of box A?', options: ['1/2', '1/6', '2/12', '5/6'], answer: 0, traps: { 1: 'weighted by the number of balls; the box is chosen by a coin', 2: 'the same size weighting, unreduced', 3: 'weighted box B by size' }, explain: 'The coin picks the box: 1/2 each, whatever their sizes.' },
         ] },
-      { say: 'For each hypothesis, find the likelihood: the chance it produces exactly what you saw.', why: 'The double-headed coin always shows heads; a fair coin shows k heads with 1/2^k; a box shows red with its own red fraction.',
+      { answers: 'count-cards', say: 'For each hypothesis, find the likelihood: the chance it produces exactly what you saw.', why: 'The double-headed coin always shows heads; a fair coin shows k heads with 1/2^k; a box shows red with its own red fraction.',
         checks: [
           { make: (rng) => { const a = rng.int(2, 6); let b = rng.int(1, 6); if (b === a) b = a - 1; return mc(rng, `Box A holds ${a} red and ${b} blue. Likelihood of drawing red from box A?`, Q.of(a, a + b).toString(), [[Q.of(b, a + b).toString(), 'answered blue'], ['1/2', 'used the prior of the box'], [Q.of(a, 2 * (a + b)).toString(), 'multiplied by the prior 1/2: that is P(box A and red)'], [Q.of(1, a + b).toString(), 'one specific ball']], `${a} of ${a + b} balls are red.`); } },
         ] },
-      { say: 'Weight = prior × likelihood. Posterior = one weight / the sum of all weights.', why: 'The weights are the joint chances of "this object and this evidence"; dividing by their sum conditions on the evidence.',
+      { answers: 'prior-only', say: 'Weight = prior × likelihood. Posterior = one weight / the sum of all weights.', why: 'The weights are the joint chances of "this object and this evidence"; dividing by their sum conditions on the evidence.',
         checks: [
           { make: (rng) => { const { a, b, c, d } = box(rng); const v = boxA(a, b, c, d); return mc(rng, `Box A: ${a} red, ${b} blue. Box B: ${c} red, ${d} blue. A random box gives red. P(box A)?`, v.toString(), [[Q.of(a, a + c).toString(), 'pooled all red balls as equally likely'], [Q.of(a, a + b).toString(), 'answered P(red | A), the likelihood'], ['1/2', 'kept the prior'], [one.sub(v).toString(), 'answered box B']], `(½ × ${Q.of(a, a + b)}) / (½ × ${Q.of(a, a + b)} + ½ × ${Q.of(c, c + d)}) = ${v}.`); } },
         ] },
@@ -104,8 +112,16 @@ export default {
     { type: 'explain', prompt: 'In your own words: in the three-card puzzle, why is the answer 2/3 and not 1/2?', model: 'What you see is a face, and each of the six faces is equally likely to be the one facing you. Three of them are red: two on the red-red card and one on the mixed card. So given a red face, you are twice as likely to hold the red-red card. Counting the two cards with a red side as equally likely ignores that the red-red card shows red twice as often.', points: ['the equally likely atoms are faces, not cards', 'the red-red card has two red faces, the mixed card one', 'P(back red) = 2 of 3 red faces'] },
 
     S('worked'),
-    { type: 'worked', family: 'bayes-boxes', section: 'bto', difficulty: 2, seed: 'b', intro: 'Two-sided cards. Try it before opening the solution.' },
+    { type: 'worked', family: 'bayes-boxes', section: 'bto', difficulty: 2, seed: 'b', explainAt: [0], intro: 'Two-sided cards. Try it before opening the solution.' },
     { type: 'worked', family: 'bayes-boxes', section: 'bto', difficulty: 3, seed: 'c', fade: 1, intro: 'Two boxes of different sizes. The first steps are given; the last one and the answer are yours.' },
+
+    { type: 'thinkaloud', problem: 'Box A has 2 red and 1 blue ball; box B has 1 red and 3 blue. A box is picked by a coin flip and a ball drawn from it is red. What is the probability it came from box A?', lines: [
+      { t: 0, say: 'A hidden box and evidence it produced: weigh each box by prior × likelihood.' },
+      { t: 3, say: `Red balls: 2 in A, 1 in B, so A holds 2 of the 3 reds: ${Q.of(2, 3)}.`, slip: true },
+      { t: 7, say: `Wait, that pools the balls. Each box is picked with 1/2 whatever its size. Likelihoods: A gives red with ${Q.of(2, 3)}, B with ${Q.of(1, 4)}.` },
+      { t: 12, say: `Equal priors cancel: ${Q.of(2, 3)} / (${Q.of(2, 3)} + ${Q.of(1, 4)}) = ${boxA(2, 1, 1, 3)}.` },
+      { t: 16, say: `Check: A is the redder box, so the answer is above 1/2. ${boxA(2, 1, 1, 3)} ≈ ${d3(boxA(2, 1, 1, 3))}. Answer ${boxA(2, 1, 1, 3)}.` },
+    ] },
 
     S('predict'),
     { type: 'predict', question: 'A jar of 10 coins has one double-headed coin. You pick one and see three heads. Above or below 1/2 that you hold the double-headed coin?', answer: `Below: ${dh(10, 3)} ≈ ${d3(dh(10, 3))}.`, explain: 'Odds 1 : 9 times 8 : 1 = 8 : 9. One more head would tip it.' },
@@ -123,7 +139,7 @@ export default {
       'Answer 1/4.',
     ], errorStep: 2, explain: `Red balls are not equally likely: box A is picked half the time and then gives red with 1/2, box B with 3/4. P(box A | red) = (1/2)/(1/2 + 3/4) = ${boxA(1, 1, 3, 1)}.` },
     { type: 'check', scope: 'the named traps', questions: [
-      { type: 'choice', q: '9 fair coins and 1 double-headed; 3 heads. A candidate answers 7/8. Which belief?', options: ['"A fair coin rarely does this" as the answer', 'Kept the prior', 'Counted faces'], answer: 0, explain: `7/8 = 1 − 1/8 ignores that fair coins are nine times as common. Correct: ${dh(10, 3)}.` },
+      { type: 'choice', q: '9 fair coins and 1 double-headed; 3 heads. A candidate answers 7/8. Which belief?', options: ['"A fair coin rarely does this" as answer', 'Kept the prior 1/10 as the answer', 'Counted coin faces instead of whole coins'], answer: 0, explain: `7/8 = 1 − 1/8 ignores that fair coins are nine times as common. Correct: ${dh(10, 3)}.` },
     ] },
 
     S('speed'),
@@ -148,6 +164,19 @@ export default {
     { type: 'check', scope: 'the contrast table and edge cases', questions: [
       { type: 'choice', q: '9 coins, one double-headed. You flip the chosen coin: heads, heads, tails. P(double-headed)?', options: ['0', dh(9, 2).toString(), '1/9', '1/2'], answer: 0, traps: { 1: 'ignored the tail', 2: 'kept the prior', 3: 'a coin flip' }, explain: 'A double-headed coin cannot show tails.' },
     ] },
+
+    { type: 'variation', base: `Three cards, RR, RB and BB. A red face is seen. P(back red) = ${cards(1, 1)}.`, rows: [
+      { change: 'Add a second black-black card', effect: `No change: ${cards(1, 1)}. Black-black cards never show red, so they are ruled out either way.`, same: true },
+      { change: 'Replace BB with a second RB card', effect: `Red faces: 2 on RR, 2 on the RB cards: ${cards(1, 2)}.` },
+      { change: 'Use two RR cards and one RB', effect: `Red faces 4 against 1: ${cards(2, 1)}.` },
+      { change: 'Ask instead whether you hold the RB card', effect: `The complement: ${one.sub(cards(1, 1))}.` },
+      { change: 'Add a second RR card and a second RB card', effect: `Both kinds double, so the red faces go from 2 : 1 to 4 : 2, the same ratio: ${cards(2, 2)}. The answer depends on the ratio of red faces, not on the number of cards.`, fusion: true },
+    ] },
+    { type: 'transfer',
+      near: { make: (rng) => { const m = rng.pick([6, 10, 13]); const k = rng.int(1, 2); return mc(rng, `A bag holds ${m} dice: one has a 6 on every face, the rest are fair. You pick one and roll it ${k === 1 ? 'once' : 'twice'}: ${k === 1 ? 'a six' : 'two sixes'}. P(you hold the loaded die)?`, loaded(m, k).toString(), [[Q.of(1, m).toString(), 'kept the prior'], [one.sub(Q.of(1, 6 ** k)).toString(), 'used "a fair die rarely does this" as the answer'], [Q.of(6 ** k, 6 ** k + 1).toString(), 'dropped the priors: one loaded die against many fair ones']], `Weights 1/${m} × 1 against ${m - 1}/${m} × 1/${6 ** k}: ${loaded(m, k)}.`); } },
+      far: { type: 'choice', q: `Desk A has a winning day with probability ${PA}, desk B with ${PB}. A P&L sheet is taken from one desk, chosen by a coin flip, and shows 2 winning days out of 2. P(it is desk A's sheet)?`, options: [deskA(PA, PB, 2).toString(), '1/2', deskA(PA, PB, 1).toString(), PA.mul(PA).toString()], answer: 0, traps: { 1: 'kept the prior', 2: 'used only one of the two winning days', 3: 'answered P(two wins | desk A), the likelihood' }, explain: `Weights ½ × (${PA})² against ½ × (${PB})²: ${deskA(PA, PB, 2)}.` },
+      principle: { type: 'choice', q: 'Which idea carried over from cards and boxes to dice and desks?', options: ['Weigh each hidden source by prior × likelihood', 'Count the sources and treat each as equally likely', 'Take the chance the source gives this evidence', 'Pool the outcomes of all sources and count them'], answer: 0, traps: { 1: 'sources differ in how often they produce what you saw', 2: 'that is the likelihood; it still needs the priors and the division', 3: 'each source is picked by its prior, not by its size' }, explain: 'Posterior = prior × likelihood / total, whatever the hidden objects are.' },
+    },
 
     S('tryit'),
     { type: 'tryit', family: 'bayes-boxes', section: 'bto', count: 3 },

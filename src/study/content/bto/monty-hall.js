@@ -37,12 +37,15 @@ export default {
   ],
   blocks: [
     S('recognise'),
-    { type: 'challenge', q: 'Before any teaching: three doors, one car, two goats. You pick door 1. The host, who knows where the car is, opens another door showing a goat and offers a switch. If you switch, what is your chance of the car? Try two approaches.', answer: `${knowSwitch(3, 1)}`, explain: 'Your first pick is right 1/3 of the time and switching then loses; it is wrong 2/3 of the time and switching then wins, because the host has removed the only other goat. If you said 1/2, you treated the two closed doors as equal; the lesson shows why they are not.' },
+    { type: 'challenge', q: 'Before any teaching: three doors, one car, two goats. You pick door 1. The host, who knows where the car is, opens another door showing a goat and offers a switch. If you switch, what is your chance of the car? Try two approaches.', answer: `${knowSwitch(3, 1)}`, explain: 'Your first pick is right 1/3 of the time and switching then loses; it is wrong 2/3 of the time and switching then wins, because the host has removed the only other goat. If you said 1/2, you treated the two closed doors as equal; the lesson shows why they are not.', attempts: [
+      { id: 'two-left', label: 'Two doors left, so 1/2', approach: 'Two closed doors and one car: answered 1/2.', breaksAt: 'The doors are not symmetric: the host could never touch yours, but he chose which of the others to open.' },
+      { id: 'still-third', label: 'Every door stays at 1/3', approach: 'Each door started at 1/3, so the other closed door is still 1/3 and switching does not matter.', breaksAt: 'The opened door drops to 0, and its share has to go somewhere: all of it lands on the other closed door.' },
+    ] },
     { type: 'text', text: 'Several doors (boxes, envelopes) hide one prize. You pick one. A **host** then opens some of the others, showing no prize, and you may **stay or switch**. The question asks your chance of winning, and the crucial detail is **whether the host knows** where the prize is.' },
     { type: 'list', items: ['"Three doors, you pick door 1, the host (who knows) opens door 3: a goat. Switch?"', '"100 doors; the host opens 98 empty ones. Probability the last closed door has the car?"', '"The host does not know where the car is and opens a door at random: a goat. Now what is your chance if you switch?"'] },
     { type: 'text', text: 'Not this lesson: evidence produced by the object itself, like a coin showing heads (bto/bayes-boxes). Here the evidence is **chosen** by someone, and his rule of choice is what matters.' },
     { type: 'check', scope: 'the recognition cues above', questions: [
-      { type: 'choice', q: 'Which detail matters most in a Monty Hall question?', options: ['Whether the host could have revealed the prize', 'Which door number you picked', 'Whether the prize is a car', 'How many goats there are'], answer: 0, traps: { 1: 'door labels are symmetric', 2: 'the prize is irrelevant', 3: 'it matters only through the number of doors' }, explain: 'A host who avoids the prize on purpose moves probability; a host who might have shown it does not.' },
+      { type: 'choice', q: 'Which detail matters most in a Monty Hall question?', options: ['Whether the host could have shown the prize', 'Which door number you happened to pick first', 'Whether the prize is a car or something else', 'How many goats there are behind the doors'], answer: 0, traps: { 1: 'door labels are symmetric', 2: 'the prize is irrelevant', 3: 'it matters only through the number of doors' }, explain: 'A host who avoids the prize on purpose moves probability; a host who might have shown it does not.' },
     ] },
 
     S('why'),
@@ -84,11 +87,11 @@ export default {
         checks: [
           { make: (rng) => { const n = rng.int(3, 8); return { type: 'number', q: `${n} doors. Before anything is opened, how many times out of ${n * 10} would your first pick hide the car, on average?`, answer: 10, hints: [`P = 1/${n}.`], explain: `${n * 10} × 1/${n} = 10.` }; } },
         ] },
-      { say: 'Knowing host: he can always open goat doors, whatever is behind yours. So his action says nothing about your door: it keeps 1/n.', why: 'Evidence that is equally likely under "car behind my door" and "car elsewhere" cannot move the probability of your door.',
+      { answers: 'two-left', say: 'Knowing host: he can always open goat doors, whatever is behind yours. So his action says nothing about your door: it keeps 1/n.', why: 'Evidence that is equally likely under "car behind my door" and "car elsewhere" cannot move the probability of your door.',
         checks: [
           { type: 'choice', q: 'Knowing host, 3 doors. After he opens a goat door, P(car behind your door)?', options: ['1/3', '1/2', '2/3', '0'], answer: 0, traps: { 1: 'thought the reveal splits the rest evenly', 2: 'swapped your door with the other', 3: 'thought the host reveals your door\'s content' }, explain: 'His action was possible whatever your door hid: 1/3 stays.' },
         ] },
-      { say: 'The opened doors drop to 0. The remaining (n − 1)/n spreads evenly over the other closed doors, k of them.', why: 'He never opens the car, so its probability cannot sit on an opened door; the other closed doors are symmetric to each other.',
+      { answers: 'still-third', say: 'The opened doors drop to 0. The remaining (n − 1)/n spreads evenly over the other closed doors, k of them.', why: 'He never opens the car, so its probability cannot sit on an opened door; the other closed doors are symmetric to each other.',
         checks: [
           { make: (rng) => { const n = rng.int(4, 7), m = rng.int(1, n - 3); const k = n - m - 1; return { type: 'number', q: `${n} doors, knowing host opens ${m}. How many closed doors are there besides yours?`, answer: k, hints: [`${n} doors minus yours minus ${m} opened.`], explain: `${n} − 1 − ${m} = ${k}; they share ${Q.of(n - 1, n)}.` }; } },
         ] },
@@ -104,8 +107,16 @@ export default {
     { type: 'explain', prompt: 'In your own words: why does switching win 2/3 with a knowing host but only 1/2 with a host who opens a door at random and happens to show a goat?', model: 'The knowing host can always show a goat, so his reveal tells you nothing about your own door, which stays at 1/3; since he never reveals the car, the other 2/3 lands on the one closed door. The random host could have revealed the car, and seeing a goat is equally consistent with the car behind your door or the other closed door, so they end up equal at 1/2.', points: ['ask whether the host could have shown the car', 'knowing host: your door keeps 1/n, the rest moves to the other closed doors', 'random host: the reveal is elimination, all closed doors equal'] },
 
     S('worked'),
-    { type: 'worked', family: 'monty-hall', section: 'bto', difficulty: 2, seed: 'a', intro: 'The classic three doors. Try it before opening the solution.' },
+    { type: 'worked', family: 'monty-hall', section: 'bto', difficulty: 2, seed: 'a', explainAt: [0], intro: 'The classic three doors. Try it before opening the solution.' },
     { type: 'worked', family: 'monty-hall', section: 'bto', difficulty: 3, seed: 'c', fade: 1, intro: 'More doors and a host who does not know. The first steps are given; the last one and the answer are yours.' },
+
+    { type: 'thinkaloud', problem: 'Five doors, one car. You pick a door; the host, who knows where the car is, opens two goat doors. You switch to one of the two other closed doors. What is your chance of winning?', lines: [
+      { t: 0, say: 'Doors and a host. First question: could he have shown the car? He knows, so no: my door keeps 1/5.' },
+      { t: 4, say: `The rest left my door, so switching gets ${Q.of(4, 5)}.`, slip: true },
+      { t: 7, say: `Wait, that ${Q.of(4, 5)} is shared by the 2 other closed doors, and I switch to just one of them.` },
+      { t: 10, say: `${Q.of(4, 5)} ÷ 2 = ${knowSwitch(5, 2)}.` },
+      { t: 13, say: `Check: ${knowSwitch(5, 2)} beats staying at ${stay(5)}, and the closed doors add up: ${stay(5)} + ${knowSwitch(5, 2)} + ${knowSwitch(5, 2)} = ${stay(5).add(knowSwitch(5, 2)).add(knowSwitch(5, 2))}. Answer ${knowSwitch(5, 2)}.` },
+    ] },
 
     S('predict'),
     { type: 'predict', question: '100 doors. The knowing host opens 98 goat doors. Before computing: roughly what is your chance if you switch to the last closed door?', answer: `${knowSwitch(100, 98)}.`, explain: 'Your door kept 1/100; the one other closed door collected the rest.' },
@@ -123,7 +134,7 @@ export default {
       'Switching does not matter.',
     ], errorStep: 2, explain: 'The two doors are not symmetric. The host could open door 3 whatever was behind door 1, so door 1 keeps 1/3; he chose door 3 partly because door 2 might hide the car. Door 2 has 2/3.' },
     { type: 'check', scope: 'the named traps', questions: [
-      { type: 'choice', q: `5 doors, knowing host opens 1 goat door; you switch to one of the other 3 closed doors. A candidate answers ${Q.of(4, 5)}. Which belief?`, options: ['Gave the new door all of (n − 1)/n', 'Two doors, so 1/2', 'Random host'], answer: 0, explain: `4/5 is shared by 3 doors: ${knowSwitch(5, 1)}.` },
+      { type: 'choice', q: `5 doors, knowing host opens 1 goat door; you switch to one of the other 3 closed doors. A candidate answers ${Q.of(4, 5)}. Which belief?`, options: ['Gave the new door all of (n − 1)/n', 'Two closed doors, so each has 1/2', 'Used the random-host answer 1/(n − m)'], answer: 0, explain: `4/5 is shared by 3 doors: ${knowSwitch(5, 1)}.` },
     ] },
 
     S('speed'),
@@ -148,6 +159,19 @@ export default {
     { type: 'check', scope: 'the contrast table', questions: [
       { type: 'choice', q: 'Three doors, you pick door 1. The host always opens door 3 when it hides a goat (otherwise door 2). He opens door 3. P(win if you switch to door 2)?', options: ['1/2', '2/3', '1/3', '1'], answer: 0, traps: { 1: 'the classic answer assumes he picks at random when both others are goats', 2: 'kept the prior for door 2', 3: 'thought door 3 opening proves door 2 has the car' }, explain: 'Car behind door 1: he opens 3 (weight 1/3). Car behind door 2: he opens 3 (weight 1/3). Equal weights: 1/2.' },
     ] },
+
+    { type: 'variation', base: `Three doors, the knowing host opens a goat door. Switching wins ${knowSwitch(3, 1)}.`, rows: [
+      { change: 'You pick door 2 instead of door 1', effect: `No change: ${knowSwitch(3, 1)}. Door labels are symmetric; only the host's rule matters.`, same: true },
+      { change: 'The host does not know and happens to show a goat', effect: `He could have shown the car, so the reveal is plain elimination: ${randomHost(3, 1)}.` },
+      { change: 'Four doors, the host opens one', effect: `Your door keeps ${stay(4)}; ${Q.of(3, 4)} is shared by 2 closed doors: ${knowSwitch(4, 1)}.` },
+      { change: 'Ten doors, the host opens eight', effect: `One other closed door collects everything else: ${knowSwitch(10, 8)}.` },
+      { change: 'Four doors, one opened, and the host does not know', effect: `The random host makes every unopened door equal, and the extra door only sets how many share: ${randomHost(4, 1)} each, against ${knowSwitch(4, 1)} with a knowing host.`, fusion: true },
+    ] },
+    { type: 'transfer',
+      near: { make: (rng) => { const n = rng.int(4, 7), m = rng.int(1, n - 3); const v = knowSwitch(n, m); return mc(rng, `${n} boxes, one holds a prize. You pick one; an assistant who knows where the prize is opens ${m} empty box${m > 1 ? 'es' : ''}. You switch to one of the other closed boxes at random. P(you win)?`, v.toString(), [[randomHost(n, m).toString(), 'treated every unopened box as equally likely'], [stay(n).toString(), 'the staying probability'], [Q.of(n - 1, n).toString(), 'gave your new box all of the share that left yours']], `Your box keeps 1/${n}; ${Q.of(n - 1, n)} is shared by ${n - m - 1} boxes: ${v}.`); } },
+      far: { type: 'choice', q: 'Three prisoners, A, B and C; one of them, chosen at random, will be pardoned. A asks the guard, who knows, to name one of B and C who will not be pardoned (choosing at random if both). The guard names B. P(C is pardoned)?', options: [knowSwitch(3, 1).toString(), randomHost(3, 1).toString(), stay(3).toString(), '1'], answer: 0, traps: { 1: 'two prisoners left, so 1/2: the guard could never name A', 2: 'kept the prior for C', 3: 'thought naming B proves C is pardoned' }, explain: `The guard is the knowing host: A keeps ${stay(3)}, C collects ${knowSwitch(3, 1)}.` },
+      principle: { type: 'choice', q: 'Which idea carried over from doors to boxes and prisoners?', options: ['Ask whether the revealer could have shown the prize', 'Two possibilities are left, so each gets one half', 'A reveal never changes any of the probabilities', 'The first choice always keeps its probability'], answer: 0, traps: { 1: 'the revealer protected one of the two', 2: 'the opened option drops to 0, so the others must change', 3: 'only when the revealer could act the same whatever it hid; a random host changes it' }, explain: 'If the revealer avoids the prize on purpose, your pick keeps its prior and the rest moves to the other closed options; if not, the reveal is plain elimination.' },
+    },
 
     S('tryit'),
     { type: 'tryit', family: 'monty-hall', section: 'bto', count: 3 },

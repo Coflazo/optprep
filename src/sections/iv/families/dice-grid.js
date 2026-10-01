@@ -57,7 +57,7 @@ const fam = {
       { say: 'Correct by scanning for deviations: extra sixes push the total up, extra ones pull it down.', why: 'Counting deviations is faster than summing 100 numbers.' },
     ],
     predict: { question: 'You count 22 sixes and 12 ones, the rest look balanced. Estimate the total.', answer: 'Roughly 350 + (22 − 17) × 2.5 − (12 − 17) × 2.5 ≈ 375: each extra six adds about 2.5 over average, each missing one also adds 2.5.' },
-    rule: 'Total ≈ n × mean + scanned correction; interval ± about 1.3 × your remaining error.',
+    rule: 'Total ≈ n × mean + scanned correction; interval ± about 2 × your remaining error (about 2.5× when that error is only 1-2%).',
     contrast: 'The chance spread of the total (±17) is not your error bar after scanning; scanning is what earns a narrower interval.',
     edge: 'Counting a single face exactly is feasible (17 of 100); counting all pips exactly is not in 60 seconds.',
   },

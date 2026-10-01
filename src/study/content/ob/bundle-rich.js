@@ -35,8 +35,9 @@ function richQuoteQ(rng) {
   const cheap = card('A + B', [1, 1], r6(Lb - 1.5), r6(Lb - 0.5));
   const fair = card('A + B', [1, 1], r6(La - 0.5), r6(La + 0.5));
   const midOnly = card('A + B', [1, 1], r6(La - 0.5), r6(La + 2.5));
-  return mc({ q: `A ${quote(a)}, B ${quote(b)} (bid / ask). Which A + B quote is rich (sell it, buy the legs)?`, right: quote(rich),
-    wrong: [[quote(cheap), 'its ask is below the legs\' bids added: that bundle is cheap, the opposite trade'], [quote(fair), 'its bid is below the legs\' asks added: nothing to sell into'], [quote(midOnly), 'its mid is high, but its bid does not clear the legs\' asks added']],
+  const Q = (c) => `A + B ${quote(c)}`;
+  return mc({ q: `A ${quote(a)}, B ${quote(b)} (bid / ask). Which A + B quote is rich (sell it, buy the legs)?`, right: Q(rich),
+    wrong: [[Q(cheap), 'its ask is below the legs\' bids added: that bundle is cheap, the opposite trade'], [Q(fair), 'its bid is below the legs\' asks added: nothing to sell into'], [Q(midOnly), 'its mid is high, but its bid does not clear the legs\' asks added']],
     explain: `The legs cost ${px(a.ask)} + ${px(b.ask)} = ${px(La)} at the asks. Only ${quote(rich)} has a bid above that.` }, rng);
 }
 
@@ -67,8 +68,8 @@ function notRichQ(rng) {
   const p = cs.map((c) => part(c)), La = buyCost(p);
   const bid = r6(La - rng.pick([0, 0.5])), X = card('A + B + C', [1, 1, 1], bid, r6(bid + 2 * rng.pick([0.5, 1])));
   const bidTrap = r6(cs[0].ask + cs[1].ask + cs[2].bid);
-  return mc({ q: `Board (bid / ask): ${boardText([...cs, X])}. Should you sell A + B + C and buy the three legs?`, right: `No: the legs cost ${px(La)} at their asks, and the bid is ${px(bid)}`,
-    wrong: [[`Yes: the bid ${px(bid)} beats the legs priced ${px(bidTrap)}`, 'priced one leg (C) at its bid: every leg you buy costs its ask']],
+  return mc({ q: `Board (bid / ask): ${boardText([...cs, X])}. Should you sell A + B + C and buy the three legs?`, right: `No: the legs cost ${px(La)} and the bid is ${px(bid)}`,
+    wrong: [[`Yes: the legs cost ${px(bidTrap)} and the bid is ${px(bid)}`, 'priced one leg (C) at its bid: every leg you buy costs its ask']],
     explain: `Edge = ${px(bid)} − ${px(La)} = ${px(bid - La)}: ${bid - La === 0 ? 'zero does not count' : 'a loss'}.` }, rng);
 }
 
@@ -88,7 +89,12 @@ export default {
   ],
   blocks: [
     sec('recognise'),
-    { type: 'challenge', q: `Before any teaching: board (bid / ask) ${boardText([A3, B3, C3, ABC])}. Find a flat, profitable set of trades. Two approaches, then the trades and the profit.`, answer: `${cap(tradeText(pkg3))}: +${px(outcome(pkg3, 3).cash)}.`, explain: `The legs bought at their asks cost ${px(A3.ask)} + ${px(B3.ask)} + ${px(C3.ask)} = ${px(buyCost(legs3))}; the bundle bid is ${px(ABC.bid)}. If you added the bids (${px(sellValue(legs3))}) you saw a bigger gap than exists; if you tried to buy the bundle, its ask ${px(ABC.ask)} is above every way of selling the legs.` },
+    { type: 'challenge', q: `Before any teaching: board (bid / ask) ${boardText([A3, B3, C3, ABC])}. Find a flat, profitable set of trades. Two approaches, then the trades and the profit.`, answer: `${cap(tradeText(pkg3))}: +${px(outcome(pkg3, 3).cash)}.`, explain: `The legs bought at their asks cost ${px(A3.ask)} + ${px(B3.ask)} + ${px(C3.ask)} = ${px(buyCost(legs3))}; the bundle bid is ${px(ABC.bid)}. If you added the bids (${px(sellValue(legs3))}) you saw a bigger gap than exists; if you tried to buy the bundle, its ask ${px(ABC.ask)} is above every way of selling the legs.`,
+      attempts: [
+        { id: 'bids', label: 'Legs priced at their bids', approach: `Added the leg bids, ${px(sellValue(legs3))}, and saw the bundle bid ${px(ABC.bid)} clear them by ${px(ABC.bid - sellValue(legs3))}.`, breaksAt: `You buy the legs, and buying pays the ask: they cost ${px(buyCost(legs3))}, so the real gap is ${px(edgeSell(ABC, legs3))}.` },
+        { id: 'buyit', label: 'Buy the bundle instead', approach: `Bought A + B + C at ${px(ABC.ask)} and sold the three legs.`, breaksAt: `The legs sell for only ${px(sellValue(legs3))}: that direction loses ${px(-edgeBuy(ABC, legs3))}.` },
+        { id: 'someLegs', label: 'Buy only some of the legs', approach: 'Sold A + B + C, then bought A and B.', breaksAt: 'The bundle holds three legs, so you end short one C: not flat, nothing locked in.' },
+      ] },
     { type: 'text', text: 'The cue: a **bundle card** (A + B, A + B + C) and **every one of its legs quoted alone**, with no weights and no minus signs. The question is one comparison: is the bundle\'s **bid** above what the legs cost at their **asks**?' },
     { type: 'list', items: [`"${boardText([A2, B2, AB2])}"`, `"${boardText([A3, B3, C3, ABC])}"`, 'Boards with an extra product (C) that appears in no bundle: a distractor'] },
     { type: 'check', scope: 'spotting a rich bundle', questions: [{ make: richQuoteQ }] },
@@ -122,11 +128,11 @@ export default {
     sec('derivation'),
     { type: 'text', text: 'Four moves turn the anchor into a procedure. Each move answers one question about the board, in the same order every time: what is the replica, what does it cost, does the bundle bid beat that cost, and which taps make it flat.' },
     { type: 'steps', steps: [
-      { say: 'Name the replica. One A + B + C is exactly one A, one B and one C. If you sell the bundle, you owe those three units.', why: 'The bundle is its legs; only the exact set of legs cancels it.',
+      { answers: 'someLegs', say: 'Name the replica. One A + B + C is exactly one A, one B and one C. If you sell the bundle, you owe those three units.', why: 'The bundle is its legs; only the exact set of legs cancels it.',
         checks: [mc({ q: 'You sell one A + B + C. Which purchases make you flat?', right: 'One A, one B, one C', wrong: [['One A and one B', 'C is still owed'], ['Three A', 'each product must net to 0 on its own'], ['One A, one B, one C and one more A + B + C', 'the extra bundle makes you long every leg again']], explain: 'One unit of each leg.' })] },
-      { say: 'Price the replica on the side you trade. You buy the legs, and buying pays the ask, so the replica costs the asks added.', why: 'Always price the side you will actually hit.',
+      { answers: 'bids', say: 'Price the replica on the side you trade. You buy the legs, and buying pays the ask, so the replica costs the asks added.', why: 'Always price the side you will actually hit.',
         checks: [{ make: (rng) => { const cs = singles(rng, ['A', 'B', 'C'], 10, 90); const p = cs.map((c) => part(c)); return { type: 'number', q: `A ${quote(cs[0])}, B ${quote(cs[1])}, C ${quote(cs[2])}. What does one of each cost?`, answer: buyCost(p), hints: ['Buy = ask.', `${p.map((x) => px(x.ask)).join(' + ')}.`], explain: `${p.map((x) => px(x.ask)).join(' + ')} = ${px(buyCost(p))}.` }; } }] },
-      { say: 'Compare. Selling the bundle receives its bid, so the edge is bundle bid − replica cost. Trade only if it is above 0.', why: 'That is the whole cash flow of the package: one bid in, the asks out.',
+      { answers: 'buyit', say: 'Compare. Selling the bundle receives its bid, so the edge is bundle bid − replica cost. Trade only if it is above 0. The other direction is the cheap check of the next lesson.', why: 'That is the whole cash flow of the package: one bid in, the asks out.',
         checks: [{ hinge: true, make: packageQ }] },
       { say: 'Execute: sell one bundle, buy one of every leg, then read the net row. Products that are in no bundle stay untouched.', why: 'The package is 1 + (number of legs) trades; a distractor product can only break flatness.',
         checks: [{ make: (rng) => { const n = rng.pick([2, 3]); const legs = ['A', 'B', 'C'].slice(0, n).join(' + '); return { type: 'number', q: `How many taps does the package for a rich ${legs} need (the bundle plus its legs)?`, answer: n + 1, explain: `One sale of ${legs} and ${n} leg purchases: ${n + 1}.` }; } }] },
@@ -137,13 +143,14 @@ export default {
     { type: 'text', text: 'Watch for the distractor on the first board: a product that appears in no bundle card. It has a quote and may even look cheap, but no package can include it, because nothing on the board cancels it. On the second board there are three legs, so the package has four taps.' },
     { type: 'thinkaloud', problem: `Board (bid / ask): ${boardText([A3, B3, C3, ABC])}.`, lines: [
       { t: 0, say: 'A + B + C with all three legs quoted alone, no weights, no minus signs: plain bundle check.' },
-      { t: 4, say: `Rich side first. Leg asks: ${px(A3.ask)} + ${px(B3.ask)} + ${px(C3.ask)} = ${px(buyCost(legs3))}. Bundle bid ${px(ABC.bid)}: above by ${px(edgeSell(ABC, legs3))}.` },
-      { t: 9, say: 'Positive, so that is the trade. Edge is one tick: plausible, not a sign I priced a leg at its bid.' },
-      { t: 12, say: 'Sell A + B + C, buy A, buy B, buy C. Four taps.' },
-      { t: 16, say: `Net row: A 0, B 0, C 0, cash +${px(outcome(pkg3, 3).cash)}. Submit.` },
+      { t: 3, say: `Leg bids ${px(A3.bid)} + ${px(B3.bid)} + ${px(C3.bid)} = ${px(sellValue(legs3))}, bundle bid ${px(ABC.bid)}: ${px(ABC.bid - sellValue(legs3))} of edge.`, slip: true },
+      { t: 6, say: `${px(ABC.bid - sellValue(legs3))} is several ticks: too good. I buy the legs, so they cost their asks, not their bids.` },
+      { t: 9, say: `Leg asks: ${px(A3.ask)} + ${px(B3.ask)} + ${px(C3.ask)} = ${px(buyCost(legs3))}. Bundle bid ${px(ABC.bid)}: above by ${px(edgeSell(ABC, legs3))}. One tick: plausible.` },
+      { t: 13, say: 'Sell A + B + C, buy A, buy B, buy C. Four taps.' },
+      { t: 17, say: `Net row: A 0, B 0, C 0, cash +${px(outcome(pkg3, 3).cash)}. Submit.` },
     ] },
     { type: 'check', scope: 'the same check on a fresh board', questions: [{ make: edgeQ }] },
-    { type: 'worked', section: 'ob', family: 'bundle-rich', difficulty: 2, seed: 'a', intro: 'Two legs and a distractor product. Price the replica at the asks, decide, tap the package, then open the solution.' },
+    { type: 'worked', section: 'ob', family: 'bundle-rich', difficulty: 2, seed: 'a', explainAt: [0, 1], intro: 'Two legs and a distractor product. Price the replica at the asks, decide, tap the package, then open the solution.' },
     { type: 'worked', section: 'ob', family: 'bundle-rich', difficulty: 3, seed: 'b', fade: 2, intro: 'Three legs. The pricing and the decision are given; tapping the four trades and checking the net row are yours.' },
 
     sec('predict'),
@@ -182,16 +189,32 @@ export default {
     { type: 'callout', tone: 'edge', text: 'Edge cases. A bid exactly equal to the legs\' ask earns 0: not a solution. Three legs means three spreads to beat, so a three-leg bundle needs a bigger gap on mids to be rich. A distractor product never enters the package.' },
     { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: every harder type keeps "sell the card at its bid, buy its replica at the asks". Weighted bundles repeat a leg, spreads flip a leg\'s side, chains build a missing leg from other bundles, and hidden boards use another bundle as the replica.' },
     { type: 'check', scope: 'the contrast table and edge cases', questions: [
-      { make: (rng) => { const { cs, parts } = richBoard(rng, 2); const La = buyCost(parts); const X = card('A + B', [1, 1], La, r6(La + 1)); return mc({ q: `A ${quote(cs[0])}, B ${quote(cs[1])}, A + B ${quote(X)}. Does selling A + B and buying the legs solve the board?`, right: 'No: the bid equals the legs\' ask, so the cash is exactly 0',
-        wrong: [['Yes: the bid covers the legs exactly', 'zero cash is not a profit'], ['Yes, if you add a second copy', 'two copies of zero are still zero']], explain: `${px(X.bid)} − ${px(La)} = 0.` }, rng); } },
+      { make: (rng) => { const { cs, parts } = richBoard(rng, 2); const La = buyCost(parts), e = rng.pick([0, 0, 0.5]), go = e > 0; const X = card('A + B', [1, 1], r6(La + e), r6(La + e + 1)); const yes = 'Yes: one package is enough', no = 'No: the package earns nothing';
+        return mc({ q: `A ${quote(cs[0])}, B ${quote(cs[1])}, A + B ${quote(X)}. Does selling A + B and buying the legs solve the board?`, right: go ? yes : no,
+          wrong: [[go ? no : yes, go ? `the bid is above the legs' ask by ${px(e)}` : 'the bid only equals the legs\' ask: zero cash is not a profit'], ['Only with two copies of the package', go ? `one package already earns ${px(e)}` : 'two copies of zero are still zero']],
+          explain: `${px(X.bid)} − ${px(La)} = ${px(e)}${go ? ': one package solves it.' : ': zero does not count.'}` }, rng); } },
     ] },
 
     { type: 'variation', base: `Base: ${boardText([A2, B2, AB2])}. Sell A + B, buy A and B: +${px(edgeSell(AB2, legs2))}.`, rows: [
-      { change: `The bundle ask rises by ${px(1)}`, effect: `Nothing: you sell the bundle, so only its bid counts. Profit stays ${px(edgeSell(card('A + B', [1, 1], AB2.bid, AB2.ask + 1), legs2))}.` },
-      { change: `B's bid falls by ${px(1)}`, effect: `Nothing: you buy B, so its bid never enters. Profit stays ${px(edgeSell(AB2, [part(A2), part(card('B', [0, 1], B2.bid - 1, B2.ask))]))}.` },
+      { same: true, change: `The bundle ask rises by ${px(1)}`, effect: `Nothing: you sell the bundle, so only its bid counts. Profit stays ${px(edgeSell(card('A + B', [1, 1], AB2.bid, AB2.ask + 1), legs2))}.` },
+      { same: true, change: `B's bid falls by ${px(1)}`, effect: `Nothing: you buy B, so its bid never enters. Profit stays ${px(edgeSell(AB2, [part(A2), part(card('B', [0, 1], B2.bid - 1, B2.ask))]))}.` },
       { change: `B's ask rises by ${px(edgeSell(AB2, legs2))}`, effect: `The legs now cost exactly the bundle bid: profit ${px(edgeSell(AB2, [part(A2), part(card('B', [0, 1], B2.bid, B2.ask + edgeSell(AB2, legs2)))]))}, no trade.` },
-      { change: `A product C appears, quoted ${quote(Cd)}, in no bundle`, effect: 'Nothing: C is a distractor. Leave it alone.' },
+      { same: true, change: `A product C appears, quoted ${quote(Cd)}, in no bundle`, effect: 'Nothing: C is a distractor. Leave it alone.' },
+      { fusion: true, change: `The whole A + B quote rises by ${px(1)} and A's ask rises by ${px(0.5)}`, effect: `Both enter: +${px(1)} on the bundle bid you sell at, −${px(0.5)} on the A you buy. Profit ${px(edgeSell(card('A + B', [1, 1], AB2.bid + 1, AB2.ask + 1), [part(card('A', [1, 0], A2.bid, A2.ask + 0.5)), part(B2)]))}.` },
     ] },
+    { type: 'transfer',
+      near: { make: (rng) => { const { cs, parts, bundle, e } = richBoard(rng, 3, 1); return { type: 'number', q: `Board (bid / ask): ${boardText(rng.shuffle([...cs, bundle]))}. One package locks in a profit. How much?`, answer: e,
+        hints: ['D is in no bundle. Price the three legs at their asks.', `Legs' ask ${px(buyCost(parts))}; compare with the ${bundle.name} bid.`], explain: `${px(bundle.bid)} − ${px(buyCost(parts))} = ${px(e)}; D stays untouched.` }; } },
+      far: { make: (rng) => { const c = (lo, hi) => rng.int(lo, hi), usd = (x) => (x / 100).toFixed(2);
+        const shares = ['X', 'Y', 'Z'].map((n) => { const bid = c(2000, 9000), w = c(1, 3); return { n, bid, ask: bid + w }; });
+        const asks = shares.reduce((s, x) => s + x.ask, 0), e = c(1, 5), fb = asks + e, fa = fb + c(2, 4);
+        return { type: 'number', q: `A fund F holds exactly one share each of X, Y and Z. Quotes in $ (bid / ask): ${shares.map((x) => `${x.n} ${usd(x.bid)} / ${usd(x.ask)}`).join('; ')}; F ${usd(fb)} / ${usd(fa)}. What does selling 100 units of F and buying 100 of each share lock in, in dollars?`, answer: e,
+          hints: ['Selling F receives its bid; buying the shares pays their asks.', `Shares at the asks: $${usd(asks)} per unit of F; F bid $${usd(fb)}.`],
+          explain: `Per unit: ${usd(fb)} − ${usd(asks)} = $${usd(e)}. Times 100: $${e}. The fund is a bundle and the shares are its legs.` }; } },
+      principle: mc({ q: 'Which idea carried over from the rich bundle to the fund?', right: 'Sell the package at its bid, buy its parts at their asks',
+        wrong: [['Compare the fund\'s mid with the shares\' mids', 'mids are never traded: a mid gap can vanish after the spreads'], ['A fund always trades at exactly its holdings\' value', 'nothing forces it to, and that gap is the trade'], ['Buy the fund and sell the shares whenever they differ', 'the direction comes from which side is rich: here the fund bid beats the shares\' asks']],
+        explain: 'The fund is a bundle: its bid above its holdings bought at their asks is a rich bundle, traded the same way.' }),
+    },
 
     sec('tryit'),
     { type: 'tryit', section: 'ob', family: 'bundle-rich', count: 3 },

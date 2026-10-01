@@ -17,6 +17,18 @@ const NS = [10, 20, 50, 100];
 const CH = [['(a) the 10-birth hospital records more than 60% boys', morePct(10, 0.6)], ['(b) the 50-birth hospital records more than 60% boys', morePct(50, 0.6)], ['(c) exactly 50% boys among 30 births', half(30)]].sort((a, b) => b[1] - a[1]);
 const npdf = (m, s) => Array.from({ length: 201 }, (_, i) => { const x = i / 200; return [x, Number((Math.exp(-((x - m) ** 2) / (2 * s * s)) / (s * Math.sqrt(2 * Math.PI))).toFixed(4))]; });
 
+// Think-aloud: at least 60% in 10 flips, at least 60% in 40 flips, exactly half in 10 flips.
+const TA = { a: atLeastPct(10, 0.6), b: atLeastPct(40, 0.6), c: half(10), est: Math.sqrt(2 / (10 * Math.PI)) };
+// Variation: a band for (b); exactly half of 300 for (c); the small hospital at 40 births with a 55% line.
+const V = { band: within(50, 0.1), half300: half(300), fus: morePct(40, 0.55), z10: 0.1 / sd(10), z40: 0.05 / sd(40) };
+if (!(TA.a > TA.c && TA.c > TA.b && TA.est < TA.a && V.band > morePct(10, 0.6) && V.half300 < morePct(50, 0.6) && Math.abs(V.z10 - V.z40) < 1e-9 && V.fus > half(30))) throw new Error('large-numbers: prose orders no longer hold');
+
+// Transfer: near = traders with few or many trades; far = the sd of an average P&L.
+const nearT = (rng) => again(() => { const a = rng.pick([10, 20]), b = rng.pick([50, 80, 100]);
+  return rank(rng, 'Each trade wins with probability 1/2, independently. Rank from most to least likely.', [[`A trader making ${a} trades today wins more than 60% of them.`, morePct(a, 0.6)], [`A trader making ${b} trades today wins more than 60% of them.`, morePct(b, 0.6)], [`A trader making ${a} trades today wins exactly half of them.`, half(a)]], `sd of the win rate: ${dp(sd(a), 2)} for ${a} trades, ${dp(sd(b), 2)} for ${b}. Exactly half of ${a}: ${dp(half(a))}.`, { gap: 0.02 }); });
+const farT = (rng) => { const n = rng.pick([4, 16, 25, 64, 100]), s0 = rng.pick([1000, 2000, 5000]);
+  return { type: 'number', q: `A desk's daily P&L has sd €${s0}, independently from day to day. What is the sd of its average daily P&L over ${n} days, in euros?`, answer: s0 / Math.sqrt(n), tolerance: 1, hints: ['An average of n independent days: sd / √n.', `√${n} = ${Math.sqrt(n)}.`], explain: `${s0}/√${n} = ${s0 / Math.sqrt(n)}.` }; };
+
 // Pool for the ranking checks.
 const POOL = {
   ge: (r) => { const n = r.pick(NS), f = r.pick([0.6, 0.7]); return [`At least ${f * 100}% heads in ${n} flips.`, atLeastPct(n, f)]; },
@@ -41,7 +53,12 @@ export default {
   ],
   blocks: [
     S('recognise'),
-    { type: 'challenge', q: 'Before any teaching: boys and girls are equally likely. Rank: (a) a hospital with 10 births today records more than 60% boys, (b) a hospital with 50 births today records more than 60% boys, (c) exactly 50% of 30 births today are boys.', answer: CH.map(([t, p]) => `${t} ≈ ${dp(p)}`).join(' > '), explain: 'Most people call (a) and (b) equal: "60% is 60%". Sample size decides it. In 10 births one extra boy moves the proportion by 10 points; in 50 births by 2. Extreme proportions are common in small samples and rare in large ones. (c) needs one exact count, which is never very likely.' },
+    { type: 'challenge', q: 'Before any teaching: boys and girls are equally likely. Rank: (a) a hospital with 10 births today records more than 60% boys, (b) a hospital with 50 births today records more than 60% boys, (c) exactly 50% of 30 births today are boys.', answer: CH.map(([t, p]) => `${t} ≈ ${dp(p)}`).join(' > '), explain: 'Most people call (a) and (b) equal: "60% is 60%". Sample size decides it. In 10 births one extra boy moves the proportion by 10 points; in 50 births by 2. Extreme proportions are common in small samples and rare in large ones. (c) needs one exact count, which is never very likely.',
+      attempts: [
+        { id: 'same', label: '60% is 60%', approach: 'You called (a) and (b) equal: the same percentage in both hospitals.', breaksAt: 'The spread of a proportion depends on n: 60% is fewer sds out for the small hospital.' },
+        { id: 'morebirths', label: 'More births, more extremes', approach: 'You put (b) above (a) because a big hospital has more births to make a lopsided day.', breaksAt: 'More births pack the proportion around 50%: the tail beyond 60% shrinks.' },
+        { id: 'lln', label: 'Exactly half is likely', approach: 'You put (c) first: by the law of large numbers, half the births should be boys.', breaksAt: 'The proportion lands near 1/2, not on it: exactly 15 of 30 is one count among many, about √(2/(πn)).' },
+      ] },
     { type: 'text', text: 'There is **no picture**: statements about the **proportion** of heads (or boys) in samples of **different sizes**: at least f% in n flips, exactly 50%, between two percentages, more than 60% boys in a small or a large hospital. The trap is to judge by the percentage alone.' },
     { type: 'text', text: 'Not this lesson: a fixed number of flips with patterns (coin strings) or a single binomial count. Here the point is comparing the same proportion across n, and the sample sizes are what the item is really about.' },
     { type: 'check', scope: 'the recognition cues above', questions: [
@@ -71,7 +88,7 @@ export default {
     { type: 'text', text: 'Three statements across four sample sizes: extremes fall, bands rise, exact balance falls. Read each group of bars left to right and say which way it moves before reading the numbers.' },
     { type: 'diagram', diagram: 'bar', spec: { title: 'Fair coin, n flips', xLabel: 'n', yLabel: 'probability', categories: NS.map(String), series: [{ name: 'at least 60% heads', values: NS.map((n) => Number(atLeastPct(n, 0.6).toFixed(3))) }, { name: 'exactly 50%', values: NS.map((n) => Number(half(n).toFixed(3))) }, { name: '40% to 60%', values: NS.map((n) => Number(within(n, 0.1).toFixed(3))) }] }, caption: `At least 60%: ${NS.map((n) => dp(atLeastPct(n, 0.6))).join(', ')}. Exactly 50%: ${NS.map((n) => dp(half(n))).join(', ')}. Between 40% and 60%: ${NS.map((n) => dp(within(n, 0.1))).join(', ')}.` },
     { type: 'check', scope: 'which way each statement moves with n', questions: [
-      mc(null, 'As n grows from 10 to 100, which statement becomes more likely?', 'between 40% and 60% heads', [['exactly 50% heads', 'exact balance gets rarer: more counts share the probability'], ['at least 60% heads', 'extremes fade as the spread shrinks'], ['none of them', 'the band around 1/2 fills up']], 'The band holds more and more sds of the distribution.', { at: 0 }),
+      mc(null, 'As n grows from 10 to 100, which statement becomes more likely?', '40% to 60% heads', [['exactly 50% heads', 'exact balance gets rarer: more counts share the probability'], ['at least 60% heads', 'extremes fade as the spread shrinks'], ['none of the three', 'the band around 1/2 fills up']], 'The band holds more and more sds of the distribution.', { at: 0 }),
     ] },
 
     S('derivation'),
@@ -79,17 +96,17 @@ export default {
     { type: 'steps', steps: [
       { say: 'Head count: mean n/2, sd √n/2. Proportion = count/n: mean 1/2, sd 0.5/√n.', why: 'Dividing a random quantity by n divides its sd by n; √n/2 over n is 0.5/√n.',
         checks: [{ make: (rng) => { const n = rng.pick([16, 36, 64, 100]); return { type: 'number', q: `n = ${n}. sd of the head count? (2 decimals)`, answer: Math.sqrt(n) / 2, tolerance: 0.006, hints: ['√n / 2.'], explain: `√${n}/2 = ${dp(Math.sqrt(n) / 2, 2)}.` }; } }] },
-      { say: 'A threshold proportion f sits z = |f − 1/2| / (0.5/√n) = 2|f − 1/2|√n sds from the centre. Same f, bigger n → bigger z.', why: 'The distance to the threshold is fixed while the spread shrinks like 1/√n.',
+      { answers: 'same', say: 'A threshold proportion f sits z = |f − 1/2| / (0.5/√n) = 2|f − 1/2|√n sds from the centre. Same f, bigger n → bigger z.', why: 'The distance to the threshold is fixed while the spread shrinks like 1/√n.',
         checks: [{ make: (rng) => { const f = rng.pick([0.6, 0.7]); return mc(rng, `At least ${f * 100}% heads: which n puts the threshold furthest out in sds?`, 'n = 100', [['n = 10', 'reversed: small n means a wide spread, so the threshold is close'], ['n = 25', 'in between: z grows with √n'], ['all the same', 'judged by the percentage alone']], `z = 2 × ${dp(f - 0.5, 1)} × √n grows with n.`); } }] },
-      { say: 'The further out the threshold, the smaller its tail: P(at least f%) falls with n for any f above 1/2. Small samples produce extreme proportions.', why: `Tail probabilities shrink quickly with z (about ${T1} at z = 1, ${T2} at z = 2).`,
+      { answers: 'morebirths', say: 'The further out the threshold, the smaller its tail: P(at least f%) falls with n for any f above 1/2. Small samples produce extreme proportions.', why: `Tail probabilities shrink quickly with z (about ${T1} at z = 1, ${T2} at z = 2).`,
         checks: [{ hinge: true, make: (rng) => { const [a, b] = rng.pick([[10, 45], [15, 60], [10, 60], [20, 45]]); return mc(rng, `Which hospital has more days with more than 60% boys: one with ${a} births a day or one with ${b}?`, `the ${a}-birth hospital`, [[`the ${b}-birth hospital`, 'thought more births means more chances of an extreme day; the proportion concentrates instead'], ['about the same', 'judged by the percentage alone: the hospital-problem belief']], `${dp(morePct(a, 0.6))} against ${dp(morePct(b, 0.6))}.`); } }] },
-      { say: 'Exactly 1/2 gets rarer (≈ √(2/(πn))) while a band around 1/2 gets likelier: the probability spreads over more counts, but those counts crowd into the band.', why: 'The single central count has probability about 1/(sd of the count × √(2π)), and that sd grows like √n.',
+      { answers: 'lln', say: 'Exactly 1/2 gets rarer (≈ √(2/(πn))) while a band around 1/2 gets likelier: the probability spreads over more counts, but those counts crowd into the band.', why: 'The single central count has probability about 1/(sd of the count × √(2π)), and that sd grows like √n.',
         checks: [{ make: (rng) => { const n = rng.pick([10, 20, 50, 100]); return { type: 'number', q: `Estimate P(exactly 50% heads in ${n} flips) with √(2/(πn)). (3 decimals)`, answer: half(n), tolerance: 0.01, hints: [`√(2/(π × ${n})).`], explain: `≈ ${dp(Math.sqrt(2 / (Math.PI * n)))}; exact ${dp(half(n))}.` }; } }] },
     ] },
     { type: 'explain', prompt: 'Explain why a small hospital records "more than 60% boys" on more days than a large one, although boys are equally likely in both.', model: 'The proportion of boys in a day\'s births has sd 0.5/√n. In a small hospital n is small, so the proportion swings widely and passing 60% is a short distance in sds. In a large hospital the proportion is tightly packed around 50%, so 60% is several sds away and rarely reached.', points: ['Proportion sd = 0.5/√n', 'Same threshold, smaller sd → more sds away', 'More sds away → smaller tail'] },
 
     S('worked'),
-    { type: 'worked', section: 'll', family: 'large-numbers', difficulty: 2, seed: 'a', intro: 'At least f%, exactly half, and a band, across sample sizes. Try it first.' },
+    { type: 'worked', section: 'll', family: 'large-numbers', difficulty: 2, seed: 'a', explainAt: [0, 2], intro: 'At least f%, exactly half, and a band, across sample sizes. Try it first.' },
     { type: 'worked', section: 'll', family: 'large-numbers', difficulty: 3, seed: 'b', fade: 1, intro: 'The hospital version. The binomial values are given; the ordering is yours.' },
 
     S('predict'),
@@ -110,7 +127,7 @@ export default {
       'Order: exactly 50% (100) > at least 60% (10) > at least 60% (100).',
     ], errorStep: 2, explain: `The law of large numbers pulls the proportion near 50%, not onto it. Exactly 50 heads in 100 has probability ${dp(half(100))}, below "at least 60% in 10 flips" (${dp(atLeastPct(10, 0.6))}).` },
     { type: 'check', scope: 'the named traps', questions: [
-      mc(null, 'A candidate says "exactly 50% heads" is more likely in 1000 flips than in 10 flips. Which belief?', 'The proportion converging to 1/2 means hitting 1/2 exactly', [['The sd shrinks like 1/n', 'no sd was used'], ['Larger samples give more extremes', 'the claim is about the centre, not extremes'], ['Proportions do not depend on n', 'the candidate did use n, in the wrong direction']], `Exactly half: ${dp(half(10))} for 10 flips, about ${dp(Math.sqrt(2 / (Math.PI * 1000)))} for 1000.`, { at: 0 }),
+      mc(null, 'A candidate says "exactly 50% heads" is more likely in 1000 flips than in 10 flips. Which belief?', 'The proportion converging to 1/2 means hitting 1/2 exactly', [['The sd of the proportion shrinks like 1/n, not 1/√n', 'no sd was used'], ['Larger samples give more chances of an extreme result', 'the claim is about the centre, not extremes'], ['The proportion of heads does not depend on the sample size', 'the candidate did use n, in the wrong direction']], `Exactly half: ${dp(half(10))} for 10 flips, about ${dp(Math.sqrt(2 / (Math.PI * 1000)))} for 1000.`, { at: 0 }),
     ] },
 
     S('speed'),
@@ -118,6 +135,18 @@ export default {
     { type: 'callout', tone: 'speed', text: `Direction rules settle most items without numbers: extremes fall with n, bands around 1/2 rise with n, exactly 1/2 falls with n. Budget: ${LL.exam.perItemSeconds} seconds; use numbers only when two statements move the same way.` },
     { type: 'check', scope: 'direction rules and the sd table', questions: [
       { make: (rng) => again(() => { const keys = rng.shuffle(Object.keys(POOL)).slice(0, 3); return rank(rng, 'Fair coin (or equally likely boys and girls). Rank from most to least likely.', keys.map((k) => POOL[k](rng)), 'z-distance with sd 0.5/√n for tails; √(2/(πn)) for exactly half; bands rise with n.', { gap: 0.02 }); }) },
+    ] },
+
+    { type: 'thinkaloud', problem: 'A fair coin. Rank: (a) at least 60% heads in 10 flips, (b) at least 60% heads in 40 flips, (c) exactly 50% heads in 10 flips.', lines: [
+      { t: 0, say: 'Proportions across sample sizes: write n next to each statement.' },
+      { t: 5, say: `(a) n = 10: sd ${dp(sd(10), 2)}, so 60% is ${dp(0.1 / sd(10), 1)} sd out. A fat tail, about ${dp(TA.a, 2)}.` },
+      { t: 11, say: `(b) n = 40: sd ${dp(sd(40), 2)}, so 60% is ${dp(0.1 / sd(40), 1)} sd out. Thinner: about ${dp(TA.b, 2)}.` },
+      { t: 17, say: '(c) exactly half: half is what a fair coin gives most often, so (c) goes first.', slip: true },
+      { t: 22, say: `Careful: the most likely single count, but one count among 11. √(2/(10π)) ≈ ${dp(TA.est, 2)}, below (a).` },
+      { t: 29, say: `Order (a) > (c) > (b), with ${LL.exam.perItemSeconds - 29} seconds left.` },
+    ] },
+    { type: 'check', scope: 'the think-aloud routine on fresh statements', questions: [
+      { make: (rng) => again(() => rank(rng, 'A fair coin (or equally likely boys and girls). Rank from most to least likely.', [POOL.ge(rng), POOL.half(rng), POOL[rng.pick(['hosp', 'within'])](rng)], 'Write n next to each: z = 2|f − ½|√n for tails, √(2/(πn)) for exactly half, bands rise with n.', { gap: 0.02 })) },
     ] },
 
     S('rule'),
@@ -136,6 +165,22 @@ export default {
     { type: 'check', scope: 'the contrast table and edge cases', questions: [
       { make: (rng) => { const n = rng.pick([5, 7, 9, 11]); return mc(rng, `P(at least 50% heads in ${n} flips)?`, '1/2', [['above 1/2, because it includes ties', `with ${n} (odd) flips a tie is impossible`], ['below 1/2', 'heads and tails are symmetric'], [dp(half(n + 1)), 'answered "exactly half" for the next even n']], 'Odd n: no tie, so symmetry splits the outcomes equally.'); } },
     ] },
+
+    { type: 'variation', base: `The challenge: (a) 10 births, more than 60% boys ≈ ${dp(morePct(10, 0.6))} > (c) exactly 15 of 30 ≈ ${dp(half(30))} > (b) 50 births, more than 60% boys ≈ ${dp(morePct(50, 0.6))}.`, rows: [
+      { same: true, change: 'Ask about girls instead of boys in (a) and (b)', effect: 'No change. Boys and girls are equally likely, so "more than 60% girls" mirrors "more than 60% boys".' },
+      { change: 'Change (b) to "the 50-birth hospital records between 40% and 60% boys"', effect: `A band around 1/2 in a large sample: ${dp(V.band)}. (b) jumps from last to first.` },
+      { change: 'Change (c) to exactly 50% boys among 300 births', effect: `Exact balance gets rarer with n: ${dp(V.half300)}. (c) falls to last.` },
+      { fusion: true, change: 'Grow the small hospital to 40 births, and lower its line to 55%', effect: `Four times the births halves the sd; half the distance to the line cancels it: z stays ${dp(V.z40, 2)}. Only rounding to whole births moves (a), to ${dp(V.fus)}; it stays first.` },
+    ] },
+    { type: 'transfer',
+      near: { make: nearT },
+      far: { make: farT },
+      principle: mc(null, 'Which idea carried over from births to the average P&L?', 'An average of n independent pieces has its spread shrink like 1/√n', [
+        ['The spread of an average does not depend on how many pieces it has', 'the hospital-problem belief: n decides the spread'],
+        ['An average of n pieces has its spread shrink like 1/n', 'it shrinks like 1/√n: quadruple n to halve it'],
+        ['A bigger sample makes extreme averages more likely', 'a bigger sample packs the average closer to its centre'],
+      ], 'A proportion of boys is an average of 0/1 births: sd 0.5/√n. A daily P&L average is the same with sd/√n.'),
+    },
 
     S('tryit'),
     { type: 'tryit', section: 'll', family: 'large-numbers', count: 3 },

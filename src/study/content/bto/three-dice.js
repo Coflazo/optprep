@@ -27,6 +27,9 @@ const TRIPLE = count(([a, b, c]) => a === b && b === c);
 const ODD = count(([a, b, c]) => (a * b * c) % 2 === 1);
 const maxEq = (k) => k ** 3 - (k - 1) ** 3;
 const SUMS = Array.from({ length: 16 }, (_, i) => i + 3);
+const MOVES = [-1, 0, 1].flatMap((a) => [-1, 0, 1].flatMap((b) => [-1, 0, 1].map((c) => a + b + c)));
+const BACK = MOVES.filter((m) => m === 0).length; // up/down/stay sequences of 3 steps that return to the start
+const k3 = (k) => ({ pair: 3 * k * (k - 1), diff: k * (k - 1) * (k - 2), all: k ** 3 });
 const sumGrid = (s) => {
   const hl = [];
   const text = F.map((a) => F.map((b) => { const c = s - a - b; if (c >= 1 && c <= 6) { hl.push([a - 1, b - 1]); return c; } return '·'; }));
@@ -49,7 +52,10 @@ export default {
   ],
   blocks: [
     S('recognise'),
-    { type: 'challenge', q: 'Before any teaching: you throw three fair dice. What is the probability that exactly two of them show the same face (a pair, not three of a kind)? Find two different ways.', answer: `${PAIR}/216 = ${fr(PAIR, T)}`, explain: `Direct: 3 positions for the odd die × 6 faces for the pair × 5 for the odd die = ${PAIR}. By elimination: 216 − ${ALL_DIFF} (all different) − ${TRIPLE} (triples) = ${PAIR}. If you got ${fr(T - ALL_DIFF, T)} you included three of a kind; if you got ${fr(30, T)} you forgot where the odd die sits.` },
+    { type: 'challenge', q: 'Before any teaching: you throw three fair dice. What is the probability that exactly two of them show the same face (a pair, not three of a kind)? Find two different ways.', answer: `${PAIR}/216 = ${fr(PAIR, T)}`, explain: `Direct: 3 positions for the odd die × 6 faces for the pair × 5 for the odd die = ${PAIR}. By elimination: 216 − ${ALL_DIFF} (all different) − ${TRIPLE} (triples) = ${PAIR}. If you got ${fr(T - ALL_DIFF, T)} you included three of a kind; if you got ${fr(30, T)} you forgot where the odd die sits.`, attempts: [
+      { id: 'no-position', label: 'Pair face times odd face', approach: `Counted 6 faces for the pair × 5 for the odd die = 30 of 216, so ${fr(30, T)}.`, breaksAt: 'A combination like {2, 2, 5} is three ordered triples: the odd die can be first, second or third.' },
+      { id: 'at-least-two', label: 'One minus all different', approach: `Took 1 − P(all different) = ${fr(T - ALL_DIFF, T)}.`, breaksAt: 'That is "at least two equal", which also contains the three-of-a-kind triples.' },
+    ] },
     { type: 'text', text: 'Three fair dice are thrown at once (or one die three times, which is the same thing). The question asks about the **shape** of the result (all different, a pair, three of a kind), the **sum**, the **highest face**, or a property such as an even product.' },
     { type: 'list', items: ['"Three dice are rolled. What is the probability that the total is 10?"', '"Three dice: what is the chance that exactly two match?"', '"Three dice: probability the highest number shown is 5?"', '"Three dice are rolled and the faces multiplied. Probability the product is even?"'] },
     { type: 'text', text: 'Not this lesson: two dice (bto/two-dice-sum, bto/dice-order-stats) and long runs of throws where only agreement matters (bto/die-repeats). Three dice is where the counting first gets big enough that shortcuts matter.' },
@@ -90,15 +96,15 @@ export default {
 
     S('derivation'),
     { type: 'steps', steps: [
-      { say: 'Use ordered triples as the outcomes: 216 of them, each 1/216.', why: 'The dice are distinct objects. The 56 unordered combinations are not equally likely: {1,2,3} happens in 6 orders, {1,1,2} in 3, {1,1,1} in 1.',
+      { answers: 'no-position', say: 'Use ordered triples as the outcomes: 216 of them, each 1/216.', why: 'The dice are distinct objects. The 56 unordered combinations are not equally likely: {1,2,3} happens in 6 orders, {1,1,2} in 3, {1,1,1} in 1.',
         checks: [
-          { type: 'choice', q: 'Why is dividing by 56 (unordered combinations) wrong?', options: ['Combinations happen in different numbers of orders', 'There are really 64 combinations', 'Dice are indistinguishable'], answer: 0, traps: { 1: 'there are 56; the problem is that they are not equally likely', 2: 'dice are physically distinct, which is why order counts' }, explain: `{1,2,3} is 6 ordered triples; {2,2,2} is 1. Dividing by 56 treats them as equally likely.` },
+          { type: 'choice', q: 'Why is dividing by 56 (unordered combinations) wrong?', options: ['Combinations happen in different numbers of orders', 'There are 64 combinations, so 56 undercounts them', 'Sums, not combinations, are the equally likely outcomes'], answer: 0, traps: { 1: 'there are 56; the problem is that they are not equally likely', 2: `sums are even less equal: sum 3 has 1 triple, sum 10 has ${ways3(10)}` }, explain: `{1,2,3} is 6 ordered triples; {2,2,2} is 1. Dividing by 56 treats them as equally likely.` },
         ] },
       { say: 'All different: walk the dice, 6 × 5 × 4 = 120. Three of a kind: 6 (one per face).', why: 'The same allowed-face walk as repeated throws: each new die avoids every used face.',
         checks: [
           { type: 'choice', q: 'Three dice. P(all three different)?', options: [fr(ALL_DIFF, T), fr(25, 36), fr(35, 36), fr(20, T)], answer: 0, traps: { 1: 'only kept neighbouring dice apart (5/6 × 5/6)', 2: 'took the complement of "all the same"', 3: 'counted sets of three faces, C(6,3), without their 6 orders' }, explain: `${ALL_DIFF}/216 = ${fr(ALL_DIFF, T)}.` },
         ] },
-      { say: 'Exactly a pair: 216 − 120 − 6 = 90. Directly: choose the odd die\'s position (3) × the pair face (6) × a different odd face (5) = 90.', why: 'Every triple has exactly one shape, so the counts add to 216. The direct count confirms it; forgetting the 3 positions is the classic slip.',
+      { answers: 'at-least-two', say: 'Exactly a pair: 216 − 120 − 6 = 90. Directly: choose the odd die\'s position (3) × the pair face (6) × a different odd face (5) = 90.', why: 'Every triple has exactly one shape, so the counts add to 216. The direct count confirms it; forgetting the 3 positions is the classic slip.',
         checks: [
           { make: (rng) => mc(rng, 'Three dice. P(exactly two show the same face)?', fr(PAIR, T), [[fr(PAIR + TRIPLE, T), 'included three of a kind ("at least two")'], [fr(30, T), 'forgot to choose which die is the odd one'], [fr(15, T), 'required the pair to be one named face'], ['1/2', 'added 1/6 for each of the three pairs of dice']], `${PAIR}/216 = ${fr(PAIR, T)}.`) },
         ] },
@@ -118,8 +124,16 @@ export default {
     { type: 'explain', prompt: 'In your own words: why does the direct count for "exactly a pair" need the factor 3, and how can you check the answer without it?', model: `A pair and an odd die can be arranged with the odd die first, second or third, and these are different ordered triples, so there are 3 × 6 × 5 = ${PAIR}. The check is the split: all 216 triples are all different (${ALL_DIFF}), a pair, or a triple (${TRIPLE}), so pairs are what is left.`, points: ['ordered triples: the odd die\'s position matters', '3 positions × 6 pair faces × 5 odd faces', 'check: 216 − 120 − 6'] },
 
     S('worked'),
-    { type: 'worked', family: 'three-dice', section: 'bto', difficulty: 2, seed: 'f', intro: 'A shape question on three dice. Try it before opening the solution.' },
+    { type: 'worked', family: 'three-dice', section: 'bto', difficulty: 2, seed: 'f', explainAt: [0], intro: 'A shape question on three dice. Try it before opening the solution.' },
     { type: 'worked', family: 'three-dice', section: 'bto', difficulty: 3, seed: 'd', fade: 1, intro: 'A sum on three dice. The first steps are given; the last one and the answer are yours.' },
+
+    { type: 'thinkaloud', problem: 'Three fair dice are thrown. What is the probability that the sum is 16?', lines: [
+      { t: 0, say: `Three dice, a sum near the top: 216 ordered triples, and I mirror. 16 pairs with 21 − 16 = ${21 - 16}.` },
+      { t: 4, say: `Sum ${21 - 16} as faces: {1,1,3} and {1,2,2}. That is ${multisets(5)} outcomes, so ${multisets(5)}/216?`, slip: true },
+      { t: 8, say: `Wait, those are combinations. Each pair shape stands for 3 ordered triples: ${multisets(5)} × 3 = ${ways3(5)}.` },
+      { t: 12, say: `Cross-check with the triangular list for sums 3 to 8: ${SUMS.slice(0, 3).map(ways3).join(', ')}, so sum 5 has ${ways3(5)}. Same.` },
+      { t: 16, say: `P = ${ways3(16)}/216 = ${fr(ways3(16), T)} ≈ ${(ways3(16) / T).toFixed(3)}. Tiny, as an extreme sum should be. Answer ${fr(ways3(16), T)}.` },
+    ] },
 
     S('predict'),
     { type: 'predict', question: 'Without computing: three dice. Is P(all three different) above or below 1/2? And is a sum of 10 more or less likely than a sum of 9?', answer: `Above: ${fr(ALL_DIFF, T)} ≈ ${Math.round(ALL_DIFF / T * 1000) / 1000}. And 10 beats 9, ${ways3(10)} triples against ${ways3(9)}.`, explain: `Both sums have six unordered partitions, but 9 includes (3,3,3), which has only one order.` },
@@ -137,7 +151,7 @@ export default {
       'P = 2/216 = 1/108.',
     ], errorStep: 2, explain: `{1,1,3} is three ordered triples ((1,1,3), (1,3,1), (3,1,1)), and so is {1,2,2}. The count is ${ways3(5)} (matching ${multisets(5)} combinations × 3 orders), so P = ${fr(ways3(5), T)}. The error mixed unordered combinations with an ordered total.` },
     { type: 'check', scope: 'the named traps', questions: [
-      { type: 'choice', q: `A candidate answers P(sum = 10) = ${multisets(10)}/56. Which belief produced it?`, options: ['Unordered combinations as equally likely outcomes', 'Equally likely sums', 'Forgetting the third die'], answer: 0, explain: `${multisets(10)} combinations of 56, but they carry different numbers of orders. Correct: ${ways3(10)}/216 = ${fr(ways3(10), T)}.` },
+      { type: 'choice', q: `A candidate answers P(sum = 10) = ${multisets(10)}/56. Which belief produced it?`, options: ['Unordered combinations are equally likely', 'All 16 possible sums are equally likely', 'The third die was left out of the count'], answer: 0, explain: `${multisets(10)} combinations of 56, but they carry different numbers of orders. Correct: ${ways3(10)}/216 = ${fr(ways3(10), T)}.` },
       { type: 'choice', q: `Another answers P(exactly a pair) = ${fr(PAIR + TRIPLE, T)}. Which belief?`, options: ['Counting triples as pairs', 'Forgetting the odd die\'s position', 'Using two dice'], answer: 0, explain: `${fr(PAIR + TRIPLE, T)} = 1 − ${fr(ALL_DIFF, T)} includes the ${TRIPLE} triples.` },
     ] },
 
@@ -167,6 +181,19 @@ export default {
       { type: 'choice', q: 'Three dice. Which is more likely?', options: ['sum = 10', 'sum = 9', 'They are equally likely'], answer: 0, traps: { 1: '9 includes (3,3,3), a combination with a single order', 2: 'both have six combinations, but combinations carry different numbers of orders' }, explain: `${ways3(10)} against ${ways3(9)} ordered triples.` },
       { type: 'number', q: 'Three dice. How many ordered triples does the combination {2, 2, 5} stand for?', answer: 3, explain: '(2,2,5), (2,5,2), (5,2,2): a pair shape has 3 orders.' },
     ] },
+
+    { type: 'variation', base: `Three dice. P(sum = 10) = ${ways3(10)}/216 = ${fr(ways3(10), T)}.`, rows: [
+      { change: 'Ask for sum 11 instead', effect: `No change: ${ways3(11)} triples. 10 and 11 mirror each other (21 − 10 = 11), the twin peaks of the bell.`, same: true },
+      { change: 'Throw one die three times instead of three dice at once', effect: 'No change. Three throws are three ordered positions, exactly like three labelled dice.', same: true },
+      { change: 'Ask for sum 9', effect: `Drops to ${ways3(9)}: nine and ten both have six combinations, but (3,3,3) has one order where a mixed combination has 3 or 6.` },
+      { change: 'Ask for "sum at least 11"', effect: `Sums 11 to 18 mirror sums 3 to 10, so exactly half: ${SUMS.filter((x) => x >= 11).reduce((a, x) => a + ways3(x), 0)}/216 = ${fr(SUMS.filter((x) => x >= 11).reduce((a, x) => a + ways3(x), 0), T)}.` },
+      { change: 'Two dice and sum 11, both at once', effect: `The mirror moves with the number of dice: two dice mirror about 7 (s ↔ 14 − s), so 11 pairs with 3, giving ${F.flatMap((a) => F.map((b) => a + b)).filter((x) => x === 11).length}/36. Dropping a die changes the grid and the mirror together.`, fusion: true },
+    ] },
+    { type: 'transfer',
+      near: { make: (rng) => { const k = rng.pick([4, 8, 10]); const c = k3(k); return mc(rng, `Three fair ${k}-sided dice (faces 1 to ${k}) are thrown. P(exactly two show the same face)?`, fr(c.pair, c.all), [[fr(c.all - c.diff, c.all), 'included three of a kind ("at least two")'], [fr(k * (k - 1), c.all), 'forgot to choose which die is the odd one'], [fr(3, k), 'added 1/k for each of the three pairs of dice']], `3 positions × ${k} pair faces × ${k - 1} odd faces = ${c.pair} of ${c.all}: ${fr(c.pair, c.all)}.`); } },
+      far: { type: 'choice', q: 'Each second a quote moves up one tick, down one tick or stays, each with probability 1/3, independently. After 3 seconds, P(the quote is back where it started)?', options: [fr(BACK, 27), fr(2, 27), fr(2, 10), fr(BACK - 1, 27)], answer: 0, traps: { 1: 'counted the combinations {up, down, stay} and {stay, stay, stay} as one sequence each', 2: 'took 2 of the 10 unordered combinations as equally likely', 3: 'forgot stay, stay, stay' }, explain: `27 ordered sequences. {up, down, stay} has 6 orders, {stay, stay, stay} has 1: ${BACK} of 27.` },
+      principle: { type: 'choice', q: 'Which idea carried over from dice to the moving quote?', options: ['Weight each combination by its number of orders', 'Each combination of results is one equal outcome', 'Every total (sum or end point) is equally likely', 'Count only the combinations with all results different'], answer: 0, traps: { 1: 'combinations are not equally likely: 6 orders against 1', 2: 'totals are made by different numbers of sequences', 3: 'pairs and triples of equal results count too, with fewer orders' }, explain: 'Ordered sequences are the equally likely atoms; a combination is worth as many atoms as it has orders (6, 3 or 1).' },
+    },
 
     S('tryit'),
     { type: 'tryit', family: 'three-dice', section: 'bto', count: 3 },

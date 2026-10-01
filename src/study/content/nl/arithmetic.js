@@ -1,5 +1,5 @@
 // NumberLogic family lesson: constant difference. Every number shown is computed here.
-import { S, neg, sgn, seq, diffs, ladderRows, nz, nextQ, pick, num, arith, geo, quad, weave } from './method-ladder.js';
+import { S, neg, sgn, seq, diffs, ladderRows, nz, nextQ, pick, fair, num, arith, geo, quad, weave } from './method-ladder.js';
 
 const CHd = -7, CH = arith(41, CHd, 6);
 const UP = arith(12, 9, 6);
@@ -9,9 +9,11 @@ const ERR = arith(62, -7, 6);
 const MISS = arith(5, 4, 5);
 const DEC = arith(0.5, 0.75, 5);
 const T1 = geo(3, 2, 5), T2 = quad(2, 3, 2, 5), T3 = weave(arith(4, 3, 3), arith(30, -4, 3), 6);
+const TAd = -6, TA = arith(38, TAd, 6), TAw = TA[4] - TAd;
+const dU = UP[1] - UP[0], UP5 = UP.slice(0, 5);
 
 // Sequences of the four types the contrast table names.
-const KINDS = ['constant gap', 'constant ratio', 'gaps change by a constant', 'two strands'];
+const KINDS = ['the gap between neighbours', 'the ratio between neighbours', 'the change in the gap', 'each strand on its own'];
 const KIND_TRAP = [
   [null, 'the ratios drift; it is the gaps that stay equal', 'the gaps do not change at all', 'the gaps never zigzag'],
   ['the gaps grow with the terms', null, 'the gaps grow by a factor, not by a fixed amount', 'every step is the same multiplication'],
@@ -41,12 +43,16 @@ export default {
   ],
   blocks: [
     S('recognise'),
-    { type: 'challenge', q: `Before any teaching: ${seq(CH.slice(0, 5))}, ? What comes next? Try two ways: one using the gaps, one using the position of each term.`, answer: String(CH[5]), explain: `The gaps are all ${neg(CH[1] - CH[0])}, so ${CH[4]} ${sgn(CH[1] - CH[0])} = ${CH[5]}. By position: term n = ${CH[0]} − ${-CHd} × (n − 1), so term 6 = ${CH[0]} − ${-CHd} × 5 = ${CH[5]}. If you wrote ${CH[4] - CHd}, you subtracted the wrong way round: this lesson names that slip.` },
+    { type: 'challenge', q: `Before any teaching: ${seq(CH.slice(0, 5))}, ? What comes next? Try two ways: one using the gaps, one using the position of each term.`, answer: String(CH[5]), explain: `The gaps are all ${neg(CH[1] - CH[0])}, so ${CH[4]} ${sgn(CH[1] - CH[0])} = ${CH[5]}. By position: term n = ${CH[0]} − ${-CHd} × (n − 1), so term 6 = ${CH[0]} − ${-CHd} × 5 = ${CH[5]}. If you wrote ${CH[4] - CHd}, you subtracted the wrong way round: this lesson names that slip.`,
+      attempts: [
+        { id: 'backwards', label: 'Earlier minus later', approach: `Took ${CH[0]} − ${CH[1]} = ${-CHd} as the gap and added it: ${CH[4]} + ${-CHd} = ${CH[4] - CHd}.`, breaksAt: `The terms fall, so the step is ${neg(CHd)}. ${CH[4] - CHd} is already in the list: the answer walked backwards.` },
+        { id: 'first-gap', label: 'Trust the first gap', approach: `Found ${neg(CH[1] - CH[0])} from the first pair and applied it at once, without looking at the other gaps.`, breaksAt: 'It holds here by luck. A list can open with equal gaps and then bend, and one unequal gap means a different rule.' },
+      ] },
     { type: 'text', text: 'The terms move by the **same amount every step**: up or down, starting anywhere, including below zero. The item asks for the next term, or hides one term in the middle and asks what replaces the question mark.' },
     { type: 'list', items: [`What number comes next?  ${seq(UP.slice(0, 5))}, ?`, `What number comes next?  ${seq(DOWN.slice(0, 5))}, ?`, `Which number replaces the question mark?  ${seq(MISS.slice(0, 2))}, ?, ${seq(MISS.slice(3))}`] },
     { type: 'text', text: `Not this lesson: gaps that change (${seq(T2)}) or terms that multiply (${seq(T1)}). Those fail the first test, and the method ladder sends you to the next rung.` },
     { type: 'check', scope: 'the cue: equal gaps', questions: [
-      { make: (rng) => { const A = kindSeq(rng, 0), G = kindSeq(rng, 1), Qd = kindSeq(rng, 2); return pick(rng, 'Which sequence belongs to this lesson?', seq(A), [[seq(G), `its gaps ${seq(diffs(G))} grow`], [seq(Qd), `its gaps ${seq(diffs(Qd))} change by a fixed amount`]], `Only ${seq(A)} has equal gaps: ${seq(diffs(A))}.`); } },
+      { make: fair((rng) => { const A = kindSeq(rng, 0), G = kindSeq(rng, 1), Qd = kindSeq(rng, 2); return pick(rng, 'Which sequence belongs to this lesson?', seq(A), [[seq(G), `its gaps ${seq(diffs(G))} grow`], [seq(Qd), `its gaps ${seq(diffs(Qd))} change by a fixed amount`]], `Only ${seq(A)} has equal gaps: ${seq(diffs(A))}.`); }) },
     ] },
     { type: 'text', text: 'The wrong options are built from real slips: the step applied backwards, a gap misread by one, the term after the next one, and rules that fit only the last few terms (repeating the last ratio, adding the last two terms). Each one is tempting for a reason, and each has a quick test that kills it.' },
     { type: 'check', scope: 'where the wrong options come from', questions: [
@@ -72,11 +78,11 @@ export default {
 
     S('derivation'),
     { type: 'steps', steps: [
-      { say: 'Subtract each term from the next one: term 2 − term 1, term 3 − term 2, and so on. Always later minus earlier.', why: 'Later minus earlier keeps the sign: a falling sequence gives negative gaps, which tells you to go down. Subtracting the other way round flips every step.',
+      { answers: 'backwards', say: 'Subtract each term from the next one: term 2 − term 1, term 3 − term 2, and so on. Always later minus earlier.', why: 'Later minus earlier keeps the sign: a falling sequence gives negative gaps, which tells you to go down. Subtracting the other way round flips every step.',
         checks: [
           { make: (rng) => { const d = -rng.int(3, 12), xs = arith(rng.int(40, 90), d, 5); return pick(rng, `What is the gap of ${seq(xs)}?`, d, [[-d, 'subtracted earlier minus later; the terms fall, so the gap is negative'], [d - 1, `misread one subtraction: ${xs[0]} − ${xs[1]} is ${-d}`], [d + 1, `misread one subtraction: ${xs[0]} − ${xs[1]} is ${-d}`]], `${xs[1]} − ${xs[0]} = ${neg(d)}: the terms fall by ${-d} each step.`); } },
         ] },
-      { say: 'Check every gap, not just the first two. If all of them equal d, the rule is "add d".', why: 'A sequence can start with two equal gaps and then change. One unequal gap means this is a different family, and the method ladder takes over.',
+      { answers: 'first-gap', say: 'Check every gap, not just the first two. If all of them equal d, the rule is "add d".', why: 'A sequence can start with two equal gaps and then change. One unequal gap means this is a different family, and the method ladder takes over.',
         checks: [
           { make: (rng) => { const d = rng.int(2, 9), xs = arith(rng.int(1, 30), d, 5), bend = rng.chance(0.5); if (bend) xs[4] += rng.pick([1, 2, -1]); const g = diffs(xs); return pick(rng, `Is ${seq(xs)} a constant-gap sequence?`, bend ? 'No' : 'Yes', [[bend ? 'Yes' : 'No', bend ? `the first gaps agree but the last is ${g[3]}: check every gap` : 'every gap is equal; recheck the subtractions']], `Gaps: ${seq(g)}.`); } },
         ] },
@@ -94,7 +100,7 @@ export default {
     { type: 'explain', prompt: 'Why must you subtract later minus earlier, and why check every gap rather than the first two?', model: 'Later minus earlier gives the step with its sign, so adding it moves in the right direction; the reverse order flips every step. Two equal gaps can be a coincidence at the start of a different rule, so only a fully flat gap row proves "add d".', points: ['Later − earlier keeps the sign of the step', 'Adding a negative gap moves down', 'One unequal gap anywhere means a different rule'] },
 
     S('worked'),
-    { type: 'worked', family: 'arithmetic', section: 'nl', difficulty: 1, seed: 'a', intro: 'A live item from the generator. Find the gap, then the answer, before opening the solution.' },
+    { type: 'worked', family: 'arithmetic', section: 'nl', difficulty: 1, seed: 'a', explainAt: [0], intro: 'A live item from the generator. Find the gap, then the answer, before opening the solution.' },
     { type: 'worked', family: 'arithmetic', section: 'nl', difficulty: 1, seed: 'b', fade: 1, intro: 'The gaps are given; the final step and the answer are yours.' },
 
     S('predict'),
@@ -118,6 +124,16 @@ export default {
 
     S('speed'),
     { type: 'callout', tone: 'speed', text: `Subtract by counting up from the smaller number (from 38 up to 45 is ${45 - 38}), and treat negatives as positions on a number line (from −3 to 5 is ${5 - -3} steps right). Then eyeball the other pairs: once you know d, equal spacing is easy to confirm. Target: under 15 seconds.` },
+    { type: 'thinkaloud', problem: nextQ(TA.slice(0, 5)), lines: [
+      { t: 0, say: 'Five terms, falling steadily. First rung: subtract neighbours.' },
+      { t: 3, say: `${TA[0]} and ${TA[1]} are ${-TAd} apart, so the gap is +${-TAd}: ${TA[4]} + ${-TAd} = ${TAw}.`, slip: true },
+      { t: 5, say: `Wait: ${TAw} is already in the list, so I walked backwards. Later minus earlier: ${TA[1]} − ${TA[0]} = ${neg(TAd)}.` },
+      { t: 8, say: `The other pairs give ${seq(diffs(TA.slice(0, 5)))}: a flat row, so the rule is add ${neg(TAd)}.` },
+      { t: 11, say: `${TA[4]} − ${-TAd} = ${TA[5]}. Still falling by ${-TAd} and not in the list. Answer ${TA[5]}.` },
+    ] },
+    { type: 'check', scope: 'the think-aloud: sign first, then the in-the-list check', questions: [
+      { make: (rng) => { const d = -rng.int(3, 14), xs = arith(rng.int(30, 90), d, 6); return num(`${nextQ(xs.slice(0, 5))} Aim for under 15 seconds.`, xs[5], `Later minus earlier: ${neg(xs[1])} − ${neg(xs[0])} = ${neg(d)}. Next ${neg(xs[4])} − ${-d} = ${neg(xs[5])}, which is not already in the list.`, ['Later minus earlier gives the gap with its sign.', `If your answer is already in the list (like ${neg(xs[3])}), you went the wrong way.`]); } },
+    ] },
     { type: 'callout', tone: 'speed', text: 'Jump ahead without listing: **term n = first + (n − 1) × d**. It checks an answer in one line, and it fills a blank that sits far from the terms you trust.' },
     { type: 'check', scope: 'term n = first + (n − 1) × d', questions: [
       { make: (rng) => { const a = rng.int(-10, 30), d = nz(rng, -9, 9), n = rng.int(8, 15); return num(`A constant-gap sequence starts at ${neg(a)} with gap ${sgn(d)}. What is term ${n}?`, a + (n - 1) * d, `${neg(a)} + (${n} − 1) × ${d < 0 ? `(${neg(d)})` : d} = ${neg(a + (n - 1) * d)}.`, [`Term ${n} is ${n - 1} steps after term 1.`, `${neg(a)} + ${n - 1} × ${neg(d)}.`]); } },
@@ -137,8 +153,25 @@ export default {
     { type: 'check', scope: 'the contrast table', questions: [
       { make: (rng) => { const t = rng.int(0, 3), xs = kindSeq(rng, t); return pick(rng, `${seq(xs)}: what stays fixed?`, KINDS[t], KINDS.map((k, i) => [k, KIND_TRAP[t][i]]).filter((_, i) => i !== t), `Gaps: ${seq(diffs(xs))}.`); } },
     ] },
+    { type: 'variation', base: `${seq(UP5)}, ?  Gap ${sgn(dU)}, next ${UP[5]}.`, rows: [
+      { same: true, change: `Drop the first term: ${seq(UP5.slice(1))}, ?`, effect: `Still ${UP[5]}. The three gaps left still read ${sgn(dU)} and the last term has not moved: fewer terms is less evidence, not a new rule.` },
+      { change: `Add 100 to every term: ${seq(UP5.map((v) => v + 100))}, ?`, effect: `${UP[5] + 100}. The 100 cancels in every subtraction, so the gap is still ${sgn(dU)}; only the last term moved.` },
+      { change: `Reverse the list: ${seq([...UP5].reverse())}, ?`, effect: `${UP[0] - dU}. Later minus earlier now gives ${sgn(-dU)}: the direction lives in the sign of the gap.` },
+      { change: `Double every term: ${seq(UP5.map((v) => 2 * v))}, ?`, effect: `${2 * UP[5]}. Doubling every term doubles every gap, to ${sgn(2 * dU)}.` },
+      { fusion: true, change: `Double every term, then add 100: ${seq(UP5.map((v) => 2 * v + 100))}, ?`, effect: `${2 * UP[5] + 100}. The doubling reaches the gap (${sgn(2 * dU)}); the 100 cancels in each subtraction, so only the last term carries it.` },
+    ] },
     { type: 'callout', tone: 'edge', text: `Edge cases: gap 0 gives a constant sequence (7, 7, 7). Fractions and decimals follow the same rule: ${DEC.slice(0, 4).join(', ')} adds ${DEC[1] - DEC[0]}, next ${DEC[4]}. A blank between two shown terms is also their average, because both gaps around it equal d.` },
     { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: a constant gap is a straight line. Any series that grows by about the same amount each period extrapolates the same way, last value + (periods ahead) × step, which is exactly how you estimate a trend by eye.' },
+    { type: 'transfer',
+      near: { make: (rng) => { const a = rng.int(12, 30), d = rng.int(2, 6), n = rng.int(12, 25); return num(`Row 1 of a theatre has ${a} seats, and every row has ${d} more seats than the row in front of it. How many seats are in row ${n}?`, a + (n - 1) * d, `Rows are positions with a constant gap of ${d}: row ${n} = ${a} + (${n} − 1) × ${d} = ${a + (n - 1) * d}.`, ['The same number of seats is added from each row to the next.', `Row ${n} is ${n - 1} steps after row 1.`]); } },
+      far: { make: (rng) => { const p = rng.int(8, 20) * 100, s = rng.pick([20, 25, 40, 50]), m = rng.int(6, 15); return num(`At 9:00 a trader holds ${p} lots and sells ${s} lots every minute. How many lots does she hold at 9:${String(m).padStart(2, '0')}?`, p - m * s, `9:00 is minute 0, so 9:${String(m).padStart(2, '0')} is ${m} steps later: ${p} − ${m} × ${s} = ${p - m * s}.`, ['The holding changes by the same amount every minute: a constant gap of −' + s + '.', `9:00 is the start (step 0), so count ${m} steps, not ${m - 1}.`]); } },
+      principle: { type: 'choice', q: 'Which idea carried over from the number lists to the theatre and the trader?', options: [
+        'a fixed change per step: start + steps × change',
+        'a fixed factor per step: start × factor^{steps}',
+        'each value is the sum of the two values before',
+        'value at step n is n × change, with no start value',
+      ], answer: 0, traps: { 1: 'nothing here grows with its own size: seats and lots change by the same amount each step', 2: 'no step looks back two values; each step adds the same amount', 3: 'that drops the starting value: row 1 already has seats before any step is taken' }, explain: 'Seats per row and lots held are constant-gap sequences in disguise: find the step, count the steps from the start, add.' },
+    },
     { type: 'check', scope: 'the edge cases', questions: [
       { make: (rng) => { const d = nz(rng, -9, 9), xs = arith(rng.int(-20, 40), d, 3); return num(`Which number replaces the question mark?  ${neg(xs[0])}, ?, ${neg(xs[2])}`, xs[1], `Both gaps around the blank equal d, so the blank is the average: (${neg(xs[0])} + ${neg(xs[2])}) ÷ 2 = ${neg(xs[1])}.`, ['The two gaps around the blank are equal.', 'Take the average of the two neighbours.']); } },
     ] },
