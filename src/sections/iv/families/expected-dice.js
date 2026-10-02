@@ -3,6 +3,9 @@ import { ivItem, range } from '../lib.js';
 
 // Expected values over a few fair dice, computed exactly with rationals.
 const faces = (m) => range(1, m);
+// Every outcome pair with its value: the expectation is the plain average of the cells.
+const valueGrid = (m, f, caption) => ({ diagram: 'grid', spec: { rows: m, cols: m, highlight: [], cellText: faces(m).map((a) => faces(m).map((b) => String(f(a, b)))), rowTitle: 'first die', colTitle: 'second die' }, caption });
+
 const S = {
   sumN: {
     level: 1,
@@ -22,6 +25,7 @@ const S = {
       { say: `E = Σ k·P(k) over k = 1..${m}.`, why: 'Definition of expectation over the distribution just found.' },
     ],
     brute: ({ m, which }) => { let t = 0; for (const a of faces(m)) for (const b of faces(m)) t += which === 'max' ? Math.max(a, b) : Math.min(a, b); return t / (m * m); },
+    pic: ({ m, which }) => valueGrid(m, (a, b) => (which === 'max' ? Math.max(a, b) : Math.min(a, b)), `Each cell holds the ${which === 'max' ? 'larger' : 'smaller'} of the two rolls. The answer is the average of these ${m * m} numbers; the value k fills an L-shaped band of 2k − 1 cells${which === 'max' ? '' : ' counted from the far corner'}.`),
   },
   product: {
     level: 2,
@@ -41,6 +45,7 @@ const S = {
       { say: `E = Σ d·2(${m} − d)/${m * m} = (m² − 1)/(3m) = ${m * m - 1}/${3 * m}.`, why: 'The sum of d(m − d) over d = 1..m − 1 is m(m² − 1)/6.' },
     ],
     brute: ({ m }) => { let t = 0; for (const a of faces(m)) for (const b of faces(m)) t += Math.abs(a - b); return t / (m * m); },
+    pic: ({ m }) => valueGrid(m, (a, b) => Math.abs(a - b), `Each cell holds |first − second|. The answer is the average of these ${m * m} numbers: 0 on the diagonal, and each difference d on two diagonals of ${m} − d cells.`),
   },
   reroll: {
     level: 3,
@@ -75,6 +80,7 @@ const fam = {
   title: 'Expected values with dice',
   skill: 'Linearity, indicators and max/min distributions give exact expectations quickly',
   levels: [1, 2, 3],
+  picture: (params) => S[params?.scenario]?.pic?.(params) ?? null,
   generate(rng, { difficulty = 1 } = {}) {
     const keys = Object.keys(S).filter((k) => S[k].level === difficulty);
     const key = rng.pick(keys), sc = S[key], params = sc.make(rng);

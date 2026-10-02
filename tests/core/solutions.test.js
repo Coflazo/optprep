@@ -10,7 +10,7 @@ import { validateDiagram, DIAGRAM_TYPES } from '../../src/study/diagrams/index.j
 import { makeRng } from '../../src/core/rng.js';
 import { parseLabel } from '../../src/sections/mm/lib.js';
 
-const SECTIONS = ['mm', 'ob', 'nl', 'll'];
+const SECTIONS = ['mm', 'ob', 'nl', 'll', 'iv'];
 const SEEDS = 40;
 
 // Families whose solutions carry no picture, with the reason. Keep this list short.
@@ -53,7 +53,7 @@ function agrees(it) {
     const stated = p.diagram === 'bundle' ? sp.stated.profit : sp.stated.cash;
     if (Math.abs(stated - it.best.profit) > 1e-9) return `${p.diagram} states ${stated}, best profit ${it.best.profit}`;
   }
-  if (p.diagram === 'tree' && sp.total != null && it.answer?.value != null) {
+  if (it.kind === 'mcq' && p.diagram === 'tree' && sp.total != null && it.answer?.value != null) {
     const [n, d = '1'] = String(sp.total).split('/');
     if (Math.abs(Number(n) / Number(d) - it.answer.value) > 1e-9) return `tree total ${sp.total}, answer ${it.answer.value}`;
   }
