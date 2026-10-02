@@ -16,9 +16,9 @@
   --surface-3: #CFE3F4;
   --text: #0F2442;
   --text-2: #3C5B7C;
-  --text-3: #5E7EA0;
+  --text-3: #4F6F91;
   --border: #CFE3F4;
-  --border-strong: #7D98B0;
+  --border-strong: #6E8AA5;
   --accent: #011735;
   --accent-text: #FFFFFF;
   --brand: #FF3300;
@@ -109,12 +109,18 @@
 @media (forced-colors: active) {
   :root { --brand: CanvasText; --ring: Highlight; }
   .option, .btn, .panel { border: 1px solid CanvasText; }
+  .bubble { border-color: CanvasText; }
+  .bubble::after, .rail-mark.is-filled, .minutes-bar.is-met, .bar > span, .logo-mark { forced-color-adjust: none; background: CanvasText; fill: CanvasText; }
+  .option[aria-checked="true"] { outline: 2px solid Highlight; }
+  .option[aria-checked="true"] .key { forced-color-adjust: none; background: Highlight; color: HighlightText; }
 }
 @media (prefers-reduced-motion: reduce) {
   /* Fewer and gentler, not zero: colour and opacity changes stay, movement goes. */
   *, *::before, *::after { animation-iteration-count: 1 !important; scroll-behavior: auto !important; }
   .btn:active, .option:active, .choice-option:active, .grid-row:active, .next-step:active { transform: none !important; }
   ::view-transition-old(root), ::view-transition-new(root) { animation: none !important; }
+  .toast, .toast.is-leaving { transform: none !important; }
+  .bubble::after, .tabbar a .icon, .btn .icon { transition: opacity var(--dur-1) ease !important; }
 }
 
 /* Brand: wordmark and mark. The o is printed in brand orange; letters and the pencil
@@ -161,8 +167,8 @@ button, input, select { font: inherit; color: inherit; }
 
 .sheet { position: relative; min-width: 0; display: grid; grid-template-columns: var(--rail) minmax(0, 1fr); }
 .rail { position: sticky; top: 0; height: 100dvh; display: flex; flex-direction: column; justify-content: center; gap: 10px; padding-left: 6px; border-right: 1px solid var(--border); background: var(--bg); }
-.rail-mark { display: block; width: 10px; height: 4px; border-radius: 1px; background: var(--surface-3); transition: background-color var(--dur-2) ease; }
-.rail-mark.is-filled { background: var(--text); }
+.rail-mark { display: block; width: 10px; height: 4px; border-radius: 1px; background: var(--border-strong); opacity: 0.55; transition: background-color var(--dur-2) ease; }
+.rail-mark.is-filled { background: var(--text); opacity: 1; }
 .main { padding: 40px clamp(20px, 4vw, 48px) 64px; max-width: 1040px; width: 100%; }
 
 /* ---------- Type on the sheet ---------- */
@@ -189,6 +195,7 @@ html { accent-color: var(--brand-text); scrollbar-color: var(--surface-3) transp
 .field { position: relative; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px 20px 20px; margin: 0 0 16px; }
 .field-label { margin: 0 0 12px; font-size: 13px; font-weight: 600; letter-spacing: 0; color: var(--brand-text); }
 .empty { color: var(--text-2); padding: 24px; border: 1px dashed var(--border-strong); border-radius: var(--radius); background: var(--surface); }
+.visually-hidden:focus-visible + .btn { outline: 2px solid var(--ring); outline-offset: 2px; }
 .visually-hidden { position: absolute !important; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
 /* ---------- Buttons ----------
@@ -221,7 +228,7 @@ html { accent-color: var(--brand-text); scrollbar-color: var(--surface-3) transp
 .bubble.is-filled::after { opacity: 1; transform: scale(1); transition-delay: calc(var(--i, 0) * 30ms); }
 .bubbles.is-current .bubble:not(.is-filled) { border-color: var(--brand-text); background: var(--brand-bg); }
 /* Rows you are not on stay quiet so only the current row draws the eye. */
-.grid-row:not(.is-current) .bubble:not(.is-filled) { border-color: color-mix(in srgb, var(--ink) 70%, var(--surface)); }
+.grid-row:not(.is-current) .bubble { border-width: 1.25px; }
 
 /* Radio groups drawn as bubbles (settings, battery picker). Native input stays for a11y. */
 .choice { border: 0; padding: 0; margin: 0 0 12px; display: grid; gap: 8px; }
@@ -389,13 +396,13 @@ details > summary { cursor: pointer; }
 .option:active { transform: scale(0.985); }
 .option .key { flex: none; display: grid; place-items: center; width: 24px; height: 30px; border: 1.5px solid var(--ink); border-radius: 50%; font-family: var(--mono); font-size: 12px; color: var(--brand-text); transition: background-color var(--dur-1) ease, color var(--dur-1) ease, border-color var(--dur-1) ease; }
 .option .val { font-family: var(--mono); font-size: 17px; font-variant-numeric: tabular-nums; }
-.option[aria-pressed="true"] { border-color: var(--text-2); background: var(--surface-2); }
-.option[aria-pressed="true"] .key { background: var(--text); border-color: var(--text); color: var(--surface); }
+.option[aria-checked="true"] { border-color: var(--text-2); background: var(--surface-2); }
+.option[aria-checked="true"] .key { background: var(--text); border-color: var(--text); color: var(--surface); }
 .option.is-correct { border-color: var(--correct); background: var(--correct-bg); }
 .option.is-correct .key { border-color: var(--correct); color: var(--correct); }
 .option.is-wrong { border-color: var(--wrong); background: var(--wrong-bg); }
 .option.is-wrong .key { background: var(--wrong); border-color: var(--wrong); color: var(--surface); }
-@media (hover: hover) and (pointer: fine) { .option:hover { border-color: var(--border-strong); } .option:hover:not([aria-pressed="true"]) .key { background: var(--brand-bg); } }
+@media (hover: hover) and (pointer: fine) { .option:hover { border-color: var(--border-strong); } .option:hover:not([aria-checked="true"]) .key { background: var(--brand-bg); } }
 
 /* Feedback and solution */
 .feedback { padding: 12px 16px; margin: 16px 0; background: var(--surface-2); border-radius: var(--radius-sm); border: 1px solid var(--border); }
@@ -449,6 +456,9 @@ details > summary { cursor: pointer; }
 [data-grade].is-graded[data-grade="right"] { background: color-mix(in srgb, var(--correct-bg) 60%, transparent); }
 [data-grade].is-graded[data-grade="wrong"] { background: color-mix(in srgb, var(--wrong-bg) 60%, transparent); }
 
+/* ---------- Exam start ---------- */
+.exam-start h1 { margin-bottom: 12px; }
+
 /* ---------- Session summary ---------- */
 .summary-stats { display: flex; flex-wrap: wrap; gap: 8px 28px; margin: 4px 0 16px; color: var(--text-2); }
 .num.big { font-size: 24px; font-weight: 600; color: var(--text); letter-spacing: -0.01em; }
@@ -464,7 +474,7 @@ details > summary { cursor: pointer; }
 @media (max-width: 640px) { .summary-row { grid-template-columns: minmax(0, 1fr) auto; } }
 
 /* ---------- Toast ---------- */
-.toast { position: fixed; z-index: 40; left: 50%; bottom: calc(20px + env(safe-area-inset-bottom, 0px)); display: flex; align-items: center; gap: 12px; padding: 10px 12px 10px 16px; background: var(--accent); color: var(--accent-text); border-radius: var(--radius); box-shadow: var(--shadow);
+.toast { position: fixed; z-index: 40; left: 50%; bottom: calc(20px + env(safe-area-inset-bottom, 0px)); max-width: min(92vw, 28rem); display: flex; align-items: center; gap: 12px; padding: 10px 12px 10px 16px; background: var(--accent); color: var(--accent-text); border-radius: var(--radius); box-shadow: var(--shadow);
   translate: -50% 0; transition: opacity 400ms ease, transform 400ms ease; }
 @starting-style { .toast { opacity: 0; transform: translateY(100%); } }
 .toast.is-leaving { opacity: 0; transform: translateY(100%); }
@@ -506,6 +516,11 @@ details > summary { cursor: pointer; }
   .tabbar a:active .icon { transform: scale(0.9); }
   .tabbar a[aria-current="page"] { color: var(--text); font-weight: 600; }
   .tabbar a[aria-current="page"]::before { content: ""; position: absolute; top: 0; left: 30%; right: 30%; height: 2px; background: var(--brand); border-radius: 0 0 2px 2px; }
+}
+@media (max-width: 1023px) {
+  html { scroll-padding-top: calc(72px + env(safe-area-inset-top, 0px)); scroll-padding-bottom: calc(var(--tabbar) + 16px + env(safe-area-inset-bottom, 0px)); }
+  .toast { bottom: calc(var(--tabbar) + 12px + env(safe-area-inset-bottom, 0px)); }
+  .study-progress { top: calc(64px + env(safe-area-inset-top, 0px)); }
 }
 @media (prefers-reduced-transparency: reduce) { .topbar, .tabbar { backdrop-filter: none; -webkit-backdrop-filter: none; background: var(--surface); } }
 
@@ -571,7 +586,7 @@ code { font-size: 0.92em; background: var(--surface-2); padding: 1px 4px; border
 .callout-label { font-size: 12px; font-weight: 600; color: var(--text-2); margin-bottom: 2px; }
 .callout-idea { background: color-mix(in srgb, var(--viz-1) 6%, var(--surface)); } .callout-idea .callout-label { color: var(--viz-1); }
 .callout-trap { background: color-mix(in srgb, var(--wrong-bg) 70%, var(--surface)); } .callout-trap .callout-label { color: var(--wrong); }
-.callout-speed { border-left-color: var(--viz-2); } .callout-speed .callout-label { color: var(--viz-2); }
+.callout-speed { background: color-mix(in srgb, var(--brand-bg) 60%, var(--surface)); } .callout-speed .callout-label { color: var(--brand-text); }
 .callout-rule { border-left-color: var(--text); background: var(--surface-2); } .callout-rule .callout-label { color: var(--text); }
 .callout-contrast, .callout-transfer { border-left-color: var(--viz-4); } .callout-contrast .callout-label, .callout-transfer .callout-label { color: var(--viz-4); }
 .callout-edge { border-left-color: var(--warn); } .callout-edge .callout-label { color: var(--warn); }

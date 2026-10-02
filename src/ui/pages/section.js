@@ -46,7 +46,8 @@ export function sectionMap(store, id) {
 function row(r, n, id) {
   // One action per row; the title opens the lesson, so the row never needs two buttons.
   const titleHref = r.kind === 'skill' ? (r.lesson ? `#/study/lesson/${r.lesson}` : `#/s/${id}/learn/${r.id}`) : r.href;
-  const actions = [h('a', { class: `btn small${r.current ? ' primary' : ' ghost'}`, href: r.href }, r.kind === 'skill' ? (r.state === 'needs-review' ? 'Review' : 'Practise') : r.kind === 'lesson' ? 'Read' : 'Start')];
+  const verb = r.kind === 'skill' ? (r.state === 'needs-review' ? 'Review' : 'Practise') : r.kind === 'lesson' ? 'Read' : 'Start';
+  const actions = [h('a', { class: `btn small${r.current ? ' primary' : ' ghost'}`, href: r.href, 'aria-label': `${verb}: ${r.title}` }, verb)];
   return h('li', { class: `grid-row${r.current ? ' is-current' : ''}${r.later ? ' is-later' : ''}${r.done ? ' is-done' : ''}`, id: r.current ? 'current-row' : null, 'aria-current': r.current ? 'step' : null },
     h('span', { class: 'grid-num num' }, String(n)),
     h('span', { class: 'grid-body' },

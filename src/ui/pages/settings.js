@@ -17,14 +17,16 @@ function backup(store) {
     try { store.importJSON(await f.text()); status.textContent = 'Backup restored. Your sheet now shows the imported progress.'; } catch (e) { status.textContent = `That file could not be restored: ${e.message}. Pick a file exported from OptPrep.`; }
     file.value = '';
   } });
-  let armed = null;
-  const reset = h('button', { class: 'btn danger', type: 'button', onclick: () => {
+  let armed = false;
+  const disarm = () => { if (armed) { armed = false; reset.textContent = 'Reset progress'; status.textContent = 'Reset cancelled.'; } };
+  const reset = h('button', { class: 'btn danger', type: 'button', onblur: disarm, onkeydown: (e) => { if (e.key === 'Escape') disarm(); }, onclick: () => {
     if (!armed) {
+      armed = true;
       reset.textContent = 'Press again to delete all progress';
-      armed = setTimeout(() => { armed = null; reset.textContent = 'Reset progress'; }, 4000);
+      status.textContent = 'Press the button again to delete all progress on this device, or press Escape to cancel.';
       return;
     }
-    clearTimeout(armed); armed = null;
+    armed = false;
     store.reset();
     reset.textContent = 'Reset progress';
     status.textContent = 'Progress deleted from this device.';
@@ -58,21 +60,23 @@ const when = (t) => (t ? new Date(t).toLocaleString([], { dateStyle: 'medium', t
 // Optional sync through the user's own GitHub Gist.
 function syncField(store, rerender) {
   const cfg = gistConfig();
-  const status = h('p', { role: 'status', class: 'muted small-note' });
+  const status = h('p', { role: 'status', class: 'muted small-note', id: 'sync-status' });
+  // After a rebuild the page holds a new status node; always write into the live one.
+  const out = () => document.getElementById('sync-status') || status;
   const run = async (choose) => {
-    status.textContent = 'Syncing...';
+    out().textContent = 'Syncing...';
     try {
       const res = await syncNow(store, { choose });
       if (res.action === 'conflict') {
         const here = describeSave(store.state), there = describeSave(res.remote);
-        status.replaceChildren('Both devices changed since the last sync. Which progress do you want to keep?');
-        status.after(h('div', { class: 'row conflict' },
+        out().replaceChildren('Both devices changed since the last sync. Which progress do you want to keep?');
+        out().after(h('div', { class: 'row conflict' },
           h('button', { class: 'btn', type: 'button', onclick: () => rerender(() => run('keep-local')) }, `This device: ${here.answers} answers, ${when(here.updatedAt)}`),
           h('button', { class: 'btn', type: 'button', onclick: () => rerender(() => run('pull')) }, `The other device: ${there.answers} answers, ${when(there.updatedAt)}`)));
         return;
       }
-      status.textContent = { push: 'Uploaded this device\'s progress.', pull: 'Downloaded progress from your other device.', none: 'Already up to date.' }[res.action] || '';
-    } catch (e) { status.textContent = e.message; }
+      out().textContent = { push: 'Uploaded this device\'s progress.', pull: 'Downloaded progress from your other device.', none: 'Already up to date.' }[res.action] || '';
+    } catch (e) { out().textContent = e.message; }
   };
   if (!cfg?.token) {
     const token = h('input', { type: 'password', id: 'gist-token', autocomplete: 'off', spellcheck: 'false', placeholder: 'github_pat_...' });
@@ -86,7 +90,7 @@ function syncField(store, rerender) {
       h('label', { class: 'field-inline', for: 'gist-token' }, 'Token', token),
       h('label', { class: 'field-inline', for: 'gist-pass' }, 'Passphrase', pass),
       h('div', { class: 'row' }, h('button', { class: 'btn primary', type: 'button', onclick: () => {
-        if (!token.value.trim()) { status.textContent = 'Paste a token first.'; return; }
+        if (!token.value.trim()) { status.textContent = 'Paste a token first.'; token.setAttribute('aria-invalid', 'true'); token.focus(); return; }
         connectGist({ token: token.value, passphrase: pass.value });
         rerender(() => run());
       } }, 'Connect and sync')),
@@ -96,7 +100,7 @@ function syncField(store, rerender) {
     h('p', {}, `Connected. ${cfg.passphrase ? 'Uploads are encrypted with your passphrase.' : 'Uploads are not encrypted; a secret gist is unlisted, not private.'} Last sync: ${when(cfg.last?.at)}.`),
     h('div', { class: 'row' },
       h('button', { class: 'btn', type: 'button', onclick: () => run() }, 'Sync now'),
-      h('button', { class: 'btn ghost', type: 'button', onclick: () => { disconnectGist(); rerender(); } }, 'Disconnect')),
+      h('button', { class: 'btn ghost', type: 'button', onclick: () => { disconnectGist(); rerender(() => document.getElementById('gist-token')?.focus()); } }, 'Disconnect')),
     status);
 }
 
@@ -105,19 +109,26 @@ export function settingsPage(root, { store }) {
   const install = canInstall() ? h('button', { class: 'btn', type: 'button', onclick: async () => { if (await promptInstall()) install.replaceWith(h('p', { class: 'muted' }, 'Installed.')); } }, 'Install the app') : null;
   mount(root,
     h('h1', {}, 'Settings'),
-    field('Theme', choice({ name: 'theme', value: getTheme(), onChange: setTheme, columns: true, options: [
+    field('Theme', choice({ legend: 'Theme', hideLegend: true, name: 'theme', value: getTheme(), onChange: setTheme, columns: true, options: [
       { value: 'system', label: 'System', hint: 'Follows your device' },
       { value: 'light', label: 'Light' },
       { value: 'dark', label: 'Dark' }] })),
-    field('Daily goal', choice({ name: 'goal', value: goal, columns: true, onChange: (v) => store.setSetting('dailyGoalMin', v), options: [
+    field('Daily goal', choice({ legend: 'Daily goal', hideLegend: true, name: 'goal', value: goal, columns: true, onChange: (v) => store.setSetting('dailyGoalMin', v), options: [
       { value: 5, label: '5 minutes', hint: 'A quick daily habit' },
       { value: 10, label: '10 minutes', hint: 'Recommended' },
       { value: 20, label: '20 minutes', hint: 'Exam is close' }] }),
     h('p', { class: 'muted small-note' }, 'Minutes count only while you answer or read, with the tab open.')),
     field('Battery', h('p', {}, 'Currently: ', h('strong', {}, activePreset().title), '.'), presetPicker(store, { compact: true, onDone: () => settingsPage(root, { store }) })),
-    field('Division sign', choice({ name: 'div', value: store.settings().divNotation || 'obelus', columns: true, onChange: (v) => store.setSetting('divNotation', v), options: [
+    field('Division sign', choice({ legend: 'Division sign', hideLegend: true, name: 'div', value: store.settings().divNotation || 'obelus', columns: true, onChange: (v) => store.setSetting('divNotation', v), options: [
       { value: 'obelus', label: '÷', hint: '84 ÷ 7' },
       { value: 'colon', label: ':', hint: '84 : 7, as some European tests print it' }] })),
+    field('Answering', choice({ legend: 'Answer keys', hideLegend: true, name: 'keys', value: store.settings().answerKeys === false ? 'off' : 'on', columns: true, onChange: (v) => store.setSetting('answerKeys', v === 'on'), options: [
+      { value: 'on', label: 'Number keys answer', hint: '1 to 4 or A to D pick an option, as in the test' },
+      { value: 'off', label: 'Mouse or touch only', hint: 'Stray key presses never answer' }] }),
+    choice({ legend: 'Extra time', name: 'extra', value: String(store.settings().extraTime || 1), columns: true, onChange: (v) => store.setSetting('extraTime', Number(v)), options: [
+      { value: '1', label: 'Standard time', hint: 'Counts toward Ready' },
+      { value: '1.5', label: '1.5 times', hint: 'Practice only' },
+      { value: '2', label: 'Double time', hint: 'Practice only' }] })),
     install ? field('App', h('p', {}, 'Install OptPrep to open it from your dock or home screen and practise offline.'), install) : null,
     field('Backup', ...backup(store), storageLine(store)),
     syncField(store, (then) => { settingsPage(root, { store }); then?.(); }),

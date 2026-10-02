@@ -16,7 +16,7 @@ const lum = (hex) => {
 const ratio = (a, b) => { const [x, y] = [lum(a), lum(b)].sort((p, q) => q - p); return (x + 0.05) / (y + 0.05); };
 const PAIRS = [
   ['text', 'bg', 4.5], ['text', 'surface', 4.5], ['text', 'surface-2', 4.5], ['text-2', 'surface', 4.5], ['text-2', 'bg', 4.5], ['text-2', 'surface-2', 4.5],
-  ['text-3', 'surface', 3], ['brand-text', 'surface', 4.5], ['brand-text', 'bg', 4.5], ['accent-text', 'accent', 4.5],
+  ['text-3', 'surface', 4.5], ['text-3', 'bg', 4.5], ['border-strong', 'bg', 3], ['brand-text', 'surface', 4.5], ['brand-text', 'bg', 4.5], ['accent-text', 'accent', 4.5],
   ['correct', 'correct-bg', 4.5], ['correct', 'surface', 4.5], ['wrong', 'wrong-bg', 4.5], ['wrong', 'surface', 4.5],
   ['warn', 'warn-bg', 4.5], ['warn', 'surface', 4.5], ['ring', 'bg', 3], ['ring', 'surface', 3], ['border-strong', 'surface', 3],
   ['brand', 'surface', 3], ['xp', 'surface', 4.5], ['ink', 'surface', 3], ['ink', 'surface-2', 3], ['ink', 'brand-bg', 3],

@@ -16,7 +16,7 @@ export function presetPicker(store, { onDone, compact = false } = {}) {
   let picked = store.settings().preset?.id || 'full';
   const options = Object.values(PRESETS).map((p) => ({ value: p.id, label: p.title, hint: p.who }));
   return h('div', { class: 'preset-picker' },
-    choice({ legend: compact ? 'Battery' : null, options, value: picked, onChange: (v) => { picked = v; } }),
+    choice({ legend: 'Battery', hideLegend: true, options, value: picked, onChange: (v) => { picked = v; } }),
     h('div', { class: 'row' },
       h('button', { class: 'btn primary', type: 'button', onclick: () => { store.setSetting('preset', { id: picked }); store.setSetting('presetConfirm', false); activatePreset({ id: picked }); onDone?.(); } }, compact ? 'Save' : 'Start')));
 }
@@ -67,7 +67,7 @@ export function pathPage(root, { store }) {
     h('h1', {}, 'Today'),
     h('div', { class: 'today' },
       h('div', { class: 'today-goal' },
-        bubbles(goal, minutes, { label: `${minutes} of ${goal} minutes today`, size: goal > 12 ? 'sm' : 'md' }),
+        bubbles(goal, minutes, { label: null, size: goal > 12 ? 'sm' : 'md' }),
         h('span', { class: 'num' }, `${minutes} of ${goal} min`)),
       h('div', { class: 'today-stats' },
         h('span', { class: 'stat' }, icon('fire', { size: 18 }), h('span', { class: 'num' }, String(st.current)), st.current === 1 ? ' day' : ' days'),

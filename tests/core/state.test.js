@@ -82,3 +82,14 @@ test('zapn targets: lower is better for *Over metrics, higher otherwise', () => 
   assert.equal(zapnReadiness(runs, { metric: 'accuracy', value: 0.9 }).ready, true);
   assert.equal(zapnReadiness(runs.slice(1), { metric: 'accuracy', value: 0.9 }).ready, false);
 });
+
+test('countdown restarts from full time', () => {
+  let t = 0;
+  const cd = makeCountdown(1000, () => t);
+  t = 600;
+  assert.equal(cd.remaining(), 400);
+  cd.restart();
+  assert.equal(cd.remaining(), 1000);
+  t = 1700;
+  assert.ok(cd.expired());
+});

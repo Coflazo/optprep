@@ -5,7 +5,8 @@ import { h } from './dom.js';
 // A row of answer bubbles: `filled` of `n` are marked. Used for skill levels and goals.
 export function bubbles(n, filled, { label, size = 'md', current = false } = {}) {
   const k = Math.max(0, Math.min(n, Math.round(filled)));
-  return h('span', { class: `bubbles bubbles-${size}${current ? ' is-current' : ''}`, role: 'img', 'aria-label': label ?? `${k} of ${n}` },
+  const a11y = label === null ? { 'aria-hidden': 'true' } : { role: 'img', 'aria-label': label ?? `${k} of ${n}` };
+  return h('span', { class: `bubbles bubbles-${size}${current ? ' is-current' : ''}`, ...a11y },
     Array.from({ length: n }, (_, i) => h('span', { class: `bubble${i < k ? ' is-filled' : ''}`, style: { '--i': i } })));
 }
 
@@ -17,9 +18,9 @@ export function field(label, ...children) {
 // A labelled radio group drawn as answer bubbles. Native inputs keep keyboard and screen
 // reader behaviour; onChange gets the chosen value.
 let groupSeq = 0;
-export function choice({ legend, name = `choice-${++groupSeq}`, options, value, onChange, columns = false }) {
+export function choice({ legend, hideLegend = false, name = `choice-${++groupSeq}`, options, value, onChange, columns = false }) {
   return h('fieldset', { class: `choice${columns ? ' choice-columns' : ''}` },
-    legend ? h('legend', {}, legend) : null,
+    legend ? h('legend', { class: hideLegend ? 'visually-hidden' : null }, legend) : null,
     options.map((o) => h('label', { class: 'choice-option' },
       h('input', { type: 'radio', name, value: o.value, checked: o.value === value, onchange: () => onChange?.(o.value) }),
       h('span', { class: 'bubble', 'aria-hidden': 'true' }),
@@ -74,9 +75,13 @@ export function tickTo(el, to, { duration = 400 } = {}) {
 }
 
 // A short status toast that enters and leaves through the bottom edge.
+// Screen readers hear it through the page's single live region (#live). ms 0 keeps it up.
 export function toast(message, { ms = 4000, icon: ico = null } = {}) {
-  const el = h('div', { class: 'toast', role: 'status' }, ico, message);
+  document.querySelectorAll('.toast').forEach((t) => t.remove());
+  const el = h('div', { class: 'toast', 'aria-hidden': 'true' }, ico, h('span', {}, message));
   document.body.append(el);
-  setTimeout(() => { el.classList.add('is-leaving'); setTimeout(() => el.remove(), 450); }, ms);
+  const live = document.getElementById('live');
+  if (live) live.textContent = message;
+  if (ms) setTimeout(() => { el.classList.add('is-leaving'); setTimeout(() => el.remove(), 450); }, ms);
   return el;
 }

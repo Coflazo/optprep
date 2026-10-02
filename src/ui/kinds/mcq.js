@@ -2,22 +2,22 @@ import { h } from '../dom.js';
 
 // Four or five options (item.options decides); keys 1-5 or A-E select, ignoring keys past the last option.
 // Response: { choice } or null.
-export function mcqView(item, { onChange } = {}) {
+export function mcqView(item, { onChange, keys = true, labelledby } = {}) {
   let choice = null;
   let locked = false;
   const buttons = item.options.map((o, i) => h('button', {
-    class: 'option', type: 'button', 'aria-pressed': 'false',
+    class: 'option', type: 'button', role: 'radio', 'aria-checked': 'false',
     onclick: () => select(i),
   }, h('span', { class: 'key' }, 'ABCDE'[i]), h('span', { class: 'val' }, o.label)));
   function select(i) {
     if (locked) return;
     choice = i;
-    buttons.forEach((b, k) => b.setAttribute('aria-pressed', String(k === i)));
+    buttons.forEach((b, k) => b.setAttribute('aria-checked', String(k === i)));
     onChange?.();
   }
-  const el = h('div', { class: 'options', role: 'group', 'aria-label': 'Answer options' }, buttons);
+  const el = h('div', { class: 'options', role: 'radiogroup', ...(labelledby ? { 'aria-labelledby': labelledby } : { 'aria-label': 'Answer options' }) }, buttons);
   const onKey = (e) => {
-    if (e.target.closest?.('input, textarea')) return;
+    if (!keys || e.target.closest?.('input, textarea, select, [contenteditable]')) return;
     if (e.metaKey || e.ctrlKey || e.altKey) return;
     const k = e.key.toUpperCase();
     const i = k.length !== 1 ? -1 : '12345'.indexOf(k) >= 0 ? '12345'.indexOf(k) : 'ABCDE'.indexOf(k);

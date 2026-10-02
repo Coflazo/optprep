@@ -70,8 +70,8 @@ function todayBits() {
   const st = store.streak();
   const minutes = Math.floor(store.todayMs() / 60e3);
   return [
-    h('span', { class: 'stat', title: 'Streak' }, icon('fire', { size: 16 }), h('span', { class: 'num' }, String(st.current))),
-    h('span', { class: 'stat', title: 'Minutes today' }, icon('timer', { size: 16 }), h('span', { class: 'num' }, `${minutes}/${store.goalMin()}`)),
+    h('span', { class: 'stat', title: 'Streak' }, icon('fire', { size: 16 }), h('span', { class: 'visually-hidden' }, 'Streak: '), h('span', { class: 'num' }, String(st.current)), h('span', { class: 'visually-hidden' }, ' days')),
+    h('span', { class: 'stat', title: 'Minutes today' }, icon('timer', { size: 16 }), h('span', { class: 'visually-hidden' }, 'Minutes today: '), h('span', { class: 'num' }, `${minutes}/${store.goalMin()}`)),
   ];
 }
 
@@ -87,8 +87,8 @@ function renderNav(hash) {
     h('div', { class: 'group' }, 'Tasks'),
     tasks.map((id) => (id === 'zapn' ? link('#/zapn', 'Zap-N games') : link(`#/s/${id}`, SECTIONS[id].title))),
     h('div', { class: 'group' }, 'Learn'),
-    link('#/study', 'Study guide', due ? h('span', { class: 'nav-count', 'aria-label': `${due} lessons due` }, String(due)) : null, 'study', (hash === '#/study' || hash.startsWith('#/study/')) && !studyOwn),
-    link('#/progress', 'Progress', open ? h('span', { class: 'nav-count', 'aria-label': `${open} open mistakes` }, String(open)) : null, 'progress', hash.startsWith('#/progress') || studyOwn),
+    link('#/study', 'Study guide', due ? h('span', { class: 'nav-count' }, String(due), h('span', { class: 'visually-hidden' }, ' lessons due')) : null, 'study', (hash === '#/study' || hash.startsWith('#/study/')) && !studyOwn),
+    link('#/progress', 'Progress', open ? h('span', { class: 'nav-count' }, String(open), h('span', { class: 'visually-hidden' }, ' open mistakes')) : null, 'progress', hash.startsWith('#/progress') || studyOwn),
     link('#/mock', 'Full mock', null, 'timer'),
     link('#/settings', 'Settings', null, 'settings', hash === '#/settings' || hash === '#/data'));
   mount(tabbar,
@@ -122,7 +122,11 @@ function render() {
         console.error(e);
         mount(view, h('h1', {}, 'This page failed to load'), h('p', {}, 'Your progress is safe. Reload the page; if it happens again, report it with the details below.'), h('pre', {}, String(e.stack || e)));
       }
-      view.focus({ preventScroll: true });
+      // Name the page and put focus on its heading (WCAG 2.4.2, 2.4.3).
+      const h1 = view.querySelector('h1');
+      document.title = h1 ? `${h1.textContent} · OptPrep` : 'OptPrep · Optiver online assessment practice';
+      // A page that already placed focus (the runner focuses the question) keeps it.
+      if (!view.contains(document.activeElement) || document.activeElement === view) { if (h1) { h1.tabIndex = -1; h1.focus({ preventScroll: true }); } else view.focus({ preventScroll: true }); }
       window.scrollTo(0, 0);
       return;
     }
@@ -131,6 +135,8 @@ function render() {
 }
 
 window.addEventListener('hashchange', route);
+// The skip link moves focus to the page without touching the router.
+document.querySelector('.skip')?.addEventListener('click', (e) => { e.preventDefault(); (view.querySelector('h1') || view).focus(); });
 // Printing a lesson opens every derivation step first, so the page prints as a complete document.
 window.addEventListener('beforeprint', () => view.querySelectorAll('[data-print-expand]:not([hidden])').forEach((b) => b.click()));
 sync.start(store).then((ok) => { if (ok && (location.hash || '#/') === '#/') route(); });
@@ -168,7 +174,6 @@ if (gistConfig()?.token) {
 
 // A new version is ready: offer one reload, never force it.
 window.addEventListener('optprep:update', (e) => {
-  const toast = h('div', { class: 'toast', role: 'status' }, 'A new version of OptPrep is ready.',
-    h('button', { class: 'btn small', type: 'button', onclick: () => e.detail?.apply?.() }, 'Reload'));
-  document.body.append(toast);
+  const t = toast('A new version of OptPrep is ready.', { ms: 0 });
+  t.append(h('button', { class: 'btn small', type: 'button', onclick: () => e.detail?.apply?.() }, 'Reload'));
 });
