@@ -565,11 +565,11 @@ details > summary { cursor: pointer; }
 .formula { font-family: var(--mono); font-size: 15px; padding: 10px 14px; background: var(--surface-2); border-radius: var(--radius-sm); overflow-x: auto; }
 code { font-size: 0.92em; background: var(--surface-2); padding: 1px 4px; border-radius: 4px; }
 
-/* Callouts: left rule, tone colour on the label only */
-.callout { border-left: 3px solid var(--border); padding: 10px 14px; background: var(--surface); border-radius: 0 var(--radius-sm) var(--radius-sm) 0; border-top: 1px solid var(--border); border-right: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+/* Callouts: a printed note on the sheet. Tone lives in the label colour and a faint tint, never a side stripe. */
+.callout { padding: 10px 14px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); }
 .callout-label { font-size: 12px; font-weight: 600; color: var(--text-2); margin-bottom: 2px; }
-.callout-idea { border-left-color: var(--viz-1); } .callout-idea .callout-label { color: var(--viz-1); }
-.callout-trap { border-left-color: var(--wrong); } .callout-trap .callout-label { color: var(--wrong); }
+.callout-idea { background: color-mix(in srgb, var(--viz-1) 6%, var(--surface)); } .callout-idea .callout-label { color: var(--viz-1); }
+.callout-trap { background: color-mix(in srgb, var(--wrong-bg) 70%, var(--surface)); } .callout-trap .callout-label { color: var(--wrong); }
 .callout-speed { border-left-color: var(--viz-2); } .callout-speed .callout-label { color: var(--viz-2); }
 .callout-rule { border-left-color: var(--text); background: var(--surface-2); } .callout-rule .callout-label { color: var(--text); }
 .callout-contrast, .callout-transfer { border-left-color: var(--viz-4); } .callout-contrast .callout-label, .callout-transfer .callout-label { color: var(--viz-4); }
@@ -694,10 +694,10 @@ input.study-input[type=number] { width: 120px; }
 .think-lines li { display: grid; grid-template-columns: 48px 1fr; gap: 8px; align-items: baseline; }
 .think-t { color: var(--text-2); font-size: 12px; text-align: right; }
 .study-variation table td:first-child { width: 45%; }
-.check-again { margin-top: 10px; padding-left: 12px; border-left: 2px solid var(--border); }
+.check-again { margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--border); }
 .study-input.wide { width: 260px; }
 @media print { .study-progress { display: none; } .think-lines li[hidden] { display: grid !important; } }
-.attempt-note { margin-top: 6px; padding: 6px 10px; border-left: 3px solid var(--warn); background: var(--warn-bg); border-radius: 0 var(--radius-sm) var(--radius-sm) 0; font-size: 14px; }
+.attempt-note { margin-top: 6px; padding: 6px 10px; background: var(--warn-bg); color: var(--text); border-radius: var(--radius-sm); font-size: 14px; }
 .study-transfer { border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 16px; background: var(--surface); }
 .check-option.is-picked { border-color: var(--text-2); }
 .diagnose .step-pick { font-size: 14px; }
