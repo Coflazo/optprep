@@ -15,7 +15,7 @@ import { setsPage, setRunPage } from './src/ui/pages/sets.js';
 import { runFeedbackSession, runExam } from './src/ui/runner.js';
 import { brandLockup, wordmark } from './src/ui/logo.js';
 import { icon } from './src/ui/icons.js';
-import { setRail } from './src/ui/sheet.js';
+import { setRail, toast } from './src/ui/sheet.js';
 import { creditTick } from './src/core/activity.js';
 import { initTheme } from './src/ui/theme.js';
 import { createSync } from './src/ui/sync.js';
@@ -145,8 +145,14 @@ let lastInputAt = null;
 for (const ev of ['pointerdown', 'keydown', 'input', 'wheel', 'scroll', 'touchstart']) window.addEventListener(ev, () => { lastInputAt = Date.now(); }, { passive: true, capture: true });
 setInterval(() => {
   const now = Date.now();
+  const before = store.todayMs();
   store.creditMs(creditTick({ now, lastTick, lastInputAt, hidden: document.hidden, inSession: SESSION.test(location.hash) }));
   lastTick = now;
+  const goal = store.goalMin() * 60e3;
+  if (before < goal && store.todayMs() >= goal) {
+    store.save();
+    toast(`Daily goal met. Streak: ${store.streak().current} days.`, { icon: icon('fire', { size: 18 }) });
+  }
 }, 5000);
 document.addEventListener('visibilitychange', () => { if (document.hidden) store.save(); else lastTick = Date.now(); });
 window.addEventListener('pagehide', () => store.save());

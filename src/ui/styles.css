@@ -469,6 +469,7 @@ details > summary { cursor: pointer; }
 @starting-style { .toast { opacity: 0; transform: translateY(100%); } }
 .toast.is-leaving { opacity: 0; transform: translateY(100%); }
 .toast .btn { min-height: 32px; background: var(--accent-text); color: var(--accent); border-color: transparent; }
+.toast .icon { color: var(--brand); flex: none; }
 
 /* ---------- Boot splash: shown until the first page mounts ---------- */
 .boot { min-height: 60vh; display: grid; place-content: center; justify-items: center; gap: 18px; color: var(--text); }

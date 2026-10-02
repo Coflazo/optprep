@@ -59,3 +59,24 @@ export function scanSheet(container, rows, { duration = 900 } = {}) {
   const anim = line.animate([{ transform: 'translateY(0)' }, { transform: `translateY(${height}px)` }], { duration, easing: 'cubic-bezier(0.77, 0, 0.175, 1)', fill: 'forwards' });
   return anim.finished.catch(() => {}).then(() => { line.remove(); container.classList.remove('is-scanning'); });
 }
+
+// Number ticker for a rare reward moment (XP after a session). Tabular digits, 400 ms,
+// ease-out; jumps straight to the value under reduced motion.
+export function tickTo(el, to, { duration = 400 } = {}) {
+  if (reduced() || !Number.isFinite(to)) { el.textContent = `+${to}`; return; }
+  const start = performance.now();
+  const step = (now) => {
+    const t = Math.min(1, (now - start) / duration);
+    el.textContent = `+${Math.round(to * (1 - (1 - t) ** 3))}`;
+    if (t < 1) requestAnimationFrame(step);
+  };
+  requestAnimationFrame(step);
+}
+
+// A short status toast that enters and leaves through the bottom edge.
+export function toast(message, { ms = 4000, icon: ico = null } = {}) {
+  const el = h('div', { class: 'toast', role: 'status' }, ico, message);
+  document.body.append(el);
+  setTimeout(() => { el.classList.add('is-leaving'); setTimeout(() => el.remove(), 450); }, ms);
+  return el;
+}

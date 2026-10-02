@@ -20,7 +20,7 @@ import { SECTION_MODULES } from '../sections/index.js';
 import { readiness, runMeetsTarget } from '../core/readiness.js';
 import { lessonForFamily } from '../study/content/index.js';
 import { divNotation } from '../core/format.js';
-import { setRail, scanSheet, bubbles } from './sheet.js';
+import { setRail, scanSheet, bubbles, tickTo } from './sheet.js';
 import { mistakeRow } from '../core/mistakes.js';
 import { timingOf } from '../../config/presets.js';
 
@@ -194,7 +194,7 @@ export function runFeedbackSession(root, { sectionId, mode, family, count, store
       h('h2', { class: 'field-label' }, `${modeLabel(mode)} summary`),
       n ? h('div', { class: 'summary-stats' },
         h('span', {}, h('span', { class: 'num big' }, `${correct}/${n}`), ' right'),
-        h('span', {}, h('span', { class: 'num big' }, `+${xpGain}`), ' XP'),
+        h('span', {}, h('span', { class: 'num big xp-tick' }, '+0'), ' XP'),
         h('span', {}, h('span', { class: 'num big' }, `${Math.floor(spentS / 60)}:${String(spentS % 60).padStart(2, '0')}`), ' on questions'))
         : h('p', { class: 'muted' }, mode === 'mistakes' ? 'Nothing is due for review in this task right now.' : 'No questions answered.'),
       n ? h('ol', { class: 'summary-list' }, famRows) : null,
@@ -202,6 +202,8 @@ export function runFeedbackSession(root, { sectionId, mode, family, count, store
         weakest && weakest[1].c < weakest[1].n && lessonForFamily(sectionId, weakest[0]) ? h('a', { class: 'btn primary', href: `#/study/lesson/${lessonForFamily(sectionId, weakest[0])}` }, `Study: ${familyTitle(section, weakest[0])}`) : null,
         weakest && weakest[1].c < weakest[1].n ? h('a', { class: 'btn', href: `#/s/${sectionId}/learn/${weakest[0]}` }, `Worked examples: ${familyTitle(section, weakest[0])}`) : null,
         h('a', { class: 'btn ghost', href: `#/s/${sectionId}` }, 'Back to the roadmap'))));
+    const xpEl = root.querySelector('.xp-tick');
+    if (xpEl) tickTo(xpEl, xpGain);
     onDone?.({ n, correct, clean: log.filter((x) => x.correct && !x.hints).length, family: fixedItems?.[0]?.family, ms: log.map((x) => Math.round(x.ms)), budgetMs: perItemMs(fixedItems?.[0] || {}) });
   }
 
