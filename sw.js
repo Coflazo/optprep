@@ -5,7 +5,10 @@
 // which has no fetch handler, installed clients recover on their next visit.
 const BUILD = '__BUILD__';
 const CACHE = `optprep-${BUILD.startsWith('__') ? 'dev' : BUILD}`;
-const PRECACHE = ['index.html', 'app.js', 'manifest.webmanifest'];
+// The Pages workflow fills FILES with every module and asset the app can load, so an installed
+// copy works offline on every page, including the ones that load on demand.
+const FILES = [/*FILES*/];
+const PRECACHE = ['index.html', 'app.js', 'manifest.webmanifest', ...FILES];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(caches.open(CACHE).then((c) => c.addAll(PRECACHE)));

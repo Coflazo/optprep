@@ -31,6 +31,10 @@ jobs:
           cp -R index.html app.js config src assets manifest.webmanifest sw.js .nojekyll _site/
           sed -i "s/__BUILD__/${GITHUB_SHA::12}/g" _site/sw.js
           grep -q "${GITHUB_SHA::12}" _site/sw.js
+          # Every file the app can load goes into the offline cache on install.
+          (cd _site && find src config assets -type f \( -name '*.js' -o -name '*.css' -o -name '*.svg' -o -name '*.woff2' -o -name '*.png' \) | LC_ALL=C sort) > files.txt
+          node -e "const fs=require('fs');const f=fs.readFileSync('files.txt','utf8').trim().split('\n');const p='_site/sw.js';fs.writeFileSync(p,fs.readFileSync(p,'utf8').replace('[/*FILES*/]',JSON.stringify(f)))"
+          grep -q '"src/study/pages.js"' _site/sw.js
       - uses: actions/upload-pages-artifact@v5
         with:
           path: _site
