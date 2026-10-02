@@ -77,7 +77,7 @@
   --brand-text: #FF7A57;
   --brand-bg: #1F1A2F;
   --ink: #E87556;
-  --ink-rule: #5A3A42;
+  --ink-rule: #7A3E2E;
   --ring: #FF7A57;
   --correct: #39D377;
   --correct-bg: #0B3324;
@@ -99,7 +99,7 @@
     color-scheme: dark;
     --bg: #021129; --surface: #011735; --surface-2: #11274A; --surface-3: #1C3557;
     --text: #DCE5EE; --text-2: #A9C0D4; --text-3: #94ADBF; --border: #1C3557; --border-strong: #4D6F93;
-    --accent: #F4F7FA; --accent-text: #021129; --brand: #FF3300; --brand-text: #FF7A57; --brand-bg: #1F1A2F; --ink: #E87556; --ink-rule: #5A3A42; --ring: #FF7A57;
+    --accent: #F4F7FA; --accent-text: #021129; --brand: #FF3300; --brand-text: #FF7A57; --brand-bg: #1F1A2F; --ink: #E87556; --ink-rule: #7A3E2E; --ring: #FF7A57;
     --correct: #39D377; --correct-bg: #0B3324; --wrong: #FF6B7D; --wrong-bg: #3B1520; --warn: #F0B44C; --warn-bg: #33270F;
     --xp: #C48BFF; --viz-1: #94ADBF; --viz-2: #FF5A33; --viz-3: #39D377; --viz-4: #B266FF; --viz-5: #CFE3F4;
     --shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
@@ -499,8 +499,10 @@ details > summary { cursor: pointer; }
 @media (prefers-reduced-motion: reduce) { .bubble.is-new::after { animation: none; opacity: 1; transform: none; } }
 .score-print { transition: opacity var(--dur-2) ease; }
 /* The scan ends by printing the score into the sheet's corner box. */
-.review-head { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 12px 20px; margin-bottom: 8px; }
-.review-head h1 { margin: 0; }
+.review-head { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 12px 20px; margin-bottom: 12px; }
+.review-title { flex: 1 1 320px; min-width: 0; }
+.review-title h1 { margin: 0 0 10px; }
+.review-title p { margin: 0 0 6px; }
 .score-box { flex: none; min-width: 140px; padding: 10px 16px 12px; border: 1px solid var(--ink); border-radius: var(--radius); background: var(--surface); text-align: right; }
 .score-box:focus-visible { outline-offset: 3px; }
 .score-label { display: block; font: 500 12px/1.4 var(--mono); letter-spacing: 0.04em; color: var(--brand-text); }

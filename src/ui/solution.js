@@ -1,5 +1,5 @@
 import { h } from './dom.js';
-import { fmtNum } from '../core/format.js';
+import { fmtNum, superscripts } from '../core/format.js';
 import { positionOutcome } from '../core/check.js';
 import { renderDiagram } from '../study/diagrams/index.js';
 import { lessonForFamily } from '../study/catalog.js';
@@ -53,15 +53,14 @@ export function solutionPanel(item, { stepwise = true } = {}) {
   const list = h('ol', { class: 'steps' });
   const more = h('button', { class: 'btn small', type: 'button', onclick: () => { shown = Math.min(steps.length, shown + 1); render(); } }, 'Next step');
   const all = h('button', { class: 'btn small', type: 'button', onclick: () => { shown = steps.length; render(); } }, 'Show all');
-  // Caret exponents print as real superscripts: 2^4 reads 2⁴.
-  const sup = (t) => (typeof t === 'string' ? t.replace(/\^(\d+)/g, (_, d) => [...d].map((c) => '⁰¹²³⁴⁵⁶⁷⁸⁹'[+c]).join('')) : t);
+  const sup = superscripts;
   const ask = sol.ask ? h('p', { class: 'solution-ask' }, sup(sol.ask)) : null;
   const picture = sol.picture ? pictureFigure(sol.picture) : null;
   const block = (cls, title, body) => h('div', { class: cls, hidden: true }, h('h4', {}, title), h('p', {}, sup(body)));
   const fast = sol.fast ? block('solution-fast', 'Exam-speed path', sol.fast) : null;
   const check = sol.check ? block('solution-check', 'Sanity check', sol.check) : null;
-  const rule = h('div', { class: 'rule', hidden: true }, sol.rule);
-  const anchor = h('p', { class: 'muted', hidden: true }, `Anchor: ${sol.anchor}`);
+  const rule = h('div', { class: 'rule', hidden: true }, sup(sol.rule));
+  const anchor = h('p', { class: 'muted', hidden: true }, `Anchor: ${sup(sol.anchor)}`);
   const best = item.kind === 'orderbook' && item.best ? h('p', { class: 'num', hidden: true }, `Best position: ${describeTrades(item)} → profit ${fmtNum(item.best.profit)}`) : null;
   function render() {
     list.replaceChildren(...steps.slice(0, shown).map((s, i) => h('li', {},

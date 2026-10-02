@@ -12,4 +12,7 @@ export function fmtNum(x) {
 }
 export const fmtFrac = (q) => q.toString();
 // European division sign: items always store ÷; the view shows : when the learner asks for it.
+// Caret exponents print as superscripts: 2^6 reads 2⁶, 2^n reads 2ⁿ. Grouped exponents like 2^(n-1) stay as written.
+const SUP = { 0: '⁰', 1: '¹', 2: '²', 3: '³', 4: '⁴', 5: '⁵', 6: '⁶', 7: '⁷', 8: '⁸', 9: '⁹', n: 'ⁿ', k: 'ᵏ', m: 'ᵐ' };
+export const superscripts = (t) => (typeof t === 'string' ? t.replace(/\^([0-9nkm]+)\b/g, (_, e) => [...e].map((c) => SUP[c]).join('')) : t);
 export const divNotation = (text, mode) => (mode === 'colon' ? String(text).replace(/÷/g, ':') : text);
