@@ -5,6 +5,7 @@ export default family({
   title: 'Cubes, shifted',
   skill: 'Know the cubes to 12³; a third-difference of 6 is the fingerprint of n³',
   levels: [2, 3],
+  view: 'table',
   show: (d) => (d === 2 ? 5 : 6),
   params: (rng, d) => (d === 2 ? { s: rng.int(1, 6), k: rng.int(-9, 9), lin: 0 } : { s: rng.int(1, 7), k: rng.int(-9, 9), lin: rng.pick([-1, 1]) }),
   terms: ({ s, k, lin }, n) => Array.from({ length: n }, (_, i) => q((i + s) ** 3 + lin * (i + s) + k)),

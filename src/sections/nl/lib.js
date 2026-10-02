@@ -97,6 +97,106 @@ export function missingRivals(seq, k, mode) {
   return out;
 }
 
+// ---------------------------------------------------------------- worked-solution fields
+// The arithmetic of a computed step: the last "x = y" clause, without a "term n =" lead-in.
+// "term 7 = 41 = 41" -> "term 7 = 41": a repeated side adds nothing.
+const tidy = (t) => String(t).replace(/(\S+) = \1(?=[.,;]|$)/g, '$1');
+const hasOp = (t) => /[+×÷^²³*\/]|\s[−-]\s/.test(t);
+
+export function equationOf(text) {
+  const part = tidy(text).replace(/\.$/, '').split(/[:;]\s*|,\s*so\s+/).filter((s) => s.includes('=')).pop();
+  if (!part) return null;
+  const bare = part.replace(/^(next gap|term)\s*\d*\s*=\s*/i, '').trim();
+  return bare.includes('=') ? bare : part.trim();
+}
+
+// A computed step split into words (say) and arithmetic (math).
+export function computeStep(text, k, missing, why) {
+  const t = tidy(text).replace(/\.$/, '');
+  const math = equationOf(t);
+  if (!math) return { say: `${t}.`, why };
+  const parts = t.split(/[:;]\s*|,\s*so\s+/);
+  const j = parts.map((s) => s.includes('=')).lastIndexOf(true);
+  const lead = parts.slice(0, j).join(', ').trim();
+  const say = lead ? `${lead}.` : missing ? `Fill the blank, term ${k + 1}, with the same rule.` : `Apply the rule once more for term ${k + 1}.`;
+  return { say, math, why };
+}
+
+// Rows of a difference ladder: the terms, then gaps, until a row is constant (at most three rows of gaps).
+function ladderRows(terms) {
+  const rows = [terms];
+  while (rows.length < 4) {
+    const last = rows[rows.length - 1];
+    if (last.length < 3 || allEqual(last)) break;
+    rows.push(diffsQ(last));
+  }
+  if (rows.length === 1) rows.push(diffsQ(terms));
+  return rows;
+}
+
+// ask, fast path, sanity check and picture. seq: every term including the answer (Q[]);
+// k: the answer's position; view: 'diff' | 'ratio' | 'strands' | 'table'; ruleRow(i): the
+// family's computation of term i (table view), srule: the one-line rule, how: the answer's computation.
+export function nlExtras({ seq, k, missing, mode, view = 'diff', ruleRow, srule, how }) {
+  const L1 = (x) => label(x, mode), ans = L1(seq[k]), n = seq.length;
+  const enc = (xs) => xs.map(encodeTerm);
+  const prev = seq[k - 1], gaps = diffsQ(seq);
+  const rising = gaps.every((g) => g.n > 0n), falling = gaps.every((g) => g.n < 0n);
+  const ask = missing ? `We want the term in the blank, term ${k + 1} of ${n}.` : `We want term ${k + 1}, the one after ${L1(prev)}.`;
+  const fast = `${srule.replace(/\.?$/, '.')} Here: ${String(how).replace(/\.?$/, '.')}`;
+  const order = !missing && (rising || falling) ? `Every step so far ${rising ? 'rises' : 'falls'}, so the answer is ${rising ? 'above' : 'below'} ${L1(prev)}. ` : missing && (rising || falling) ? `The terms ${rising ? 'rise' : 'fall'} throughout, so the blank lies between ${L1(seq[k - 1])} and ${L1(seq[k + 1])}. ` : '';
+  let rows = [];
+  if (view === 'table' && ruleRow) {
+    for (let i = Math.max(1, (missing ? k : n - 1) - 3); i <= Math.min(n - 1, missing ? k + 1 : n - 1); i++) {
+      try {
+        const t = ruleRow(i), eq = t && equationOf(t);
+        if (t && !/undefined|NaN/.test(t)) rows.push([`${i + 1}${i === k ? ' (answer)' : ''}`, eq && hasOp(eq) ? eq : tidy(t).replace(/\.$/, '')]);
+      } catch { /* the rule needs more earlier terms */ }
+    }
+  }
+  if (view === 'table' && rows.length >= 2) {
+    const shownRow = rows.find((r) => !r[0].includes('answer'));
+    return {
+      ask, fast,
+      check: `${order}Test the rule on a shown term before trusting it. Term ${shownRow[0]}: ${shownRow[1][0].toLowerCase()}${shownRow[1].slice(1)}. The same rule gives ${ans}.`,
+      picture: { diagram: 'table', spec: { columns: ['Term', 'The rule at work'], rows }, caption: `The rule run on the last terms. It reproduces every shown term, and one more step gives ${ans}.` },
+    };
+  }
+  if (view === 'parts' && seq.every((x) => x.d !== 1n)) {
+    const heads = seq.map((_, i) => `${i + 1}${i === k ? ' (answer)' : ''}`);
+    return {
+      ask, fast,
+      check: `${order}Both rows must continue: tops ${seq.map((x) => x.n).join(', ')} and bottoms ${seq.map((x) => x.d).join(', ')}. An option that moves only one row fails one of them.`,
+      picture: { diagram: 'table', spec: { columns: ['Term', ...heads], rows: [['top', ...seq.map((x) => String(x.n))], ['bottom', ...seq.map((x) => String(x.d))]] }, caption: `Tops and bottoms read as two separate sequences. Each continues on its own, and together they give ${ans}.` },
+    };
+  }
+  if (view === 'ratio' && seq.every((x) => !x.isZero())) {
+    const r = seq[1].div(seq[0]);
+    return {
+      ask, fast,
+      check: `${order}${ans} ÷ ${L1(prev)} = ${label(r, 'frac')}, the same ratio as every earlier pair.`,
+      picture: { diagram: 'ladder', spec: { mode: 'ratio', rows: [enc(seq), enc(ratiosQ(seq))], predicted: !missing }, caption: `Each term divided by the one before gives ${label(r, 'frac')} every time${missing ? `, the blank included once it holds ${ans}` : `; the outlined ratio carries the sequence to ${ans}`}.` },
+    };
+  }
+  if (view === 'strands' && seq.length >= 4) {
+    const strand = seq.filter((_, i) => i % 2 === k % 2).map(L1);
+    return {
+      ask, fast,
+      check: `${ans} has to fit its own strand, positions ${k % 2 ? '2, 4, 6' : '1, 3, 5'}, …: ${strand.join(', ')}. The neighbour on the other strand plays no part.`,
+      picture: { diagram: 'strands', spec: missing ? { terms: enc(seq) } : { terms: enc(seq.slice(0, -1)), next: encodeTerm(seq[n - 1]) }, caption: `Positions 1, 3, 5, … form one sequence and 2, 4, 6, … another. Term ${k + 1} belongs to the ${k % 2 ? 'second' : 'first'} strand, which continues to ${ans}.` },
+    };
+  }
+  const lr = ladderRows(seq), lastRow = lr[lr.length - 1];
+  const flat = lr.length > 1 && allEqual(lastRow);
+  return {
+    ask, fast,
+    check: flat
+      ? `${order}With ${ans} in place the gaps are ${list(gaps, mode)}${lr.length > 2 ? `, and the bottom row stays at ${L1(lastRow[0])}` : ''}. Any other option breaks that pattern at its last step.`
+      : `${order}With ${ans} in place the gaps are ${list(gaps, mode)}. Each option gives a different last gap; only ${L1(gaps[k - 1])} matches the rule.`,
+    picture: { diagram: 'ladder', spec: { mode: 'diff', rows: lr.map(enc), predicted: !missing }, caption: flat ? `Each row is the gaps of the row above. The bottom row is constant at ${L1(lastRow[0])}; building back up from it gives ${ans}.` : `Each row is the gaps of the row above, with ${ans} ${missing ? 'in the blank' : 'as the next term'}.` },
+  };
+}
+
 // Family factory. def: { id, title, skill, levels, display, show(d,p), params(rng,d),
 //   terms(p, count) -> Q[], rule(p), explain(p, ctx) -> steps, compute(p, all, k) -> string,
 //   rivals(p, ctx) -> [{value, misconception}], hints(p, ctx), anchor, srule, lesson,
@@ -109,6 +209,7 @@ export function family(def) {
     skill: def.skill,
     levels: def.levels,
     terms: def.terms,
+    view: def.view || 'diff',
     generate(rng, { difficulty = def.levels[0] } = {}) { return build(def, rng, difficulty); },
     verify: verifyNl,
     lesson: def.lesson,
@@ -170,10 +271,12 @@ function build(def, rng, difficulty) {
       fillers: [],
     });
     const ctx = { shown: missing ? used : seq, next: target, all, k, missing, mode, difficulty, labels: display };
-    const steps = [...def.explain(p, ctx), {
-      say: def.compute(p, all, k, mode),
-      why: missing ? `The blank is term ${k + 1}; check that the term after it follows from ${correctLabel} by the same rule.` : 'Apply the same rule once more to the last shown term.',
-    }];
+    const howText = def.compute(p, all, k, mode);
+    const last = computeStep(howText, k, missing, missing ? `The blank is term ${k + 1}; check that the term after it follows from ${correctLabel} by the same rule.` : 'Apply the same rule once more to the last shown term.');
+    if (!(last.math && hasOp(last.math)) && def.math) last.math = def.math(p, all, k, mode);
+    if (!(last.math && hasOp(last.math))) { const g = target.sub(used[k - 1]); last.math = `${label(used[k - 1], mode)} ${g.n < 0n ? MINUS : '+'} ${label(g.n < 0n ? g.neg() : g, mode)} = ${correctLabel}`; }
+    const steps = [...def.explain(p, ctx), last];
+    const extras = nlExtras({ seq: used, k, missing, mode, view: def.view, ruleRow: (i) => def.compute(p, all, i, mode), srule: def.srule, how: last.math || howText });
     return {
       id: `nl:${def.id}:${rng.seed}`,
       section: 'nl',
@@ -187,7 +290,7 @@ function build(def, rng, difficulty) {
       ...mcq,
       answer: { value: target.toNumber(), label: correctLabel, rule: def.rule(p), full: used.map((x) => label(x, mode)), position: k },
       params: { rule: def.id, coeffs: p, shown: seq.map((x, i) => (missing && i === k ? null : encodeTerm(x))), next: encodeTerm(target), position: k },
-      solution: { steps, rule: def.srule, anchor: def.anchor },
+      solution: { ...extras, steps, rule: def.srule, anchor: def.anchor },
       hints: def.hints(p, ctx),
     };
   }

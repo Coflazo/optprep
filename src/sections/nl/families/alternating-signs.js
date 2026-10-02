@@ -5,6 +5,7 @@ export default family({
   title: 'Alternating signs',
   skill: 'Separate sign from size: solve the sizes, then restore the alternating sign',
   levels: [2, 3],
+  view: 'table',
   show: 6,
   params: (rng, d) => (d === 2
     ? rng.pick([{ k: 'sq', s: rng.int(1, 6), e: rng.pick([0, 1]) }, { k: 'lin', a: rng.int(1, 9), d: rng.int(2, 7), e: rng.pick([0, 1]) }])
@@ -24,6 +25,10 @@ export default family({
       { say: `Signs alternate. Sizes: ${shown.map((v) => L(v.n < 0n ? v.neg() : v)).join(', ')}.`, why: 'Strip the sign and solve the sizes as an ordinary sequence.' },
       { say: p.k === 'sq' ? 'The sizes are consecutive squares.' : `The sizes go up by ${p.d}.`, why: 'Then put the alternating sign back on.' },
     ]),
+  math: (p, all, k) => {
+    const abs = (v) => (v.n < 0n ? v.neg() : v), size = abs(all[k]), sign = all[k].n < 0n ? MINUS : '+';
+    return p.k === 'sq' ? `${sign}(${Math.round(Math.sqrt(size.toNumber()))}²) = ${L(all[k])}` : `${sign}(${L(abs(all[k - 1]))} + ${p.d}) = ${L(all[k])}`;
+  },
   compute: (p, all, k) => (p.k === 'aff'
     ? `Term ${k + 1} = ${MINUS}${p.m} × ${L(all[k - 1])} ${p.c < 0 ? '−' : '+'} ${Math.abs(p.c)} = ${L(all[k])}.`
     : `The next size is ${L(all[k].n < 0n ? all[k].neg() : all[k])} and the previous sign was ${all[k - 1].n < 0n ? 'negative' : 'positive'}, so term ${k + 1} = ${L(all[k])}.`),

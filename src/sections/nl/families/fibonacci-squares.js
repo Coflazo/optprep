@@ -5,6 +5,7 @@ export default family({
   title: 'Squares and products of Fibonacci numbers',
   skill: 'Take square roots (or factor into neighbours) to reveal a Fibonacci list',
   levels: [4],
+  view: 'table',
   show: 6,
   params: (rng) => ({ s: rng.int(0, 6), k: rng.pick(['sq', 'prod']), c: rng.pick([0, 0, 0, -3, -2, -1, 1, 2, 3]) }),
   terms: ({ s, k, c }, n) => Array.from({ length: n }, (_, i) => q((k === 'sq' ? FIB[i + s] ** 2 : FIB[i + s] * FIB[i + s + 1]) + c)),

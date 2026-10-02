@@ -19,6 +19,7 @@ export default family({
   title: 'Add the digit sum (or product)',
   skill: 'When gaps are small, irregular and track the digits, test "add the sum of the digits"',
   levels: [3, 4],
+  view: 'table',
   show: 6,
   // Digit products: most starts reach a number containing 0 within a few terms
   // (product 0, the sequence stalls), so draw only from PROD_STARTS.

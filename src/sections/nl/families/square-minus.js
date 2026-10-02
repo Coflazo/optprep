@@ -17,6 +17,7 @@ export default family({
   title: 'Square the previous term, then adjust',
   skill: 'When each term is roughly the square of the one before, the leftover is the constant',
   levels: [4, 5],
+  view: 'table',
   show: (d, p) => p.show,
   limit: 2e8,
   params: (rng, d) => { const [a, c] = rng.pick(POOL[d]); return { a, c, show: viable(a, c) }; },

@@ -8,6 +8,7 @@ export default family({
   title: 'Constant ratio',
   skill: 'When gaps grow fast, divide neighbours: a constant ratio means multiply by the same number',
   levels: [1, 2],
+  view: 'ratio',
   show: 5,
   missing: 1,
   params: (rng, d) => {

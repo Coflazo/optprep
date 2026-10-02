@@ -6,6 +6,7 @@ export default family({
   title: 'Gaps form a geometric sequence',
   skill: 'When the gaps multiply rather than add, extend the gaps by their ratio',
   levels: [2, 3],
+  view: 'table',
   show: (d) => (d === 2 ? 5 : 6),
   params: (rng, d) => (d === 2
     ? { a: rng.int(0, 20), g: rng.int(1, 5), r: 2 }

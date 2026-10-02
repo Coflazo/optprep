@@ -17,6 +17,7 @@ export default family({
   title: 'Fractions: numerator and denominator rules',
   skill: 'Split each fraction into numerator and denominator and solve the two sequences separately',
   levels: [3, 4, 5],
+  view: 'parts',
   show: 5,
   display: 'frac',
   params: (rng, d) => {
@@ -42,6 +43,7 @@ export default family({
     { say: `Numerators: ${shown.map((x) => x.n).join(', ')}; denominators: ${shown.map((x) => x.d).join(', ')}.`, why: 'Fraction sequences are usually two integer sequences glued together; the fraction values themselves rarely follow a simple rule.' },
     { say: p.fibPair ? 'Both rows are Fibonacci numbers, and each denominator becomes the next numerator.' : `Numerators ${say[p.num[0]](...p.num.slice(1))}; denominators ${say[p.den[0]](...p.den.slice(1))}.`, why: 'Solve each row as an ordinary sequence.' },
   ],
+  math: (p, all, k) => `top ${all[k - 1].n} → ${all[k].n}, bottom ${all[k - 1].d} → ${all[k].d}`,
   compute: (p, all, k) => `Next numerator ${all[k].n}, next denominator ${all[k].d}: ${label(all[k], 'frac')} (already in lowest terms).`,
   rivals: (p, { shown, next, after }) => {
     const n = shown.length, a = shown[n - 1], b = shown[n - 2];

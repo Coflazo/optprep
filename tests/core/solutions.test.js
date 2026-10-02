@@ -10,7 +10,7 @@ import { validateDiagram, DIAGRAM_TYPES } from '../../src/study/diagrams/index.j
 import { makeRng } from '../../src/core/rng.js';
 import { parseLabel } from '../../src/sections/mm/lib.js';
 
-const SECTIONS = ['mm', 'ob'];
+const SECTIONS = ['mm', 'ob', 'nl'];
 const SEEDS = 40;
 
 // Families whose solutions carry no picture, with the reason. Keep this list short.
@@ -33,6 +33,11 @@ function agrees(it) {
     const [a, b, c] = sp.rows.slice(1).map((r) => Number(r.slice(1).join('')));
     const want = sp.rows[2][0] === '+' ? a + b : a - b;
     if (want !== c || Math.abs(c) !== Math.abs(it.answer.value)) return `column view ${a} ${sp.rows[2][0]} ${b} = ${c}, answer ${it.answer.value}`;
+  }
+  if (it.section === 'nl' && ['ladder', 'strands'].includes(p.diagram)) {
+    const full = it.prompt.sequence.map((s) => num(s === '?' ? it.options[it.answerIndex].label : s));
+    const first = (p.diagram === 'ladder' ? sp.rows[0] : [...sp.terms, ...(sp.next != null ? [sp.next] : [])]).map(num);
+    if (first.length !== full.length || first.some((v, i) => Math.abs(v - full[i]) > 1e-9)) return `picture terms ${first} differ from the sequence ${full}`;
   }
   if ((p.diagram === 'bundle' || p.diagram === 'ledger') && it.best) {
     const stated = p.diagram === 'bundle' ? sp.stated.profit : sp.stated.cash;
