@@ -103,6 +103,8 @@ tbody tr:hover { background: var(--surface-2); }
 .qhead { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 12px; color: var(--text-2); font-size: 13px; }
 .timer { font-size: 15px; color: var(--text); }
 .timer.low { color: var(--wrong); }
+.pace { font-size: 13px; }
+.pace.over { color: var(--wrong); }
 .prompt { font-size: 18px; line-height: 1.5; margin: 4px 0 16px; }
 .visual { margin: 0 0 16px; overflow-x: auto; }
 .visual svg { display: block; max-width: 100%; height: auto; }

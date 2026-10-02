@@ -42,6 +42,9 @@ export function solutionPanel(item, { stepwise = true } = {}) {
   const all = h('button', { class: 'btn small', type: 'button', onclick: () => { shown = steps.length; render(); } }, 'Show all');
   const rule = h('div', { class: 'rule', hidden: true }, item.solution.rule);
   const anchor = h('p', { class: 'muted', hidden: true }, `Anchor: ${item.solution.anchor}`);
+  // Exam-speed path and a sanity check (the 80-in-8 carries both), shown with the rule.
+  const fast = item.solution.fast ? h('p', { hidden: true }, h('strong', {}, 'At exam speed: '), item.solution.fast) : null;
+  const check = item.solution.check ? h('p', { class: 'muted', hidden: true }, h('strong', {}, 'Check: '), item.solution.check) : null;
   const best = item.kind === 'orderbook' && item.best ? h('p', { class: 'num', hidden: true }, `Best position: ${describeTrades(item)} → profit ${fmtNum(item.best.profit)}`) : null;
   function render() {
     list.replaceChildren(...steps.slice(0, shown).map((s, i) => h('li', {},
@@ -49,10 +52,10 @@ export function solutionPanel(item, { stepwise = true } = {}) {
     const done = shown >= steps.length;
     more.hidden = done; all.hidden = done;
     rule.hidden = !done; anchor.hidden = !done;
-    if (best) best.hidden = !done;
+    for (const el of [best, fast, check]) if (el) el.hidden = !done;
   }
   render();
-  return h('section', { class: 'solution' }, h('h3', {}, 'Solution'), list, h('div', { class: 'row' }, more, all), best, anchor, rule);
+  return h('section', { class: 'solution' }, h('h3', {}, 'Solution'), list, h('div', { class: 'row' }, more, all), best, fast, check, anchor, rule);
 }
 
 function describeTrades(item) {

@@ -6,6 +6,12 @@ import { formatLine, sectionStatus } from './home.js';
 import { buildLibrary, librarySets, setCount } from '../../core/library.js';
 import { lessonForFamily, BOOK_BY_ID } from '../../study/content/index.js';
 
+// Some 80-in-8 reports write division as 735 : 15. The learner picks; items keep ÷ underneath.
+function notationToggle(store) {
+  const box = h('input', { type: 'checkbox', checked: store.settings().divNotation === 'colon', onchange: () => store.setSetting('divNotation', box.checked ? 'colon' : 'obelus') });
+  return h('label', { class: 'small-note', style: { display: 'flex', gap: '8px', alignItems: 'center', marginTop: '12px' } }, box, 'Write division as 735 : 15 (European notation) instead of 735 ÷ 15');
+}
+
 export function sectionPage(root, { store, id }) {
   const cfg = SECTIONS[id];
   const mod = SECTION_MODULES[id];
@@ -44,7 +50,8 @@ export function sectionPage(root, { store, id }) {
         h('a', { class: 'btn', href: `#/run/${id}/exam` }, 'Exam (full replica)'),
         ...cfg.variants.map((v, i) => h('a', { class: 'btn', href: `#/run/${id}/exam/v${i}` }, v.label)),
         h('a', { class: 'btn', href: `#/run/${id}/mistakes` }, `Mistakes (${due} due)`),
-        BOOK_BY_ID[id] && !BOOK_BY_ID[id].pending ? h('a', { class: 'btn', href: `#/study/book/${id}` }, 'Study this section') : null)),
+        BOOK_BY_ID[id] && !BOOK_BY_ID[id].pending ? h('a', { class: 'btn', href: `#/study/book/${id}` }, 'Study this section') : null),
+      id === 'mm' ? notationToggle(store) : null),
     h('h2', {}, 'Question library'),
     h('div', { class: 'panel spread' },
       h('div', {}, h('div', {}, `${lib.length} fixed questions in ${nSets} exam-sized sets, plus unlimited fresh questions in Practice, Drill and Exam.`),
