@@ -1,6 +1,6 @@
 // 80-in-8: decimals with 1 or 2 places. Powers of ten, adding and subtracting with the points
 // lined up, decimal × whole number, decimal × decimal, and dividing by a decimal.
-import { family, q, L, smallFromLarge } from '../lib.js';
+import { family, q, L, smallFromLarge, placePicture, areaPicture, tablePicture } from '../lib.js';
 
 const D = (m, dp) => q(m, 10 ** dp); // 347, 2 -> 3.47
 const nonInt = (x) => x.d !== 1n;
@@ -25,8 +25,9 @@ const pow10 = {
       ask: `${times ? 'Multiply' : 'Divide'} ${L(x)} by ${p}.`,
       steps: [
         { say: `${p} has ${k} zero${k > 1 ? 's' : ''}, so the decimal point moves ${k} place${k > 1 ? 's' : ''} to the ${dir}.`, why: `Each ${times ? '× 10 makes every digit ten times bigger' : '÷ 10 makes every digit ten times smaller'}: one place per zero.` },
-        { say: `${L(x)} → ${L(r)}.`, why: 'Count the places one at a time; add zeros as place holders if the digits run out.' },
+        { say: 'Move the point and read the answer.', math: `${L(x)} ${times ? '×' : '÷'} ${p} = ${L(r)}`, why: 'Count the places one at a time; add zeros as place holders if the digits run out.' },
       ],
+      picture: placePicture([['', x], [`${times ? '×' : '÷'} ${p}`, r]], `The same digits, shifted ${k} place${k > 1 ? 's' : ''} ${times ? 'to the left (bigger)' : 'to the right (smaller)'} against the fixed place columns. The wrong options shift them too far, too little or the wrong way.`),
       fast: `Count the zeros of ${p} (${k}) and hop the point ${k} to the ${dir}: ${L(r)}.`,
       check: `Size: ${times ? `${p} times` : `one ${p === 10 ? 'tenth' : p === 100 ? 'hundredth' : 'thousandth'} of`} ${L(x)} must be ${times ? 'bigger' : 'smaller'}; ${L(r)} is.`,
       hints: [`How many zeros does ${p} have?`, `Move the point that many places to the ${dir}.`],
@@ -51,9 +52,10 @@ const addDec = {
       ask: `Add ${L(y)} to ${L(x)}.`,
       steps: [
         { say: `Line up the points: ${L(x)} = ${(m1 / 10).toFixed(2)}.`, why: 'Write both with two decimal places so tenths sit under tenths and hundredths under hundredths.' },
-        { say: `${Math.floor(m1 / 10)} + ${Math.floor(m2 / 100)} = ${Math.floor(m1 / 10) + Math.floor(m2 / 100)} ones, and ${L(D(m1 % 10, 1))} + ${L(D(m2 % 100, 2))} = ${L(D((m1 % 10) * 10 + (m2 % 100), 2))}.`, why: 'Whole parts and decimal parts add separately; a decimal part over 1 carries into the ones.' },
-        { say: `Total: ${L(c)}.`, why: 'Put the two parts back together.' },
+        { say: 'Add the whole parts, then the decimal parts.', math: `${Math.floor(m1 / 10)} + ${Math.floor(m2 / 100)} = ${Math.floor(m1 / 10) + Math.floor(m2 / 100)};  ${L(D(m1 % 10, 1))} + ${L(D(m2 % 100, 2))} = ${L(D((m1 % 10) * 10 + (m2 % 100), 2))}`, why: 'Whole parts and decimal parts add separately; a decimal part over 1 carries into the ones.' },
+        { say: 'Put the two parts back together.', math: `${Math.floor(m1 / 10) + Math.floor(m2 / 100)} + ${L(D((m1 % 10) * 10 + (m2 % 100), 2))} = ${L(c)}`, why: 'The whole parts and the decimal parts are two halves of one sum.' },
       ],
+      picture: placePicture([['', x], ['+', y], ['=', c]], `Points lined up: tenths under tenths, hundredths under hundredths. Lining up the last digits instead would put the ${m1 % 10} of ${L(x)} in the hundredths.`),
       fast: `Ones first, then the decimal parts: ${Math.floor(m1 / 10) + Math.floor(m2 / 100)} + ${L(D((m1 % 10) * 10 + (m2 % 100), 2))} = ${L(c)}.`,
       check: `Size: about ${Math.round(m1 / 10)} + ${Math.round(m2 / 100)} = ${Math.round(m1 / 10) + Math.round(m2 / 100)}. The answer has ${L(y).split('.')[1].length} decimal places, ending in ${m2 % 10}.`,
       hints: ['Line up the decimal points, not the last digits.', `${L(x)} = ${(m1 / 10).toFixed(2)}.`],
@@ -78,8 +80,9 @@ const subDec = {
       steps: [
         { say: `Line up the points: ${L(x)} = ${(m1 / 10).toFixed(2)}.`, why: 'The empty hundredths place holds a 0, and you will borrow into it.' },
         { say: `${(m1 / 10).toFixed(2)} − ${L(y)}: count up from ${L(y)} to ${Math.ceil(m2 / 100)} (${L(q(Math.ceil(m2 / 100)).sub(y))}), then to ${L(x)} (${L(x.sub(Math.ceil(m2 / 100)))}).`, why: 'Counting up to a whole number avoids borrowing across the point.' },
-        { say: `${L(q(Math.ceil(m2 / 100)).sub(y))} + ${L(x.sub(Math.ceil(m2 / 100)))} = ${L(c)}.`, why: 'The two hops together are the gap between the numbers.' },
+        { say: 'Add the two hops.', math: `${L(q(Math.ceil(m2 / 100)).sub(y))} + ${L(x.sub(Math.ceil(m2 / 100)))} = ${L(c)}`, why: 'The two hops together are the gap between the numbers.' },
       ],
+      picture: { diagram: 'numberline', spec: { min: Math.floor(m2 / 100), max: Math.ceil(m1 / 10), step: 1, start: y.toNumber(), target: x.toNumber(), marks: [{ x: Math.ceil(m2 / 100), label: 'whole number' }] }, caption: `Count up from ${L(y)} (start) to ${L(x)} (target): ${L(q(Math.ceil(m2 / 100)).sub(y))} to reach ${Math.ceil(m2 / 100)}, then ${L(x.sub(Math.ceil(m2 / 100)))} more. The gap is ${L(c)}.` },
       fast: `Count up: ${L(y)} → ${Math.ceil(m2 / 100)} → ${L(x)}; the hops add to ${L(c)}.`,
       check: `Add back: ${L(c)} + ${L(y)} = ${L(x)}. Size: about ${Math.round(m1 / 10)} − ${Math.round(m2 / 100)}.`,
       hints: [`Write ${L(x)} as ${(m1 / 10).toFixed(2)}.`, `Count up from ${L(y)} to the next whole number first.`],
@@ -104,9 +107,11 @@ const decTimesInt = {
       text: `${L(x)} × ${n} = ?`, value: c, mode: 'dec', wrong,
       ask: `Multiply ${L(x)} by ${n}.`,
       steps: [
-        { say: `Ignore the point: ${m} × ${n} = ${m * n}.`, why: `${L(x)} is ${m} ${place(xs)}, so the product is ${m * n} ${place(xs)}.` },
-        { say: `${L(x)} has ${xs} decimal place${xs > 1 ? 's' : ''}, so the answer has ${xs}: ${L(c)}.`, why: 'Count the decimal places in the question; the answer gets the same number.' },
+        { say: 'Ignore the point and multiply the whole numbers.', math: `${m} × ${n} = ${m * n}`, why: `${L(x)} is ${m} ${place(xs)}, so the product is ${m * n} ${place(xs)}.` },
+        { say: `${L(x)} has ${xs} decimal place${xs > 1 ? 's' : ''}, so the answer has ${xs}.`, math: `${m * n} ${place(xs)} = ${L(c)}`, why: 'Count the decimal places in the question; the answer gets the same number.' },
       ],
+      picture: whole ? areaPicture([n], [q(whole), D(frac, xs)], `Area model: ${L(x)} = ${whole} + ${L(D(frac, xs))}, each part times ${n}. The cells add to ${whole * n} + ${L(D(frac * n, xs))} = ${L(c)}.`)
+        : tablePicture(['', 'Digits only', 'With the point'], [[`× ${n}`, `${m} × ${n} = ${m * n}`, `${L(x)} × ${n} = ${L(c)}`]], `Same digits either way; the ${xs} decimal place${xs > 1 ? 's' : ''} of ${L(x)} decide where the point goes.`),
       fast: whole ? `${whole} × ${n} = ${whole * n}, ${L(D(frac, xs))} × ${n} = ${L(D(frac * n, xs))}: ${L(c)}.` : `${m} × ${n} = ${m * n}, then ${xs} decimal places: ${L(c)}.`,
       check: `Size: about ${L(D(Math.round(m / 10 ** (xs - 1)), 1))} × ${n} ≈ ${Math.round((m / 10 ** xs) * n * 10) / 10}. Last digit: ${m % 10} × ${n % 10} ends in ${(m % 10) * (n % 10) % 10}.`,
       hints: [`Work out ${m} × ${n} first.`, `Then give the answer ${xs} decimal place${xs > 1 ? 's' : ''}.`],
@@ -131,9 +136,11 @@ const decTimesDec = {
       text: `${L(x)} × ${L(y)} = ?`, value: c, mode: 'dec', wrong,
       ask: `Multiply ${L(x)} by ${L(y)}.`,
       steps: [
-        { say: `Ignore the points: ${a} × ${b} = ${a * b}.`, why: 'Tenths times tenths are hundredths: the digits come from the whole-number product.' },
-        { say: `One place + one place = two decimal places: ${L(c)}.`, why: '0.1 × 0.1 = 0.01, so the decimal places of the two factors add.' },
+        { say: 'Ignore the points and multiply the whole numbers.', math: `${a} × ${b} = ${a * b}`, why: 'Tenths times tenths are hundredths: the digits come from the whole-number product.' },
+        { say: 'One place plus one place makes two decimal places.', math: `${a * b} hundredths = ${L(c)}`, why: '0.1 × 0.1 = 0.01, so the decimal places of the two factors add.' },
       ],
+      picture: wa && wb ? areaPicture([q(wa), D(fa, 1)], [q(wb), D(fb, 1)], `Area model: whole and tenths parts of each factor. The four cells add to ${L(c)}; the two cross cells (${wa} × ${L(D(fb, 1))} and ${L(D(fa, 1))} × ${wb}) are what splitting whole and decimal parts misses.`)
+        : tablePicture(['', 'Digits only', 'With the points'], [['product', `${a} × ${b} = ${a * b}`, `${L(x)} × ${L(y)} = ${L(c)}`]], `Same digits; two decimal places in the factors, so two in the answer.`),
       fast: `${a} × ${b} = ${a * b}, two places: ${L(c)}.`,
       check: `Size: about ${Math.round(a / 10) || 0.5} × ${Math.round(b / 10) || 0.5}. A factor below 1 makes the product smaller than the other factor.`,
       hints: [`${a} × ${b} = ?`, 'Count the decimal places in both factors and add them.'],
@@ -159,8 +166,9 @@ const divByDec = {
       ask: `How many ${ys}s make ${L(x)}?`,
       steps: [
         { say: `Multiply both numbers by ${p}: ${L(x)} ÷ ${ys} = ${L(x.mul(p))} ÷ ${L(y.mul(p))}.`, why: 'Scaling both numbers by the same amount leaves the quotient unchanged, and the divisor becomes whole.' },
-        { say: `${L(x.mul(p))} ÷ ${L(y.mul(p))} = ${L(r)}.`, why: 'Now it is division by a whole number.' },
+        { say: 'Divide by the whole number.', math: `${L(x.mul(p))} ÷ ${L(y.mul(p))} = ${L(r)}`, why: 'Now it is division by a whole number.' },
       ],
+      picture: tablePicture(['', 'Number', 'Divisor', 'Quotient'], [['as given', L(x), ys, L(r)], [`both × ${p}`, L(x.mul(p)), L(y.mul(p)), L(r)]], `Scaling both numbers by ${p} leaves the quotient at ${L(r)}. Scaling only one of them is the slip behind two of the wrong options.`),
       fast: `÷ ${ys} is × ${L(q(Number(y.d), Number(y.n)))}: ${L(x)} × ${L(q(Number(y.d), Number(y.n)))} = ${L(r)}.`,
       check: `Multiply back: ${L(r)} × ${ys} = ${L(x)}. ${y.toNumber() < 1 ? `Dividing by less than 1 gives more than ${L(x)}.` : `Dividing by more than 1 gives less than ${L(x)}.`}`,
       hints: [`Multiply both numbers by ${p} so the divisor is whole.`, `${L(x.mul(p))} ÷ ${L(y.mul(p))}.`],
@@ -183,8 +191,9 @@ const decDivInt = {
       ask: `Divide ${L(x)} by ${n}.`,
       steps: [
         { say: `Ignore the point: ${L(x.mul(10 ** rs))} ÷ ${n} = ${L(r.mul(10 ** rs))}.`, why: `${L(x)} is ${L(x.mul(10 ** rs))} ${place(rs)}; dividing ${place(rs)} gives ${place(rs)}.` },
-        { say: `Put the point back: ${L(r)}.`, why: 'Dividing by a whole number keeps the point exactly above where it was.' },
+        { say: 'Put the point back.', math: `${L(r.mul(10 ** rs))} ${place(rs)} = ${L(r)}`, why: 'Dividing by a whole number keeps the point exactly above where it was.' },
       ],
+      picture: placePicture([['', x], [`÷ ${n}`, r]], `Dividing by ${n} keeps the columns: ${place(rs)} stay ${place(rs)}, so the point of ${L(r)} sits where it sat in ${L(x)}.`),
       fast: `${L(x.mul(10 ** rs))} ÷ ${n} = ${L(r.mul(10 ** rs))}, point back in: ${L(r)}.`,
       check: `Multiply back: ${n} × ${L(r)} = ${L(x)}. Size: about ${Math.round(x.toNumber())} ÷ ${n}.`,
       hints: [`Ignore the point and divide ${L(x.mul(10 ** rs))} by ${n}.`, 'Put the point back in the same place.'],

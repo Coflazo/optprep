@@ -83,6 +83,30 @@ test('mm: the answer position is spread over all four slots', () => {
   }
 });
 
+// A test-wise solver who never does the sum picks the option closest to all the others (smallest
+// summed digit-edit distance; ties split). With every wrong option one slip from the answer that
+// found the answer 78 to 94% of the time. It must stay near the 1-in-4 chance level.
+test('mm: the closest-to-the-others option is the answer no more often than chance (2,000 seeds per family)', () => {
+  const lev = (a, b) => {
+    const d = Array.from({ length: a.length + 1 }, (_, i) => [i, ...Array(b.length).fill(0)]);
+    for (let j = 1; j <= b.length; j++) d[0][j] = j;
+    for (let i = 1; i <= a.length; i++) for (let j = 1; j <= b.length; j++) d[i][j] = Math.min(d[i - 1][j] + 1, d[i][j - 1] + 1, d[i - 1][j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+    return d[a.length][b.length];
+  };
+  for (const f of section.families) {
+    let hit = 0, compound = 0;
+    for (const it of items(f, 2000, 'tell')) {
+      const L = it.options.map((o) => o.label);
+      const sums = L.map((a, i) => L.reduce((t, b, j) => t + (i === j ? 0 : lev(a, b)), 0));
+      const best = sums.flatMap((v, i) => (v === Math.min(...sums) ? [i] : []));
+      if (best.includes(it.answerIndex)) hit += 1 / best.length;
+      if (it.options.some((o) => / A second slip on top: /.test(o.misconception || ''))) compound++;
+    }
+    assert.ok(hit / 2000 <= 0.35, `${f.id}: the centre option is the answer in ${(hit / 20).toFixed(1)}% of items`);
+    assert.ok(compound / 2000 >= 0.5, `${f.id}: only ${compound} items build a distractor from another distractor`);
+  }
+});
+
 test('mm: the verifier rejects an item keyed to a wrong option', () => {
   for (const f of section.families) for (const it of items(f, 10, 'neg')) {
     const k = (it.answerIndex + 1) % 4;
