@@ -21,6 +21,7 @@ export function validateItem(it) {
   else s.steps.forEach((st, i) => { if (!str(st.say) || !str(st.why)) e.push(`solution.steps[${i}] needs say and why`); });
   if (!str(s?.rule)) e.push('solution.rule missing');
   if (!str(s?.anchor)) e.push('solution.anchor missing');
+  if (s) e.push(...validateSolution(s));
   if (!Array.isArray(it.hints) || it.hints.length < 2 || !it.hints.every(str)) e.push('hints needs >= 2 strings');
 
   if (it.kind === 'mcq') {

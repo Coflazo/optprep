@@ -10,7 +10,7 @@ import { validateDiagram, DIAGRAM_TYPES } from '../../src/study/diagrams/index.j
 import { makeRng } from '../../src/core/rng.js';
 import { parseLabel } from '../../src/sections/mm/lib.js';
 
-const SECTIONS = ['mm', 'bto', 'nl', 'll', 'iv', 'ob'];
+const SECTIONS = Object.keys(SECTION_MODULES);
 const SEEDS = 40;
 
 // Families whose solutions carry no picture, with the reason. Keep this list short.
