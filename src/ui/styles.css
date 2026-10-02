@@ -159,8 +159,8 @@ button, input, select { font: inherit; color: inherit; }
 .sidebar nav a { position: relative; display: flex; align-items: center; gap: 10px; min-height: 36px; padding: 6px 10px; border-radius: var(--radius-sm); text-decoration: none; color: var(--text-2); transition: background-color var(--dur-1) ease, color var(--dur-1) ease; }
 .sidebar nav a .icon { flex: none; opacity: 0.85; }
 .sidebar nav a .nav-count { margin-left: auto; font-family: var(--mono); font-size: 12px; color: var(--text-3); font-variant-numeric: tabular-nums; }
+/* The current page is marked by a band, never a stripe. */
 .sidebar nav a[aria-current="page"] { color: var(--text); background: var(--surface-2); font-weight: 500; }
-/* The current page carries a short orange tick in the margin, like a graded answer. */
 .sidebar .group { margin: 14px 10px 4px; font-size: 12px; color: var(--text-3); }
 .sidebar-foot { margin-top: auto; padding: 12px 10px 0; border-top: 1px solid var(--border); font-size: 12px; color: var(--text-3); }
 .sidebar-foot a { color: var(--text-2); }
@@ -195,7 +195,7 @@ html { accent-color: var(--brand-text); scrollbar-color: var(--surface-3) transp
 .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 .spread { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
 .stack > * + * { margin-top: 12px; }
-/* A printed field: thin orange rule, label in form ink. */
+/* A field on the sheet: a framed group with its label in form ink. */
 .field { position: relative; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px 20px 20px; margin: 0 0 16px; }
 .field-label { margin: 0 0 12px; font-size: 13px; font-weight: 600; letter-spacing: 0; color: var(--brand-text); }
 .empty { color: var(--text-2); padding: 24px; border: 1px dashed var(--border-strong); border-radius: var(--radius); background: var(--surface); }
@@ -479,7 +479,7 @@ details > summary { cursor: pointer; }
 
 /* ---------- Scan: submit grades the sheet row by row ---------- */
 .is-scanning { position: relative; overflow: hidden; }
-.scan-line { position: absolute; left: 0; right: 0; top: 0; height: 2px; background: var(--brand); box-shadow: 0 0 0 1px color-mix(in srgb, var(--brand) 20%, transparent); pointer-events: none; z-index: 2; }
+.scan-line { position: absolute; left: 0; right: 0; top: 0; height: 2px; background: var(--brand); pointer-events: none; z-index: 2; }
 [data-grade] { transition: background-color var(--dur-2) ease; }
 [data-grade].is-graded[data-grade="right"] { background: color-mix(in srgb, var(--correct-bg) 60%, transparent); }
 [data-grade].is-graded[data-grade="wrong"] { background: color-mix(in srgb, var(--wrong-bg) 60%, transparent); }
@@ -644,9 +644,9 @@ code { font-size: 0.92em; background: var(--surface-2); padding: 1px 4px; border
 .callout-idea { background: color-mix(in srgb, var(--viz-1) 6%, var(--surface)); } .callout-idea .callout-label { color: var(--viz-1); }
 .callout-trap { background: color-mix(in srgb, var(--wrong-bg) 70%, var(--surface)); } .callout-trap .callout-label { color: var(--wrong); }
 .callout-speed { background: color-mix(in srgb, var(--brand-bg) 60%, var(--surface)); } .callout-speed .callout-label { color: var(--brand-text); }
-.callout-rule { border-left-color: var(--text); background: var(--surface-2); } .callout-rule .callout-label { color: var(--text); }
-.callout-contrast, .callout-transfer { border-left-color: var(--viz-4); } .callout-contrast .callout-label, .callout-transfer .callout-label { color: var(--viz-4); }
-.callout-edge { border-left-color: var(--warn); } .callout-edge .callout-label { color: var(--warn); }
+.callout-rule { background: var(--surface-2); } .callout-rule .callout-label { color: var(--text); }
+.callout-contrast .callout-label, .callout-transfer .callout-label { color: var(--viz-4); }
+.callout-edge .callout-label { color: var(--warn); }
 
 /* Interactive blocks share one frame */
 .study-check, .study-challenge, .study-explain, .study-erroneous, .study-predict, .study-worked, .study-try, .study-traps, .study-recognize { border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 16px; background: var(--surface); }
@@ -662,7 +662,7 @@ code { font-size: 0.92em; background: var(--surface-2); padding: 1px 4px; border
 .check-feedback .feedback { margin: 8px 0 0; }
 .study-input { min-height: 36px; padding: 0 10px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface); width: 180px; max-width: 100%; }
 input.study-input[type=number] { width: 120px; }
-.study-text { display: block; width: 100%; padding: 8px 10px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface); font: inherit; color: inherit; resize: vertical; margin: 6px 0; }
+.study-text { display: block; width: 100%; padding: 8px 10px; border: 1px solid var(--ink); border-radius: var(--radius-sm); background: var(--surface); font: inherit; color: inherit; resize: vertical; margin: 6px 0; }
 .study-steps li { padding-bottom: 12px; }
 .step-pick { text-align: left; width: 100%; padding: 4px 2px; border-radius: 4px; }
 .step-pick:hover { background: var(--surface-2); }
