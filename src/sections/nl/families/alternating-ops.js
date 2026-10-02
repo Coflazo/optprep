@@ -15,6 +15,7 @@ export default family({
   title: 'Alternating operations',
   skill: 'When the steps take turns (add, multiply, add, multiply), track which operation is due',
   levels: [2, 3],
+  view: 'table',
   show: (d) => (d === 2 ? 6 : 7),
   params: (rng, d) => ({ a: rng.int(1, 9), ops: pairFor(rng, d) }),
   accept: (p, xs) => xs.every((v) => !v.isZero()),

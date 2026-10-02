@@ -5,6 +5,7 @@ export default family({
   title: 'Sum of the previous two',
   skill: 'When the gaps look like earlier terms, test last + previous',
   levels: [2, 3],
+  view: 'table',
   show: 6,
   missing: 2,
   params: (rng, d) => (d === 2 ? { a: rng.int(1, 9), b: rng.int(1, 9) } : { a: rng.int(-6, 15), b: rng.int(4, 20) }),

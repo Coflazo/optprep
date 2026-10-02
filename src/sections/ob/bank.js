@@ -2,7 +2,7 @@
 // (bid) and buy (ask) price; tap prices to build a flat, profitable position. Every board is
 // hand-written; tests confirm the written trades are the solver's best package.
 import { positionOutcome } from '../../core/check.js';
-import { describe, promptText } from './lib.js';
+import { describe, promptText, obSolution } from './lib.js';
 import { families } from './registry.js';
 
 const SRC = {
@@ -34,7 +34,7 @@ function board(fam, d, src, products, cards, trades, idea) {
     prompt: { text: promptText(b) },
     board: b,
     best: { trades: tr, profit },
-    solution: { steps: [...idea.map(([say, why]) => ({ say, why })), ...describe(b, tr)], rule: F[fam].lesson.rule, anchor: F[fam].lesson.anchor },
+    solution: { ...obSolution(b, { trades: tr, profit }, fam), steps: [...idea.map(([say, why]) => ({ say, why })), ...describe(b, tr)], rule: F[fam].lesson.rule, anchor: F[fam].lesson.anchor },
     hints: ['Price every bundle from its parts on the side you would trade.', 'Look for a bid above an equivalent ask.'],
     params: { structure: fam },
     meta: { source: SRC[src] },

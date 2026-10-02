@@ -1,7 +1,9 @@
 // Card symmetry: unseen discards change nothing; any fixed position is a uniformly random card.
 import { nCr } from '../../../core/combinatorics.js';
 import { Q } from '../../../core/rational.js';
-import { mcqItem, agree, q } from '../lib.js';
+import { mcqItem, agree, q, pic } from '../lib.js';
+
+const oneLevel = (label, yes, no, pYes, pNo) => ({ label, children: [{ p: pYes, label: yes, mark: true }, { p: pNo, label: no }] });
 
 const ID = 'card-symmetry';
 const ord = (k) => `${k}${k % 10 === 1 && k !== 11 ? 'st' : k % 10 === 2 && k !== 12 ? 'nd' : k % 10 === 3 && k !== 13 ? 'rd' : 'th'}`;
@@ -30,6 +32,12 @@ function build(kind, rng) {
         { say: `P = ${good}/52 = ${value}.`, why: `${good} of 52 cards qualify.` },
       ],
       hints: ['Did you learn anything about the discarded cards?', `Position ${d + 1} is as random as position 1.`, `${good}/52.`],
+      picture: pic('tree', { root: { label: 'one unseen discard', children: [
+        { p: `${good}/52`, label: `discard ${red ? 'red' : 'an ace'}`, children: [{ p: `${good - 1}/51`, label: `next ${red ? "red" : "an ace"}`, mark: true }, { p: `${52 - good}/51`, label: "next other" }] },
+        { p: `${52 - good}/52`, label: 'discard other', children: [{ p: `${good}/51`, label: `next ${red ? 'red' : 'an ace'}`, mark: true }, { p: `${51 - good}/51`, label: 'next other' }] },
+      ] }, total: `${good}/52` }, `One unseen discard, split by what it was. The two marked paths add back to ${good}/52; each of the other ${d - 1} discards averages out the same way.`),
+      fast: `Unseen cards carry no information, so the ${ord(d + 1)} card is a random card: ${good}/52 = ${value}.`,
+      check: `The answer cannot depend on how many cards were burned: with ${d} or with 0 discards it is ${value}. An option that changes with ${d} uses the discards as if they were seen.`,
     };
   }
   if (kind === 'sameSuit' || kind === 'heartBottom') {
@@ -55,6 +63,9 @@ function build(kind, rng) {
         { say: 'P = 12/51 = 4/17 ≈ 0.235.', why: 'Favourable over remaining.' },
       ],
       hints: ['Once the top card is fixed, how many cards remain and how many share its suit?', 'Position does not matter among the remaining 51.', '12/51.'],
+      picture: pic('tree', { root: oneLevel('top card known', 'same suit', 'other suit', '12/51', '39/51'), total: '12/51' }, 'With the top card fixed, the other card is one of 51, and 12 of them share its suit. Its position does not matter.'),
+      fast: '12 of the remaining 51 cards share the suit: 12/51 = 4/17.',
+      check: 'Slightly below 1/4, because the top card has used up one card of its own suit: 12/51 against 13/52.',
     };
   }
   if (kind === 'aceBeforeKing') return {
@@ -70,6 +81,9 @@ function build(kind, rng) {
       { say: 'Each of the 8 is equally likely to be first among them; 4 are aces. P = 4/8 = 1/2.', why: 'Symmetry among the relevant cards.' },
     ],
     hints: ['Which cards decide the event?', 'Among the 8 aces and kings, which comes first?', '4/8.'],
+    picture: pic('tree', { root: oneLevel('first of the 8 aces and kings', 'an ace', 'a king', '4/8', '4/8'), total: '1/2' }, 'Only the first card among the 4 aces and 4 kings decides it; the other 44 cards never matter. Each of the 8 is equally likely to come first.'),
+    fast: 'Aces and kings are symmetric: 4 of the 8 deciding cards are aces, 1/2.',
+    check: 'Swap the words ace and king and the question is unchanged, so the two answers are equal and add to 1: each is 1/2.',
   };
   const r = rng.pick(['spades', 'hearts']);
   return {
@@ -86,6 +100,9 @@ function build(kind, rng) {
       { say: 'Each of the 13 is equally likely to be first among them: P = 1/13 ≈ 0.077.', why: 'Symmetry.' },
     ],
     hints: ['Which cards decide the event?', `The order among the 13 ${r}.`, '1/13.'],
+    picture: pic('tree', { root: oneLevel(`first of the 13 ${r}`, 'the ace', 'another card', '1/13', '12/13'), total: '1/13' }, `Only the order among the 13 ${r} matters, and each of them is equally likely to come first.`),
+    fast: `Each of the 13 ${r} is equally likely to come first among them: 1/13.`,
+    check: `The 13 answers "card X comes first among the ${r}" are equal and must add to 1, so each is 1/13.`,
   };
 }
 

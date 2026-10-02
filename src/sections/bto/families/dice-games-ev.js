@@ -1,6 +1,11 @@
 // Expected value of dice games: payoff functions, fair prices, and the optimal reroll rule.
 import { Q } from '../../../core/rational.js';
-import { mcqItem, agree, q } from '../lib.js';
+import { mcqItem, agree, q, pic, table } from '../lib.js';
+
+// Payoff per face: the fair price is the plain average of the right-hand column.
+const payTable = (k, pay, caption, head = 'Payoff') => table(['Face', head], Array.from({ length: k }, (_, i) => [i + 1, pay(i + 1)]), caption);
+// Two dice, every cell equally likely, holding its payoff.
+const payGrid = (f, caption) => pic('grid', { rows: 6, cols: 6, highlight: [], cellText: [1, 2, 3, 4, 5, 6].map((a) => [1, 2, 3, 4, 5, 6].map((b) => String(f(a, b)))), rowTitle: 'first die', colTitle: 'second die' }, caption);
 
 const ID = 'dice-games-ev';
 const die = (k) => (k === 6 ? 'a fair die' : `a fair ${k}-sided die`);
@@ -51,6 +56,9 @@ export default {
         rule: 'E[X²] = (k+1)(2k+1)/6 for a fair k-sided die; E[X²] − E[X]² = variance > 0.',
         anchor: 'The average roll (k+1)/2, with one change: average the payoff f(x) = x² instead of x itself.',
         hints: ['Average the payoffs, not the rolls.', 'Σ x² = n(n+1)(2n+1)/6.', `Divide by ${k}.`],
+        picture: payTable(k, (x) => x * x, `Each face pays its square. The fair price is the average of the column, ${(k * (k + 1) * (2 * k + 1)) / 6}/${k} = ${v}, more than the square of the average roll, ${mean(k).mul(mean(k))}.`),
+        fast: `(k + 1)(2k + 1)/6 = ${k + 1} × ${2 * k + 1}/6 = ${v}.`,
+        check: `E[X²] beats E[X]² = ${mean(k).mul(mean(k))} by the variance, so the answer must be above that; and below the top payoff ${k * k}.`,
         data: { kind, k },
       });
     }
@@ -77,6 +85,9 @@ export default {
         rule: 'EV = (Σ winning payoffs − Σ losing payoffs)/k.',
         anchor: 'The average roll, with one change: some faces count negative.',
         hints: ['Which faces win and which lose?', 'Add the payoffs with signs, then divide by the number of faces.', `Signed sum ${s}.`],
+        picture: payTable(k, (x) => (x >= t ? `+${x}` : `−${x}`), `Faces ${t} and up pay their value, the rest cost it. The signed column adds to ${s}; divide by ${k}.`, 'Profit'),
+        fast: `(winning faces − losing faces)/${k} = ${s}/${k} = ${v}.`,
+        check: `The big faces win, so the game ${s > 0 ? 'favours you' : s < 0 ? 'favours the house' : 'is fair'}; the answer must lie between −${t - 1} and ${k}.`,
         data: { kind, k, t },
       });
     }
@@ -106,6 +117,9 @@ export default {
         rule: prod ? 'Independent: E[XY] = E[X]E[Y]; but E[X²] ≠ E[X]².' : 'E|X − Y| for two dice = 70/36; |·| destroys the cancellation of E[X − Y] = 0.',
         anchor: 'The average of one die, with one change: the payoff combines two independent dice.',
         hints: prod ? ['Are the two dice independent?', 'Expectations of independent products factor.', '3.5².'] : ['Tabulate the differences 0..5 with their counts.', 'Counts: 6, 10, 8, 6, 4, 2.', '70/36.'],
+        picture: prod ? payGrid((a, b) => a * b, 'Each of the 36 cells pays its product. The cells add to 441 = 21 × 21, so the average is 441/36 = 12.25 = 3.5².') : payGrid((a, b) => Math.abs(a - b), 'Each of the 36 cells pays the difference. The diagonal pays 0 and the cells add to 70, so the average is 70/36.'),
+        fast: prod ? '3.5 × 3.5 = 12.25.' : '(1·10 + 2·8 + 3·6 + 4·4 + 5·2)/36 = 70/36.',
+        check: prod ? 'Independence makes E[XY] = 3.5²; using E[X²] = 91/6 for one die squared would give 15.17, which is the wrong game.' : 'E[X − Y] = 0 but the absolute value removes the cancellation, so the answer is positive and below the largest difference 5.',
         data: { kind },
       });
     }
@@ -139,6 +153,9 @@ export default {
         { say: rolls === 2 ? `With one reroll left, keep x if x ≥ ${mean(k)}, otherwise reroll.` : `With one reroll left the value is ${two}; with two left, keep x if x ≥ ${two}.`, why: 'Compare the sure value in hand with the expected value of continuing.' },
         { say: `Value = E[max(X, value of continuing)] = ${V} ≈ ${V.toNumber().toFixed(3)}.`, why: 'Average over the first roll with the keep/reroll rule applied.' },
       ],
+      picture: payTable(k, (x) => (q(x).cmp(firstCut) >= 0 ? `keep: ${x}` : `reroll: worth ${firstCut}`), `First roll: keep a face worth at least the value of continuing (${firstCut}), otherwise reroll. The column averages to ${V}.`, 'Best move and its worth'),
+      fast: `Keep ${firstCut.toNumber() % 1 === 0 ? `${firstCut} or more` : `above ${firstCut.toNumber().toFixed(2)}`}; value = E[max(X, ${firstCut})] = ${V.toNumber().toFixed(3)}.`,
+      check: `Above one roll's ${mean(k)} (the option to reroll can only help) and below the max of ${rolls} rolls, ${maxOfAll.toNumber().toFixed(3)}, because a roll you passed on cannot be taken back.`,
       rule: 'Backward induction: V_1 = mean; V_(r+1) = E[max(X, V_r)]. d6: 3.5 → 4.25 → 4.667.',
       anchor: 'The average roll 3.5, with one change: you may throw away a low roll, so each roll is worth max(roll, value of continuing).',
       hints: ['Start from the last roll: what is it worth?', 'Keep a roll only if it beats the value of rerolling.', `Threshold ${firstCut}.`],

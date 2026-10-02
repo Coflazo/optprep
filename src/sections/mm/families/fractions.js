@@ -1,5 +1,5 @@
 // 80-in-8: fractions with denominators up to 12, all four operations, answers in lowest terms.
-import { family, q, L, gcd } from '../lib.js';
+import { family, q, L, gcd, tablePicture } from '../lib.js';
 
 const lcm = (a, b) => (a * b) / gcd(a, b);
 const F = (n, d) => `${n}/${d}`;
@@ -45,9 +45,10 @@ function addSub(op) {
         text: `${F(a, b)} ${op} ${F(c, e)} = ?`, value: v, mode: 'frac', wrong,
         ask: `${plus ? 'Add' : 'Subtract'} the fractions and give the answer in lowest terms.`,
         steps: [
-          { say: `Common denominator ${M}: ${F(a, b)} = ${F(A, M)} and ${F(c, e)} = ${F(C, M)}.`, why: `Only pieces of the same size can be ${plus ? 'added' : 'subtracted'}; ${M} is the smallest number both ${b} and ${e} divide.` },
-          { say: `${F(A, M)} ${op} ${F(C, M)} = ${F(N, M)}${reduced ? ` = ${v}` : ''}.`, why: `${plus ? 'Add' : 'Subtract'} the tops; the bottom names the piece size and stays${reduced ? ', then cancel the common factor' : ''}.` },
+          { say: `Rescale both fractions to the common denominator ${M}.`, math: `${F(a, b)} = ${F(A, M)};  ${F(c, e)} = ${F(C, M)}`, why: `Only pieces of the same size can be ${plus ? 'added' : 'subtracted'}; ${M} is the smallest number both ${b} and ${e} divide.` },
+          { say: `${plus ? 'Add' : 'Subtract'} the tops${reduced ? ' and cancel' : ''}.`, math: `${F(A, M)} ${op} ${F(C, M)} = ${F(N, M)}${reduced ? ` = ${v}` : ''}`, why: `${plus ? 'Add' : 'Subtract'} the tops; the bottom names the piece size and stays${reduced ? ', then cancel the common factor' : ''}.` },
         ],
+        picture: tablePicture(['Fraction', 'Scale top and bottom by', `As ${M}ths`], [[F(a, b), M / b, F(A, M)], [F(c, e), M / e, F(C, M)], [plus ? 'sum' : 'difference', '', `${F(N, M)}${reduced ? ` = ${v}` : ''}`]], `Both fractions cut into ${M}ths, the smallest piece size that fits both. Only then do the tops ${plus ? 'add' : 'subtract'}: ${A} ${op} ${C} = ${N}.`),
         fast: M === Math.max(b, e) ? `Only ${b < e ? F(a, b) : F(c, e)} needs rescaling, to ${M}ths: ${F(A, M)} ${op} ${F(C, M)} = ${v}.` : `Cross-multiply: (${a} × ${e} ${op} ${c} × ${b}) / (${b} × ${e}) = ${F(a * e + (plus ? 1 : -1) * c * b, b * e)} = ${v}.`,
         check: `Size: ${approx(q(a, b))} ${op} ${approx(q(c, e))} ≈ ${approx(v)}, and ${v} ≈ ${approx(v)}. The bottom of the answer divides ${M}.`,
         hints: [`What is the smallest number both ${b} and ${e} go into?`, `${F(a, b)} = ${F(A, M)}, ${F(c, e)} = ${F(C, M)}.`],
@@ -74,8 +75,9 @@ const mul = {
       ask: 'Multiply the fractions and give the answer in lowest terms.',
       steps: [
         { say: cancels ? `Cancel across first: ${gcd(a, e) > 1 ? `${a} and ${e} share ${gcd(a, e)}` : `${c} and ${b} share ${gcd(c, b)}`}.` : `Nothing cancels: ${a} and ${e} share no factor, nor do ${c} and ${b}.`, why: 'A top and a bottom anywhere in a product can be divided by a common factor before multiplying: smaller numbers, no reducing later.' },
-        { say: `Tops times tops, bottoms times bottoms: ${F(a * c, b * e)} = ${v}.`, why: 'a/b × c/d = ac/bd: a fraction of a fraction.' },
+        { say: 'Multiply tops by tops and bottoms by bottoms.', math: `${F(a, b)} × ${F(c, e)} = ${F(a * c, b * e)} = ${v}`, why: 'a/b × c/d = ac/bd: a fraction of a fraction.' },
       ],
+      picture: { diagram: 'unitsquare', spec: { regions: [{ points: [[0, 0], [a / b, 0], [a / b, 1], [0, 1]], tone: 1 }, { points: [[0, 0], [a / b, 0], [a / b, c / e], [0, c / e]], area: F(a * c, b * e), label: v.toString(), tone: 3 }], xLabel: `${F(a, b)} of the width`, yLabel: `${F(c, e)} of the height` }, caption: `A fraction of a fraction is an area: ${F(a, b)} of the width times ${F(c, e)} of the height covers ${F(a * c, b * e)} = ${v} of the square. Smaller than both factors, as a product of two fractions below 1 must be.` },
       fast: `${F(a, b)} × ${F(c, e)}: cancel, then ${v}.`,
       check: `Both factors are below 1, so the product is smaller than each: ${approx(v)} < ${Math.min(approx(q(a, b)), approx(q(c, e)))}.`,
       hints: ['Look for a top and a bottom that share a factor.', 'Multiply the tops, multiply the bottoms.'],
@@ -99,9 +101,10 @@ const div = {
       text: `${F(a, b)} ÷ ${F(c, e)} = ?`, value: v, mode: 'frac', wrong,
       ask: 'Divide the first fraction by the second; answer in lowest terms.',
       steps: [
-        { say: `Dividing by ${F(c, e)} is multiplying by ${F(e, c)}: ${F(a, b)} × ${F(e, c)}.`, why: `How many ${F(c, e)}s fit: multiplying by the flipped fraction undoes multiplying by ${F(c, e)}.` },
-        { say: `${F(a * e, b * c)} = ${v}.`, why: 'Then multiply tops and bottoms and cancel.' },
+        { say: `Dividing by ${F(c, e)} is multiplying by ${F(e, c)}.`, math: `${F(a, b)} ÷ ${F(c, e)} = ${F(a, b)} × ${F(e, c)}`, why: `How many ${F(c, e)}s fit: multiplying by the flipped fraction undoes multiplying by ${F(c, e)}.` },
+        { say: 'Multiply tops and bottoms, then cancel.', math: `${F(a * e, b * c)} = ${v}`, why: 'Then multiply tops and bottoms and cancel.' },
       ],
+      picture: tablePicture(['', 'Top', 'Bottom'], [['keep the first', a, b], [`flip ${F(c, e)}`, e, c], ['multiply', a * e, b * c], ['lowest terms', String(v.n), String(v.d)]], `Keep, change, flip: only the second fraction turns over. Flipping the first one instead gives the answer upside down, ${F(b * c, a * e)}.`),
       fast: `Keep, change, flip: ${F(a, b)} × ${F(e, c)} = ${v}.`,
       check: `${q(c, e).cmp(q(a, b)) > 0 ? `${F(c, e)} is bigger than ${F(a, b)}, so the answer is below 1` : `${F(c, e)} is smaller than ${F(a, b)}, so the answer is above 1`}: ${v} ≈ ${approx(v)}.`,
       hints: ['Flip the second fraction and multiply.', `${F(a, b)} × ${F(e, c)}.`],
@@ -126,8 +129,11 @@ const withWhole = {
       text: `${F(a, b)} ${op} ${n} = ?`, value: v, mode: 'frac', wrong,
       ask: `${times ? 'Multiply' : 'Divide'} ${F(a, b)} by ${n}; answer in lowest terms.`,
       steps: times
-        ? [{ say: `Only the top is multiplied: ${F(a, b)} × ${n} = ${F(a * n, b)}.`, why: `${n} lots of ${a} pieces of size 1/${b} are ${a * n} pieces of the same size.` }, { say: `Cancel: ${F(a * n, b)} = ${v}.`, why: 'Divide top and bottom by their common factor.' }]
-        : [{ say: `Only the bottom is multiplied: ${F(a, b)} ÷ ${n} = ${F(a, b * n)}.`, why: `Cutting each 1/${b} piece into ${n} makes pieces of size 1/${b * n}.` }, { say: `Cancel if possible: ${v}.`, why: 'Lowest terms: divide top and bottom by any common factor.' }],
+        ? [{ say: 'Multiply only the top.', math: `${F(a, b)} × ${n} = ${F(a * n, b)}`, why: `${n} lots of ${a} pieces of size 1/${b} are ${a * n} pieces of the same size.` }, { say: 'Cancel.', math: `${F(a * n, b)} = ${v}`, why: 'Divide top and bottom by their common factor.' }]
+        : [{ say: 'Multiply only the bottom.', math: `${F(a, b)} ÷ ${n} = ${F(a, b * n)}`, why: `Cutting each 1/${b} piece into ${n} makes pieces of size 1/${b * n}.` }, { say: 'Cancel if possible.', math: `${F(a, b * n)} = ${v}`, why: 'Lowest terms: divide top and bottom by any common factor.' }],
+      picture: times
+        ? tablePicture(['', 'Top', 'Bottom'], [[F(a, b), a, b], [`× ${n}`, a * n, b], ['lowest terms', String(v.n), String(v.d)]], `${n} lots of ${F(a, b)}: the pieces keep their size (the bottom stays ${b}), there are ${n} times as many (top ${a * n}).`)
+        : tablePicture(['', 'Top', 'Bottom'], [[F(a, b), a, b], [`÷ ${n}`, a, b * n], ['lowest terms', String(v.n), String(v.d)]], `${F(a, b)} shared ${n} ways: the same number of pieces (top ${a}), each ${n} times smaller (bottom ${b * n}).`),
       fast: times ? `Cancel ${n} against ${b} first, then multiply: ${v}.` : `${F(a, b)} ÷ ${n} = ${F(a, b * n)} = ${v}.`,
       check: times ? `${n} × ${approx(q(a, b))} ≈ ${approx(v)}: the answer is ${n} times bigger.` : `${approx(q(a, b))} ÷ ${n} ≈ ${approx(v)}: the answer is ${n} times smaller.`,
       hints: [times ? 'Multiply only the top.' : 'Multiply only the bottom.', 'Then cancel.'],

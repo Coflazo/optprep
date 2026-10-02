@@ -1,6 +1,6 @@
 // 80-in-8: whole-number multiplication. Times one digit, two digits by two, and the shortcut
 // multipliers (×5 = ×10 ÷ 2, ×25 = ×100 ÷ 4, ×125 = ×1000 ÷ 8, ×11 digit-sum, near 100).
-import { family, q, digits, dropCarryMul, tens, units, intPick } from '../lib.js';
+import { family, q, digits, dropCarryMul, tens, units, intPick, areaPicture, chainPicture, columnPicture } from '../lib.js';
 
 const Z = (n) => (Number.isInteger(n) ? q(n) : null); // null: not a whole number, so not an option
 const lastDigit = (a, b) => `${a % 10} × ${b % 10} ends in ${(a % 10) * (b % 10) % 10}, so the answer ends in ${(a * b) % 10}`;
@@ -22,9 +22,10 @@ const byOne = {
       text: `${a} × ${b} = ?`, value: Z(c), mode: 'int', wrong,
       ask: `Multiply ${a} by ${b}.`,
       steps: [
-        { say: `Split ${a} = ${t} + ${u}: ${t} × ${b} = ${t * b}.`, why: 'Multiply the big part first; its product sets the size of the answer.' },
-        { say: `${u} × ${b} = ${u * b}, and ${t * b} + ${u * b} = ${c}.`, why: 'a × b = (tens part) × b + (units part) × b: two easy products, one addition.' },
+        { say: `Split ${a} = ${t} + ${u} and multiply the big part first.`, math: `${t} × ${b} = ${t * b}`, why: 'Multiply the big part first; its product sets the size of the answer.' },
+        { say: 'Multiply the units part and add the two products.', math: `${u} × ${b} = ${u * b};  ${t * b} + ${u * b} = ${c}`, why: 'a × b = (tens part) × b + (units part) × b: two easy products, one addition.' },
       ],
+      picture: areaPicture([b], [t, u], `Area model: ${a} × ${b} cut into ${t} × ${b} and ${u} × ${b}. The two cells add to ${t * b} + ${u * b} = ${c}.`),
       fast: `${t} × ${b} = ${t * b}, + ${u * b} = ${c}: left to right, no carries to remember.`,
       check: `Last digit: ${lastDigit(a, b)}. Size: ${size(a, b)}.`,
       hints: [`Split ${a} into ${t} + ${u}.`, `${t} × ${b} = ${t * b}.`],
@@ -49,9 +50,10 @@ const timesFive = {
       text: `${n} × 5 = ?`, value: Z(c), mode: 'int', wrong,
       ask: `Multiply ${n} by 5.`,
       steps: [
-        { say: `× 5 is × 10 ÷ 2: ${n} × 10 = ${n * 10}.`, why: '5 = 10 ÷ 2, so multiplying by 5 is multiplying by 10 and halving.' },
-        { say: `${n * 10} ÷ 2 = ${c}.`, why: 'Halving one number is quicker than five times a several-digit number.' },
+        { say: '× 5 is × 10 ÷ 2, so first multiply by 10.', math: `${n} × 10 = ${n * 10}`, why: '5 = 10 ÷ 2, so multiplying by 5 is multiplying by 10 and halving.' },
+        { say: 'Halve it.', math: `${n * 10} ÷ 2 = ${c}`, why: 'Halving one number is quicker than five times a several-digit number.' },
       ],
+      picture: chainPicture([['start', n], ['× 10', n * 10], ['÷ 2', c]], `× 5 as two moves: add a zero, then halve. ${n * 10} ÷ 2 = ${c}.`),
       fast: `Halve, then add a zero: ${n} ÷ 2 = ${n / 2}, × 10 = ${c}.`,
       check: `An odd number times 5 ends in 5, an even one in 0: ${n} is ${n % 2 ? 'odd' : 'even'}, so the answer ends in ${c % 10}. Size: half of ${n * 10}.`,
       hints: ['5 = 10 ÷ 2.', `${n} × 10 = ${n * 10}; now halve it.`],
@@ -73,9 +75,10 @@ const timesQuarter = {
       text: `${n} × 25 = ?`, value: Z(c), mode: 'int', wrong,
       ask: `Multiply ${n} by 25.`,
       steps: [
-        { say: `× 25 is × 100 ÷ 4: ${n} × 100 = ${n * 100}.`, why: '25 = 100 ÷ 4.' },
-        { say: `${n * 100} ÷ 4 = ${c} (halve twice: ${n * 50}, then ${c}).`, why: 'Dividing by 4 is halving twice, which is easier than a long multiplication by 25.' },
+        { say: '× 25 is × 100 ÷ 4, so first multiply by 100.', math: `${n} × 100 = ${n * 100}`, why: '25 = 100 ÷ 4.' },
+        { say: 'Divide by 4 by halving twice.', math: `${n * 100} ÷ 2 = ${n * 50};  ${n * 50} ÷ 2 = ${c}`, why: 'Dividing by 4 is halving twice, which is easier than a long multiplication by 25.' },
       ],
+      picture: chainPicture([['start', n], ['× 100', n * 100], ['÷ 2', n * 50], ['÷ 2', c]], `× 25 as three moves: two zeros, then halve twice. Halving only once gives × 50 (${n * 50}).`),
       fast: n % 4 === 0 ? `${n} ÷ 4 = ${n / 4}, then × 100 = ${c}.` : `Quarter ${n}: ${n} ÷ 4 = ${n / 4}, × 100 = ${c}.`,
       check: `× 25 always ends in 00, 25, 50 or 75: ${c} ends in ${String(c).slice(-2)}. Size: a quarter of ${n * 100}.`,
       hints: ['25 = 100 ÷ 4.', `${n} × 100 = ${n * 100}; now halve twice.`],
@@ -97,9 +100,10 @@ const timesEighth = {
       text: `${n} × 125 = ?`, value: Z(c), mode: 'int', wrong,
       ask: `Multiply ${n} by 125.`,
       steps: [
-        { say: `× 125 is × 1000 ÷ 8: ${n} × 1000 = ${n * 1000}.`, why: '125 = 1000 ÷ 8.' },
-        { say: `${n * 1000} ÷ 8 = ${c} (halve three times: ${n * 500}, ${n * 250}, ${c}).`, why: 'Dividing by 8 is halving three times.' },
+        { say: '× 125 is × 1000 ÷ 8, so first multiply by 1000.', math: `${n} × 1000 = ${n * 1000}`, why: '125 = 1000 ÷ 8.' },
+        { say: 'Divide by 8 by halving three times.', math: `${n * 1000} → ${n * 500} → ${n * 250} → ${c}`, why: 'Dividing by 8 is halving three times.' },
       ],
+      picture: chainPicture([['start', n], ['× 1000', n * 1000], ['÷ 2', n * 500], ['÷ 2', n * 250], ['÷ 2', c]], `× 125 as four moves: three zeros, then halve three times. Stopping after two halvings gives × 250 (${n * 250}).`),
       fast: `${n} ÷ 8 = ${n / 8}, then × 1000 = ${c}.`,
       check: `× 125 always ends in 000, 125, 250, 375, 500, 625, 750 or 875: ${c} ends in ${String(c).slice(-3)}. Size: an eighth of ${n * 1000}, about ${Math.round(n / 8)} thousand.`,
       hints: ['125 = 1000 ÷ 8.', `${n} × 1000 = ${n * 1000}; now halve three times.`],
@@ -122,9 +126,10 @@ const timesEleven = {
       text: `${n} × 11 = ?`, value: Z(c), mode: 'int', wrong,
       ask: `Multiply ${n} by 11.`,
       steps: [
-        { say: `× 11 is × 10 + × 1: ${n} × 10 + ${n}.`, why: '11 = 10 + 1.' },
-        { say: `The digits ${a} and ${b} go outside, their sum ${s} goes in the middle${s >= 10 ? `, carrying 1 into ${a}` : ''}: ${c}.`, why: `${n}0 + ${n}: the tens column adds ${a} and ${b}.` },
+        { say: '× 11 is × 10 plus one more lot.', math: `${n} × 10 + ${n} = ${n * 10} + ${n}`, why: '11 = 10 + 1.' },
+        { say: `The digits ${a} and ${b} go outside, their sum ${s} goes in the middle${s >= 10 ? `, carrying 1 into ${a}` : ''}.`, math: `${a} | ${a} + ${b} | ${b} = ${c}`, why: `${n}0 + ${n}: the tens column adds ${a} and ${b}.` },
       ],
+      picture: columnPicture(n * 10, n, '+', `${n} × 11 = ${n * 10} + ${n}. The tens column holds ${a} + ${b} = ${s}${s >= 10 ? ', so a 1 carries into the hundreds' : ''}.`),
       fast: `${a} _ ${b}, middle ${a} + ${b} = ${s}${s >= 10 ? ' (carry 1)' : ''}: ${c}.`,
       check: `The answer starts with ${Math.floor(c / 100)} and ends in ${b}; it is about 11 × ${n} ≈ ${n * 10 + n}.`,
       hints: ['11 = 10 + 1.', `Put ${a} + ${b} between ${a} and ${b}.`],
@@ -146,10 +151,11 @@ const twoByTwo = {
       text: `${a} × ${b} = ?`, value: Z(c), mode: 'int', wrong,
       ask: `Multiply ${a} by ${b}.`,
       steps: [
-        { say: `Split ${b} = ${tb} + ${ub}: ${a} × ${tb} = ${a * tb}.`, why: 'Split only one factor; the other stays whole.' },
-        { say: `${a} × ${ub} = ${a * ub}.`, why: 'The second partial product: the whole first number times the units.' },
-        { say: `${a * tb} + ${a * ub} = ${c}.`, why: 'a × (tens + units) = a × tens + a × units.' },
+        { say: `Split ${b} = ${tb} + ${ub} and multiply ${a} by the tens part.`, math: `${a} × ${tb} = ${a * tb}`, why: 'Split only one factor; the other stays whole.' },
+        { say: `Multiply ${a} by the units part.`, math: `${a} × ${ub} = ${a * ub}`, why: 'The second partial product: the whole first number times the units.' },
+        { say: 'Add the two partial products.', math: `${a * tb} + ${a * ub} = ${c}`, why: 'a × (tens + units) = a × tens + a × units.' },
       ],
+      picture: areaPicture([ta, ua], [tb, ub], `Area model: four cells, ${ta * tb} + ${ta * ub} + ${ua * tb} + ${ua * ub} = ${c}. The two cross cells (${ta} × ${ub} and ${ua} × ${tb}) are the ones the wrong options leave out.`),
       fast: `${a} × ${tb} = ${a * tb}, plus ${a} × ${ub} = ${a * ub}: ${c}.`,
       check: `Last digit: ${lastDigit(a, b)}. Size: ${size(a, b)}.`,
       hints: [`Split ${b} into ${tb} + ${ub}.`, `${a} × ${tb} = ${a * tb}.`],
@@ -175,10 +181,11 @@ const near100 = {
       text: `${a} × ${b} = ?`, value: Z(c), mode: 'int', wrong,
       ask: `Multiply ${a} by ${b}; both are close to 100.`,
       steps: [
-        { say: `Distances from 100: ${a} = 100 ${sgn(da)}, ${b} = 100 ${sgn(db)}.`, why: 'Numbers near 100 multiply fastest through their distances from 100.' },
-        { say: `Cross-add: ${a} ${sgn(db)} = ${100 + da + db}, so 100 × ${100 + da + db} = ${base}.`, why: '(100 + p)(100 + q) = 100(100 + p + q) + pq.' },
-        { say: `Add the distance product ${da} × ${db} = ${xy}: ${base} ${sgn(xy)} = ${c}.`, why: `The pq term: ${xy > 0 ? 'both on the same side of 100, so it is added' : 'one above and one below 100, so it is subtracted'}.` },
+        { say: 'Write each number as 100 plus or minus its distance from 100.', math: `${a} = 100 ${sgn(da)};  ${b} = 100 ${sgn(db)}`, why: 'Numbers near 100 multiply fastest through their distances from 100.' },
+        { say: 'Cross-add one distance to the other number, then multiply by 100.', math: `${a} ${sgn(db)} = ${100 + da + db};  100 × ${100 + da + db} = ${base}`, why: '(100 + p)(100 + q) = 100(100 + p + q) + pq.' },
+        { say: 'Add the product of the two distances.', math: `${base} ${sgn(xy)} = ${c}`, why: `The pq term ${da} × ${db} = ${xy}: ${xy > 0 ? 'both on the same side of 100, so it is added' : 'one above and one below 100, so it is subtracted'}.` },
       ],
+      picture: areaPicture([100, da], [100, db], `Area model with 100 split off each factor. The big cells give ${base}; the small corner ${da} × ${db} = ${xy} is the part the wrong options drop or flip. Total ${c}.`),
       fast: `${a} ${sgn(db)} = ${100 + da + db}; then ${da} × ${db} = ${xy}: ${c}.`,
       check: `Last digit: ${lastDigit(a, b)}. Size: about 100 × ${100 + da + db}.`,
       hints: ['Write each number as 100 plus or minus a small distance.', `100 × (${a} ${sgn(db)}) = ${base}; then the distance product.`],

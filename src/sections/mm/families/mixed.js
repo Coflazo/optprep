@@ -2,6 +2,24 @@
 // then + and − left to right. The tempting wrong answer is always the one read left to right.
 import { family, q } from '../lib.js';
 
+// Expression tree, root (the answer) on the left; every box is worked out from the boxes to its right.
+// node: [text, ...children] for an operation, or a number for a leaf.
+function tree(node, caption) {
+  const nodes = [], edges = [];
+  let n = 0;
+  const walk = (x, depth) => {
+    const id = `n${n++}`;
+    if (Array.isArray(x)) {
+      nodes.push({ id, text: x[0], kind: depth === 0 ? 'a' : 'q' });
+      for (const c of x.slice(1)) edges.push({ from: id, to: walk(c, depth + 1) });
+    } else nodes.push({ id, text: String(x), kind: 'note' });
+    return id;
+  };
+  walk(node, 0);
+  return { diagram: 'flow', spec: { root: 'n0', nodes, edges, label: 'Expression tree' }, caption };
+}
+const TREE = 'Expression tree: each box is worked out from the boxes to its right, so the deepest operation goes first and the box on the left is the answer.';
+
 const Z = (n) => (Number.isInteger(n) && n > 0 ? q(n) : null);
 const ORDER = 'Brackets first, then × and ÷, then + and −; equal ranks go left to right.';
 
@@ -18,9 +36,10 @@ const addMul = {
       text, value: q(v), mode: 'int', wrong,
       ask: 'Evaluate the line with the order of operations.',
       steps: [
-        { say: `× before +: ${b} × ${c} = ${b * c}.`, why: ORDER },
-        { say: `${a} + ${b * c} = ${v}.`, why: 'Only the addition is left.' },
+        { say: '× before +: work out the product first.', math: `${b} × ${c} = ${b * c}`, why: ORDER },
+        { say: 'Add.', math: `${a} + ${b * c} = ${v}`, why: 'Only the addition is left.' },
       ],
+      picture: tree([`+  gives ${v}`, a, [`×  gives ${b * c}`, b, c]], TREE),
       fast: `Spot the × first (${b * c}), then add ${a}: ${v}.`,
       check: `The answer is ${a} plus a product, so it is more than ${b * c}. Last digit: ${a % 10} + ${(b * c) % 10} ends in ${v % 10}.`,
       hints: ['Which operation goes first?', `${b} × ${c} = ${b * c}.`],
@@ -40,9 +59,10 @@ const subMul = {
       text: `${a} − ${b} × ${c} = ?`, value: q(v), mode: 'int', wrong,
       ask: 'Evaluate the line with the order of operations.',
       steps: [
-        { say: `× before −: ${b} × ${c} = ${b * c}.`, why: ORDER },
-        { say: `${a} − ${b * c} = ${v}.`, why: 'Only the subtraction is left.' },
+        { say: '× before −: work out the product first.', math: `${b} × ${c} = ${b * c}`, why: ORDER },
+        { say: 'Subtract.', math: `${a} − ${b * c} = ${v}`, why: 'Only the subtraction is left.' },
       ],
+      picture: tree([`−  gives ${v}`, a, [`×  gives ${b * c}`, b, c]], TREE),
       fast: `${b * c} first, then ${a} − ${b * c} = ${v}.`,
       check: `Add back: ${v} + ${b * c} = ${a}.`,
       hints: ['× goes before −.', `${b} × ${c} = ${b * c}.`],
@@ -64,9 +84,10 @@ const twoProducts = {
       text: `${a} × ${b} ${op} ${c} × ${d} = ?`, value: q(v), mode: 'int', wrong,
       ask: 'Evaluate the line with the order of operations.',
       steps: [
-        { say: `Both products first: ${a} × ${b} = ${a * b} and ${c} × ${d} = ${c * d}.`, why: ORDER },
-        { say: `${a * b} ${op} ${c * d} = ${v}.`, why: 'The + or − joins the two products.' },
+        { say: 'Both products first.', math: `${a} × ${b} = ${a * b};  ${c} × ${d} = ${c * d}`, why: ORDER },
+        { say: `Then the ${plus ? 'addition' : 'subtraction'}.`, math: `${a * b} ${op} ${c * d} = ${v}`, why: 'The + or − joins the two products.' },
       ],
+      picture: tree([`${op}  gives ${v}`, [`×  gives ${a * b}`, a, b], [`×  gives ${c * d}`, c, d]], TREE),
       fast: `${a * b} ${op} ${c * d} = ${v}.`,
       check: `Size: ${a * b} ${op} ${c * d}. Last digit: ${(a * b) % 10} ${op} ${(c * d) % 10} gives ${v % 10}.`,
       hints: ['Two products joined by one + or −.', `${a} × ${b} = ${a * b}.`],
@@ -86,9 +107,10 @@ const addDiv = {
       text: first ? `${a} + ${b} ÷ ${c} = ?` : `${b} ÷ ${c} + ${a} = ?`, value: q(v), mode: 'int', wrong,
       ask: 'Evaluate the line with the order of operations.',
       steps: [
-        { say: `÷ before +: ${b} ÷ ${c} = ${k}.`, why: ORDER },
-        { say: `${a} + ${k} = ${v}.`, why: 'Only the addition is left.' },
+        { say: '÷ before +: work out the division first.', math: `${b} ÷ ${c} = ${k}`, why: ORDER },
+        { say: 'Add.', math: `${a} + ${k} = ${v}`, why: 'Only the addition is left.' },
       ],
+      picture: tree([`+  gives ${v}`, a, [`÷  gives ${k}`, b, c]], TREE),
       fast: `${b} ÷ ${c} = ${k}, + ${a} = ${v}.`,
       check: `Multiply back: ${c} × ${k} = ${b}. The answer is a little more than ${a}.`,
       hints: ['Divide before you add.', `${b} ÷ ${c} = ${k}.`],
@@ -108,9 +130,10 @@ const divMul = {
       text: `${a} ÷ ${b} × ${c} = ?`, value: q(v), mode: 'int', wrong,
       ask: 'Evaluate left to right: ÷ and × have equal rank.',
       steps: [
-        { say: `Left to right: ${a} ÷ ${b} = ${a / b}.`, why: ORDER },
-        { say: `${a / b} × ${c} = ${v}.`, why: 'Then the multiplication.' },
+        { say: 'Equal rank, so left to right: the division first.', math: `${a} ÷ ${b} = ${a / b}`, why: ORDER },
+        { say: 'Multiply.', math: `${a / b} × ${c} = ${v}`, why: 'Then the multiplication.' },
       ],
+      picture: tree([`×  gives ${v}`, [`÷  gives ${a / b}`, a, b], c], `${TREE} Equal ranks nest from the left, so ${a} ÷ ${b} sits deepest.`),
       fast: `${a} ÷ ${b} = ${a / b}, × ${c} = ${v}.`,
       check: `Dividing by ${b} then multiplying by ${c} scales ${a} by ${c}/${b}: ${c > b ? 'bigger' : 'smaller'} than ${a}.`,
       hints: ['× and ÷ have the same rank.', 'Go left to right.'],
@@ -132,10 +155,11 @@ const brackets = {
         text: `(${a} + ${b}) × ${c} − ${d} = ?`, value: q(v), mode: 'int', wrong,
         ask: 'Evaluate the line with the order of operations.',
         steps: [
-          { say: `Brackets: ${a} + ${b} = ${a + b}.`, why: ORDER },
-          { say: `${a + b} × ${c} = ${(a + b) * c}.`, why: '× before −.' },
-          { say: `${(a + b) * c} − ${d} = ${v}.`, why: 'The subtraction comes last.' },
+          { say: 'Brackets first.', math: `${a} + ${b} = ${a + b}`, why: ORDER },
+          { say: 'Then the multiplication.', math: `${a + b} × ${c} = ${(a + b) * c}`, why: '× before −.' },
+          { say: 'Then the subtraction.', math: `${(a + b) * c} − ${d} = ${v}`, why: 'The subtraction comes last.' },
         ],
+        picture: tree([`−  gives ${v}`, [`×  gives ${(a + b) * c}`, [`( + )  gives ${a + b}`, a, b], c], d], TREE),
         fast: `${a + b} × ${c} = ${(a + b) * c}, − ${d} = ${v}.`,
         check: `Size: ${a + b} × ${c} is ${(a + b) * c}; the answer is ${d} below it.`,
         hints: ['Brackets first.', `${a + b} × ${c}.`],
@@ -149,9 +173,10 @@ const brackets = {
       text: `${a} − (${b} − ${c}) = ?`, value: q(v), mode: 'int', wrong,
       ask: 'Evaluate the line with the order of operations.',
       steps: [
-        { say: `Brackets: ${b} − ${c} = ${b - c}.`, why: ORDER },
-        { say: `${a} − ${b - c} = ${v}.`, why: 'Then the outer subtraction.' },
+        { say: 'Brackets first.', math: `${b} − ${c} = ${b - c}`, why: ORDER },
+        { say: 'Then the outer subtraction.', math: `${a} − ${b - c} = ${v}`, why: 'Then the outer subtraction.' },
       ],
+      picture: tree([`−  gives ${v}`, a, [`( − )  gives ${b - c}`, b, c]], `${TREE} The bracket is one number, ${b - c}, so all of it is taken away.`),
       fast: `${a} − ${b} + ${c} = ${v}: a minus in front of brackets flips the sign inside.`,
       check: `Taking away less than ${b}: the answer is between ${a - b} and ${a}.`,
       hints: ['Brackets first.', `${b} − ${c} = ${b - c}.`],

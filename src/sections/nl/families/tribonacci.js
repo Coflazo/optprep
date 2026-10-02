@@ -5,6 +5,7 @@ export default family({
   title: 'Sum of the previous three',
   skill: 'If last + previous falls short by a steady pattern, add one more term',
   levels: [3, 4],
+  view: 'table',
   show: (d) => (d === 3 ? 6 : 7),
   params: (rng, d) => (d === 3 ? { s: [rng.int(0, 4), rng.int(1, 5), rng.int(1, 6)] } : { s: [rng.int(-4, 6), rng.int(-3, 8), rng.int(2, 10)] }),
   terms: ({ s }, n) => { const out = s.map((v) => q(v)); while (out.length < n) { const m = out.length; out.push(out[m - 1].add(out[m - 2]).add(out[m - 3])); } return out.slice(0, n); },

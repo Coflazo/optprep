@@ -1,7 +1,22 @@
 // Birthday-type collisions: any shared value versus someone sharing yours.
 import { nPr } from '../../../core/combinatorics.js';
 import { Q } from '../../../core/rational.js';
-import { mcqItem, agree, q, qpow } from '../lib.js';
+import { mcqItem, agree, q, qpow, pic } from '../lib.js';
+
+// Two curves over the number of people: some pair shares a value, and someone shares yours.
+function curves(d, n, mode) {
+  const top = d >= 100 ? Math.max(n + 10, 60) : Math.min(Math.max(2 * n, n + 3), d + 1);
+  const any = (k) => { let p = 1; for (let i = 0; i < k; i++) p *= (d - i) / d; return 1 - p; };
+  const mine = (k) => 1 - ((d - 1) / d) ** Math.max(k - 1, 0);
+  const xs = Array.from({ length: top + 1 }, (_, k) => k);
+  const y = mode === 'any' ? any(n) : 1 - ((d - 1) / d) ** n;
+  const x = mode === 'any' ? n : n + 1;
+  return pic('plot', {
+    x: { min: 0, max: top, label: 'people in the room' }, y: { min: 0, max: 1, label: 'probability' },
+    curves: [{ label: 'some pair shares', points: xs.map((k) => [k, any(k)]) }, { label: 'someone shares yours', points: xs.map((k) => [k, mine(k)]) }],
+    markers: [{ x, y, label: `${x} people: ${y.toFixed(3)}` }],
+  }, `Pairs grow like n² while matches with one fixed value grow like n, so the upper curve races ahead. The marker is this question: ${mode === 'any' ? 'any pair among' : `you plus ${n} others,`} ${x} people.`);
+}
 
 const ID = 'birthday';
 const SETTINGS = {
@@ -48,6 +63,9 @@ export default {
         rule: 'Match with a fixed value: 1 − ((d−1)/d)^n ≈ n/d. Any pair: 1 − d(d−1)…/d^n ≈ 1 − e^(−n²/2d).',
         anchor: 'The at-least-one complement rule, with the target fixed (your value), so each person is an independent trial.',
         hints: [`Your ${S.what} is fixed. What must each other person avoid?`, 'Complement: nobody matches.', `1 − (${d - 1}/${d})^${n}.`],
+        picture: curves(d, n, 'mine'),
+        fast: `1 − (${d - 1}/${d})^${n} ≈ ${v.toNumber().toFixed(4)}, a little under ${n}/${d}.`,
+        check: `Adding 1/${d} per person gives ${n}/${d} = ${(n / d).toFixed(4)}, which double counts and so sits slightly above the answer; the any-pair answer for the same room is far larger.`,
         data: { mode: 'mine', d, n },
       });
     }
@@ -75,6 +93,9 @@ export default {
       rule: 'P(collision) = 1 − Π (1 − i/d), i < n ≈ 1 − e^(−n(n−1)/2d). 23 people, 365 days: just over 1/2.',
       anchor: 'The "all dice different" chain 6/6 × 5/6 × 4/6 you know, with one change: d values instead of 6.',
       hints: ['Complement: all different.', `Each new person avoids all earlier values: (${d} − i)/${d}.`, `About 1 − e^(−${pairs}/${d}).`],
+      picture: curves(d, n, 'any'),
+      fast: `${pairs} pairs × 1/${d} = ${(pairs / d).toFixed(3)}, so about 1 − e^(−${(pairs / d).toFixed(3)}) ≈ ${(1 - Math.exp(-pairs / d)).toFixed(3)}; exactly ${v.toNumber().toFixed(4)}.`,
+      check: `It must be at least 1/${d} (one pair) and at most ${pairs}/${d} (all pairs added, double counting overlaps)${n > d ? '; with more people than values it is certain' : ''}.`,
       data: { mode: 'any', d, n },
     });
   },

@@ -5,6 +5,7 @@ export default family({
   title: 'Squares, shifted or scaled',
   skill: 'Know the squares to 30² by sight; subtract a small constant to reveal them',
   levels: [1, 2],
+  view: 'table',
   show: 5,
   missing: 1,
   params: (rng, d) => (d === 1

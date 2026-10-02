@@ -1,6 +1,6 @@
 // 80-in-8: percentages. x% of y, which percent, the whole from a part (reverse percent),
 // percentage change, and the price before a rise or fall.
-import { family, q, L, modeOf, verifyExpr, judge, parseLabel } from '../lib.js';
+import { family, q, L, modeOf, verifyExpr, judge, parseLabel, tenthsLine } from '../lib.js';
 
 const P = (p) => q(Math.round(p * 10), 1000); // percent -> fraction: 12.5 -> 1/8
 const pl = (p) => L(q(Math.round(p * 10), 10)); // 12.5 -> '12.5'
@@ -11,10 +11,10 @@ function chunkSteps(p, y) {
   const r = P(p).mul(y);
   if (FRACTION[p] && p !== 10) return [
     { say: `${p}% is ${FRACTION[p]}.`, why: 'Common percents are simple fractions: 50% = 1/2, 25% = 1/4, 20% = 1/5, 12.5% = 1/8.' },
-    { say: `${FRACTION[p]} of ${y} = ${L(r)}.`, why: 'Taking a fraction of a number is dividing by the bottom and multiplying by the top.' },
+    { say: `Take ${FRACTION[p]} of ${y}.`, math: `${y} × ${FRACTION[p]} = ${L(r)}`, why: 'Taking a fraction of a number is dividing by the bottom and multiplying by the top.' },
   ];
   const t = Math.floor(p / 10), rem = Math.round((p - 10 * t) * 10) / 10, ten = q(y, 10);
-  const steps = [{ say: `10% of ${y} = ${L(ten)}.`, why: 'Dividing by 10 gives 10%; every other percent is built from it.' }];
+  const steps = [{ say: 'Find 10% first.', math: `10% of ${y} = ${y} ÷ 10 = ${L(ten)}`, why: 'Dividing by 10 gives 10%; every other percent is built from it.' }];
   const parts = [];
   if (t > 1) { steps.push({ say: `${t * 10}% = ${t} × ${L(ten)} = ${L(ten.mul(t))}.`, why: `${t * 10}% is ${t} lots of 10%.` }); parts.push(ten.mul(t)); }
   else if (t === 1) parts.push(ten);
@@ -22,7 +22,7 @@ function chunkSteps(p, y) {
   else if (rem === 2.5) { steps.push({ say: `2.5% = a quarter of 10% = ${L(ten.div(4))}.`, why: '2.5% is a quarter of 10%.' }); parts.push(ten.div(4)); }
   else if (rem === 7.5) { steps.push({ say: `7.5% = three quarters of 10% = ${L(ten.mul(3).div(4))}.`, why: '7.5% is 5% + 2.5%.' }); parts.push(ten.mul(3).div(4)); }
   else if (rem > 0) { steps.push({ say: `${rem}% = ${rem} × 1% = ${rem} × ${L(q(y, 100))} = ${L(q(y, 100).mul(rem))}.`, why: '1% is a tenth of 10%.' }); parts.push(q(y, 100).mul(rem)); }
-  if (parts.length > 1 || steps.length < 2) steps.push({ say: `${p}% of ${y} = ${parts.map(L).join(' + ')} = ${L(r)}.`, why: 'Add the chunks: percents of the same number add.' });
+  if (parts.length > 1 || steps.length < 2) steps.push({ say: 'Add the chunks.', math: `${p}% of ${y} = ${parts.map(L).join(' + ')} = ${L(r)}`, why: 'Add the chunks: percents of the same number add.' });
   return steps;
 }
 
@@ -45,6 +45,7 @@ const of = {
       steps: chunkSteps(p, y),
       fast: FRACTION[p] ? `${pl(p)}% = ${FRACTION[p]}: ${L(r)}.` : `${pl(p)} lots of 1% (${L(q(y, 100))}): ${pl(p)} × ${L(q(y, 100))} = ${L(r)}.`,
       check: `${pl(p)}% is ${p < 50 ? 'less than half' : p === 50 ? 'exactly half' : 'more than half'}, so the answer is ${p < 50 ? 'below' : p === 50 ? 'equal to' : 'above'} ${y / 2}; 10% is ${L(q(y, 10))}.`,
+      picture: tenthsLine(y, [{ x: r.toNumber(), label: `${pl(p)}%` }], `0 to ${y} in ten steps of 10% (${L(q(y, 10))} each). ${pl(p)}% lands at ${L(r)}, ${p < 50 ? 'left of' : p === 50 ? 'at' : 'right of'} the halfway mark ${L(q(y, 2))}.`, { target: r.toNumber() }),
       hints: [`10% of ${y} is ${L(q(y, 10))}.`, `Build ${pl(p)}% from 10%, 5% and 1%.`],
       params: { p, y },
     };
@@ -64,9 +65,10 @@ const which = {
       text: `?% of ${y} = ${L(z)}`, value: v, mode: 'pct', wrong,
       ask: `${L(z)} is what percent of ${y}?`,
       steps: [
-        { say: `As a fraction: ${L(z)}/${y}${q(Number(z.n), y).toString() !== `${L(z)}/${y}` ? ` = ${q(Number(z.n), y)}` : ''}.`, why: 'Part over whole: the percent is this fraction written in hundredths.' },
-        { say: `${q(Number(z.n), y)} = ${pl(p)}/100 = ${pl(p)}%.`, why: 'Scale the fraction to hundredths (× 100).' },
+        { say: 'Write the part over the whole.', math: `${L(z)}/${y}${q(Number(z.n), y).toString() !== `${L(z)}/${y}` ? ` = ${q(Number(z.n), y)}` : ''}`, why: 'Part over whole: the percent is this fraction written in hundredths.' },
+        { say: 'Scale the fraction to hundredths.', math: `${q(Number(z.n), y)} = ${pl(p)}/100 = ${pl(p)}%`, why: 'Scale the fraction to hundredths (× 100).' },
       ],
+      picture: tenthsLine(y, [{ x: z.toNumber(), label: `${L(z)}` }], `0 to ${y} in ten steps of 10% (${y / 10} each). ${L(z)} is ${L(z.div(q(y, 10)))} steps along: ${pl(p)}%.`, { target: z.toNumber() }),
       fast: `10% of ${y} is ${y / 10}; ${L(z)} is ${L(z.div(q(y, 10)))} of those, so ${pl(p)}%.`,
       check: `${pl(p)}% of ${y} = ${L(z)}. ${L(z)} is ${z.cmp(y / 2) < 0 ? 'less' : 'more'} than half of ${y}, so the percent is ${z.cmp(y / 2) < 0 ? 'below' : 'above'} 50.`,
       hints: [`Write ${L(z)} out of ${y} as a fraction.`, `How many 10%s of ${y} (${y / 10} each) make ${L(z)}?`],
@@ -89,9 +91,10 @@ const base = {
       text: `${pl(p)}% of ? = ${zi}`, value: q(y), mode: 'int', wrong,
       ask: `${zi} is ${pl(p)}% of what number?`,
       steps: [
-        { say: `${pl(p)}% is ${zi}, so 1% is ${zi} ÷ ${pl(p)} = ${L(z.div(P(p)).div(100))}.`, why: 'Scale the known percent down to 1%.' },
-        { say: `100% is 100 × ${L(z.div(P(p)).div(100))} = ${y}.`, why: 'The whole is 100%.' },
+        { say: `${pl(p)}% is ${zi}, so scale down to 1%.`, math: `1% = ${zi} ÷ ${pl(p)} = ${L(z.div(P(p)).div(100))}`, why: 'Scale the known percent down to 1%.' },
+        { say: 'Scale up to 100%.', math: `100% = 100 × ${L(z.div(P(p)).div(100))} = ${y}`, why: 'The whole is 100%.' },
       ],
+      picture: tenthsLine(y, [{ x: zi, label: `${pl(p)}% = ${zi}` }], `The whole ${y} in ten steps of 10% (${y / 10} each). The known part ${zi} sits at ${pl(p)}%, well short of the end, so the whole is bigger than ${zi}.`, { start: zi, target: y }),
       fast: FRACTION[p] ? `${pl(p)}% = ${FRACTION[p]}, so the whole is ${zi} × ${FRACTION[p].split('/')[1]}${FRACTION[p].startsWith('1/') ? '' : ` ÷ ${FRACTION[p].split('/')[0]}`} = ${y}.` : `${zi} ÷ ${pl(p)} × 100 = ${y}.`,
       check: `${pl(p)}% of ${y} = ${zi}. The whole is bigger than the part: ${y} > ${zi}.`,
       hints: [`If ${pl(p)}% is ${zi}, what is 1%?`, 'Then multiply by 100.'],
@@ -115,9 +118,10 @@ const change = {
       text: `Percentage change from ${a} to ${b} = ?`, value: v, mode: 'pct', wrong, mixedSigns: true,
       ask: `By what percent of ${a} did the value move from ${a} to ${b}?`,
       steps: [
-        { say: `Change: ${b} − ${a} = ${b - a}.`, why: 'First the change in units, with its sign: up is +, down is −.' },
-        { say: `As a share of the old value: ${b - a}/${a} = ${L(q(b - a, a))} = ${L(v)}%.`, why: 'Percentage change is always measured against the starting value.' },
+        { say: 'Find the change in units, with its sign.', math: `${b} − ${a} = ${b - a}`, why: 'First the change in units, with its sign: up is +, down is −.' },
+        { say: 'Divide by the old value.', math: `${b - a}/${a} = ${L(q(b - a, a))} = ${L(v)}%`, why: 'Percentage change is always measured against the starting value.' },
       ],
+      picture: { diagram: 'numberline', spec: { min: 0, max: Math.max(a, b), step: a / 10, start: a, target: b }, caption: `Ticks every ${L(q(a, 10))}, which is 10% of the old value ${a}. The new value ${b} is ${L(q(Math.abs(b - a) * 10, a))} ticks ${rise ? 'above' : 'below'} the start: ${L(v)}%. Ticks sized from ${b} would give a different answer.` },
       fast: `1% of ${a} is ${L(q(a, 100))}; ${b - a} is ${L(v)} of those: ${L(v)}%.`,
       check: `${a} ${rise ? '+' : '−'} ${pl(Math.abs(c))}% of ${a} = ${b}. A ${rise ? 'rise' : 'fall'} is ${rise ? 'positive' : 'negative'}.`,
       hints: [`How much did it move? ${b} − ${a}.`, `Divide by the starting value ${a}.`],
@@ -141,9 +145,10 @@ const before = {
       text: `After a ${p}% ${rise ? 'rise' : 'fall'} the price is ${Vi}. Price before = ?`, value: q(O), mode: 'int', wrong,
       ask: `Which price, ${rise ? 'raised' : 'cut'} by ${p}%, gives ${Vi}?`,
       steps: [
-        { say: `The new price is ${rise ? 100 + p : 100 - p}% of the old one: old × ${L(f)} = ${Vi}.`, why: `A ${p}% ${rise ? 'rise adds' : 'fall takes'} ${p}% of the OLD price, so the new price is ${rise ? 100 + p : 100 - p}% of it.` },
-        { say: `Old = ${Vi} ÷ ${L(f)} = ${O}.`, why: 'Undo a multiplication by dividing.' },
+        { say: `The new price is ${rise ? 100 + p : 100 - p}% of the old one.`, math: `old × ${L(f)} = ${Vi}`, why: `A ${p}% ${rise ? 'rise adds' : 'fall takes'} ${p}% of the OLD price, so the new price is ${rise ? 100 + p : 100 - p}% of it.` },
+        { say: 'Undo the multiplication by dividing.', math: `old = ${Vi} ÷ ${L(f)} = ${O}`, why: 'Undo a multiplication by dividing.' },
       ],
+      picture: { diagram: 'numberline', spec: { min: 0, max: Math.max(O, Vi), step: O / 10, start: O, target: Vi }, caption: `Ticks every ${O / 10}, which is 10% of the old price ${O}. The ${rise ? 'rise' : 'fall'} of ${p}% moves ${p / 10} tick${p === 10 ? '' : 's'} to ${Vi}. The ticks are 10% of the old price, not of ${Vi}.` },
       fast: `${Vi} is ${rise ? 100 + p : 100 - p}%, so 1% is ${L(V.div(rise ? 100 + p : 100 - p))} and 100% is ${O}.`,
       check: `${O} ${rise ? '+' : '−'} ${p}% of ${O} (${L(q(O * p, 100))}) = ${Vi}. The old price is ${rise ? 'below' : 'above'} ${Vi}.`,
       hints: [`The new price is ${rise ? 100 + p : 100 - p}% of the old one.`, `Divide ${Vi} by ${L(f)}.`],

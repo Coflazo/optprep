@@ -1,7 +1,42 @@
 // Two dice: maximum, minimum, doubles, differences, "first beats second".
-import { mcqItem, agree, q } from '../lib.js';
+import { mcqItem, agree, q, diceGrid } from '../lib.js';
 
 const ID = 'dice-order-stats';
+
+// The 36-cell grid with the event shaded, plus the exam-speed path and a check, per kind.
+function explain(d) {
+  const { kind, k } = d;
+  if (kind === 'max') return {
+    picture: diceGrid((a, b) => Math.max(a, b) === k, (n) => `Max exactly ${k} is an L-shaped band: row ${k} and column ${k} up to the corner, ${n} cells. It is the ${k} × ${k} square minus the ${k - 1} × ${k - 1} square.`),
+    fast: `Squares: ${k}² − ${k - 1}² = ${2 * k - 1}, so ${2 * k - 1}/36.`,
+    check: `The max leans high: P(max = 6) = 11/36 is the largest and P(max = 1) = 1/36 the smallest; ${2 * k - 1}/36 sits in that order.`,
+  };
+  if (kind === 'min') return {
+    picture: diceGrid((a, b) => Math.min(a, b) === k, (n) => `Min exactly ${k} is an L-shaped band starting at (${k}, ${k}) and running to the far edges: ${n} cells.`),
+    fast: `Squares from the top: ${7 - k}² − ${6 - k}² = ${13 - 2 * k}, so ${13 - 2 * k}/36.`,
+    check: `The min leans low: P(min = 1) = 11/36 is the largest; min = ${k} and max = ${7 - k} have the same count, ${13 - 2 * k}.`,
+  };
+  if (kind === 'doubles') return {
+    picture: diceGrid((a, b) => a === b, 'The doubles are the diagonal: 6 cells of 36.'),
+    fast: 'Whatever the first die shows, the second matches it with chance 1/6.',
+    check: 'One double per face, six in all: 6/36. A named double such as (6, 6) is six times rarer.',
+  };
+  if (kind === 'diff') return {
+    picture: diceGrid((a, b) => Math.abs(a - b) === d.d, (n) => `Difference ${d.d} is two diagonals, ${6 - d.d} cells each side of the main one: ${n} cells.`),
+    fast: `${6 - d.d} pairs one way, ${6 - d.d} the other: ${2 * (6 - d.d)}/36.`,
+    check: `Larger differences are rarer: difference 1 has 10 cells and 5 has 2, and ${d.d} has ${2 * (6 - d.d)}.`,
+  };
+  if (kind === 'beats') return {
+    picture: diceGrid((a, b) => a > b, "Rows are your die, columns your friend's. You win in the 15 cells below the diagonal; the 6 diagonal cells are ties and the 15 above are losses."),
+    fast: 'Remove the 6 ties; half of the other 30 are yours: 15/36.',
+    check: 'Win, tie and lose must add to 1: 15/36 + 6/36 + 15/36. An answer of 1/2 forgets the ties.',
+  };
+  return {
+    picture: diceGrid((a, b) => Math.max(a, b) >= k, (n) => `Everything outside the ${k - 1} × ${k - 1} corner square of low pairs: ${n} cells.`),
+    fast: `Complement: 1 − (${k - 1}/6)² = ${36 - (k - 1) ** 2}/36.`,
+    check: `It must beat one die alone, ${7 - k}/6, but stay below adding the two dice, ${2 * (7 - k)}/6.`,
+  };
+}
 
 function build(kind, rng) {
   if (kind === 'max' || kind === 'min') {
@@ -111,6 +146,7 @@ export default {
     const b = build(kind, rng);
     return mcqItem(ID, rng, difficulty, {
       ...b,
+      ...explain(b.data),
       rule: 'P(max ≤ k) = (k/6)²; P(max = k) = (2k − 1)/36; P(min = k) = (13 − 2k)/36; P(one beats other) = (1 − 1/6)/2.',
       anchor: 'The 36 ordered pairs of two dice, with the one change that we look at the larger or smaller face instead of the sum.',
     });

@@ -1,7 +1,15 @@
 // Fair-coin sequences: all the same, exactly k heads, more heads than tails, no HH, runs.
 import { nCr } from '../../../core/combinatorics.js';
 import { Q } from '../../../core/rational.js';
-import { mcqItem, agree, q, qpow } from '../lib.js';
+import { mcqItem, agree, q, qpow, pic, table } from '../lib.js';
+
+// How many of the 2^n sequences have j heads, j = 0..n: the shape behind every head-count question.
+const headBars = (n, caption) => pic('bar', { categories: Array.from({ length: n + 1 }, (_, j) => String(j)), series: [{ name: 'sequences', values: Array.from({ length: n + 1 }, (_, j) => Number(nCr(n, j))) }], xLabel: 'heads', yLabel: 'sequences' }, caption);
+// All n flips the same: the first flip is free, then every flip must match it.
+function sameTree(n) {
+  const run = (side, i) => (i > n ? undefined : [{ p: '1/2', label: `${side} again`, ...(i === n ? { mark: true } : { children: run(side, i + 1) }) }, { p: '1/2', label: 'differs' }]);
+  return { label: '', children: ['H', 'T'].map((s) => ({ p: '1/2', label: `${s} first`, ...(n === 1 ? { mark: true } : { children: run(s, 2) }) })) };
+}
 
 const ID = 'coin-sequences';
 const fib = (n) => { let a = 0, b = 1; for (let i = 0; i < n; i++) [a, b] = [b, a + b]; return a; }; // F(1)=F(2)=1
@@ -35,6 +43,9 @@ function build(kind, n, rng) {
       { say: `P = (1/2)^${n - 1} = ${q(2, N)} ≈ ${(2 / N).toFixed(4)}.`, why: `Equivalently 2 favourable sequences out of ${N}.` },
     ],
     hints: ['Is a particular side required?', 'Only the later flips must match the first.', `(1/2)^${n - 1}.`],
+    picture: pic('tree', { root: sameTree(n), total: q(2, N).toString() }, `The first flip picks a side for free; the other ${n - 1} must match it. Two marked paths, all heads and all tails: 2/${N}.`),
+    fast: `(1/2)^${n - 1} = ${q(2, N)}.`,
+    check: `It is twice the chance of one named side, (1/2)^${n} = 1/${N}, because either side will do.`,
   };
   if (kind === 'exactlyK') {
     const k = rng.int(1, n - 1);
@@ -57,6 +68,9 @@ function build(kind, n, rng) {
         { say: `P = ${nCr(n, k)}/${N} = ${v} ≈ ${v.toNumber().toFixed(3)}.`, why: 'Favourable over total.' },
       ],
       hints: ['How many sequences in total?', `Choose which ${k} flips are heads.`, `C(${n},${k})/2^${n}.`],
+      picture: headBars(n, `How many of the ${N} sequences have each number of heads. The bar at ${k} is C(${n},${k}) = ${nCr(n, k)}, so the answer is ${nCr(n, k)}/${N}.`),
+      fast: `C(${n},${k}) = ${nCr(n, k)}, over 2^${n} = ${N}: ${v}.`,
+      check: `C(${n},${k}) = C(${n},${n - k}), so exactly ${k} heads and exactly ${n - k} heads are equally likely; the middle count is the largest, and all bars add to ${N}.`,
     };
   }
   if (kind === 'moreHeads') {
@@ -84,6 +98,9 @@ function build(kind, n, rng) {
         { say: 'By H/T symmetry, P = 1/2.', why: 'Every "more heads" sequence has a mirror "more tails" sequence.' },
       ],
       hints: ['Can there be a tie?', 'Use the symmetry between heads and tails.', n % 2 === 0 ? `(1 − ${tie})/2.` : '1/2.'],
+      picture: headBars(n, n % 2 === 0 ? `The bars are symmetric about ${n / 2}. Remove the middle bar (ties, ${nCr(n, n / 2)} sequences) and the rest splits evenly between more heads and more tails.` : `The bars are symmetric and there is no middle bar for ${n} flips, so the right half holds exactly half of the ${N} sequences.`),
+      fast: n % 2 === 0 ? `(1 − C(${n},${n / 2})/2^${n})/2 = ${v}.` : `No tie is possible with ${n} flips, so 1/2 by symmetry.`,
+      check: n % 2 === 0 ? `More heads, more tails and a tie add to 1, and the first two are equal, so the answer must be below 1/2.` : 'More heads and more tails are mirror images and nothing else can happen: each is exactly 1/2.',
     };
   }
   if (kind === 'noHH') {
@@ -105,6 +122,9 @@ function build(kind, n, rng) {
         { say: `P = ${good}/${N} ≈ ${(good / N).toFixed(3)}.`, why: 'Favourable over total.' },
       ],
       hints: ['Where can a head sit? What must come just before it?', 'Split on the last flip: T, or TH.', `The count is a Fibonacci number: ${good}.`],
+      picture: table(['Flips', 'Sequences with no HH', 'All sequences'], Array.from({ length: n }, (_, i) => [i + 1, fib(i + 3), 2 ** (i + 1)]), `Each count is the sum of the two above it (end in T, or in TH): 2, 3, 5, 8, … so ${n} flips give ${good} of ${N}.`),
+      fast: `Fibonacci: a(${n}) = F(${n + 2}) = ${good}, over ${N}.`,
+      check: `Neighbouring pairs overlap, so (3/4)^${n - 1} = ${qpow(q(3, 4), n - 1)} is not the answer; the true count ${good}/${N} is larger.`,
     };
   }
   const k = rng.int(2, Math.min(4, n - 1));
@@ -126,6 +146,9 @@ function build(kind, n, rng) {
       { say: `P = 1 − ${N - good}/${N} = ${v} ≈ ${v.toNumber().toFixed(3)}.`, why: 'Complement.' },
     ],
     hints: ['Count sequences that avoid the run instead.', 'Track the current run of heads: a tail resets it.', `${N - good} sequences avoid it.`],
+    picture: table(['Flips', `Sequences with no run of ${k} heads`, 'All sequences'], Array.from({ length: n }, (_, i) => [i + 1, noRun(i + 1, k), 2 ** (i + 1)]), `The complement, built one flip at a time: a tail resets the run, a head extends it. After ${n} flips ${N - good} of ${N} avoid the run, so ${good} contain it.`),
+    fast: `Complement by recursion: ${N - good} of ${N} avoid ${k} heads in a row, so ${good}/${N}.`,
+    check: `It must exceed the chance of the run in one fixed window, (1/2)^${k} = 1/${2 ** k}, and stay below ${n - k + 1} windows × 1/${2 ** k}, which double counts overlapping runs.`,
   };
 }
 

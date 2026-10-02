@@ -41,6 +41,7 @@ export function widthStep(coach, truth) {
     const terminating = Math.abs(truth * 1e6 - Math.round(truth * 1e6)) < 1e-6 * Math.max(1, truth);
     return {
       say: terminating ? `Exact answer, so give a zero-width interval: [${+truth.toFixed(6)}, ${+truth.toFixed(6)}], score 1.` : `Exact but non-terminating (${truth.toPrecision(8)}…), so bracket it tightly: [${lo}, ${hi}], score ${(lo / hi).toFixed(4)}.`,
+      math: terminating ? `score = ${+truth.toFixed(6)} / ${+truth.toFixed(6)} = 1` : `score = ${lo} / ${hi} = ${(lo / hi).toFixed(4)}`,
       why: 'Score = lower/upper when the truth is inside. With no uncertainty, any width only lowers the score.',
     };
   }
@@ -51,9 +52,55 @@ export function widthStep(coach, truth) {
   const spread = normal ? `±${show(sd)}` : `±${Math.round(sd * 100)}%`;
   return {
     say: `A well-prepared estimate is uncertain by about ${spread} (one standard deviation). The expected-score-optimal interval around a spot-on estimate is about [${plain(o.lower)}, ${plain(o.upper)}], expected score ${o.score.toFixed(2)}.`,
+    math: `score if inside = ${plain(o.lower)} / ${plain(o.upper)} = ${(Number(plain(o.lower)) / Number(plain(o.upper))).toFixed(2)}`,
     why: normal
       ? `A miss scores 0 while width only costs the ratio lower/upper, so the optimum covers ${below.toFixed(1)} sd below and ${above.toFixed(1)} sd above: it leans high because a higher interval has a larger ratio.`
       : `A miss scores 0 while width only costs the ratio lower/upper, so the optimum covers ${below.toFixed(1)} sd each way on a log scale, which puts more room above the estimate than below.`,
+  };
+}
+
+// A tick step of 1, 2 or 5 times a power of ten giving about eight ticks over span.
+export function niceStep(span) {
+  const raw = span / 8, p = 10 ** Math.floor(Math.log10(raw)), f = raw / p;
+  return (f < 1.5 ? 1 : f < 3.5 ? 2 : f < 7.5 ? 5 : 10) * p;
+}
+const r4 = (x) => Number(x.toPrecision(5));
+
+// The scoring picture, the arithmetic of the score, the ask and the check, shared by every family.
+// fam.picture?(params, truth) supplies a picture of the computation itself where one helps more.
+function ivExtras(fam, { text, truth, unit, coach, params, exact }) {
+  const u = unit === '%' ? '%' : unit ? ` ${unit}` : '';
+  const q = text.split(/(?<=[.?])\s+/).filter((s) => s.includes('?')).pop() || text;
+  const ask = `We want an interval [lower, upper] that contains the answer to: "${q.trim()}" The narrower it is while still containing it, the higher the score.`;
+  const fast = fam.fast?.(params, truth) || (coach.belief.kind === 'point' ? fam.lesson.rule : `${fam.lesson.rule} ${coach.note || ''}`.trim());
+  if (coach.exact && coach.belief.kind === 'point') {
+    const [lo, hi] = bracket(truth);
+    const terminating = Math.abs(truth * 1e6 - Math.round(truth * 1e6)) < 1e-6 * Math.max(1, truth);
+    const t = +truth.toFixed(6), wide = [r4(t * 0.99), r4(t * 1.01)];
+    return {
+      ask, fast,
+      check: `Exact means exact: ${terminating ? `[${t}, ${t}] scores 1` : `[${lo}, ${hi}] scores ${(lo / hi).toFixed(4)}`}, while a safety margin of 1% each side, [${wide[0]}, ${wide[1]}], scores only ${(wide[0] / wide[1]).toFixed(2)}.`,
+      picture: fam.picture?.(params, truth) ?? {
+        diagram: 'table',
+        spec: { columns: ['Exact value', 'Decimal', 'Interval to submit', 'Score'], rows: [[exact ? String(exact).split(' = ')[0] : `${t}${u}`, terminating ? `${t}${u}` : `${truth.toPrecision(8)}…${u}`, terminating ? `[${t}, ${t}]` : `[${lo}, ${hi}]`, terminating ? '1' : (lo / hi).toFixed(4)]] },
+        caption: terminating ? 'An exact answer that terminates: both ends on the value, full score.' : 'An exact answer that repeats: bracket it at the second decimal, which costs almost nothing.',
+      },
+    };
+  }
+  const o = optimal(coach.belief, truth);
+  const normal = coach.belief.kind === 'normal', sd = coach.belief.sd;
+  const spread = normal ? sd : truth * sd;
+  const step = niceStep(o.upper - o.lower + 2 * spread);
+  const min = Math.floor((o.lower - spread) / step) * step, max = Math.ceil((o.upper + spread) / step) * step;
+  const lo = Number(plain(o.lower)), hi = Number(plain(o.upper));
+  return {
+    ask, fast,
+    check: `Size the width from your error, not your nerves: an estimate off by one sd (about ${normal ? show(sd) : `${Math.round(sd * 100)}%`}) still lands inside [${plain(o.lower)}, ${plain(o.upper)}], while a zero-width guess scores 0 on almost any miss.`,
+    picture: fam.picture?.(params, truth) ?? {
+      diagram: 'numberline',
+      spec: { min: r4(min), max: r4(max), step: r4(step), barriers: [lo, hi], target: Number(plain(truth)), marks: [{ x: lo, label: plain(o.lower) }, { x: hi, label: plain(o.upper) }] },
+      caption: `The bars are the expected-score-optimal interval for an estimate that is good to about ${normal ? `±${show(sd)}` : `±${Math.round(sd * 100)}%`}; the dot is the true value. It reaches further above than below, because a higher interval loses less to the lower/upper ratio.`,
+    },
   };
 }
 
@@ -71,7 +118,7 @@ export function ivItem(fam, rng, difficulty, { text, visual, truth, unit, coach,
     unit,
     coach,
     answer: { value: truth, display: show(truth), ...(exact ? { exact } : {}) },
-    solution: { steps: [...steps, widthStep(coach, truth)], rule: fam.lesson.rule, anchor: fam.lesson.anchor },
+    solution: { ...ivExtras(fam, { text, truth, unit, coach, params, exact }), steps: [...steps, widthStep(coach, truth)], rule: fam.lesson.rule, anchor: fam.lesson.anchor },
     hints,
     params,
   };

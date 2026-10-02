@@ -3,7 +3,7 @@
 // re-derived by the rule search in tests (unique continuation, answer among the options).
 import { makeRng } from '../../core/rng.js';
 import { buildMcq } from '../../core/options.js';
-import { label, parseQ, genericRivals, encodeTerm } from './lib.js';
+import { label, parseQ, genericRivals, encodeTerm, equationOf, computeStep, nlExtras } from './lib.js';
 import { families } from './registry.js';
 
 const SRC = {
@@ -15,6 +15,20 @@ const SRC = {
   jtp: 'JobTestPrep number-series pattern families (digit, reversal and fraction rules); original item',
   tm: 'Tradermath NumberLogic practice format (fractions, large numbers, alternating rules late in the test); original item',
 };
+
+// The curated steps keep their words; arithmetic moves into `math`, and the shared builder adds
+// the ask, exam-speed path, sanity check and picture from the sequence itself.
+function solutionOf(F, shown, target, mode, raw) {
+  const k = shown.length;
+  const steps = raw.map(([say, why], i) => {
+    if (i === raw.length - 1) return computeStep(say, k, false, why);
+    const math = equationOf(say);
+    return math ? { say, math, why } : { say, why };
+  });
+  if (!steps.some((st) => st.math)) steps[steps.length - 1].math = `${label(target, mode)} − ${label(shown[k - 1], mode)} = ${label(target.sub(shown[k - 1]), mode)}`;
+  const extras = nlExtras({ seq: [...shown, target], k, missing: false, mode, view: F.view, srule: F.lesson.rule, how: steps.findLast((st) => st.math).math });
+  return { ...extras, steps, rule: F.lesson.rule, anchor: F.lesson.anchor };
+}
 
 function item(n, { fam, d, seq, ans, rule, steps, rivals = [], hints, src, c = {} }) {
   const F = families.find((f) => f.id === fam);
@@ -47,7 +61,7 @@ function item(n, { fam, d, seq, ans, rule, steps, rivals = [], hints, src, c = {
     prompt: { text: `What number comes next?  ${labels.join(', ')}, ?`, sequence: [...labels, '?'] },
     ...mcq,
     answer: { value: target.toNumber(), label: correctLabel, rule },
-    solution: { steps: steps.map(([say, why]) => ({ say, why })), rule: F.lesson.rule, anchor: F.lesson.anchor },
+    solution: solutionOf(F, shown, target, mode, steps),
     hints: hints || ['Start with the gaps between neighbours.', 'If the gaps do not settle, try ratios, then look for two strands or a two-term rule.'],
     params: { rule: fam, coeffs: c, shown: shown.map(encodeTerm), next: encodeTerm(target), position: shown.length },
     meta: { source: SRC[src] },

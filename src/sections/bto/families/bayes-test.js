@@ -1,5 +1,5 @@
 // Bayes with a diagnostic signal: prevalence, sensitivity, false-positive rate.
-import { mcqItem, agree, q } from '../lib.js';
+import { mcqItem, agree, q, pic } from '../lib.js';
 
 const ID = 'bayes-test';
 const CONTEXTS = [
@@ -26,7 +26,7 @@ export default {
     const variant = difficulty === 4 ? rng.pick(['twoPos', 'negative']) : 'pos';
     const p = q(...pv), s = q(...sv), f = q(...fv);
     const np = q(1).sub(p);
-    let value, text, steps, distractors;
+    let value, text, steps, distractors, extra;
     if (variant === 'pos' || variant === 'twoPos') {
       const k = variant === 'twoPos' ? 2 : 1;
       const lik = k === 2 ? s.mul(s) : s, flik = k === 2 ? f.mul(f) : f;
@@ -49,6 +49,15 @@ export default {
         { say: `False ${c.pos}: ${np} × ${flik} = ${fp}.`, why: `Those without the condition that still test ${c.pos}${k === 2 ? ' twice' : ''}.` },
         { say: `P = ${tp} / (${tp} + ${fp}) = ${value} ≈ ${value.toNumber().toFixed(3)}.`, why: `Among all ${c.pos} cases, the fraction that are real.` },
       ];
+      const plus = k === 2 ? `${c.pos} twice` : c.pos, notPlus = k === 2 ? 'not twice' : c.neg;
+      extra = {
+        picture: pic('tree', { root: { label: '', children: [
+          { p: p.toString(), label: `${c.has.replace(/^is /, '')}`, children: [{ p: lik.toString(), label: plus, mark: true }, { p: q(1).sub(lik).toString(), label: notPlus }] },
+          { p: np.toString(), label: 'does not', children: [{ p: flik.toString(), label: plus, mark: true }, { p: q(1).sub(flik).toString(), label: notPlus }] },
+        ] } }, `Each leaf shows its path product. The two marked leaves are every ${c.pos} case; the real ones are the top marked leaf, ${tp} out of ${tp.add(fp)}.`),
+        fast: `True : false ${c.pos} = ${tp} : ${fp}, so ${value}.`,
+        check: `A ${c.pos} result raises the chance above the base rate ${p}, but with ${fp.cmp(tp) > 0 ? 'more false than true' : 'this many false'} ${c.pos} cases it stays ${value.cmp(s) < 0 ? `well below the hit rate ${s}` : 'below 1'}.`,
+      };
     } else {
       const fn = p.mul(q(1).sub(s)), tn = np.mul(q(1).sub(f));
       value = fn.div(fn.add(tn));
@@ -65,9 +74,17 @@ export default {
         { say: `Correct ${c.neg}: ${np} × ${q(1).sub(f)} = ${tn}.`, why: `Do not have it and test ${c.neg}.` },
         { say: `P = ${fn} / (${fn} + ${tn}) = ${value} ≈ ${value.toNumber().toFixed(4)}.`, why: `Fraction of ${c.neg} cases that are real.` },
       ];
+      extra = {
+        picture: pic('tree', { root: { label: '', children: [
+          { p: p.toString(), label: `${c.has.replace(/^is /, '')}`, children: [{ p: s.toString(), label: c.pos }, { p: q(1).sub(s).toString(), label: c.neg, mark: true }] },
+          { p: np.toString(), label: 'does not', children: [{ p: f.toString(), label: c.pos }, { p: q(1).sub(f).toString(), label: c.neg, mark: true }] },
+        ] } }, `The two marked leaves are every ${c.neg} case. The missed real ones are the top marked leaf, ${fn} out of ${fn.add(tn)}.`),
+        fast: `Missed : correct ${c.neg} = ${fn} : ${tn}, so ${value}.`,
+        check: `A ${c.neg} result lowers the chance, so the answer must be below the base rate ${p}, though not zero while the test misses ${pct([sv[1] - sv[0], sv[1]])} of real cases.`,
+      };
     }
     return mcqItem(ID, rng, difficulty, {
-      value, text, distractors, steps,
+      value, text, distractors, steps, ...extra,
       rule: 'P(H | +) = P(H)P(+|H) / [P(H)P(+|H) + P(not H)P(+|not H)]. Count true positives against all positives.',
       anchor: 'Conditional probability P(A | B) = P(A and B)/P(B), with the one change that P(A and B) is built from a rate you are given the other way round.',
       hints: ['Picture 1,000 cases. How many have the condition, and how many of those test positive?', 'Now count the false positives among the rest.', 'True positives / all positives.'],

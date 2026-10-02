@@ -4,7 +4,23 @@
 import { makeRng } from '../../core/rng.js';
 import { nCr, derangements, factorial } from '../../core/combinatorics.js';
 import { Q } from '../../core/rational.js';
-import { mcqItem, q, qpow, harmonic, Phi } from './lib.js';
+import { mcqItem, q, qpow, harmonic, Phi, pic, table, diceGrid, firstSuccessTree } from './lib.js';
+import { value as stopValue } from './families/card-stopping.js';
+import { bell } from './families/clt-estimates.js';
+
+// Picture helpers for the curated items. Every number is computed from the item's own inputs.
+const oneLevel = (label, yes, no, pYes, pNo) => ({ label, children: [{ p: pYes, label: yes, mark: true }, { p: pNo, label: no }] });
+function walk(start, moves, extra, caption) {
+  const path = [start];
+  for (const m of moves) path.push(path[path.length - 1] + m);
+  const xs = [...path, ...(extra.barriers || []), ...(extra.marks || []).map((m) => m.x)];
+  return pic('numberline', { min: Math.min(...xs) - 1, max: Math.max(...xs) + 1, step: 1, start, path, ...extra }, caption);
+}
+const square = (regions, xLabel, yLabel, caption) => pic('unitsquare', { regions, xLabel, yLabel }, caption);
+const indicators = (rows, total, caption) => table(['Indicator: 1 when', 'Chance it is 1', 'How many', 'Adds'], [...rows, ['expected count', '', '', total]], caption);
+const doors = (n, m, other, caption) => table(['Doors', 'How many', 'Each, before', 'Each, after the reveal'], [['your door', 1, `1/${n}`, `1/${n}`], [m === 1 ? 'opened door' : 'opened doors', m, `1/${n}`, '0'], [n - m - 1 === 1 ? 'other closed door' : 'other closed doors', n - m - 1, `1/${n}`, other]], caption);
+const xs0 = (n) => Array.from({ length: n + 1 }, (_, k) => k);
+const binomRow = (n, j) => Number(nCr(n, j));
 
 const SRC = {
   prachub5: 'PracHub, "Optiver Beat The Odds: Five Rapid-Fire Probability Brainteasers (Dice, Cards, Coins, Pigeonhole)", https://prachub.com/interview-questions/optiver-beat-the-odds-five-rapid-fire-probability-brainteasers-dice-cards-coins-pigeonhole',
@@ -33,6 +49,9 @@ const bank = [
   mk('top-card-red', 'card-symmetry', 1, {
     value: q(1, 2),
     text: 'A shuffled 52-card deck has its top 10 cards removed and thrown away face down. What is the probability that the card now on top is red?',
+    picture: pic('tree', { root: { label: 'one unseen discard', children: [{ p: '26/52', label: 'discard red', children: [{ p: '25/51', label: 'next red', mark: true }, { p: '26/51', label: 'next black' }] }, { p: '26/52', label: 'discard black', children: [{ p: '26/51', label: 'next red', mark: true }, { p: '25/51', label: 'next black' }] }] }, total: '1/2' }, 'One unseen discard, split by its colour. The two marked paths add back to 1/2; each of the other nine discards averages out the same way.'),
+    fast: 'Unseen cards carry no information, so the 11th card is a random card: 26/52 = 1/2.',
+    check: 'The answer cannot depend on how many cards were thrown away: with no discards it is 1/2, so it is 1/2 with ten.',
     distractors: [
       { value: q(26, 42), misconception: 'Kept all 26 red cards but shrank the deck to 42. The unseen discards remove red and black cards alike.' },
       { value: q(16, 42), misconception: 'Assumed all 10 discards were red.' },
@@ -48,6 +67,9 @@ const bank = [
   mk('dice-11-or-12', 'two-dice-sum', 1, {
     value: q(3, 36),
     text: 'Two fair dice are thrown. What is the probability that their total is 11 or 12?',
+    picture: diceGrid((a, b) => a + b >= 11, 'Rows are the first die, columns the second. Totals 11 and 12 are the bottom-right corner: (5,6), (6,5) and (6,6), 3 of 36 cells.', { cellText: [1, 2, 3, 4, 5, 6].map((a) => [1, 2, 3, 4, 5, 6].map((b) => String(a + b))) }),
+    fast: '2 pairs for 11, 1 for 12: 3/36 = 1/12.',
+    check: 'Mirror check: totals 11 and 12 have as many pairs as totals 3 and 2, which is 2 + 1 = 3.',
     distractors: [
       { value: q(2, 11), misconception: 'Treated the 11 possible totals as equally likely.' },
       { value: q(2, 21), misconception: 'Counted unordered pairs {5,6} and {6,6} out of 21 as equally likely.' },
@@ -63,6 +85,9 @@ const bank = [
   mk('three-flips-same', 'coin-sequences', 1, {
     value: q(1, 4),
     text: 'A fair coin is flipped three times. What is the probability that all three flips land the same way?',
+    picture: table(['Sequence', 'All the same?'], ['HHH', 'HHT', 'HTH', 'HTT', 'THH', 'THT', 'TTH', 'TTT'].map((s) => [s, s === 'HHH' || s === 'TTT' ? 'yes' : 'no']), 'All 8 equally likely sequences of three flips. Two of them, HHH and TTT, are all the same: 2/8 = 1/4.'),
+    fast: 'First flip free, the other two must match it: (1/2)² = 1/4.',
+    check: 'Twice the chance of three heads (1/8), because either side will do.',
     distractors: [
       { value: q(1, 8), misconception: 'Only counted HHH; TTT also qualifies.' },
       { value: q(1, 2), misconception: 'Only compared the second flip with the first.' },
@@ -78,6 +103,9 @@ const bank = [
   mk('61-coins', 'pigeonhole', 1, {
     value: q(1),
     text: '61 coins are dropped at random into 15 boxes. You win if at least one box ends up holding more than 4 coins. What is the probability that you win?',
+    picture: table(['', 'Coins'], [['15 boxes filled to the cap of 4', 15 * 4], ['coins dropped', 61], ['coins with nowhere to go', 61 - 15 * 4]], 'Even the most even spread that keeps every box at 4 or fewer holds only 60 coins. The 61st must push some box past 4, whatever the drops.'),
+    fast: '15 × 4 = 60 < 61: certain, P = 1.',
+    check: 'Any option below 1 treats a certainty as a chance; the cap count 60 < 61 settles it.',
     distractors: [
       { value: 0, misconception: 'Thought an even spread keeps every box at 4 or fewer; 15 × 4 = 60 < 61.' },
       { value: 0.5, misconception: 'Treated overflow as a coin flip.' },
@@ -93,6 +121,9 @@ const bank = [
   mk('second-throw-differs', 'die-repeats', 1, {
     value: q(5, 6),
     text: 'A die is thrown twice. What is the probability that the second throw differs from the first?',
+    picture: pic('tree', { root: oneLevel('first throw shown', 'second differs', 'second matches', '5/6', '1/6'), total: '5/6' }, 'Whatever the first throw shows, 5 of the 6 faces differ from it.'),
+    fast: '1 − 1/6 = 5/6.',
+    check: 'A match (1/6) and a difference must add to 1.',
     distractors: [
       { value: q(1, 6), misconception: 'Computed the chance that the throws match.' },
       { value: q(25, 36), misconception: 'Applied 5/6 to both throws; the first throw cannot clash with anything.' },
@@ -108,6 +139,9 @@ const bank = [
   mk('hexagon-return', 'polygon-walk', 3, {
     ev: true, value: q(6),
     text: 'A bug sits on a corner of a regular hexagon. Every second it walks along an edge to one of the two adjacent corners, each with probability 1/2. On average, how many seconds until it is back at its starting corner?',
+    picture: pic('cycle', { n: 6, start: 0, note: 'long run: 1/6 of the time at each corner' }, 'By symmetry the bug spends 1/6 of its time at every corner, so visits to the start are 6 seconds apart on average.'),
+    fast: '1/(1/6) = 6.',
+    check: 'One step to a neighbour, then 1 × 5 more on average: 1 + 5 = 6.',
     distractors: [
       { value: 3, misconception: 'Assumed it goes halfway round and back.' },
       { value: 9, misconception: 'Used the time to reach the opposite corner.' },
@@ -123,6 +157,9 @@ const bank = [
   mk('hexagon-opposite', 'polygon-walk', 3, {
     ev: true, value: q(9),
     text: 'A token does a symmetric random walk on the corners of a regular hexagon, moving to a neighbouring corner each step. Starting at one corner, how many steps on average until it first reaches the opposite corner?',
+    picture: pic('cycle', { n: 6, start: 0, target: 3, note: '3 steps either way' }, 'Cut the hexagon open at the opposite corner: the token is 3 steps from it on both sides, and a fair walk between walls lasts 3 × 3 = 9.'),
+    fast: '3 × (6 − 3) = 9.',
+    check: 'More than the 3 steps of the direct route; every back-step costs time.',
     distractors: [
       { value: 3, misconception: 'Assumed it walks straight across.' },
       { value: 6, misconception: 'Used the return time.' },
@@ -138,6 +175,9 @@ const bank = [
   mk('octagon-meet', 'polygon-walk', 5, {
     ev: true, value: q(8),
     text: 'Two tokens start on opposite corners of a regular octagon. Each second both move simultaneously and independently to a neighbouring corner, each direction with probability 1/2. On average, how many seconds until they occupy the same corner?',
+    picture: pic('cycle', { n: 8, highlight: [0, 4], note: 'gap 4: changes by −2, 0 or +2' }, 'Follow the gap between the two marked tokens. It moves by 2 at a time, and only half the time: a lazy walk on a 4-cycle from 2 away, 2 × 2 × 2 = 8.'),
+    fast: 'Gap walk on a 4-cycle from 2, moving half the time: 2 × 2 × 2 = 8.',
+    check: 'Twice the single-walk time 2 × 2 = 4, because half the seconds leave the gap unchanged.',
     distractors: [
       { value: 4, misconception: 'Ignored the seconds when both move the same way and the gap does not change.' },
       { value: 16, misconception: 'Treated one token as fixed: a single walker from distance 4 on an octagon takes 4 × 4 = 16.' },
@@ -153,6 +193,9 @@ const bank = [
   mk('two-aces', 'card-draws', 1, {
     value: q(1, 221),
     text: 'Two cards are dealt from a shuffled standard deck. What is the probability that both are aces?',
+    picture: pic('tree', { root: { label: '', children: [{ p: '4/52', label: 'ace', children: [{ p: '3/51', label: 'ace again', mark: true }, { p: '48/51', label: 'no ace' }] }, { p: '48/52', label: 'no ace' }] }, total: '1/221' }, 'After a first ace, 3 aces remain among 51 cards. The marked path is 4/52 × 3/51.'),
+    fast: '4/52 × 3/51 = 1/13 × 1/17 = 1/221.',
+    check: 'Below (1/13)² = 1/169, the with-replacement value: the first ace leaves fewer aces.',
     distractors: [
       { value: q(1, 169), misconception: 'Used (4/52)², as if the first card were replaced.' },
       { value: q(8, 52), misconception: 'Added the two chances.' },
@@ -168,6 +211,9 @@ const bank = [
   mk('two-reds-of-three', 'urn-draws', 2, {
     value: q(5, 7),
     text: 'A bag holds 5 red and 3 green counters. Three counters are drawn without replacement. What is the probability that at least two of them are red?',
+    picture: table(['Reds in the hand', 'Sets', 'Out of C(8,3) = 56'], [0, 1, 2, 3].map((t) => [`${t}${t >= 2 ? ' (wanted)' : ''}`, `C(5,${t}) × C(3,${3 - t}) = ${binomRow(5, t) * binomRow(3, 3 - t)}`, `${binomRow(5, t) * binomRow(3, 3 - t)}/56`]), 'Every hand of three counters has 0 to 3 reds; the column adds to 56. The wanted rows give 30 + 10 = 40, so 40/56 = 5/7.'),
+    fast: '(C(5,2) × 3 + C(5,3))/56 = (30 + 10)/56 = 5/7.',
+    check: 'The four rows add to 56: 1 + 15 + 30 + 10. With replacement the answer would differ.',
     distractors: [
       { value: q(30, 56), misconception: 'Counted exactly two reds and forgot the all-red hands.' },
       { value: q(10, 56), misconception: 'Only counted three reds.' },
@@ -183,6 +229,9 @@ const bank = [
   mk('bankroll-unfair', 'gamblers-ruin', 4, {
     value: q(1).sub(qpow(q(11, 9), 10)).div(q(1).sub(qpow(q(11, 9), 20))),
     text: 'You start with $10 and repeatedly bet $1 on a game you win with probability 0.45. You stop when you reach $20 or lose everything. What is the probability that you reach $20?',
+    picture: pic('plot', { x: { min: 0, max: 20, label: 'starting dollars' }, y: { min: 0, max: 1, label: 'P(reach $20 first)' }, curves: [{ label: 'p = 0.45', points: xs0(20).map((x) => [x, (1 - (11 / 9) ** x) / (1 - (11 / 9) ** 20)]) }, { label: 'fair', points: xs0(20).map((x) => [x, x / 20]) }], markers: [{ x: 10, y: (1 - (11 / 9) ** 10) / (1 - (11 / 9) ** 20), label: 'start $10: 0.119' }] }, 'With a 45% game the curve sags far below the fair straight line: a small edge against you compounds over the many bets.'),
+    fast: 'r = 11/9; (1 − r^10)/(1 − r^20) ≈ 0.119.',
+    check: 'Far below the fair 1/2: with r^10 ≈ 7.4, the formula gives about 1/(1 + 7.4).',
     distractors: [
       { value: 0.5, misconception: 'Used the fair-game answer 10/20, ignoring the 5-point edge against you.' },
       { value: 0.45, misconception: 'Used the one-bet probability for the whole game.' },
@@ -198,6 +247,9 @@ const bank = [
   mk('price-negative', 'random-walk-line', 3, {
     value: q(37, 256),
     text: 'A price starts at 2 and each day moves up or down by 1 with equal probability (it may go negative). What is the probability that it is below 0 after 8 days?',
+    picture: walk(2, [-1, -1, -1, -1, 1, -1, 1, -1], { barriers: [0] }, 'The bar marks 0. After 8 days the move is even, so a price below 0 means ending at −2 or lower; this path ends at −2.'),
+    fast: 'At most 2 up-days: (1 + 8 + 28)/256 = 37/256.',
+    check: 'Ending exactly at 0 does not count; including it would add C(8,3) = 56 paths.',
     distractors: [
       { value: q(93, 256), misconception: 'Counted a price of exactly 0 as below 0.' },
       { value: 0.5, misconception: 'Treated above/below zero as a coin flip, ignoring the starting cushion of 2.' },
@@ -217,6 +269,9 @@ const more = [
   ['demere-four-throws', 'at-least-one', 2, SRC.classicDeMere, {
     value: q(1).sub(qpow(q(5, 6), 4)),
     text: 'You throw a die four times. What is the probability of at least one six?',
+    picture: pic('tree', { root: firstSuccessTree(4, '1/6', '5/6', 'six', 'no six'), total: '671/1296' }, 'Stop at the first six; only the bottom path, four misses, fails. The marked leaves add to 1 − (5/6)^4 = 671/1296.'),
+    fast: '1 − (5/6)^4 = 1 − 625/1296 ≈ 0.518.',
+    check: 'Above 1/2 but below the overlap-blind sum 4/6.',
     distractors: [
       { value: q(4, 6), misconception: 'Added 1/6 four times; the events overlap.' },
       { value: qpow(q(5, 6), 4), misconception: 'Answered the complement.' },
@@ -230,6 +285,9 @@ const more = [
   ['demere-double-six', 'at-least-one', 3, SRC.classicDeMere, {
     value: q(1).sub(qpow(q(35, 36), 24)),
     text: 'You throw a pair of dice 24 times. What is the probability of at least one double six?',
+    picture: pic('plot', { x: { min: 0, max: 30, label: 'throws of the pair' }, y: { min: 0, max: 1, label: 'P(at least one double six)' }, curves: [{ label: '1 − (35/36)^k', points: xs0(30).map((k) => [k, 1 - (35 / 36) ** k]) }], hlines: [{ y: 0.5, label: '1/2' }], markers: [{ x: 24, y: 1 - (35 / 36) ** 24, label: '24 throws: 0.491' }] }, 'The chance of a double six after k throws. It crosses 1/2 between 24 and 25 throws, which is why the 24-throw bet loses.'),
+    fast: '1 − (35/36)^24 ≈ 0.491.',
+    check: 'Slightly below 1/2; the overlap-blind sum 24/36 = 2/3 is far too high.',
     distractors: [
       { value: q(24, 36), misconception: 'Added 1/36 twenty-four times; overlapping events double count.' },
       { value: qpow(q(35, 36), 24), misconception: 'Answered the complement.' },
@@ -243,6 +301,9 @@ const more = [
   ['pepys-six-dice', 'at-least-one', 2, SRC.pepys, {
     value: q(1).sub(qpow(q(5, 6), 6)),
     text: 'Six fair dice are thrown. What is the probability that at least one shows a six?',
+    picture: pic('plot', { x: { min: 0, max: 6, label: 'dice' }, y: { min: 0, max: 1, label: 'P(at least one six)' }, curves: [{ label: '1 − (5/6)^k', points: xs0(6).map((k) => [k, 1 - (5 / 6) ** k]) }], markers: [{ x: 6, y: 1 - (5 / 6) ** 6, label: '6 dice: 0.665' }] }, 'Each extra die adds less than the one before, because it only helps when every earlier die missed. Six dice reach about 2/3, not 1.'),
+    fast: '1 − (5/6)^6 ≈ 1 − 0.335 = 0.665.',
+    check: 'Not 1: all six dice can miss, with chance (5/6)^6, about 1/3.',
     distractors: [
       { value: 1, misconception: 'Added 1/6 six times and got 1: you can miss on every die.' },
       { value: qpow(q(5, 6), 6), misconception: 'Answered the complement.' },
@@ -256,6 +317,9 @@ const more = [
   ['birthday-23', 'birthday', 3, SRC.feller, {
     value: q(1).sub(new Q((() => { let p = 1n; for (let i = 0n; i < 23n; i++) p *= 365n - i; return p; })(), 365n ** 23n)),
     text: '23 people are in a room. Ignoring leap years and assuming all 365 birthdays equally likely, what is the probability that at least two share a birthday?',
+    picture: pic('plot', { x: { min: 0, max: 60, label: 'people' }, y: { min: 0, max: 1, label: 'probability' }, curves: [{ label: 'some pair shares', points: xs0(60).map((k) => { let p = 1; for (let i = 0; i < k; i++) p *= (365 - i) / 365; return [k, 1 - p]; }) }, { label: 'someone shares yours', points: xs0(60).map((k) => [k, 1 - (364 / 365) ** Math.max(k - 1, 0)]) }], markers: [{ x: 23, y: 0.5073, label: '23 people: 0.507' }] }, 'Pairs grow like n², so a shared birthday among 23 people passes 1/2, while a match with one fixed birthday stays rare.'),
+    fast: '253 pairs × 1/365 ≈ 0.69, so about 1 − e^(−0.69) ≈ 0.50; exactly 0.507.',
+    check: 'Between 1/365 (one pair) and 253/365 ≈ 0.69 (all pairs added, double counting).',
     distractors: [
       { value: q(23, 365), misconception: 'Scaled one person\'s chance by 23; collisions come from 253 pairs.' },
       { value: q(1).sub(qpow(q(364, 365), 22)), misconception: 'Only checked matches with one particular person.' },
@@ -269,19 +333,25 @@ const more = [
   ['monty-three', 'monty-hall', 2, SRC.monty, {
     value: q(2, 3),
     text: 'Three doors hide one car and two goats. You pick door 1; the host, who knows where the car is, opens a different door showing a goat and lets you switch. If you switch, what is your chance of winning the car?',
+    picture: doors(3, 1, '2/3', 'The host knows and avoids the car, so your door keeps 1/3 and the opened door’s share moves to the other closed door: 2/3.'),
+    fast: 'Switching wins exactly when the first pick was wrong: 2/3.',
+    check: 'After the reveal the closed doors add to 1: 1/3 + 2/3.',
     distractors: [
       { value: q(1, 2), misconception: 'Treated the two closed doors as equally likely; the host\'s knowledge breaks the symmetry.' },
       { value: q(1, 3), misconception: 'Answered the staying probability.' },
       { value: 1, misconception: 'Believed switching always wins.' },
       { value: q(1, 4), misconception: 'Multiplied 1/2 by 1/2 for no reason.' },
     ],
-    steps: steps(['Your door keeps 1/3: the host can always show a goat.', 'His action says nothing about your door.'], ['The other closed door gets the remaining 2/3.', 'He never opens the car.']),
+    steps: steps(['Your door keeps 1/3: the host can always show a goat.', 'His action says nothing about your door.'], ['The other closed door gets the rest: 1 − 1/3 = 2/3.', 'He never opens the car.']),
     rule: 'Knowing host: switch wins (n − 1)/n with 3 doors → 2/3.', anchor: 'Bayes updating where the evidence depends on the host\'s rule.',
     hints: ['Could the host have shown the car?', 'Your door\'s probability does not move.'], params: { n: 3, m: 1, variant: 'switch' },
   }],
   ['five-letters', 'derangements', 2, SRC.mosteller, {
     value: new Q(derangements(5), factorial(5)),
     text: 'Five letters are placed at random into five addressed envelopes. What is the probability that no letter is in its correct envelope?',
+    picture: table(['Exactly j letters right', 'Arrangements C(5,j) × D(5 − j)', 'Out of 120'], [0, 1, 2, 3, 4, 5].map((j) => [`${j}${j === 0 ? ' (wanted)' : ''}`, `${binomRow(5, j)} × ${derangements(5 - j)} = ${binomRow(5, j) * Number(derangements(5 - j))}`, `${binomRow(5, j) * Number(derangements(5 - j))}/120`]), 'All 120 arrangements sorted by how many letters land right. The j = 0 row is the derangements, 44 of 120; the row j = 4 is always empty.'),
+    fast: 'D(5)/5! = 44/120 ≈ 0.367, close to 1/e.',
+    check: 'Close to 1/e ≈ 0.368; the independent guess (4/5)^5 ≈ 0.328 is noticeably off.',
     distractors: [
       { value: qpow(q(4, 5), 5), misconception: 'Treated each letter as missing independently with chance 4/5.' },
       { value: q(1).sub(new Q(derangements(5), factorial(5))), misconception: 'Answered "at least one correct".' },
@@ -295,6 +365,9 @@ const more = [
   ['first-six-mean', 'expected-waiting', 1, SRC.qbt, {
     ev: true, value: q(6),
     text: 'You throw a die until a six appears. What is the expected number of throws, counting the six?',
+    picture: pic('tree', { root: { label: 'start', children: [{ p: '1/6', label: 'six: stop', mark: true }, { p: '5/6', label: 'miss: back to the start' }] }, showProducts: false }, 'One throw always happens; with chance 5/6 you face the same wait again. E = 1 + (5/6)E gives 6.'),
+    fast: '1/p = 6.',
+    check: 'Half the time the six comes within 4 throws, yet the mean is 6: slow runs pull the average up.',
     distractors: [
       { value: 5, misconception: 'Counted only the failed throws.' },
       { value: 3.5, misconception: 'Averaged the face values.' },
@@ -308,6 +381,9 @@ const more = [
   ['double-six-wait', 'expected-waiting', 3, SRC.green, {
     ev: true, value: q(42),
     text: 'A die is thrown until two consecutive sixes appear. What is the expected number of throws?',
+    picture: pic('graph', { markov: true, nodes: [{ id: '0', label: 'no progress', x: 0.1, y: 0.5 }, { id: '1', label: 'one six', x: 0.55, y: 0.5 }, { id: 'D', label: 'done', x: 0.95, y: 0.5 }], edges: [{ from: '0', to: '0', p: 5 / 6, label: '5/6' }, { from: '0', to: '1', p: 1 / 6, label: '1/6' }, { from: '1', to: 'D', p: 1 / 6, label: '1/6' }, { from: '1', to: '0', p: 5 / 6, label: '5/6' }] }, 'A miss from either state sends you back to the start, which is why the wait is 36 + 6 and not 2 × 6.'),
+    fast: '6² + 6 = 42.',
+    check: 'At least 36, since two sixes have chance 1/36 at any fixed pair of throws; resets add the extra 6.',
     distractors: [
       { value: 36, misconception: 'Treated each pair of throws as an independent 1/36 attempt.' },
       { value: 72, misconception: 'Used non-overlapping blocks of two.' },
@@ -321,6 +397,9 @@ const more = [
   ['hh-wait', 'pattern-waiting', 3, SRC.green, {
     ev: true, value: q(6),
     text: 'A fair coin is flipped until two heads in a row appear. What is the expected number of flips?',
+    picture: table(['k', 'Last k of HH', 'First k of HH', 'Adds'], [[1, 'H', 'H', '2^1 = 2'], [2, 'HH', 'HH', '2^2 = 4']], 'HH overlaps itself at both lengths, so both add: 2 + 4 = 6 flips.'),
+    fast: 'Self-overlaps 1 and 2: 2 + 4 = 6.',
+    check: 'HT, which overlaps itself only at full length, waits 4; HH must wait longer, and 6 does.',
     distractors: [
       { value: 4, misconception: 'Used the answer for HT: after a failed HH attempt you lose your progress.' },
       { value: 8, misconception: 'Doubled 2².' },
@@ -334,6 +413,9 @@ const more = [
   ['penney-hh-th', 'pattern-waiting', 4, SRC.green, {
     value: q(3, 4),
     text: 'A fair coin is flipped until either HH or TH appears. What is the probability that TH comes first?',
+    picture: pic('tree', { root: { label: '', children: [{ p: '1/2', label: 'H first', children: [{ p: '1/2', label: 'H: HH wins' }, { p: '1/2', label: 'T: TH will win', mark: true }] }, { p: '1/2', label: 'T first: TH will win', mark: true }] }, total: '3/4' }, 'HH can only win on flips 1 and 2. Once a T has appeared, the next H completes TH before HH can.'),
+    fast: 'HH needs the first two flips to be HH; otherwise TH wins: 1 − 1/4 = 3/4.',
+    check: 'HH and TH have the same chance at any fixed spot, so a 1/2 answer ignores how a T sets up TH.',
     distractors: [
       { value: q(1, 2), misconception: 'Assumed equal-length patterns are equally likely to win.' },
       { value: q(1, 4), misconception: 'Answered P(HH first).' },
@@ -347,6 +429,9 @@ const more = [
   ['all-faces', 'coupon-collector', 2, SRC.green, {
     ev: true, value: q(6).mul(harmonic(6)),
     text: 'A die is thrown until every face has appeared at least once. What is the expected number of throws?',
+    picture: pic('bar', { categories: ['1', '2', '3', '4', '5', '6'], series: [{ name: 'expected throws', values: [6 / 6, 6 / 5, 6 / 4, 6 / 3, 6 / 2, 6 / 1].map((x) => Math.round(x * 100) / 100) }], xLabel: 'stage (new face number)', yLabel: 'expected throws' }, 'Stage i waits for a face not seen yet. The last face alone takes 6 throws; the six bars add to 14.7.'),
+    fast: '6 × H_6 = 6 × 2.45 = 14.7.',
+    check: 'The last face alone takes 6 throws on average, so the total sits well above 6 + 1.',
     distractors: [
       { value: 6, misconception: 'Assumed each throw shows a new face.' },
       { value: 21, misconception: 'Added 1 + 2 + … + 6.' },
@@ -360,6 +445,9 @@ const more = [
   ['reroll-once', 'dice-games-ev', 3, SRC.crack, {
     ev: true, value: q(17, 4), minGap: (c) => Math.max(0.05, Math.abs(c) * 0.015),
     text: 'You roll a die and are paid its face in dollars, but you may reroll once and must then accept the second roll. With the best strategy, what is the game worth?',
+    picture: table(['Face', 'Best move and its worth'], [1, 2, 3, 4, 5, 6].map((x) => [x, x >= 4 ? `keep: ${x}` : 'reroll: worth 3.5']), 'Keep a face that beats the 3.5 a reroll is worth. The column averages to (4 + 5 + 6 + 3 × 3.5)/6 = 4.25.'),
+    fast: 'Keep 4 to 6, reroll 1 to 3: (4 + 5 + 6)/6 + 3/6 × 3.5 = 4.25.',
+    check: 'Above one roll (3.5) and below the max of two rolls, 161/36 ≈ 4.47, because a passed roll is gone.',
     distractors: [
       { value: 3.5, misconception: 'Ignored the reroll option.' },
       { value: q(161, 36), misconception: 'Used the maximum of two rolls; a reroll must be accepted.' },
@@ -373,6 +461,9 @@ const more = [
   ['reroll-twice', 'dice-games-ev', 4, SRC.crack, {
     ev: true, value: q(14, 3), minGap: (c) => Math.max(0.05, Math.abs(c) * 0.015),
     text: 'You roll a die, paid its face in dollars, and may reroll up to two times, keeping only the last roll. With optimal play, what is the game worth?',
+    picture: table(['Face', 'Best move and its worth'], [1, 2, 3, 4, 5, 6].map((x) => [x, x >= 5 ? `keep: ${x}` : 'reroll: worth 4.25']), 'With two rerolls left, keep only 5 and 6, since the one-reroll game is worth 4.25. The column averages to 14/3.'),
+    fast: 'Keep 5 and 6, else 4.25: (5 + 6)/6 + 4/6 × 4.25 = 14/3.',
+    check: 'Above 4.25 (one reroll) and below the max of three rolls, 1071/216 ≈ 4.96.',
     distractors: [
       { value: 4.25, misconception: 'Used the one-reroll value.' },
       { value: 3.5, misconception: 'Ignored the rerolls.' },
@@ -386,6 +477,9 @@ const more = [
   ['red-black-small', 'card-stopping', 4, SRC.green, {
     ev: true, value: q(2, 3), minGap: (c) => Math.max(0.05, Math.abs(c) * 0.06),
     text: 'Two red and two black cards are shuffled and turned over one at a time. Each red pays $1, each black costs $1, and you may stop whenever you like. With the best strategy, what is this game worth?',
+    picture: table(['Reds left ↓ / blacks left →', '0', '1', '2'], [0, 1, 2].map((i) => [String(i), ...[0, 1, 2].map((j) => stopValue(i, j).toString())]), 'Each cell is the value with that many reds and blacks left; a cell uses the one above it and the one to its left. The corner (2, 2) is 2/3.'),
+    fast: 'V(1,1) = 1/2, V(2,1) = 4/3, V(1,2) = 0, so V(2,2) = ½(1 + 0) + ½(−1 + 4/3) = 2/3.',
+    check: 'Above 0, the value of a balanced deck you must play out, because you may stop when ahead.',
     distractors: [
       { value: 0, misconception: 'Played the whole deck: a balanced deck is worth 0 only without the option to stop.' },
       { value: q(1, 2), misconception: 'Used the one-red-one-black value.' },
@@ -399,6 +493,9 @@ const more = [
   ['broken-stick', 'uniform-geometry', 3, SRC.green, {
     value: q(1, 4),
     text: 'A stick is broken at two points chosen independently and uniformly along it. What is the probability that the three pieces form a triangle?',
+    picture: square([{ points: [[0, 0.5], [0.5, 0.5], [0.5, 1]], area: '1/8', label: 'triangle', tone: 3 }, { points: [[0.5, 0], [1, 0.5], [0.5, 0.5]], area: '1/8', label: 'triangle', tone: 3 }], 'first break', 'second break', 'Each point is a pair of break points. The shaded triangles are where every piece is shorter than 1/2: 1/8 + 1/8 = 1/4.'),
+    fast: 'Each piece is too long with chance 1/4 and only one can be: 1 − 3/4 = 1/4.',
+    check: 'Below 1/2: most pairs of breaks leave one piece longer than half.',
     distractors: [
       { value: q(1, 2), misconception: 'Guessed half.' },
       { value: q(3, 4), misconception: 'Answered the complement.' },
@@ -412,6 +509,9 @@ const more = [
   ['meet-15', 'uniform-geometry', 3, SRC.feller, {
     value: q(7, 16),
     text: 'Two traders each arrive at a random time between 9:00 and 10:00, independently. Each waits 15 minutes for the other and then leaves. What is the probability that they meet?',
+    picture: square([{ points: [[0, 0], [0.25, 0], [1, 0.75], [1, 1], [0.75, 1], [0, 0.25]], area: '7/16', label: 'meet', tone: 3 }], '9:00 to 10:00', '9:00 to 10:00', 'The hour as a unit square of arrival pairs. They meet inside the band |x − y| ≤ 15 minutes; the two corner triangles with legs 3/4 are misses.'),
+    fast: '1 − (45/60)² = 1 − 9/16 = 7/16.',
+    check: 'At least 1/4 and below 2 × 1/4 = 1/2, which would count the band’s corners twice.',
     distractors: [
       { value: q(1, 4), misconception: 'Only one trader waits.' },
       { value: q(1, 2), misconception: 'Added both windows without removing the overlap outside the hour.' },
@@ -425,6 +525,9 @@ const more = [
   ['max-two-dice', 'expected-extremes', 2, SRC.green, {
     ev: true, value: q(161, 36), minGap: (c) => Math.max(0.05, Math.abs(c) * 0.02),
     text: 'Two dice are thrown. What is the expected value of the larger face?',
+    picture: table(['k', 'P(larger ≥ k)'], [1, 2, 3, 4, 5, 6].map((k) => [k, `${36 - (k - 1) ** 2}/36`]).concat([['sum = expected value', '161/36']]), 'Tail sums: the larger face counts 1 for every k it reaches, so its mean is the sum of the column, 161/36 ≈ 4.47.'),
+    fast: 'Σ P(max ≥ k) = (36 + 35 + 32 + 27 + 20 + 11)/36 = 161/36.',
+    check: 'Above 3.5, and E[min] + E[max] = 7, so E[min] = 91/36.',
     distractors: [
       { value: 3.5, misconception: 'Used one die\'s average.' },
       { value: 4, misconception: 'Used the continuous formula 6·2/3.' },
@@ -438,6 +541,9 @@ const more = [
   ['rare-disease', 'bayes-test', 3, SRC.feller, {
     value: q(1, 2),
     text: '1% of a population has a condition. A test is positive for 99% of people with it and for 1% of people without it. A random person tests positive. What is the probability that they have the condition?',
+    picture: pic('tree', { root: { label: '', children: [{ p: '1/100', label: 'has the condition', children: [{ p: '99/100', label: 'positive', mark: true }, { p: '1/100', label: 'negative' }] }, { p: '99/100', label: 'does not', children: [{ p: '1/100', label: 'positive', mark: true }, { p: '99/100', label: 'negative' }] }] } }, 'The two marked leaves are every positive: 99/10000 true and 99/10000 false. The real ones are half of them.'),
+    fast: 'True : false positives = 0.0099 : 0.0099, so 1/2.',
+    check: 'Far below the 99% hit rate, because the condition is rare; above the 1% base rate, because the test is informative.',
     distractors: [
       { value: 0.99, misconception: 'Base-rate neglect: used P(positive | condition).' },
       { value: 0.01, misconception: 'Ignored the test result.' },
@@ -451,6 +557,9 @@ const more = [
   ['two-children', 'conditional-dice', 2, SRC.tversky, {
     value: q(1, 3),
     text: 'A family has two children, at least one of whom is a girl. Each child is independently a girl with probability 1/2. What is the probability that both are girls?',
+    picture: table(['Older', 'Younger', 'Still possible?'], [['girl', 'girl', 'yes'], ['girl', 'boy', 'yes'], ['boy', 'girl', 'yes'], ['boy', 'boy', 'no']], 'Four equally likely families; the information removes only BB. GG is one of the three left.'),
+    fast: 'GG is one of three families with a girl: 1/3.',
+    check: '"At least one girl" names no child, so the answer differs from the 1/2 of "the older is a girl".',
     distractors: [
       { value: q(1, 2), misconception: 'Treated "the other child" as a single uncertain child; the information does not say which child.' },
       { value: q(1, 4), misconception: 'Ignored the information.' },
@@ -464,6 +573,9 @@ const more = [
   ['three-cards', 'bayes-boxes', 2, SRC.feller, {
     value: q(2, 3),
     text: 'One card is red on both sides, one is black on both sides, and one is red on one side and black on the other. A card is drawn at random and a random side is shown: it is red. What is the probability that the hidden side is red?',
+    picture: table(['Card type', 'Cards', 'Red faces', 'Other side red?'], [['red / red', 1, 2, 'yes'], ['red / black', 1, 1, 'no'], ['black / black', 1, 0, 'no red face']], 'The face you see is one of three equally likely red faces; two of them are on the red-red card.'),
+    fast: '2 of the 3 red faces have a red back: 2/3.',
+    check: 'Counting cards instead of faces gives 1/2; the red-red card shows red twice as often.',
     distractors: [
       { value: q(1, 2), misconception: 'Counted cards with a red side (two) as equally likely; count red faces instead.' },
       { value: q(1, 3), misconception: 'Used the prior chance of the red-red card.' },
@@ -477,6 +589,9 @@ const more = [
   ['double-headed', 'bayes-boxes', 3, SRC.crack, {
     value: q(8, 17),
     text: 'A jar holds 10 coins: 9 fair and 1 double-headed. You pick one at random, flip it three times, and see three heads. What is the probability it is the double-headed coin?',
+    picture: pic('tree', { root: { label: '', children: [{ p: '1/10', label: 'double-headed', children: [{ p: '1', label: '3 heads', mark: true }] }, { p: '9/10', label: 'fair', children: [{ p: '1/8', label: '3 heads', mark: true }, { p: '7/8', label: 'some tail' }] }] } }, 'The two marked leaves are every way to see three heads: 1/10 and 9/80. The answer is the first over their sum, 8/17.'),
+    fast: 'Odds 1 : 9/8 = 8 : 9, so 8/17.',
+    check: 'Above the prior 1/10, since the heads favour the double-headed coin, but below 1/2 because fair coins are nine times as common.',
     distractors: [
       { value: q(1, 10), misconception: 'Ignored the flips.' },
       { value: q(7, 8), misconception: 'Used 1 − 1/8, ignoring that fair coins are nine times as common.' },
@@ -490,6 +605,9 @@ const more = [
   ['hat-check-mean', 'linearity', 2, SRC.feller, {
     ev: true, value: q(1), minGap: (c) => Math.max(0.04, Math.abs(c) * 0.05),
     text: 'Twenty people check their coats and get them back in a random order. What is the expected number of people who receive their own coat?',
+    picture: indicators([['a given person gets their own coat', '1/20', 20, '1']], '1', 'One indicator per person, each 1 with chance 1/20. Dependence between them changes the spread, not the mean.'),
+    fast: '20 × 1/20 = 1.',
+    check: 'The answer is 1 for any number of people; an option that changes with 20 is a probability, not a count.',
     distractors: [
       { value: q(1, 20), misconception: 'Gave the probability for one person.' },
       { value: 10, misconception: 'Assumed about half.' },
@@ -503,6 +621,9 @@ const more = [
   ['running-total-6', 'running-sum', 3, SRC.opa, {
     value: q(16807, 46656),
     text: 'You throw a die repeatedly and keep a running total. What is the probability that the total is exactly 6 at some point?',
+    picture: pic('plot', { x: { min: 0, max: 12, label: 'target total m' }, y: { min: 0, max: 1, label: 'P(total ever equals m)' }, curves: [{ label: 'p(m)', points: (() => { const p = [1]; for (let m = 1; m <= 12; m++) { let s = 0; for (let k = 1; k <= 6; k++) if (m - k >= 0) s += p[m - k]; p.push(s / 6); } return p.map((v, m) => [m, v]); })() }], hlines: [{ y: 2 / 7, label: 'limit 2/7' }], markers: [{ x: 6, y: 16807 / 46656, label: 'p(6) ≈ 0.360' }] }, 'Each p(m) averages the six values before it. The curve climbs to its peak at 6 and then settles at 2/7, one landing per 3.5 units.'),
+    fast: 'p(6) = (7/6)^5/6 = 16807/46656 ≈ 0.360.',
+    check: 'Above the long-run 2/7 ≈ 0.286, because small totals can be reached in many short ways.',
     distractors: [
       { value: q(1, 6), misconception: 'Only counted a first throw of 6.' },
       { value: q(2, 7), misconception: 'Used the long-run limit 2/7; small totals are hit more often.' },
@@ -516,6 +637,9 @@ const more = [
   ['series-seven-games', 'race-to-k', 2, SRC.crack, {
     value: q(5, 16),
     text: 'Two equally strong teams play a best-of-seven series. What is the probability that it goes to a seventh game?',
+    picture: table(['Team A wins of the first 6 games', 'Ways', 'Probability'], xs0(6).map((j) => [`${j}${j === 3 ? ' (counts)' : ''}`, `C(6,${j}) = ${binomRow(6, j)}`, `${binomRow(6, j)}/64`]), 'Only a 3-3 split after six games sends the series to game 7: 20 of 64.'),
+    fast: 'C(6,3)/2^6 = 20/64 = 5/16.',
+    check: 'It is the largest row of the six-game table, and well below 1/2: most series end earlier.',
     distractors: [
       { value: q(1, 64), misconception: 'Counted one alternating win pattern.' },
       { value: q(1, 4), misconception: 'Treated the four possible series lengths as equally likely.' },
@@ -529,6 +653,9 @@ const more = [
   ['sixty-heads', 'clt-estimates', 3, SRC.opa, {
     value: (() => { let s = 0n, c = 1n; for (let k = 0; k <= 100; k++) { if (k >= 60) s += c; c = (c * BigInt(100 - k)) / BigInt(k + 1); } return new Q(s, 2n ** 100n); })(),
     text: 'A fair coin is flipped 100 times. Roughly what is the probability of at least 60 heads?',
+    picture: bell(50, 5, 59.5, 100, 'number of heads', 'Heads centre on 50 with sd 5; the ticks are 1, 2 and 3 sd apart. The shaded tail from 59.5 is about 2.9%.'),
+    fast: 'sd = √100/2 = 5; 60 is 2 sd up, so about 2.3%, a little more with the half-unit correction.',
+    check: 'Below the 16% of a 1 sd tail; using the variance 25 as the sd would make 60 look almost certain.',
     distractors: [
       { value: 1 - Phi(10 / 25), misconception: 'Divided by the variance 25 instead of the sd 5.' },
       { value: 1 - Phi(1), misconception: 'Used √100 = 10 as the sd.' },
@@ -542,6 +669,9 @@ const more = [
   ['socks-three-colours', 'pigeonhole', 1, SRC.atp, {
     value: q(1),
     text: 'A drawer holds 10 socks of each of three colours. In the dark you take four socks. What is the probability that you have at least two of the same colour?',
+    picture: table(['', 'Socks'], [['one of each of the 3 colours', 3], ['socks taken', 4]], 'Three socks is the most you can hold without a match; the fourth must repeat a colour.'),
+    fast: '4 socks > 3 colours: certain.',
+    check: 'More socks than colours forces a match in every draw, so exactly 1.',
     distractors: [
       { value: q(2, 3), misconception: 'Estimated a likely-but-uncertain chance; four socks in three colours force a match.' },
       { value: q(1, 3), misconception: 'Used the chance two particular socks match.' },
@@ -555,6 +685,9 @@ const more = [
   ['pair-two-cards', 'card-draws', 1, SRC.atp, {
     value: q(3, 51),
     text: 'Two cards are drawn from a shuffled deck. What is the probability that they have the same rank?',
+    picture: pic('tree', { root: oneLevel('first card fixes the rank', 'same rank', 'no match', '3/51', '48/51'), total: '1/17' }, 'Whatever the first card is, 3 cards of its rank remain among the 51.'),
+    fast: '3/51 = 1/17.',
+    check: 'A little below 1/13 = 4/52, because one card of that rank is already in your hand.',
     distractors: [
       { value: q(1, 13), misconception: 'Drew with replacement.' },
       { value: q(4, 51), misconception: 'Left four of the rank in the deck.' },
@@ -568,6 +701,9 @@ const more = [
   ['higher-die', 'dice-duel', 2, SRC.atp, {
     value: q(15, 36),
     text: 'You and an opponent each throw one die; you win only with a strictly higher number. What is your chance of winning?',
+    picture: diceGrid((a, b) => a > b, "Rows are your die, columns the opponent's. You win in the 15 cells below the diagonal; the 6 diagonal cells are ties."),
+    fast: '(36 − 6)/2 = 15, so 15/36.',
+    check: 'Win, tie and lose add to 1: 15/36 + 6/36 + 15/36. An answer of 1/2 forgets the ties.',
     distractors: [
       { value: q(1, 2), misconception: 'Ignored ties.' },
       { value: q(21, 36), misconception: 'Counted ties as wins.' },
@@ -581,6 +717,9 @@ const more = [
   ['three-dice-ten', 'three-dice', 3, SRC.atp, {
     value: q(27, 216),
     text: 'Three dice are thrown. What is the probability that the total is 10?',
+    picture: (() => { const highlight = [], cellText = []; for (let a = 1; a <= 6; a++) { cellText.push([]); for (let b = 1; b <= 6; b++) { const c = 10 - a - b; const ok = c >= 1 && c <= 6; cellText[a - 1].push(ok ? String(c) : ''); if (ok) highlight.push([a - 1, b - 1]); } } return pic('grid', { rows: 6, cols: 6, highlight, count: highlight.length, cellText, rowTitle: 'first die', colTitle: 'second die' }, `Each cell holds the third die needed for a total of 10. ${highlight.length} cells have a legal face, so ${highlight.length} of 216.`); })(),
+    fast: 'Fix the first two dice: 27 pairs leave a legal third die, 27/216 = 1/8.',
+    check: '10 and 11 are the peak totals of three dice (27 ways each), so no total is likelier.',
     distractors: [
       { value: q(1, 16), misconception: 'Treated the 16 totals as equally likely.' },
       { value: q(6, 56), misconception: 'Counted unordered combinations as equally likely.' },
@@ -594,6 +733,9 @@ const more = [
   ['first-six-third', 'first-success', 1, SRC.atp, {
     value: q(25, 216),
     text: 'A die is thrown repeatedly. What is the probability that the first six appears on the third throw?',
+    picture: pic('tree', { root: firstSuccessTree(3, '1/6', '5/6', 'six', 'no six', false), total: '25/216' }, 'Stop at the first six. The one marked leaf is two misses and then a six: (5/6)² × 1/6.'),
+    fast: '(5/6)² × 1/6 = 25/216.',
+    check: 'Below 1/6, the chance on throw 1, because the earlier throws must miss.',
     distractors: [
       { value: q(1, 6), misconception: 'Ignored that the first two throws must miss.' },
       { value: q(25, 36), misconception: 'Forgot the final 1/6.' },
@@ -607,19 +749,25 @@ const more = [
   ['flush', 'card-draws', 3, SRC.feller, {
     value: new Q(4n * nCr(13, 5), nCr(52, 5)),
     text: 'Five cards are dealt from a shuffled deck. What is the probability that all five are the same suit?',
+    picture: table(['Card', 'Same suit left', 'Cards left', 'Factor'], [[1, 'any', 52, '1'], [2, 12, 51, '12/51'], [3, 11, 50, '11/50'], [4, 10, 49, '10/49'], [5, 9, 48, '9/48']], 'The first card sets the suit; each later card must come from the shrinking suit.'),
+    fast: '12/51 × 11/50 × 10/49 × 9/48 ≈ 0.00198, about 1 in 505.',
+    check: 'Each factor is at most 12/51 ≈ 0.24, so the answer is below 0.24⁴ ≈ 0.0033.',
     distractors: [
       { value: qpow(q(1, 4), 4), misconception: 'Dealt with replacement.' },
       { value: new Q(nCr(13, 5), nCr(52, 5)), misconception: 'Required one specific suit.' },
       { value: q(12, 51), misconception: 'Only checked the second card.' },
       { value: qpow(q(1, 4), 5), misconception: 'Specific suit, with replacement.' },
     ],
-    steps: steps(['First card free; then 12/51 × 11/50 × 10/49 × 9/48.', 'Shrinking suit.'], ['P ≈ 0.00198.', 'About 1 in 505.']),
+    steps: steps(['First card free; then 12/51 × 11/50 × 10/49 × 9/48.', 'Shrinking suit.'], ['Multiply the factors: P = 4 × C(13,5)/C(52,5) ≈ 0.00198.', 'About 1 in 505.']),
     rule: 'Flush ≈ 0.002.', anchor: 'Same-suit pair (12/51) extended to five cards.',
     hints: ['Does the first card matter?', 'Four more must match.'], params: { kind: 'flush' },
   }],
   ['walk-back-to-zero', 'random-walk-line', 3, SRC.feller, {
     value: q(252, 1024),
     text: 'A particle starts at 0 and steps +1 or −1 with equal probability. What is the probability it is back at 0 after 10 steps?',
+    picture: walk(0, [1, 1, 1, 1, 1, -1, -1, -1, -1, -1], { target: 0 }, 'One of the C(10,5) = 252 paths back at 0 after 10 steps: 5 ups and 5 downs in any order.'),
+    fast: 'C(10,5)/2^10 = 252/1024 ≈ 0.246.',
+    check: 'About 1/√(5π) ≈ 0.252; it is the most likely single end point after 10 steps.',
     distractors: [
       { value: q(1, 11), misconception: 'Treated end points as equally likely.' },
       { value: q(1, 32), misconception: 'Required five ups then five downs.' },
@@ -633,6 +781,9 @@ const more = [
   ['distinct-faces-six', 'linearity', 3, SRC.green, {
     ev: true, value: q(6).mul(q(1).sub(qpow(q(5, 6), 6))), minGap: (c) => Math.max(0.04, Math.abs(c) * 0.05),
     text: 'A die is thrown six times. What is the expected number of different faces seen?',
+    picture: indicators([['a given face appears at least once', '1 − (5/6)^6', 6, '≈ 3.99']], '≈ 3.99', 'One indicator per face, not per throw. Each face shows up with chance 1 − (5/6)^6 ≈ 0.665.'),
+    fast: '6 × (1 − (5/6)^6) ≈ 3.99.',
+    check: 'Below 6, since repeats are likely in six throws; the all-different chance is only 6!/6^6 ≈ 0.015.',
     distractors: [
       { value: 6, misconception: 'Assumed all six faces appear.' },
       { value: 3.5, misconception: 'Used the average face value.' },
@@ -646,6 +797,9 @@ const more = [
   ['ann-first-six', 'first-success', 2, SRC.mosteller, {
     value: q(6, 11),
     text: 'Two players take turns throwing a die; the first to throw a six wins. What is the probability that the player who throws first wins?',
+    picture: pic('tree', { root: { label: 'round', children: [{ p: '1/6', label: 'first player throws a six', mark: true }, { p: '5/6', label: 'first player misses', children: [{ p: '1/6', label: 'second player throws a six' }, { p: '5/6', label: 'both miss: start again' }] }] } }, 'One round ends at 1/6 for the first player or 5/36 for the second; the rest replays the round, so only 6 : 5 matters.'),
+    fast: '1/(2 − 1/6) = 6/11.',
+    check: 'Above 1/2 because the first player always throws first; the two players’ chances add to 1.',
     distractors: [
       { value: q(1, 2), misconception: 'Ignored the first-mover advantage.' },
       { value: q(5, 11), misconception: 'Computed the second player\'s chance.' },
@@ -659,6 +813,9 @@ const more = [
   ['empty-boxes', 'linearity', 3, SRC.feller, {
     ev: true, value: q(4).mul(qpow(q(3, 4), 4)), minGap: (c) => Math.max(0.04, Math.abs(c) * 0.05),
     text: 'Four balls are thrown independently and uniformly into four boxes. What is the expected number of empty boxes?',
+    picture: indicators([['a given box stays empty', '(3/4)^4', 4, '81/64']], '81/64', 'One indicator per box: all four balls must miss it, chance (3/4)^4 = 81/256.'),
+    fast: '4 × (3/4)^4 = 81/64 ≈ 1.27.',
+    check: 'At most 3 boxes can be empty, and four balls usually leave one or two empty: 1.27 fits.',
     distractors: [
       { value: 0, misconception: 'Assumed a perfect spread.' },
       { value: qpow(q(3, 4), 4), misconception: 'Gave the probability one box is empty.' },
@@ -672,6 +829,9 @@ const more = [
   ['stock-hits-ten', 'gamblers-ruin', 2, SRC.prachubStats, {
     value: q(3, 10),
     text: 'A stock at 3 moves up or down 1 each minute with equal probability. What is the probability it reaches 10 before it reaches 0?',
+    picture: pic('plot', { x: { min: 0, max: 10, label: 'start' }, y: { min: 0, max: 1, label: 'P(reach 10 first)' }, curves: [{ label: 'x/10', points: xs0(10).map((x) => [x, x / 10]) }], markers: [{ x: 3, y: 0.3, label: 'start 3: 3/10' }] }, 'In a fair walk the chance of reaching the top first is a straight line in the start: 3/10 from 3.'),
+    fast: '3/10.',
+    check: 'Below 1/2, because 3 is nearer to 0 than to 10; reaching 0 first has the other 7/10.',
     distractors: [
       { value: q(1, 2), misconception: 'Ignored the starting point.' },
       { value: q(7, 10), misconception: 'Gave the chance of hitting 0 first.' },
@@ -685,6 +845,9 @@ const more = [
   ['runs-ten-flips', 'linearity', 2, SRC.feller, {
     ev: true, value: q(11, 2), minGap: (c) => Math.max(0.04, Math.abs(c) * 0.05),
     text: 'A coin is flipped 10 times. What is the expected number of runs (maximal blocks of equal outcomes)?',
+    picture: indicators([['the first flip (always starts a run)', '1', 1, '1'], ['flip i differs from flip i − 1', '1/2', 9, '9/2']], '11/2', 'A run starts at the first flip and at every change, so count the changes.'),
+    fast: '1 + 9/2 = 5.5.',
+    check: 'Between 1 (all equal) and 10 (alternating), in the middle at 5.5.',
     distractors: [
       { value: 5, misconception: 'Forgot the first run.' },
       { value: 2, misconception: 'Assumed one run of each side.' },
@@ -698,6 +861,9 @@ const more = [
   ['four-throws-all-different', 'die-repeats', 2, SRC.atp, {
     value: q(360, 1296),
     text: 'A die is thrown four times. What is the probability that all four faces are different?',
+    picture: table(['Throw', 'Faces allowed', 'Factor'], [[1, 6, '6/6'], [2, 5, '5/6'], [3, 4, '4/6'], [4, 3, '3/6']], 'Each throw must avoid every face already used: 6 × 5 × 4 × 3 = 360 of 1296.'),
+    fast: '6/6 × 5/6 × 4/6 × 3/6 = 5/18.',
+    check: 'Below "no equal neighbours", (5/6)^3 ≈ 0.58, a weaker event.',
     distractors: [
       { value: q(125, 216), misconception: 'Only required each throw to differ from the previous one.' },
       { value: q(215, 216), misconception: 'Treated "all different" as "not all the same".' },
@@ -711,19 +877,25 @@ const more = [
   ['hundred-doors', 'monty-hall', 3, SRC.monty, {
     value: q(99, 100),
     text: '100 doors hide one car. You pick one; the host, who knows where the car is, opens 98 of the others, all goats. You switch to the last closed door. What is the probability you win?',
+    picture: doors(100, 98, '99/100', 'The host knows and avoids the car, so your door keeps 1/100 and the 98 opened doors’ share moves to the one door he left closed.'),
+    fast: 'Your door keeps 1/100, so the last closed door has 99/100.',
+    check: 'After the reveal your door and the other closed door add to 1.',
     distractors: [
       { value: q(1, 2), misconception: 'Treated the two closed doors as equally likely.' },
       { value: q(1, 100), misconception: 'Gave the staying probability.' },
       { value: q(1, 99), misconception: 'Spread 99/100 over all 99 other doors including opened ones.' },
       { value: 0.9, misconception: 'Guessed a round number.' },
     ],
-    steps: steps(['Your door keeps 1/100.', 'The host can always open 98 goats.'], ['The one other closed door holds 99/100.', 'The host never opens the car.']),
+    steps: steps(['Your door keeps 1/100.', 'The host can always open 98 goats.'], ['The one other closed door holds the rest: 1 − 1/100 = 99/100.', 'The host never opens the car.']),
     rule: 'Knowing host concentrates (n − 1)/n on the doors he leaves.', anchor: 'The 3-door game scaled up.',
     hints: ['Does the host\'s action change your door?', 'Where does the rest go?'], params: { n: 100, m: 98, variant: 'switch' },
   }],
   ['sum-uniforms', 'uniform-geometry', 2, SRC.green, {
     value: q(1, 2).mul(q(3, 4)).mul(q(3, 4)),
     text: 'X and Y are independent uniform numbers on [0, 1]. What is the probability that X + Y < 3/4?',
+    picture: square([{ points: [[0, 0], [0.75, 0], [0, 0.75]], area: '9/32', label: 'x + y < 3/4', tone: 3 }], 'X', 'Y', 'The part of the unit square below the line x + y = 3/4 is a triangle with legs 3/4.'),
+    fast: '(3/4)²/2 = 9/32.',
+    check: 'Below 1/2 = P(X + Y < 1); treating X + Y as uniform on [0, 2] would give 3/8.',
     distractors: [
       { value: q(3, 8), misconception: 'Treated X + Y as uniform on [0, 2].' },
       { value: q(9, 16), misconception: 'Forgot the 1/2 in the triangle area.' },
@@ -737,6 +909,9 @@ const more = [
   ['max-three-uniforms', 'expected-extremes', 3, SRC.green, {
     ev: true, value: q(3, 4),
     text: 'Three numbers are drawn independently and uniformly from [0, 1]. What is the expected value of the largest?',
+    picture: pic('numberline', { min: 0, max: 1, step: 0.25, marks: [{ x: 0.25, label: 'mean min' }, { x: 0.75, label: 'mean max' }] }, 'Three random points cut [0, 1] into four gaps of mean length 1/4; the largest point is three gaps in, at 3/4.'),
+    fast: 'n/(n + 1) = 3/4.',
+    check: 'E[min] + E[max] = 1 by symmetry, and the max is pushed towards 1.',
     distractors: [
       { value: q(1, 2), misconception: 'Used one uniform\'s mean.' },
       { value: q(2, 3), misconception: 'Divided by n instead of n + 1.' },
@@ -750,6 +925,9 @@ const more = [
   ['parity-trap', 'random-walk-line', 3, SRC.feller, {
     value: q(0),
     text: 'A particle starts at 0 and steps +1 or −1 with equal probability. What is the probability that it is at position 3 after 8 steps?',
+    picture: walk(0, [1, 1, 1, 1, 1, -1, -1, -1], { marks: [{ x: 3, label: '3: never' }] }, 'After 8 steps the position is always even. This path ends at 2, next to the unreachable 3.'),
+    fast: 'Parity: 8 + 3 is odd, so 0.',
+    check: 'Any positive option forgets that every step changes the parity of the position.',
     distractors: [
       { value: q(1, 9), misconception: 'Treated end points as equally likely.' },
       { value: new Q(nCr(8, 3), 256n), misconception: 'Chose 3 up-steps; the position would be −2.' },
@@ -765,6 +943,9 @@ const more = [
   ['expected-square', 'dice-games-ev', 2, SRC.qbt, {
     ev: true, value: q(91, 6), minGap: (c) => Math.max(0.05, Math.abs(c) * 0.015),
     text: 'A game pays the square of one die\'s face, in dollars. What is the fair price to play?',
+    picture: table(['Face', 'Payoff'], [1, 2, 3, 4, 5, 6].map((x) => [x, x * x]), 'The fair price is the average payoff: 91/6 ≈ 15.17, above 3.5² = 12.25.'),
+    fast: '(1 + 4 + 9 + 16 + 25 + 36)/6 = 91/6.',
+    check: 'E[X²] beats E[X]² = 12.25 by the variance 35/12.',
     distractors: [
       { value: 12.25, misconception: 'Squared the average (3.5²).' },
       { value: 3.5, misconception: 'Used the average face.' },
@@ -778,6 +959,9 @@ const more = [
   ['numbers-sum-eleven', 'pigeonhole', 2, SRC.mosteller, {
     value: q(1),
     text: 'You pick six different numbers from 1 to 10. What is the probability that two of them add up to 11?',
+    picture: table(['Box', 'Numbers adding to 11'], [1, 2, 3, 4, 5].map((i) => [i, `${i} and ${11 - i}`]), 'Five boxes, six numbers: two of them must share a box, and a shared box adds to 11.'),
+    fast: '6 numbers in 5 pairs: certain.',
+    check: 'Every possible choice of six contains a pair, so exactly 1.',
     distractors: [
       { value: q(55, 63), misconception: 'Used the five-number answer.' },
       { value: 0.5, misconception: 'Coin flip.' },
@@ -791,6 +975,9 @@ const more = [
   ['ace-before-king', 'card-symmetry', 2, SRC.mosteller, {
     value: q(1, 2),
     text: 'A deck is dealt face up. What is the probability that the first ace appears before the first king?',
+    picture: pic('tree', { root: oneLevel('first of the 8 aces and kings', 'an ace', 'a king', '4/8', '4/8'), total: '1/2' }, 'Only the first card among the 4 aces and 4 kings decides it; each of the 8 is equally likely to come first.'),
+    fast: 'Aces and kings are symmetric: 1/2.',
+    check: 'Swap the words ace and king and the question is unchanged, so the two answers are equal and add to 1.',
     distractors: [
       { value: q(1, 13), misconception: 'Computed the chance the first card is an ace.' },
       { value: q(3, 14), misconception: 'Required the first two aces-or-kings to both be aces.' },

@@ -1,7 +1,11 @@
 // Random permutations: nobody gets their own item, exactly k fixed points, the impossible n−1 case.
 import { derangements, factorial, nCr } from '../../../core/combinatorics.js';
 import { Q } from '../../../core/rational.js';
-import { mcqItem, agree, q, qpow, permutations } from '../lib.js';
+import { mcqItem, agree, q, qpow, permutations, table } from '../lib.js';
+
+// Every arrangement has some number j of matches: C(n,j)·D(n−j) of the n! arrangements.
+const matchTable = (n, wanted, caption) => table(['Exactly j match', 'Arrangements C(n,j) × D(n − j)', `Out of ${factorial(n)}`],
+  Array.from({ length: n + 1 }, (_, j) => [`${j}${wanted(j) ? ' (wanted)' : ''}`, `${nCr(n, j)} × ${derangements(n - j)} = ${nCr(n, j) * derangements(n - j)}`, new Q(nCr(n, j) * derangements(n - j), factorial(n)).toString()]), caption);
 
 const ID = 'derangements';
 const CTX = [
@@ -47,6 +51,9 @@ export default {
         rule: 'D(n)/n! = Σ (−1)^k/k! → 1/e ≈ 0.368 fast (n = 4: 0.375, n = 5: 0.367).',
         anchor: 'The complement rule for "at least one match", with one change: the "match" events are dependent, so inclusion-exclusion replaces the product.',
         hints: ['Is each person\'s chance of a match independent of the others?', `Count derangements: D(${n}) = ${Dn}.`, `${Dn}/${n}!.`],
+        picture: matchTable(n, (j) => (atLeast ? j > 0 : j === 0), `All ${n}! arrangements sorted by how many ${c.item}s match. ${atLeast ? `Every row except j = 0 counts: 1 − ${none}.` : `The j = 0 row is the derangements, ${Dn} of ${nf}.`} The row j = ${n - 1} is always empty.`),
+        fast: `D(${n}) = ${Dn}, so ${atLeast ? `1 − ${Dn}/${nf}` : `${Dn}/${nf}`} = ${v}; for any n above 4 the no-match chance is about 1/e ≈ 0.368.`,
+        check: `No match is close to 1/e ≈ 0.368 already at n = ${n}; the independent-trials guess (${n - 1}/${n})^${n} = ${indep.toNumber().toFixed(3)} is close but not exact.`,
         data: { kind, n },
       });
     }
@@ -70,6 +77,9 @@ export default {
         rule: 'Exactly n − 1 fixed points never happens; exactly k fixed points has C(n,k)D(n−k) arrangements.',
         anchor: 'The derangement count with one change: fix k items first, derange the rest. For k = n − 1 the rest is a single item, and D(1) = 0.',
         hints: [`If ${n - 1} are correct, where can the last one go?`, 'Only one slot remains.', 'Impossible.'],
+        picture: matchTable(n, (j) => j === n - 1, `All ${n}! arrangements sorted by how many ${c.item}s match. The row j = ${n - 1} holds C(${n},${n - 1}) × D(1) = ${n} × 0 = 0 arrangements.`),
+        fast: `${n - 1} correct leaves one slot, the last ${c.item}'s own: impossible, 0.`,
+        check: 'Any positive option describes an arrangement that cannot exist; check by placing the last item.',
         data: { kind, n },
       });
     }
@@ -94,6 +104,9 @@ export default {
       rule: 'P(exactly k fixed) = C(n,k)·D(n−k)/n! ≈ e^(−1)/k! for large n.',
       anchor: 'The derangement count with one change: first choose which k are correct, then derange the rest.',
       hints: [`Choose which ${k} match.`, 'The rest must all miss: a derangement.', `C(${n},${k})·D(${n - k})/${n}!.`],
+      picture: matchTable(n, (j) => j === k, `All ${n}! arrangements sorted by how many ${c.item}s match; the rows add to ${nf}. The wanted row is C(${n},${k}) × D(${n - k}) = ${ways}.`),
+      fast: `C(${n},${k}) × D(${n - k}) = ${ways}, over ${n}! = ${nf}: ${v}.`,
+      check: `For large n this tends to e^(−1)/${k}! ≈ ${(Math.exp(-1) / Number(factorial(k))).toFixed(3)}; and the rows for j = 0 to ${n} must add to 1.`,
       data: { kind, n, k },
     });
   },

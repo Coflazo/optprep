@@ -1,5 +1,5 @@
 // 80-in-8: addition and subtraction of 2- to 4-digit whole numbers, always with carries or borrows.
-import { family, q, neg, PLACE, carryPlaces, borrowPlaces, noCarrySum, smallFromLarge, digits, intPick } from '../lib.js';
+import { family, q, neg, PLACE, carryPlaces, borrowPlaces, noCarrySum, smallFromLarge, digits, intPick, columnPicture } from '../lib.js';
 
 // 1579 -> [1000, 500, 70, 9]: the place parts, largest first.
 const parts = (n) => digits(n).map((d, k) => d * 10 ** k).filter(Boolean).reverse();
@@ -14,7 +14,8 @@ function chain(start, ps, op) {
     run = op === '+' ? run + p : run - p;
     const last = i === ps.length - 1;
     return {
-      say: `${neg(prev)} ${op === '+' ? '+' : '−'} ${p} = ${neg(run)}`,
+      say: `${op === '+' ? 'Add' : 'Take away'} ${p}${i === 0 ? ', the biggest part' : ''}.`,
+      math: `${neg(prev)} ${op === '+' ? '+' : '−'} ${p} = ${neg(run)}`,
       why: i === 0 ? `Work one place at a time, biggest part first (${ps.join(' + ')}), so you only ever hold one running total.`
         : last ? (op === '+' ? `Last the units: ${prev % 10} + ${p} ${prev % 10 + p >= 10 ? 'passes the next ten, so the tens digit goes up by one' : 'stays inside the same ten'}.`
           : `Last the units: ${prev % 10} − ${p} ${prev % 10 < p ? 'goes below the ten, so the tens digit goes down by one' : 'stays inside the same ten'}.`)
@@ -56,6 +57,7 @@ const add = {
       steps: chain(a, ps, '+'),
       fast: compensate(a, b, '+'),
       check: `Units: ${ua} + ${ub} ends in ${(ua + ub) % 10}, so the answer ends in ${c % 10}. Size: ${rough(a)} + ${rough(b)} ≈ ${rough(a) + rough(b)}.`,
+      picture: columnPicture(a, b, '+', `Column view. Each 1 in the carry row is a ten passed to the next place: ${cp.length} carr${cp.length === 1 ? 'y' : 'ies'} here. Most wrong options drop one of them or invent one.`),
       hints: [`Add ${b} in parts: ${ps.join(' + ')}.`, `The units ${ua} + ${ub} end in ${(ua + ub) % 10}, and so does the answer.`],
       params: { a, b, op: '+' },
     };
@@ -86,6 +88,7 @@ const sub = {
       steps: chain(a, ps, '−'),
       fast: compensate(a, b, '−'),
       check: `Add back: ${c} + ${b} = ${a}. Units: ${top} − ${ub} = ${top - ub}, so the answer ends in ${c % 10}.`,
+      picture: columnPicture(a, b, '−', `Column view. Each −1 in the top row is a place of ${a} that lends one to the place on its right: ${bp.length} borrow${bp.length === 1 ? '' : 's'} here. The wrong options skip one or take it twice.`),
       hints: [`Take ${b} away in parts: ${ps.join(', then ')}.`, `Check by adding back: answer + ${b} must give ${a}.`],
       params: { a, b, op: '−' },
     };
@@ -113,8 +116,9 @@ const negative = {
       steps: [
         { say: `${b} is bigger than ${a}, so the answer is negative: find ${b} − ${a} and put a minus in front.`, why: 'a − b = −(b − a): swapping the order only flips the sign.' },
         ...chain(b, parts(a), '−'),
-        { say: `So ${a} − ${b} = ${neg(c)}.`, why: 'The size is the gap between the two numbers; the sign says the first number is the smaller one.' },
+        { say: 'Put the minus sign in front.', math: `${a} − ${b} = ${neg(c)}`, why: 'The size is the gap between the two numbers; the sign says the first number is the smaller one.' },
       ],
+      picture: columnPicture(b, a, '−', `The column work is ${b} − ${a} = ${m}, bigger minus smaller. The order in the question only adds the minus sign: ${neg(c)}.`),
       fast: `Count up from ${a} to ${b}: ${a} → ${Math.ceil(a / 10) * 10} → ${Math.floor(b / 10) * 10} → ${b} is ${m}; the answer is ${neg(c)}.`,
       check: `Smaller minus bigger is negative. Add back: ${neg(c)} + ${b} = ${a}.`,
       hints: ['Which number is bigger? Then the sign is already decided.', `Find the gap ${b} − ${a}, then put a minus in front.`],

@@ -1,6 +1,6 @@
 // Expected waiting times: first six, two special faces, a repeat, two sixes in a row, k heads in a row.
 import { hittingTimes } from '../../../core/markov.js';
-import { mcqItem, agree, q } from '../lib.js';
+import { mcqItem, agree, q, pic, table } from '../lib.js';
 const par = (x) => (String(x).includes('/') ? `(${x})` : String(x));
 
 const ID = 'expected-waiting';
@@ -40,6 +40,9 @@ function variant(kind, rng) {
         { say: `Let E be the expected number. One trial happens; with probability ${p} you stop, otherwise you are back at the start.`, why: 'Independent trials: after a failure, nothing has changed.' },
         { say: `E = 1 + (1 − ${p})E, so E = 1/p = ${c / a}.`, why: 'Solve the one-line equation.' },
       ],
+      picture: pic('tree', { root: { label: 'start', children: [{ p: p.toString(), label: 'success: stop', mark: true }, { p: q(1).sub(p).toString(), label: 'miss: back to the start' }] }, showProducts: false }, `One ${ev.unit.replace(/s$/, '')} always happens. With chance ${p} you stop; otherwise you face the same wait again, so E = 1 + (1 − ${p})E and E = ${c / a}.`),
+      fast: `1/p = ${c}/${a} = ${c / a}.`,
+      check: `Half the time you finish within ${med} ${ev.unit}, yet the mean is ${c / a}: the long tail of slow runs pulls the average up, so an option near ${med} is the median, not the mean.`,
     };
   }
   if (kind === 'twoFaces') {
@@ -62,6 +65,9 @@ function variant(kind, rng) {
         { say: `Stage i (i special faces still missing) succeeds with probability i/${s} per throw: expected ${s}/i throws.`, why: 'Any missing special face ends the stage.' },
         { say: `Total = ${parts.join(' + ')} = ${v} ≈ ${v.toNumber().toFixed(2)}.`, why: 'Linearity: expected total = sum of expected stages.' },
       ],
+      picture: table(['Stage', 'Special faces missing', 'Chance per throw', 'Expected throws'], Array.from({ length: m }, (_, i) => [i + 1, m - i, `${m - i}/${s}`, `${s}/${m - i}`]), `Each stage ends when any missing special face shows up, so it gets slower as fewer are missing. The stage waits add to ${v}.`),
+      fast: `${parts.join(' + ')} = ${v}.`,
+      check: `It must exceed ${m} × ${s}/${m} = ${s} (waiting for the faces at the first stage's speed throughout) and stay below ${m} × ${s} = ${m * s} (waiting for each face from scratch).`,
     };
   }
   if (kind === 'repeat') {
@@ -80,6 +86,10 @@ function variant(kind, rng) {
         { say: `The first throw sets a face; from then on, each throw matches the previous one with probability 1/${s}.`, why: 'Whatever the previous face is, exactly one face matches it.' },
         { say: `Expected throws after the first = ${s}, so total = 1 + ${s} = ${s + 1}.`, why: 'Geometric wait, plus the first throw.' },
       ],
+      picture: pic('tree', { root: { label: 'after any throw', children: [{ p: `1/${s}`, label: 'next throw matches: stop', mark: true }, { p: `${s - 1}/${s}`, label: 'no match: same position' }] }, showProducts: false }, `After the first throw the chance of a match is 1/${s} every time, whatever the faces are, so the wait after it is ${s} throws: ${s + 1} in total.`),
+      fast: `1 + ${s} = ${s + 1}.`,
+      ask: 'We want E[number of throws until a throw repeats the face of the throw before it].',
+      check: `The first throw can never be a match, so the answer is one more than the plain wait ${s}.`,
     };
   }
   if (kind === 'doubleSix') {
@@ -98,6 +108,9 @@ function variant(kind, rng) {
         { say: `States: 0 (no progress), 1 (last throw a ${face.slice(0, -1)}). E0 = 1 + (${s - 1}/${s})E0 + (1/${s})E1, E1 = 1 + (${s - 1}/${s})E0.`, why: `From state 1, a ${face.slice(0, -1)} finishes and anything else resets to state 0.` },
         { say: `Substitute and solve: E0 = ${s}² + ${s} = ${s * s + s}.`, why: 'Two linear equations in two unknowns.' },
       ],
+      picture: pic('graph', { markov: true, nodes: [{ id: '0', label: 'no progress', x: 0.1, y: 0.5 }, { id: '1', label: `one ${face.slice(0, -1)}`, x: 0.55, y: 0.5 }, { id: 'D', label: 'done', x: 0.95, y: 0.5 }], edges: [{ from: '0', to: '0', p: (s - 1) / s, label: `${s - 1}/${s}` }, { from: '0', to: '1', p: 1 / s, label: `1/${s}` }, { from: '1', to: 'D', p: 1 / s, label: `1/${s}` }, { from: '1', to: '0', p: (s - 1) / s, label: `${s - 1}/${s}` }] }, `Two states of progress. A miss from either state sends you back to the start, which is why the wait is ${s}² + ${s} and not 2 × ${s}.`),
+      fast: `s² + s = ${s * s} + ${s} = ${s * s + s}.`,
+      check: `Two ${face} in a row have chance 1/${s * s} in any fixed pair of throws, so the wait is at least ${s * s}; losing progress after a miss adds the extra ${s}.`,
     };
   }
   if (kind === 'headRun') {
@@ -115,6 +128,9 @@ function variant(kind, rng) {
         { say: `E_k = 2E_(k−1) + 2: to extend a run of k − 1 heads, flip once more; a tail sends you back to the start.`, why: 'E_k = E_(k−1) + 1 + (1/2)E_k, which rearranges to E_k = 2E_(k−1) + 2.' },
         { say: `E_1 = 2, E_2 = 6, E_3 = 14, … so E_${k} = 2^${k + 1} − 2 = ${2 ** (k + 1) - 2}.`, why: 'Iterate the recursion.' },
       ],
+      picture: table(['Heads in a row', 'Expected flips E = 2 × previous + 2'], Array.from({ length: k }, (_, i) => [i + 1, `${i ? `2 × ${2 ** (i + 1) - 2} + 2 = ` : ''}${2 ** (i + 2) - 2}`]), `Each extra head in the run roughly doubles the wait, because a tail at any point throws away the whole run.`),
+      fast: `2^${k + 1} − 2 = ${2 ** (k + 1) - 2}.`,
+      check: `The chance of ${k} heads in a row at a fixed place is 1/${2 ** k}, so the wait is at least ${2 ** k}; resets push it to about twice that.`,
     };
   }
   // Wait until both heads and tails have appeared, biased coin.
@@ -135,6 +151,9 @@ function variant(kind, rng) {
       { say: `If the first is a head (prob ${p}), the wait for a tail is 1/${par(r)}; if a tail (prob ${r}), the wait for a head is 1/${par(p)}.`, why: 'Geometric waits.' },
       { say: `E = 1 + ${par(p)}/${par(r)} + ${par(r)}/${par(p)} = ${v} ≈ ${v.toNumber().toFixed(3)}.`, why: 'Condition on the first flip.' },
     ],
+    picture: pic('tree', { root: { label: 'first flip', children: [{ p: p.toString(), label: `head, then wait 1/${par(r)} for a tail` }, { p: r.toString(), label: `tail, then wait 1/${par(p)} for a head` }] }, showProducts: false }, `Split on the first flip; after it only the missing side matters. E = 1 + ${p} × 1/${par(r)} + ${r} × 1/${par(p)} = ${v}.`),
+    fast: `1 + p/q + q/p = ${v}.`,
+    check: `A fair coin gives 3; a biased one waits longer for its rare side, so the answer is above 3.`,
   };
 }
 
@@ -154,6 +173,7 @@ export default {
       text: v.text,
       distractors: v.distractors,
       steps: v.steps,
+      picture: v.picture, fast: v.fast, check: v.check, ask: v.ask,
       rule: 'Geometric wait = 1/p. Multi-stage wait = sum of stage waits. With resets, set up E_state = 1 + Σ p·E_next and solve.',
       anchor: 'The expected number of throws to a six is 6 = 1/p. Every waiting question here is that fact with one change: several stages, or progress that can be lost.',
       hints: ['What are the states of progress?', 'Write E for each state: one step, then the expected remaining wait from where you land.', 'Solve the small linear system.'],

@@ -1,5 +1,5 @@
 // Dice duels: P(A > B) for different dice, sums, best-of-two, and non-transitive dice.
-import { mcqItem, agree, q } from '../lib.js';
+import { mcqItem, agree, q, pic, table } from '../lib.js';
 
 const ID = 'dice-duel';
 const EFRON = { A: [4, 4, 4, 4, 0, 0], B: [3, 3, 3, 3, 3, 3], C: [6, 6, 2, 2, 2, 2], D: [5, 5, 5, 1, 1, 1] };
@@ -48,8 +48,23 @@ export default {
     const text = reroll
       ? `You and a friend each roll ${name(A)}. Ties are rolled again until someone is strictly higher. What is the probability that you win?`
       : `You roll ${name(A).replace('two dice and adds them', 'two dice and add them').replace('two dice and keeps the higher', 'two dice and keep the higher')}; your friend rolls ${name(B)}. You win only if your result is strictly higher. What is the probability that you win?`;
+    // Equal-weight faces fit a win grid (rows yours, columns theirs); two-dice results get a win/tie/lose table.
+    const plain = (s) => s.type === 'die' || s.type === 'custom';
+    const rowsOf = (s) => (s.type === 'die' ? faces(s.k) : s.faces);
+    let picture;
+    if (plain(A) && plain(B)) {
+      const ra = rowsOf(A), rb = rowsOf(B), highlight = [];
+      ra.forEach((x, i) => rb.forEach((y, j) => { if (x > y) highlight.push([i, j]); }));
+      picture = pic('grid', { rows: ra.length, cols: rb.length, rowLabels: ra.map(String), colLabels: rb.map(String), highlight, count: highlight.length, rowTitle: 'your roll', colTitle: "friend's roll" }, reroll
+        ? `Shaded cells are your wins, ${highlight.length} of ${ra.length * rb.length}; the diagonal ties are replayed, and the unshaded rest mirrors your wins. Only decided rounds count, so 1/2.`
+        : `Every cell is equally likely. You win in the ${highlight.length} shaded cells of ${ra.length * rb.length}; ties count as losses.`);
+    } else {
+      picture = table(['Result of one duel', 'Chance'], [['you are strictly higher', win.toString()], ['tie', tie.toString()], ['your friend is higher', lose.toString()]], `The three cases add to 1. ${same ? 'The two players are identical, so win and lose are equal and share what the tie leaves.' : 'Keeping the higher of two dice shifts you up, so your wins outweigh your losses.'}`);
+    }
+    const fast = reroll ? 'Ties are replayed and the players are symmetric: 1/2.' : same && A.type !== 'custom' ? `(1 − ${tie})/2 = ${v}.` : `Count your winning pairs: ${win}.`;
+    const check = reroll ? 'A replayed tie changes nothing, so neither player can have the edge: exactly 1/2.' : `Win, tie and lose must add to 1: ${win} + ${tie} + ${lose}.${same ? ' With identical players win equals lose, so the answer is below 1/2.' : ''}`;
     return mcqItem(ID, rng, difficulty, {
-      value: v, text,
+      value: v, text, picture, fast, check,
       distractors: [
         { value: reroll ? win : 0.5, misconception: reroll ? 'Ignored the rerolls and counted ties as losses. Ties are replayed, so only the non-tied rounds decide.' : 'Assumed the duel is a coin flip. Ties go against you, and the dice may not be equal.' },
         { value: win.add(tie), misconception: 'Counted ties as wins: that is P(yours ≥ theirs).' },

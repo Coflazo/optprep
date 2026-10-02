@@ -5,6 +5,7 @@ export default family({
   title: 'Multiply, then add a constant',
   skill: 'Ratios near a whole number k but not exact: test k × previous and look at what is left over',
   levels: [2, 3],
+  view: 'table',
   show: 5,
   params: (rng, d) => (d === 2
     ? { a: rng.int(1, 9), k: rng.pick([2, 3]), c: nz(rng, -9, 9) }

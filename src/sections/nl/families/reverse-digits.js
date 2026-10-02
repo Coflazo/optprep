@@ -7,6 +7,7 @@ export default family({
   title: 'Add the reversal',
   skill: 'When terms roughly double but not exactly, test "add the number written backwards"',
   levels: [4, 5],
+  view: 'table',
   show: 5,
   limit: 1e7,
   params: (rng, d) => { for (;;) { const a = d === 4 ? rng.int(12, 98) : rng.int(102, 989); if (a % 10 && rev(a) !== a) return { a }; } },

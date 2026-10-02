@@ -1,7 +1,18 @@
 // Simple ±1 random walk on a line: position after n steps, parity traps, price below zero, reflection.
 import { nCr } from '../../../core/combinatorics.js';
 import { Q } from '../../../core/rational.js';
-import { mcqItem, agree, q } from '../lib.js';
+import { mcqItem, agree, q, pic } from '../lib.js';
+
+// One sample path drawn under the number line: start, then a list of +1/−1 moves.
+function walkPicture(start, moves, extra, caption) {
+  const path = [start];
+  for (const m of moves) path.push(path[path.length - 1] + m);
+  const marks = (extra.marks || []).map((m) => m.x);
+  const lo = Math.min(...path, ...marks, ...(extra.barriers || [])) - 1, hi = Math.max(...path, ...marks, ...(extra.barriers || [])) + 1;
+  return pic('numberline', { min: lo, max: hi, step: 1, start, path, ...extra }, caption);
+}
+const ups = (u, d) => [...Array(u).fill(1), ...Array(d).fill(-1)];
+const zigzag = (n, first) => Array.from({ length: n }, (_, i) => (i % 2 === 0 ? first : -first));
 const plus = (a, b) => (b < 0 ? `${a} − ${-b}` : `${a} + ${b}`);
 
 const ID = 'random-walk-line';
@@ -48,6 +59,11 @@ export default {
         rule: 'P(S_n = k) = C(n, (n + k)/2)/2^n if n + k is even, else 0.',
         anchor: 'Exactly u heads in n flips, C(n, u)/2^n, with one change: the position 2u − n replaces the head count u.',
         hints: ['How does the final position depend on the number of up-steps?', 'Can the particle be at an odd position after an even number of steps?', 'Count paths with the right number of up-steps.'],
+        picture: (n + k) % 2 === 0
+          ? walkPicture(0, ups((n + k) / 2, (n - k) / 2), { target: k }, `One of the C(${n}, ${(n + k) / 2}) = ${pathsTo(n, k)} paths that end at ${k}: ${(n + k) / 2} steps up and ${(n - k) / 2} down, in any order.`)
+          : ((kk) => walkPicture(0, ups((n + kk) / 2, (n - kk) / 2), { marks: [{ x: k, label: `${k}: never` }] }, `After ${n} steps the position always has the parity of ${n}, so ${k} is unreachable; this path ends next to it, at ${kk}.`))(k > 0 ? k - 1 : k + 1),
+        fast: (n + k) % 2 === 0 ? `C(${n}, ${(n + k) / 2})/2^${n} = ${v}.` : `Parity: ${n} + ${k} is odd, so 0.`,
+        check: (n + k) % 2 === 0 ? `It cannot beat the chance of the most likely end point, C(${n}, ${Math.floor(n / 2)})/2^${n} ≈ ${(Number(nCr(n, Math.floor(n / 2))) / 2 ** n).toFixed(3)}.` : 'An option above 0 forgets that every step changes the parity of the position.',
         params: { kind, n, k, start: 0 },
       });
     }
@@ -74,6 +90,9 @@ export default {
         rule: 'Terminal events: sum binomial end-point probabilities. Watch strict vs non-strict at the boundary.',
         anchor: 'Binomial tail of heads, with one change: translate "price below 0" into a condition on the number of up-days.',
         hints: ['What must the walk S_n be for the price to be negative?', 'Translate into a number of up-steps.', 'Sum the binomial probabilities.'],
+        picture: walkPicture(x, [...Array(x + 1).fill(-1), ...zigzag(n - x - 1, -1)], { barriers: [0] }, `The bar marks 0. A path counts when it ends at −1 or lower, that is with ${x} + S_${n} ≤ −1; this one falls through 0 and stays below.`),
+        fast: `Sum the binomial end points with ${x} + S_${n} ≤ −1: ${v.toNumber().toFixed(4)}.`,
+        check: `Starting above 0 makes it less than 1/2, and ending exactly at 0 does not count; including it gives ${new Q(s2, N2 ** BigInt(n)).toNumber().toFixed(4)}.`,
         params: { kind, n, start: x },
       });
     }
@@ -98,6 +117,9 @@ export default {
         rule: 'P(max_{t ≤ n} S_t ≥ a) = P(S_n ≥ a) + P(S_n > a) ≈ 2 P(S_n ≥ a).',
         anchor: 'The end-point binomial counts, with one change: reflection turns a question about the whole path into two end-point counts.',
         hints: ['Is ending above a the same as reaching a?', 'Reflect the path after its first visit to a.', 'Add P(end ≥ a) and P(end > a).'],
+        picture: walkPicture(0, [...Array(a).fill(1), ...zigzag(n - a, -1)], { barriers: [a] }, `This path touches ${a} and then ends below it. Reflecting its steps after the first touch gives a path ending above ${a}, which is why the answer is about twice P(end ≥ ${a}).`),
+        fast: `Reflection: P(S_${n} ≥ ${a}) + P(S_${n} > ${a}) = ${v.toNumber().toFixed(4)}.`,
+        check: `At least P(end ≥ ${a}) = ${new Q(tail(n, a), N2 ** BigInt(n)).toNumber().toFixed(4)} (those paths surely touched ${a}) and at most twice that.`,
         params: { kind, n, a },
       });
     }
@@ -126,6 +148,11 @@ export default {
       rule: 'P(S_2m = 0) = C(2m, m)/4^m ≈ 1/√(πm) — and P(no return by 2m) is the same number.',
       anchor: 'Exactly m heads in 2m flips, C(2m, m)/4^m, with one change: read "equal heads and tails" as "back at the start".',
       hints: ['How many ups and downs bring the walk back to 0?', 'C(2m, m) paths.', 'Divide by 2^(2m).'],
+      picture: never
+        ? walkPicture(0, Array(n).fill(1), { target: 0 }, `A path that never comes back to 0 in ${n} steps. There are exactly as many such paths as paths ending at 0: C(${n}, ${m}) = ${nCr(n, m)}.`)
+        : walkPicture(0, ups(m, m), { target: 0 }, `One of the C(${n}, ${m}) = ${nCr(n, m)} paths back at 0: ${m} ups and ${m} downs in any order.`),
+      fast: `C(${n}, ${m})/2^${n} = ${v}, about 1/√(π × ${m}) = ${(1 / Math.sqrt(Math.PI * m)).toFixed(3)}.`,
+      check: `About 1/√(πm) = ${(1 / Math.sqrt(Math.PI * m)).toFixed(3)}, shrinking as the walk gets longer; ${never ? 'the never-return chance equals the back-at-0 chance exactly.' : 'it is the largest single end-point chance.'}`,
       params: { kind: never ? 'neverReturn' : 'returnZero', n },
     });
   },

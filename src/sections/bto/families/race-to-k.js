@@ -1,7 +1,11 @@
 // First to k wins (best-of series): win probability and the chance the series goes the distance.
 import { nCr } from '../../../core/combinatorics.js';
 import { Q } from '../../../core/rational.js';
-import { mcqItem, agree, q, qpow } from '../lib.js';
+import { mcqItem, agree, q, qpow, table } from '../lib.js';
+
+// A's number of wins in m imagined games, j = 0..m, with its chance.
+const winsTable = (m, p, mark, caption) => table([`A wins of ${m} games`, 'Ways', 'Probability'],
+  Array.from({ length: m + 1 }, (_, j) => [`${j}${mark(j) ? ' (counts)' : ''}`, `C(${m},${j}) = ${nCr(m, j)}`, (Number(nCr(m, j)) * p.toNumber() ** j * (1 - p.toNumber()) ** (m - j)).toFixed(4)]), caption);
 
 const ID = 'race-to-k';
 const PS = [[1, 2], [3, 5], [2, 3], [2, 5], [3, 4], [11, 20]];
@@ -45,6 +49,9 @@ export default {
         rule: 'Series of first-to-k goes the full 2k − 1 games with probability C(2k−2, k−1)(pq)^(k−1). Best-of-7, even teams: 20/64 = 5/16.',
         anchor: 'Exactly j heads in m flips, with one change: the "flips" are the first 2k − 2 games and j = k − 1.',
         hints: [`What must the score be after ${n - 1} games?`, `${k - 1} wins each, in any order.`, `C(${n - 1}, ${k - 1})(pq)^${k - 1}.`],
+        picture: winsTable(n - 1, p, (j) => j === k - 1, `A's wins in the first ${n - 1} games. Only the row ${k - 1} (a ${k - 1}-${k - 1} split) sends the series to game ${n}.`),
+        fast: `C(${n - 1},${k - 1}) × (${p} × ${r})^${k - 1} = ${v}.`,
+        check: `p × (1 − p) is at most 1/4, so the answer is at most C(${n - 1},${k - 1})/4^${k - 1} = ${new Q(nCr(n - 1, k - 1), 4n ** BigInt(k - 1))}, reached by even teams.`,
         params: { mode: 'full', k, a, c },
       });
     }
@@ -67,6 +74,9 @@ export default {
       rule: 'Race to k = at least k wins out of 2k − 1 imagined games (binomial tail).',
       anchor: 'The binomial tail P(at least k of n), with one change: stopping early does not matter once you imagine the full n games.',
       hints: [`Would playing all ${n} games change the winner?`, 'Then it is a binomial tail.', `P(at least ${k} of ${n}).`],
+      picture: winsTable(n, p, (j) => j >= k, `All ${n} games imagined. A takes the series in the rows with ${k} or more wins; those probabilities add to ${v.toNumber().toFixed(4)}.`),
+      fast: `Binomial tail: P(at least ${k} wins in ${n}) = ${v.toNumber().toFixed(4)}.`,
+      check: `A longer series favours the stronger side, so the answer is ${p.cmp(q(1, 2)) > 0 ? 'above' : 'below'} the one-game ${p}; A's and B's series chances add to 1.`,
       params: { mode: 'win', k, a, c },
     });
   },

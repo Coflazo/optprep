@@ -1,6 +1,6 @@
 // 80-in-8: the missing operand (66 × ? = 138.6, ? − 48 = 175, 735 ÷ ? = 15). Undo the operation
 // with its inverse; the classic slip is undoing it with the same operation.
-import { family, q, L, borrowPlaces, carryPlaces, smallFromLarge, intPick } from '../lib.js';
+import { family, q, L, borrowPlaces, carryPlaces, smallFromLarge, intPick, tablePicture } from '../lib.js';
 
 const Z = (n) => (Number.isInteger(n) ? q(n) : null);
 const D = (m, dp) => q(m, 10 ** dp);
@@ -10,10 +10,11 @@ function o({ text, x, mode = 'int', wrong, inverse, why, check, hints, params })
     text, value: x, mode, wrong,
     ask: `Find the missing number in ${text}.`,
     steps: [
-      { say: `Undo it with the inverse: ? = ${inverse}.`, why },
-      { say: `${inverse} = ${L(x)}.`, why: 'Now it is a direct calculation.' },
-      { say: `Put it back: ${text.replace('?', L(x))} holds.`, why: 'Substituting the answer proves it, and catches an inverse taken the wrong way round.' },
+      { say: 'Undo the operation with its inverse.', math: `? = ${inverse}`, why },
+      { say: 'Work out the inverse directly.', math: `${inverse} = ${L(x)}`, why: 'Now it is a direct calculation.' },
+      { say: 'Put the answer back into the question.', math: text.replace('?', L(x)), why: 'Substituting the answer proves it, and catches an inverse taken the wrong way round.' },
     ],
+    picture: tablePicture(['', 'Fact'], [['question', text], ['inverse', `? = ${inverse}`], ['answer', `? = ${L(x)}`], ['check', text.replace('?', L(x))]], `One fact, read two ways: the inverse line finds the blank, and the check line puts it back. Undoing with the same operation gives a different number that fails the check.`),
     fast: `? = ${inverse} = ${L(x)}.`,
     check, hints, params,
   };

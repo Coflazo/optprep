@@ -1,13 +1,20 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { validateItem } from '../../src/core/contract.js';
+import { validateItem, validateSolution } from '../../src/core/contract.js';
 import { buildMcq } from '../../src/core/options.js';
 import { makeRng } from '../../src/core/rng.js';
 
 const base = {
   id: 'bto:demo:1', section: 'bto', family: 'demo', difficulty: 1,
   prompt: { text: 'Two dice. P(sum = 12)?' },
-  solution: { steps: [{ say: '36 equally likely pairs', why: 'each die has 6 faces' }, { say: 'Only (6,6) works', why: 'max face is 6' }], rule: 'one pair out of 36', anchor: 'counting equally likely outcomes' },
+  solution: {
+    ask: 'We want P(sum = 12).',
+    steps: [{ say: '36 equally likely pairs', math: '6 × 6 = 36', why: 'each die has 6 faces' }, { say: 'Only (6,6) works', math: 'P = 1/36', why: 'max face is 6' }],
+    fast: 'One cell of 36: 1/36.',
+    check: 'Sum 12 is as rare as sum 2: one ordered pair each.',
+    picture: { diagram: 'grid', spec: { rows: 6, cols: 6, highlight: [[5, 5]], count: 1 }, caption: 'The single cell (6, 6).' },
+    rule: 'one pair out of 36', anchor: 'counting equally likely outcomes',
+  },
   hints: ['How many ordered pairs are there?', 'Which pairs sum to 12?'],
 };
 
@@ -74,4 +81,16 @@ test('validateItem: mcq option count is 5 by default and item.optionCount when s
   const { optionCount, ...noCount } = four;
   assert.equal(optionCount, 4);
   assert.ok(validateItem(noCount).some((e) => e.includes('exactly 5 options')));
+});
+
+test('validateSolution: ask, fast, check, a picture (or an explicit null) and math on some step', () => {
+  const s = base.solution;
+  assert.deepEqual(validateSolution(s), []);
+  assert.deepEqual(validateSolution({ ...s, picture: null }), [], 'null is allowed by the contract; tests/core/solutions.test.js limits it to a named list');
+  for (const k of ['ask', 'fast', 'check']) assert.ok(validateSolution({ ...s, [k]: '' }).some((e) => e.includes(k)), `${k} required`);
+  const { picture, ...noPicture } = s;
+  assert.ok(picture && validateSolution(noPicture).some((e) => e.includes('picture')));
+  assert.ok(validateSolution({ ...s, picture: { diagram: 'grid', spec: {} } }).some((e) => e.includes('caption')));
+  assert.ok(validateSolution({ ...s, steps: s.steps.map(({ math, ...st }) => st) }).some((e) => e.includes('math')));
+  assert.ok(validateItem({ ...base, kind: 'interval', truth: 3, solution: { ...s, fast: '' } }).some((e) => e.includes('fast')), 'validateItem enforces the solution fields');
 });

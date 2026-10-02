@@ -1,5 +1,5 @@
 // Bayes with physical objects: coins (one double-headed), two boxes of balls, two-sided cards.
-import { mcqItem, agree, q, qpow } from '../lib.js';
+import { mcqItem, agree, q, qpow, pic, table } from '../lib.js';
 
 const ID = 'bayes-boxes';
 
@@ -34,6 +34,12 @@ export default {
         rule: 'Posterior odds = prior odds × likelihood ratio. Double-headed vs m − 1 fair after k heads: 1 : (m − 1)/2^k.',
         anchor: 'Bayes for a test result, with one change: the "test" is the flips, and its hit rates are 1 and 1/2^k.',
         hints: ['Start from prior odds: how many fair coins per double-headed coin?', `How likely is ${k} heads under each coin?`, `Odds 1 : ${m - 1}/${2 ** k}.`],
+        picture: pic('tree', { root: { label: '', children: [
+          { p: `1/${m}`, label: 'double-headed', children: [{ p: '1', label: `${k} heads`, mark: true }] },
+          { p: `${m - 1}/${m}`, label: 'fair', children: [{ p: lik.toString(), label: `${k} heads`, mark: true }, { p: q(1).sub(lik).toString(), label: 'some tail' }] },
+        ] } }, `The two marked leaves are every way to see ${k} heads: 1/${m} from the double-headed coin and ${q(m - 1, m).mul(lik)} from a fair one. The answer is the first over their sum.`),
+        fast: `Odds 1 : (${m - 1}/${2 ** k}), so 1/(1 + ${m - 1}/${2 ** k}) = ${v}.`,
+        check: `The heads must raise the chance above the prior 1/${m}; each extra head halves the fair coins' weight, so more heads would push it closer to 1.`,
         data: { kind, m, k },
       });
     }
@@ -60,6 +66,12 @@ export default {
         rule: 'Equal priors → posterior ∝ likelihood. Never pool balls across boxes of different sizes.',
         anchor: 'Bayes for a test result, with the change that the "test" is which colour came out and each box has its own hit rate.',
         hints: ['How likely is red from each box?', 'The equal 1/2 priors cancel.', `Ratio ${la} : ${lb}.`],
+        picture: pic('tree', { root: { label: '', children: [
+          { p: '1/2', label: 'box A', children: [{ p: la.toString(), label: 'red', mark: true }, { p: q(1).sub(la).toString(), label: 'blue' }] },
+          { p: '1/2', label: 'box B', children: [{ p: lb.toString(), label: 'red', mark: true }, { p: q(1).sub(lb).toString(), label: 'blue' }] },
+        ] } }, `The marked leaves are the two ways to draw red: ${la.mul(q(1, 2))} through box A and ${lb.mul(q(1, 2))} through box B. The answer is box A's share of that red total.`),
+        fast: `Equal priors cancel: ${la} : ${lb}, so ${v}.`,
+        check: `Red is ${la.cmp(lb) > 0 ? 'likelier' : 'less likely'} from box A, so the answer is ${la.cmp(lb) > 0 ? 'above' : 'below'} 1/2. Pooling all ${a + b + c + d} balls would give ${q(a, a + c)}, which ignores that the boxes differ in size.`,
         data: { kind, a, b, c, d },
       });
     }
@@ -83,6 +95,9 @@ export default {
       rule: 'Condition on what you saw: count the equally likely red faces, not the cards.',
       anchor: 'The classic three-card puzzle (answer 2/3) with one change: different numbers of each card type.',
       hints: ['Which things are equally likely to be seen: cards, or faces?', 'Count red faces on each card type.', `${2 * rr} of ${2 * rr + mx} red faces have a red back.`],
+      picture: table(['Card type', 'Cards', 'Red faces', 'Other side red?'], [['red / red', rr, 2 * rr, 'yes'], ['red / black', mx, mx, 'no'], ...(bb ? [['black / black', bb, 0, 'no red face']] : [])], `The face you see is one of the ${2 * rr + mx} red faces, all equally likely. ${2 * rr} of them sit on double-red cards, so the answer is ${2 * rr}/${2 * rr + mx}.`),
+      fast: `Count red faces: ${2 * rr} of ${2 * rr + mx} have a red back.`,
+      check: `Counting cards instead of faces gives ${q(rr, rr + mx)}; the double-red cards show red twice as often, so the true answer is higher.`,
       data: { kind: 'cards', rr, mx, bb },
     });
   },
