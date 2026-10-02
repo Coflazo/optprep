@@ -65,3 +65,21 @@ export function validateItem(it) {
   }
   return e;
 }
+
+// The worked solution every item carries: what is asked, a picture (or null where none
+// helps), steps with the arithmetic of each move in `math`, the exam-speed path and a
+// sanity check that would catch a wrong option. Diagram specs are checked against the
+// study diagram validators in tests/core/solutions.test.js.
+export function validateSolution(s) {
+  const e = [];
+  for (const k of ['ask', 'fast', 'check']) if (!str(s[k])) e.push(`solution.${k} missing`);
+  if (!('picture' in s)) e.push('solution.picture missing (null only where no picture helps)');
+  else if (s.picture !== null) {
+    const p = s.picture;
+    if (!(str(p?.diagram) && p.spec && typeof p.spec === 'object' && str(p.caption))) e.push('solution.picture needs diagram, spec and caption');
+  }
+  const steps = Array.isArray(s.steps) ? s.steps : [];
+  steps.forEach((st, i) => { if (st.math != null && !str(st.math)) e.push(`solution.steps[${i}].math must be text`); });
+  if (!steps.some((st) => str(st.math))) e.push('solution needs math on at least one step');
+  return e;
+}
