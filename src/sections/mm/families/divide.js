@@ -76,7 +76,7 @@ const byQuarterHundred = {
         { say: `÷ 25 is × 4 ÷ 100: ${a} × 4 = ${a * 4}.`, why: '25 = 100 ÷ 4, so dividing by 25 is multiplying by 4 and dividing by 100.' },
         { say: `${a * 4} ÷ 100 = ${qq}.`, why: 'Doubling twice and dropping two zeros replaces a long division.' },
       ],
-      fast: `How many 100s in ${a}? ${Math.floor(a / 100)}, so ${Math.floor(a / 100) * 4} quarters, plus ${(a % 100) / 25} for the ${a % 100}: ${qq}.`,
+      fast: `Each 100 holds four 25s: ${Math.floor(a / 100)} hundreds make ${Math.floor(a / 100) * 4}${a % 100 ? `, and the ${a % 100} left holds ${(a % 100) / 25} more` : ''}: ${qq}.`,
       check: `Multiply back: ${qq} × 25 = ${a}. Four 25s make 100, so the answer is about ${a} ÷ 100 × 4 ≈ ${Math.round((a / 100) * 4)}.`,
       hints: ['25 = 100 ÷ 4.', `${a} × 4 = ${a * 4}.`],
       params: { a, d: 25 },
@@ -114,7 +114,7 @@ export default family({
   title: 'Divide',
   skill: 'Divide exactly: short division (zeros in the quotient), two-digit divisors, ÷5 and ÷25 shortcuts',
   levels: [1, 2, 3],
-  rule: '÷5 = ×2 ÷ 10; ÷25 = ×4 ÷ 100; otherwise estimate with a round divisor, then let the last digit pick the answer; always multiply back.',
+  rule: '÷5 = ×2 ÷ 10; ÷25 = ×4 ÷ 100; a two-digit divisor: bracket the tens with round multiples, then let the last digit pick; always multiply back.',
   anchor: 'Division undoes multiplication: a ÷ d = q exactly when d × q = a.',
   variants: { short, byFive, byQuarterHundred, twoDigit },
   lesson: {

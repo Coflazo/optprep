@@ -358,7 +358,7 @@ export function runExam(root, { sectionId, variant, store, seed = Date.now(), on
       return [h('tr', {},
         h('td', { class: 'num' }, String(i + 1)),
         h('td', {}, familyTitle(section, it.family)),
-        h('td', {}, r.skipped ? h('span', { class: 'badge' }, 'Skipped') : r.correct || r.score > 0 ? h('span', { class: 'badge ok' }, it.kind === 'interval' ? r.score.toFixed(2) : 'Right') : h('span', { class: 'badge no' }, 'Wrong')),
+        h('td', {}, r.skipped ? h('span', { class: 'badge' }, canSkip ? 'Skipped' : 'Not answered') : r.correct || r.score > 0 ? h('span', { class: 'badge ok' }, it.kind === 'interval' ? r.score.toFixed(2) : 'Right') : h('span', { class: 'badge no' }, 'Wrong')),
         h('td', { class: 'num', style: { textAlign: 'right' } }, it.kind === 'interval' ? r.score.toFixed(2) : String(r.score)),
         h('td', { style: { textAlign: 'right' } }, toggle)), detail];
     });
