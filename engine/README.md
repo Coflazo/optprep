@@ -1,6 +1,6 @@
 # oa-engine
 
-C++20 engine behind the trainer's verification and puzzle banks. No dependencies beyond the standard library (GoogleTest for tests).
+C++20 engine behind the trainer's verification and puzzle banks. No dependencies beyond the standard library. Tests use GoogleTest: an installed copy if CMake finds one, otherwise CMake downloads it (`-DOA_BUILD_TESTS=OFF` skips tests). Needs GCC or Clang (`__int128`); on Windows use MinGW-w64, not MSVC.
 
 | Command | What it does |
 |---|---|
@@ -14,7 +14,7 @@ C++20 engine behind the trainer's verification and puzzle banks. No dependencies
 
 ```bash
 cmake -S . -B build -G Ninja -DCMAKE_PREFIX_PATH=/usr/local && cmake --build build
-ctest --test-dir build                     # 31 tests
+ctest --test-dir build                     # 34 tests
 ./build/oa-bench                           # throughput
 echo '{"cmd":"numberbox","numbers":[3,3,8,8],"target":24}' | ./build/oa-engine
 # sanitizers
