@@ -347,7 +347,7 @@ export function runExam(root, { sectionId, variant, store, seed = Date.now(), on
     if (finished) return;
     const rem = total ? total.remaining() : perItem ? perItem.remaining() : 0;
     paintTimer(t, rem);
-    if (total && total.expired()) { save(); return finish(); }
+    if (total && total.expired()) { save(); const live = document.getElementById('live'); if (live) live.textContent = 'Time is up. Your exam is finished.'; return finish(); }
     if (!total && perItem && perItem.expired()) {
       // per-item clock ran out: keep whatever is on screen (rank order, a full interval), else skip
       const r = current.body.view.response();
