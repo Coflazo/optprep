@@ -80,6 +80,39 @@ function checkList(qs, where) {
   return qs.flatMap((q) => (typeof q?.make === 'function' ? [] : validateQuestion(q).map((m) => `${where}${m}`)));
 }
 
+// Unit rule constants (see cadence below).
+export const UNIT_EXEMPT = ['why', 'rule'];
+export const UNIT_TEACHING = ['text', 'diagram', 'callout', 'formula', 'list', 'compare', 'thinkaloud', 'traps'];
+export const CLOSERS = ['check', 'steps', 'erroneous', 'recognize', 'transfer'];
+const UNIT_MAX = 3;
+
+// The unit rule: a question after every small piece of teaching.
+// A unit is one idea: consecutive teaching blocks with at most one block of each type (a
+// text plus the diagram, formula, callout, list or table that explains it) and at most 3
+// blocks. A second block of a type already in the open unit starts a new unit. Each unit
+// must be closed by a question block (CLOSERS) before the next unit starts or its section
+// ends. Other blocks (challenge, explain, predict, worked, variation, tryit) neither open
+// nor close a unit. Exception: the last unit of a "why" or "rule" section needs no check.
+// Returns [{ section, at, unit, reason }] with block indexes into L.blocks.
+export function cadence(L) {
+  const out = [];
+  let section = null, unit = [];
+  const fail = (reason, next) => out.push({ section: section?.key ?? null, at: next, unit: unit.map((u) => u.i), reason });
+  const end = () => { if (unit.length && !UNIT_EXEMPT.includes(section?.key)) fail('unit ends its section without a check', null); unit = []; };
+  (L.blocks || []).forEach((b, i) => {
+    if (b.type === 'section') { end(); section = b; return; }
+    if (CLOSERS.includes(b.type)) { unit = []; return; }
+    if (!UNIT_TEACHING.includes(b.type)) return;
+    if (unit.length && (unit.length >= UNIT_MAX || unit.some((u) => u.type === b.type))) {
+      fail(`new ${b.type} starts before the unit above is checked`, i);
+      unit = [];
+    }
+    unit.push({ i, type: b.type });
+  });
+  end();
+  return out;
+}
+
 // Every teaching section must end its unit with checks: a check block, or steps whose
 // every step carries checks.
 function sectionChecks(L) {
