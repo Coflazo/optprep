@@ -10,7 +10,8 @@ import { mockPage } from './src/ui/pages/mock.js';
 import { dataPage } from './src/ui/pages/data.js';
 import { setsPage, setRunPage } from './src/ui/pages/sets.js';
 import { runFeedbackSession, runExam } from './src/ui/runner.js';
-import { optiverLogo } from './src/ui/logo.js';
+import { brandLockup } from './src/ui/logo.js';
+import { initTheme } from './src/ui/theme.js';
 import { createSync } from './src/ui/sync.js';
 import { studyHome, bookPage, lessonPage, cheatPage, drillPage, mixedPage, reviewPage, mistakesPage, weekPage } from './src/study/pages.js';
 import { dueLessons, openBeliefs } from './src/study/progress.js';
@@ -21,10 +22,10 @@ const view = document.getElementById('view');
 const nav = document.getElementById('nav');
 let cleanup = null;
 
+initTheme();
 mount(document.querySelector('.sidebar .brand'),
-  h('a', { href: '#/', class: 'brand-link', 'aria-label': 'OA Trainer home' }, optiverLogo({ height: 20 })),
-  h('div', { class: 'brand-sub' }, 'Assessment trainer'),
-  h('div', { class: 'brand-note' }, 'Unofficial practice, not affiliated with Optiver'));
+  h('a', { href: '#/', class: 'brand-link', 'aria-label': 'OptPrep home' }, brandLockup()),
+  h('div', { class: 'brand-note' }, 'Not affiliated with or endorsed by Optiver'));
 
 const ROUTES = [
   [/^#?\/?$/, () => homePage(view, { store, sync })],

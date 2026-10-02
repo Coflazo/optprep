@@ -10,3 +10,4 @@ __pycache__/
 backend/data/*.db
 backend/data/library/
 backend/data/zapn/
+.claude/

@@ -1,42 +1,131 @@
-/* Tokens follow the Mental Math Forge design system (calm, one accent, no gradients).
-   no-slop-ui: 1px borders, radius <= 10px, shadow <= 0 2px 8px, 100-200ms colour/opacity only. */
+/* OptPrep design tokens. Palette follows the navy-and-orange feel of the Optiver site
+   (colours only, no marks). Every text pair passes WCAG AA in both themes; the token
+   contrast test in tests/ui/contrast.test.js reads this block. no-slop-ui: 1px borders,
+   radius <= 10px, one shadow. Motion tokens are shared by every animation. */
+@font-face { font-family: "Roboto"; font-style: normal; font-weight: 400 700; font-display: swap; src: url("../../assets/fonts/roboto-latin.woff2") format("woff2"); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+@font-face { font-family: "Roboto"; font-style: normal; font-weight: 400 700; font-display: swap; src: url("../../assets/fonts/roboto-latin-ext.woff2") format("woff2"); unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF; }
+@font-face { font-family: "Roboto Mono"; font-style: normal; font-weight: 400 600; font-display: swap; src: url("../../assets/fonts/roboto-mono-latin.woff2") format("woff2"); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+@font-face { font-family: "Roboto Mono"; font-style: normal; font-weight: 400 600; font-display: swap; src: url("../../assets/fonts/roboto-mono-latin-ext.woff2") format("woff2"); unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF; }
+
 :root {
-  --bg: #FAFAF7;
+  color-scheme: light;
+  /* theme: light */
+  --bg: #F4F7FA;
   --surface: #FFFFFF;
-  --surface-2: #F3F2EE;
-  --text: #111111;
-  --text-2: #5F5E5A;
-  --border: #E6E4DF;
-  --accent: #1F1F1F;
+  --surface-2: #EBF5FD;
+  --surface-3: #CFE3F4;
+  --text: #011735;
+  --text-2: #3C5B7C;
+  --text-3: #5E7EA0;
+  --border: #CFE3F4;
+  --border-strong: #7D98B0;
+  --accent: #011735;
   --accent-text: #FFFFFF;
-  --correct: #2F7D4F;
-  --correct-bg: #EAF4EE;
-  --wrong: #B23B3B;
-  --wrong-bg: #F8EAEA;
-  --warn: #9A6B12;
-  --warn-bg: #F7F0E1;
-  --ring: #1F1F1F;
-  --viz-1: #3E6FA8;
-  --viz-2: #C07A2C;
-  --viz-3: #5E8C61;
-  --viz-4: #8A5A9E;
-  --viz-5: #B24A4A;
+  --brand: #FF3300;
+  --brand-text: #CC2900;
+  --brand-bg: #FFEDE7;
+  --ring: #CC2900;
+  --correct: #00754A;
+  --correct-bg: #E3F5EC;
+  --wrong: #C8102E;
+  --wrong-bg: #FCE8EB;
+  --warn: #8A5300;
+  --warn-bg: #FFF3DC;
+  --xp: #6B00D6;
+  --viz-1: #3C5B7C;
+  --viz-2: #FF3300;
+  --viz-3: #00754A;
+  --viz-4: #7F00FF;
+  --viz-5: #94ADBF;
+  --mark-bg: #011735;
+  --shadow: 0 2px 8px rgba(1, 23, 53, 0.07);
+  /* end theme */
+  --mark-track: #3C5B7C;
+  --mark-arc: #FFFFFF;
+  --mark-tick: #FF3300;
   --radius: 8px;
   --radius-sm: 6px;
-  --shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-  --font: system-ui, -apple-system, "SF Pro Text", "Helvetica Neue", sans-serif;
-  --mono: ui-monospace, "SF Mono", Menlo, monospace;
-  --sidebar: 240px;
+  --font: "Roboto", system-ui, -apple-system, "SF Pro Text", "Helvetica Neue", sans-serif;
+  --mono: "Roboto Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  --sidebar: 248px;
+  --tabbar: 64px;
+  /* Motion: one scale for the whole app. */
+  --dur-1: 120ms;
+  --dur-2: 200ms;
+  --dur-3: 320ms;
+  --dur-4: 400ms;
+  --ease: cubic-bezier(0.2, 0, 0, 1);
+  --ease-exit: cubic-bezier(0.4, 0, 1, 1);
+  --ease-spring: linear(0, 0.36 9%, 0.81 22%, 1.03 34%, 1.07 43%, 1.04 55%, 1 70%, 0.99 85%, 1);
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  /* theme: dark */
+  --bg: #021129;
+  --surface: #011735;
+  --surface-2: #11274A;
+  --surface-3: #1C3557;
+  --text: #F4F7FA;
+  --text-2: #B3CFE3;
+  --text-3: #94ADBF;
+  --border: #1C3557;
+  --border-strong: #4D6F93;
+  --accent: #F4F7FA;
+  --accent-text: #021129;
+  --brand: #FF3300;
+  --brand-text: #FF7A57;
+  --brand-bg: #3A1A16;
+  --ring: #FF7A57;
+  --correct: #39D377;
+  --correct-bg: #0B3324;
+  --wrong: #FF6B7D;
+  --wrong-bg: #3B1520;
+  --warn: #F0B44C;
+  --warn-bg: #33270F;
+  --xp: #C48BFF;
+  --viz-1: #94ADBF;
+  --viz-2: #FF5A33;
+  --viz-3: #39D377;
+  --viz-4: #B266FF;
+  --viz-5: #CFE3F4;
+  --mark-bg: #11274A;
+  --shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+  /* end theme */
 }
 @media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #111213; --surface: #18191B; --surface-2: #202124; --text: #ECECEA; --text-2: #A3A29E;
-    --border: #2C2D30; --accent: #ECECEA; --accent-text: #111213; --ring: #ECECEA;
-    --correct: #6BBF8A; --correct-bg: #16271D; --wrong: #E07A7A; --wrong-bg: #2C1717;
-    --warn: #D9A94A; --warn-bg: #2A2314;
-    --viz-1: #7FA7D6; --viz-2: #E0A461; --viz-3: #8DBE90; --viz-4: #B892CC; --viz-5: #E08585;
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --bg: #021129; --surface: #011735; --surface-2: #11274A; --surface-3: #1C3557;
+    --text: #F4F7FA; --text-2: #B3CFE3; --text-3: #94ADBF; --border: #1C3557; --border-strong: #4D6F93;
+    --accent: #F4F7FA; --accent-text: #021129; --brand: #FF3300; --brand-text: #FF7A57; --brand-bg: #3A1A16; --ring: #FF7A57;
+    --correct: #39D377; --correct-bg: #0B3324; --wrong: #FF6B7D; --wrong-bg: #3B1520; --warn: #F0B44C; --warn-bg: #33270F;
+    --xp: #C48BFF; --viz-1: #94ADBF; --viz-2: #FF5A33; --viz-3: #39D377; --viz-4: #B266FF; --viz-5: #CFE3F4;
+    --mark-bg: #11274A; --shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
   }
 }
+@media (prefers-contrast: more) {
+  :root { --border: var(--border-strong); --text-2: var(--text); }
+}
+@media (forced-colors: active) {
+  :root { --brand: CanvasText; --ring: Highlight; --mark-tick: Highlight; }
+  .option, .btn, .panel { border: 1px solid CanvasText; }
+}
+@media (prefers-reduced-motion: reduce) {
+  :root { --dur-1: 0ms; --dur-2: 0ms; --dur-3: 0ms; --dur-4: 0ms; }
+  *, *::before, *::after { animation-duration: 0ms !important; animation-iteration-count: 1 !important; transition-duration: 0ms !important; scroll-behavior: auto !important; }
+}
+
+/* Brand mark and lockup */
+.mark { display: block; flex: none; }
+.mark-bg { fill: var(--mark-bg); }
+.mark-track { stroke: var(--mark-track); }
+.mark-arc { stroke: var(--mark-arc); }
+.mark-tick { stroke: var(--mark-tick); }
+.lockup { display: inline-flex; align-items: center; gap: 10px; color: var(--text); }
+.lockup-text { display: flex; flex-direction: column; line-height: 1.1; }
+.wordmark { font-weight: 700; font-size: 18px; letter-spacing: -0.01em; }
+.descriptor { font-size: 12px; color: var(--text-2); margin-top: 2px; }
+
 * { box-sizing: border-box; }
 [hidden] { display: none !important; }
 html, body { margin: 0; height: 100%; }
