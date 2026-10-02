@@ -53,9 +53,11 @@ export function solutionPanel(item, { stepwise = true } = {}) {
   const list = h('ol', { class: 'steps' });
   const more = h('button', { class: 'btn small', type: 'button', onclick: () => { shown = Math.min(steps.length, shown + 1); render(); } }, 'Next step');
   const all = h('button', { class: 'btn small', type: 'button', onclick: () => { shown = steps.length; render(); } }, 'Show all');
-  const ask = sol.ask ? h('p', { class: 'solution-ask' }, sol.ask) : null;
+  // Caret exponents print as real superscripts: 2^4 reads 2⁴.
+  const sup = (t) => (typeof t === 'string' ? t.replace(/\^(\d+)/g, (_, d) => [...d].map((c) => '⁰¹²³⁴⁵⁶⁷⁸⁹'[+c]).join('')) : t);
+  const ask = sol.ask ? h('p', { class: 'solution-ask' }, sup(sol.ask)) : null;
   const picture = sol.picture ? pictureFigure(sol.picture) : null;
-  const block = (cls, title, body) => h('div', { class: cls, hidden: true }, h('h4', {}, title), h('p', {}, body));
+  const block = (cls, title, body) => h('div', { class: cls, hidden: true }, h('h4', {}, title), h('p', {}, sup(body)));
   const fast = sol.fast ? block('solution-fast', 'Exam-speed path', sol.fast) : null;
   const check = sol.check ? block('solution-check', 'Sanity check', sol.check) : null;
   const rule = h('div', { class: 'rule', hidden: true }, sol.rule);
@@ -63,9 +65,9 @@ export function solutionPanel(item, { stepwise = true } = {}) {
   const best = item.kind === 'orderbook' && item.best ? h('p', { class: 'num', hidden: true }, `Best position: ${describeTrades(item)} → profit ${fmtNum(item.best.profit)}`) : null;
   function render() {
     list.replaceChildren(...steps.slice(0, shown).map((s, i) => h('li', {},
-      h('span', { class: 'n' }, String(i + 1)), h('div', {}, s.say),
-      s.math ? h('div', { class: 'solution-math num' }, s.math) : null,
-      h('div', { class: 'why' }, s.why))));
+      h('span', { class: 'n' }, String(i + 1)), h('div', {}, sup(s.say)),
+      s.math ? h('div', { class: 'solution-math num' }, sup(s.math)) : null,
+      h('div', { class: 'why' }, sup(s.why)))));
     const done = shown >= steps.length;
     more.hidden = done; all.hidden = done;
     for (const el of [best, fast, check, anchor, rule]) if (el) el.hidden = !done;

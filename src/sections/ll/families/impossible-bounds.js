@@ -48,7 +48,7 @@ function coins(rng) {
     text: `A fair coin is flipped ${n} times.`,
     statements: [
       { text: `The number of heads minus the number of tails is exactly ${d}.`, p: q(0), how: `heads − tails = 2·heads − ${n} is even. Impossible.` },
-      { text: `Exactly ${k} heads come up.`, p: new Q(nCr(n, k), 2n ** BigInt(n)), how: `C(${n},${k})/2^${n}.` },
+      { text: `Exactly ${k} head${k === 1 ? '' : 's'} come${k === 1 ? 's' : ''} up.`, p: new Q(nCr(n, k), 2n ** BigInt(n)), how: `C(${n},${k})/2^${n}.` },
       { text: 'At least one head or at least one tail comes up.', p: q(1), how: 'Every flip is one or the other. Certain.' },
     ],
     params: { scenario: 'coins', n, d },

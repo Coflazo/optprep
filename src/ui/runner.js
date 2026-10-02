@@ -405,7 +405,7 @@ export function runExam(root, { sectionId, variant, store, seed = Date.now(), on
     const ready = readiness(store.runs(sectionId, 'exam'), target);
     const rows = items.map((it, i) => {
       const detail = h('tr', { hidden: true }, h('td', { colspan: 5 }, h('div', { class: 'review-item' }, itemBody(it, { preview: false, notation }).el, feedbackBanner(it, results[i], responses[i] || { skip: true }), solutionPanel(it, { stepwise: false }))));
-      const toggle = h('button', { class: 'btn small', type: 'button', 'aria-label': `Solution, question ${i + 1}`, 'aria-expanded': 'false', onclick: () => { detail.hidden = !detail.hidden; toggle.textContent = detail.hidden ? 'Solution' : 'Hide'; toggle.setAttribute('aria-expanded', String(!detail.hidden)); } }, 'Solution');
+      const toggle = h('button', { class: 'linkish', type: 'button', 'aria-label': `Solution, question ${i + 1}`, 'aria-expanded': 'false', onclick: () => { detail.hidden = !detail.hidden; toggle.textContent = detail.hidden ? 'Solution' : 'Hide'; toggle.setAttribute('aria-expanded', String(!detail.hidden)); } }, 'Solution');
       const r = results[i];
       return [h('tr', { 'data-grade': r.skipped ? 'skip' : r.correct || r.score > 0 ? 'right' : 'wrong' },
         h('td', { class: 'num' }, String(i + 1)),
@@ -414,8 +414,13 @@ export function runExam(root, { sectionId, variant, store, seed = Date.now(), on
         h('td', { class: 'num', style: { textAlign: 'right' } }, it.kind === 'interval' ? r.score.toFixed(2) : String(r.score)),
         h('td', { style: { textAlign: 'right' } }, toggle)), detail];
     });
+    const iv = sectionId === 'iv';
+    const scoreBox = h('div', { class: 'score-box score-print is-pending', tabindex: '-1', 'aria-label': `Score: ${iv ? `${score.toFixed(2)} of ${max}, mean ${(score / max).toFixed(2)}` : `${score} of ${max}`}` },
+      h('span', { class: 'score-label', 'aria-hidden': 'true' }, iv ? 'TOTAL' : 'NET SCORE'),
+      h('span', { class: 'score-value', 'aria-hidden': 'true' }, iv ? score.toFixed(2) : String(score)),
+      h('span', { class: 'score-of', 'aria-hidden': 'true' }, iv ? `of ${max} · mean ${(score / max).toFixed(2)}` : `of ${max}`));
     const sheet = h('div', { class: 'panel exam-review' },
-      h('h1', { class: 'score-print is-pending', style: { marginTop: 0 } }, `${base.title}: ${sectionId === 'iv' ? `${score.toFixed(2)} of ${max} (mean ${(score / max).toFixed(2)})` : `${score} of ${max}`}`),
+      h('div', { class: 'review-head' }, h('h1', {}, `${base.title}: result`), scoreBox),
       h('p', {}, h('span', { class: `badge ${meets ? 'ok' : 'no'}` }, meets ? 'Target met' : 'Below target'), ` Target: ${target.label}.`),
       setNumber != null ? h('p', { class: 'muted' }, `Set ${setNumber} is fixed practice: it does not count toward readiness. Fresh full exams do.`) : official ? h('p', { class: 'muted' }, ready.ready ? 'Ready: the last 3 exams all met the target. This section is safe to open.' : `Readiness streak ${ready.streak} of ${ready.needed}. The section turns ready after 3 exams in a row at target.`) : h('p', { class: 'muted' }, 'Short variant: good practice, but only the full-length exam counts toward readiness.'),
       h('table', {}, h('thead', {}, h('tr', {}, h('th', {}, '#'), h('th', {}, 'Family'), h('th', {}, 'Result'), h('th', { style: { textAlign: 'right' } }, 'Points'), h('th', {}, h('span', { class: 'visually-hidden' }, 'Solution')))), h('tbody', {}, rows.flat())),
