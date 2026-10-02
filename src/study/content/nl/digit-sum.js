@@ -57,9 +57,12 @@ export default {
     ], q: `Before any teaching: ${seq(CH.slice(0, 6))}, ? What comes next? Try two ways: once with rows of differences, once by looking at the digits of each term.`, answer: String(CH[6]), explain: `Differences: ${seq(g(CH.slice(0, 6)))}, then ${seq(g(g(CH.slice(0, 6))))}: nothing settles. Digits: each gap is the digit sum of the term before it (${sumTxt(CH[0])}, ${sumTxt(CH[1])}, …). The digit sum of ${CH[5]} is ${ds(CH[5])}, so the next term is ${CH[6]}.` },
     { type: 'text', text: 'The gaps are **small** compared with the terms and they **jump around** with no pattern of their own. Each gap is computed from the digits of the term before it: usually their sum, sometimes their product.' },
     { type: 'list', items: [`What number comes next?  ${seq(E1.slice(0, 6))}, ?`, `What number comes next?  ${seq(E3.slice(0, 6))}, ?`, `What number comes next?  ${seq(PRED.slice(0, 6))}, ?`] },
-    { type: 'text', text: `Not this lesson: gaps that follow a list (primes, counting numbers) or a gap equal to the term written backwards, as in ${seq(REV.slice(0, 5))}: that gap is as large as the term itself (the reversal lesson).` },
     { type: 'check', scope: 'the cue: small, patternless gaps from the digits', questions: [
       { make: (rng) => { const p = draw(rng, 'sum'), xs = p.xs.slice(0, 6), b = rng.int(10, 40), ai = [b]; while (ai.length < 6) ai.push(ai[ai.length - 1] + ai.length + 1); return pick(rng, 'In which sequence is every gap the digit sum of the term before it?', seq(xs), [[seq(ai), `its gaps ${seq(g(ai))} count up; ${ai[1]} has digit sum ${ds(ai[1])}, not ${g(ai)[1]}`], [seq(REV.slice(0, 5)), 'its gaps are as large as the terms themselves: each is the term before it written backwards, not a digit sum']], `${seq(xs)}: gaps ${seq(g(xs))} are the digit sums ${seq(xs.slice(0, 5).map(ds))}.`); } },
+    ] },
+    { type: 'text', text: `Not this lesson: gaps that follow a list (primes, counting numbers) or a gap equal to the term written backwards, as in ${seq(REV.slice(0, 5))}: that gap is as large as the term itself (the reversal lesson).` },
+    { type: 'check', scope: 'a gap as big as the term', questions: [
+      { type: 'choice', q: '16, 77, 154, 605, 1111: what is each gap?', options: ['the term written backwards', 'the digit sum of the term', 'the next prime number'], answer: 0, traps: { 1: '16 has digit sum 7, but the gap is 61', 2: 'the second gap is 77, which is not prime' }, explain: '16 + 61 = 77, 77 + 77 = 154, 154 + 451 = 605: the reversal lesson.' },
     ] },
 
     S('why'),
@@ -78,6 +81,9 @@ export default {
       { make: (rng) => { const p = draw(rng, 'sum'), xs = p.xs; return num(nextQ(xs.slice(0, 6)), xs[6], `Digit sum of ${xs[5]}: ${sumTxt(xs[5])}; ${xs[5]} + ${ds(xs[5])} = ${xs[6]}.`, ['Compare each gap with the digits of the term before it.', 'Add the digit sum of the last term.']); } },
     ] },
     { type: 'diagram', diagram: 'bar', spec: { title: `Gaps of ${seq(CH.slice(0, 6))} against digit sums`, xLabel: 'step', yLabel: 'size', categories: g(CH.slice(0, 6)).map((_, i) => String(i + 1)), series: [{ name: 'gap', values: g(CH.slice(0, 6)) }, { name: 'digit sum of the left term', values: CH.slice(0, 5).map(ds) }], valueLabels: true }, caption: 'Each pair of bars is identical: the gap into a term is the digit sum of the term before it. Note the drop after a carry (a term ending in 9 moves to a new ten, and its digit sum collapses).' },
+    { type: 'check', scope: 'the drop after a carry', questions: [
+      { type: 'choice', q: 'In a digit-sum list the gap after 59 is 14, then the next gap is small. Why the drop?', options: ['59 + 14 = 73: a new ten, smaller digits', 'the rule switched to digit products', 'the list hit a prime number'], answer: 0, traps: { 1: 'one list never mixes sums and products', 2: 'primes play no part in the rule' }, explain: 'Crossing into a new ten resets the tens digit, so the digit sum collapses.' },
+    ] },
     { type: 'diagram', diagram: 'ladder', spec: { mode: 'diff', rows: ladderRows(CH.slice(0, 6), 2) }, caption: `The ladder view of the same list: gaps ${seq(g(CH.slice(0, 6)))}, second row ${seq(g(g(CH.slice(0, 6))))}. No row settles, and none will: the gaps come from the digits, not from a formula.` },
     { type: 'check', scope: 'the gap is the digit sum of the left term', questions: [
       { make: (rng) => { for (;;) { const xs = draw(rng, 'sum').xs.slice(0, 6), i = rng.int(1, 3); if (ds(xs[i + 1]) === g(xs)[i] || ds(xs[i - 1]) === g(xs)[i]) continue; return pick(rng, `In ${seq(xs)}, the gap from ${xs[i]} to ${xs[i + 1]} is ${g(xs)[i]}. Which digits give it?`, `the digits of ${xs[i]} (${sumTxt(xs[i])})`, [[`the digits of ${xs[i + 1]} (${sumTxt(xs[i + 1])})`, 'the gap is built from the term before it, not after it'], [`the digits of ${xs[i - 1]} (${sumTxt(xs[i - 1])})`, 'that is one term too early']], `${xs[i]} + ${ds(xs[i])} = ${xs[i + 1]}.`); } } },
@@ -108,6 +114,9 @@ export default {
         ] },
     ] },
     { type: 'text', text: 'Sum or product? Decide from the first gap you check. If the gap equals the digit sum, stay with sums; if it is larger than any digit sum could be, multiply the digits. Never mix the two within one list: every step uses the same operation on the digits.' },
+    { type: 'check', scope: 'sum or product', questions: [
+      { type: 'number', q: 'What comes next?  26, 38, 62, 74, ?', answer: 102, explain: 'The first gap 12 is 2 × 6, not 2 + 6: products. 7 × 4 = 28, so 74 + 28 = 102.' },
+    ] },
     { type: 'explain', prompt: 'Why does no row of differences ever settle for a digit rule, and why must the digit sum come from the last term?', model: 'The gap is computed from the digits of the current term, which change irregularly (a carry resets them), so the gaps follow no formula in the position and every difference row stays noisy. The rule makes each term from the one before it, so the next term needs the digit sum of the last term; an earlier term\'s digit sum was already used for an earlier gap.', points: ['The gaps depend on digits, not on the position', 'Carries make the gaps jump, so no row settles', 'Each gap belongs to the term on its left: use the last term'] },
 
     S('worked'),
@@ -135,6 +144,9 @@ export default {
 
     S('speed'),
     { type: 'callout', tone: 'speed', text: 'Test one gap, then one more: two matching digit sums are enough. The digit sum of a two-digit number is at most 18, so a gap above 18 before three-digit terms points to the product instead.' },
+    { type: 'check', scope: 'two matches, then answer', questions: [
+      { make: (rng) => { const p = draw(rng), f = F[p.f], xs = p.xs; return num(nextQ(xs.slice(0, 6)), xs[6], `${W[p.f]} rule: ${TXT[p.f](xs[5])}; ${xs[5]} + ${f(xs[5])} = ${xs[6]}.`, ['Match one gap to the digits of the term before it, then one more.', 'Sum or product? Apply it to the last term.']); } },
+    ] },
     { type: 'callout', tone: 'speed', text: 'Watch the carries: when a term crosses into a new ten or hundred (… 59 to 73, … 98 to 115), its digit sum collapses and the next gap drops. A sudden small gap after a big one is the fingerprint.' },
     { type: 'thinkaloud', problem: nextQ(E1.slice(0, 6)), lines: [
       { t: 0, say: `Gaps ${seq(g(E1.slice(0, 6)))}: small next to the terms, and jumpy. Ladders will not help.` },
@@ -143,8 +155,9 @@ export default {
       { t: 13, say: `No: each gap comes from the term on its left, so the next gap comes from ${E1[5]}: ${sumTxt(E1[5])}.` },
       { t: 17, say: `${E1[5]} + ${ds(E1[5])} = ${E1[6]}. Answer ${E1[6]}.` },
     ] },
-    { type: 'check', scope: 'two matches, then answer', questions: [
-      { make: (rng) => { const p = draw(rng), f = F[p.f], xs = p.xs; return num(nextQ(xs.slice(0, 6)), xs[6], `${W[p.f]} rule: ${TXT[p.f](xs[5])}; ${xs[5]} + ${f(xs[5])} = ${xs[6]}.`, ['Match one gap to the digits of the term before it, then one more.', 'Sum or product? Apply it to the last term.']); } },
+    { type: 'check', scope: 'carries, and the think-aloud', questions: [
+      { type: 'number', q: 'In a digit-sum list, which gap follows the term 99?', answer: 18, explain: '9 + 9 = 18; the next term 117 has digit sum 9, so the gap after it drops.' },
+      { type: 'choice', q: 'In the think-aloud, the first try reused the gap 14. What was wrong?', options: ['the next gap comes from 109: 1 + 0 + 9', 'the gaps here are digit products', 'the gap 14 came from 109'], answer: 0, traps: { 1: '4 + 7 = 11 is a sum, so sums it is', 2: '14 came from 95, not 109' }, explain: 'Each gap comes from the term on its left: 109 + 10 = 119.' },
     ] },
 
     S('rule'),
@@ -165,11 +178,11 @@ export default {
       { change: `Start at ${CH[0] + 2} and add the digit product`, fusion: true, effect: `${seq(run(CH[0] + 2, dp, 7))}: the product rule grows faster than the sum rule until a 0 digit appears, and then the list stalls for good.` },
     ] },
     { type: 'callout', tone: 'edge', text: `Edge cases: gaps can look periodic for a while (${seq(E2.slice(0, 6))} has gaps ${seq(g(E2.slice(0, 6)))}), but the next carry breaks the pattern (${E2[6]} + ${ds(E2[6])} = ${E2[7]}). A digit product with a 0 digit stalls the list, so those items never contain a 0.` },
-    { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: a number and its digit sum leave the same remainder when divided by 9 (casting out nines), which is why digit sums appear in divisibility tests and in check digits on account numbers.' },
     { type: 'check', scope: 'the contrast table and edge cases', questions: [
       { make: (rng) => { const t = rng.int(0, 1), p = draw(rng, t === 0 ? 'sum' : 'prod'), xs = p.xs.slice(0, 6), names = ['the digit sum', 'the digit product']; return pick(rng, `${seq(xs)}: each gap is what of the term before it?`, names[t], [[names[1 - t], `${xs[2]} has ${W[t === 0 ? 'prod' : 'sum']} ${F[t === 0 ? 'prod' : 'sum'](xs[2])}, but the gap after it is ${xs[3] - xs[2]}`], ['the term written backwards', 'a reversal is as large as the term; these gaps are small']], `${TXT[p.f](xs[2])}, and the gap is ${xs[3] - xs[2]}.`); } },
     ] },
 
+    { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: a number and its digit sum leave the same remainder when divided by 9 (casting out nines). That is why digit sums appear in divisibility tests and in check digits on account numbers.' },
     { type: 'transfer',
       near: { make: (rng) => { const p = draw(rng, 'sum'), xs = p.xs; return num(`A counter adds the sum of its own digits at every tick: ${seq(xs.slice(0, 6))}. What does it show next?`, xs[6], `${sumTxt(xs[5])}; ${xs[5]} + ${ds(xs[5])} = ${xs[6]}.`, ['Compare each jump with the digits of the reading before it.', 'Add the digit sum of the last reading.']); } },
       far: { type: 'number', q: `A number and its digit sum leave the same remainder when divided by 9. Using digit sums only, what remainder does ${NINE} leave when divided by 9?`, answer: NINE % 9, explain: `${sumTxt(NINE)}, and ${sumTxt(ds(NINE))}. So the remainder is ${NINE % 9}.`, hints: ['Add the digits.', 'Add the digits of that sum again until one digit is left.'] },

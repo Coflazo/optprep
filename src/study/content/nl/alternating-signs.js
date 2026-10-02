@@ -60,9 +60,12 @@ export default {
     ], q: `Before any teaching: ${seq(CH.slice(0, 6))}, ? What comes next? Try two ways: once with the gaps between neighbours, once with the signs covered up.`, answer: neg(CH[6]), explain: `The gaps ${seq(g(CH.slice(0, 6)))} swing wildly and hide everything. Cover the signs: ${seq(size(CH.slice(0, 6)))} are the squares 2² to 7², so the next size is 8² = ${CH[6] < 0 ? -CH[6] : CH[6]}. The signs flip every term and ${neg(CH[5])} is positive, so the answer is ${neg(CH[6])}.` },
     { type: 'text', text: 'The signs flip on **every** step: +, −, +, − or −, +, −, +. The gaps then swing between large positive and large negative values and tell you nothing. Two things are going on at once, a sign pattern and a size pattern, and they are solved separately.' },
     { type: 'list', items: [`What number comes next?  ${seq(E1.slice(0, 6))}, ?`, `What number comes next?  ${seq(E2.slice(0, 6))}, ?`, `What number comes next?  ${seq(E3.slice(0, 6))}, ?`] },
-    { type: 'text', text: `Not this lesson: signs that do not flip on every step, or two strands that happen to be positive and negative, as in ${seq(IL.slice(0, 6))} (split into ${seq(IL.slice(0, 6).filter((_, i) => i % 2 === 0))} and ${seq(IL.slice(0, 6).filter((_, i) => i % 2 === 1))}). The strand lesson covers those.` },
     { type: 'check', scope: 'the cue: the sign flips every term', questions: [
       { make: (rng) => { const p = sizesDraw(rng, 6); let q; do q = arith(-rng.int(15, 30), rng.int(8, 12), 6); while (q.includes(0)); const z = weave(arith(rng.int(10, 30), rng.int(3, 6), 3), arith(rng.int(40, 70), rng.int(3, 8), 3), 6); return pick(rng, 'In which sequence does the sign flip on every step?', seq(p.xs), [[seq(q), 'the signs change only once, where the terms cross 0'], [seq(z), 'all terms are positive: that zigzag is two strands, not signs']], `${seq(p.xs)}: +, −, +, − (or the reverse) on every step.`); } },
+    ] },
+    { type: 'text', text: `Not this lesson: signs that do not flip on every step. Also two strands that happen to be positive and negative, as in ${seq(IL.slice(0, 6))} (split into ${seq(IL.slice(0, 6).filter((_, i) => i % 2 === 0))} and ${seq(IL.slice(0, 6).filter((_, i) => i % 2 === 1))}). The strand lesson covers those.` },
+    { type: 'check', scope: 'two strands', questions: [
+      { type: 'number', q: '2, −5, 5, −9, 8, −13, ? What comes next?', answer: 11, explain: 'Split into strands: 2, 5, 8 (add 3) and −5, −9, −13. The next term is on the first strand: 11.' },
     ] },
 
     S('why'),
@@ -77,9 +80,12 @@ export default {
     S('picture'),
     { type: 'text', text: 'Draw the terms as bars: they alternate above and below zero, and the bar heights follow a plain rule. The gap row of the same list is noise; the gap row of the sizes is clean.' },
     { type: 'diagram', diagram: 'bar', spec: { title: `Terms of ${seq(E1.slice(0, 6))}`, xLabel: 'position', yLabel: 'term', categories: E1.slice(0, 6).map((_, i) => String(i + 1)), series: [{ name: 'term', values: E1.slice(0, 6) }], valueLabels: true }, caption: `Up, down, up, down: the sign flips every position. The heights ${seq(size(E1.slice(0, 6)))} grow by ${size(E1)[1] - size(E1)[0]} each time.` },
-    { type: 'diagram', diagram: 'ladder', spec: { mode: 'diff', rows: ladderRows(E1.slice(0, 6), 1) }, caption: `The gaps of the signed terms: ${seq(g(E1.slice(0, 6)))}. They swing and grow; no ladder row will settle.` },
     { type: 'check', scope: 'bars and the useless gap row', questions: [
       { make: (rng) => { const p = sizesDraw(rng, 6); return num(`What is the size (the number without its sign) of the last term of ${seq(p.xs)}?`, p.sz[5], `${neg(p.xs[5])} has size ${p.sz[5]}.`); } },
+    ] },
+    { type: 'diagram', diagram: 'ladder', spec: { mode: 'diff', rows: ladderRows(E1.slice(0, 6), 1) }, caption: `The gaps of the signed terms: ${seq(g(E1.slice(0, 6)))}. They swing and grow; no ladder row will settle.` },
+    { type: 'check', scope: 'the useless gap row', questions: [
+      { type: 'choice', q: 'The gaps of 3, −7, 11, −15, 19 are −10, 18, −26, 34. What do they tell you?', options: ['nothing: solve the sizes instead', 'the gaps grow by 8, so use them', 'the list is geometric'], answer: 0, traps: { 1: 'the gaps swing in sign; no row will settle', 2: 'the sizes add 4; nothing multiplies' }, explain: 'Signs and sizes are solved apart: sizes 3, 7, 11, 15, 19 add 4.' },
     ] },
     { type: 'diagram', diagram: 'ladder', spec: { mode: 'diff', rows: ladderRows(size(E2.slice(0, 6)), 2) }, caption: `The sizes of ${seq(E2.slice(0, 6))} are ${seq(size(E2.slice(0, 6)))}: gaps ${seq(g(size(E2.slice(0, 6))))}, second row 2. The squares, as in the squares lesson.` },
     { type: 'check', scope: 'solving the sizes', questions: [
@@ -117,6 +123,9 @@ export default {
     ] },
     { type: 'diagram', diagram: 'table', spec: { columns: ['previous', `−${E3m} × previous`, 'actual next', 'leftover'], rows: E3.slice(0, 4).map((v, i) => [neg(v), neg(-E3m * v), neg(E3[i + 1]), sgn(E3[i + 1] + E3m * v)]) }, caption: `${seq(E3.slice(0, 5))}: the sizes ${seq(size(E3.slice(0, 5)))} follow no rule, but −${E3m} × previous leaves ${sgn(E3c)} every time. Next: −${E3m} × ${par(E3[5])} ${sgn(E3c)} = ${neg(E3[6])}.` },
     { type: 'text', text: `How to tell the two cases apart in seconds: regular sizes grow by a fixed amount or are squares, and their gaps are small next to the terms. Under −m × previous + c the sizes roughly multiply by m (${seq(size(E3.slice(2, 6)))}), but not exactly, because c is added to a signed number and so pushes the size up on one step and down on the next.` },
+    { type: 'check', scope: 'regular sizes or −m × previous + c', questions: [
+      { type: 'choice', q: 'Sizes 2, 1, 5, 7, 17 follow no rule of their own. What do you test?', options: ['−m × previous + c', 'the squares', 'a constant gap in the sizes'], answer: 0, traps: { 1: '2, 1, 5 are not squares', 2: 'the size gaps −1, 4, 2 are not constant' }, explain: 'Sizes that roughly multiply, but not exactly, point to −m × previous + c.' },
+    ] },
     { type: 'explain', prompt: 'Why can you strip the signs when the sizes are regular, but must keep them when the rule is −m × previous + c?', model: 'When the sizes follow their own rule, the sign is an independent pattern laid on top, so solving sizes and signs separately loses nothing. In −m × previous + c the sign flip comes from the multiplication itself, and c is added to a signed number, so the sizes alone carry no rule; only the signed terms do.', points: ['Regular sizes: sign and size are independent patterns', 'Negative multiplier: the flip is part of the rule', 'Check the sizes first; messy sizes mean keep the signs'] },
 
     S('worked'),
@@ -144,6 +153,9 @@ export default {
 
     S('speed'),
     { type: 'callout', tone: 'speed', text: 'Sign first: it takes one glance at the last term and usually removes half the options. Then work with sizes only, where the numbers are friendly.' },
+    { type: 'check', scope: 'sign first', questions: [
+      { type: 'choice', q: '3, −7, 11, −15, 19, −23, ? What sign does the next term have?', options: ['positive', 'negative'], answer: 0, stable: true, traps: { 1: 'the sign flips every step, so after −23 comes a positive term' }, explain: 'One glance at the last term: it is negative, so the next is positive (27).' },
+    ] },
     { type: 'callout', tone: 'speed', text: `Sizes that roughly double or triple but not exactly (${seq(size(E3.slice(0, 5)))}) mean −m × previous + c. Read m from the largest pair and c from one subtraction.` },
     { type: 'thinkaloud', problem: nextQ(E3.slice(0, 6)), lines: [
       { t: 0, say: `Signs flip every term. Sizes: ${seq(size(E3.slice(0, 6)))}.` },
@@ -175,11 +187,11 @@ export default {
       { change: `Flip every sign and make the sizes add ${size(E1)[1] - size(E1)[0] + 1}`, fusion: true, effect: `The two changes act on different parts: the sign pattern flips and the size rule changes. ${seq(lin(3, 5, 1, 6))}, next ${neg(lin(3, 5, 1, 7)[6])}.` },
     ] },
     { type: 'callout', tone: 'edge', text: `Edge cases: a zero term would break the sign pattern, so these items avoid it. The pattern may start with a negative term. A ratio of −2 fits both lenses (sizes double, sign flips) and they agree. If the signs go + + − − or the sizes split into two unrelated lists, split the strands instead.` },
-    { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: (−1)^{n} in front of a series (1 − 1/2 + 1/3 − …), or a position that is long one day and short the next. Separate the direction from the magnitude, reason about each, then recombine.' },
     { type: 'check', scope: 'the contrast table and edge cases', questions: [
       { make: (rng) => { const t = rng.int(0, 2); const p = t === 0 ? sizesDraw(rng, 5) : t === 1 ? { xs: geo(rng.int(1, 5), rng.pick([-2, -3]), 5) } : affDraw(rng, 5); const names = ['sizes follow their own rule', 'a fixed negative ratio', 'minus m times previous, plus c']; const r = p.xs[1] / p.xs[0]; const trp = [[null, `the ratios ${p.xs.slice(1, 3).map((v, i) => neg(Math.round((100 * v) / p.xs[i]) / 100)).join(', ')} differ`, 'the sizes already follow a simple rule; no constant is needed'], ['the sizes grow by a constant factor: that is a negative ratio', null, `the leftover after × ${neg(r)} is 0: no constant`], [`the sizes ${seq(size(p.xs))} follow no simple rule`, 'the ratios are not constant', null]]; return pick(rng, `${seq(p.xs)}: which reading fits?`, names[t], names.map((nm, i) => [nm, trp[t][i]]).filter((_, i) => i !== t), `Sizes: ${seq(size(p.xs))}.`); } },
     ] },
 
+    { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: (−1)^{n} in front of a series (1 − 1/2 + 1/3 − …), or a position that is long one day and short the next. Separate the direction from the magnitude, reason about each, then recombine.' },
     { type: 'transfer',
       near: { make: (rng) => { const p = sizesDraw(rng, 7); return num(`A desk's daily P&L alternates between profit and loss: ${seq(p.xs.slice(0, 6))}. If the pattern holds, what is the next day's P&L?`, p.xs[6], `Sizes ${seq(p.sz.slice(0, 6))}: next ${p.sz[6]}; the sign flips from the last day: ${neg(p.xs[6])}.`, ['Sizes first.', 'Then the opposite sign of the last day.']); } },
       far: { type: 'number', q: `In the series ${SERIES.slice(0, 5).join(', ')}, …, what is the 8th term? (Type a fraction such as 1/4.)`, answer: -1 / 8, explain: 'Sizes 1/1, 1/2, 1/3, …: the 8th size is 1/8. The signs alternate starting with +, so even positions are negative: −1/8.', hints: ['Separate sign and size.', 'Even positions carry the minus sign.'] },

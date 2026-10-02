@@ -55,9 +55,12 @@ export default {
       ] },
     { type: 'text', text: `Each term is k times the previous term, plus (or minus) the same constant c. The ratios drift towards k without reaching it: in ${seq(CH.slice(0, 5))} they are ${CH.slice(1, 5).map((v, i) => round2(v / CH[i])).join(', ')}, near ${CHk} but never equal. The constant c is what spoils the exact ratio.` },
     { type: 'list', items: [`What number comes next?  ${seq(E1.slice(0, 5))}, ?`, `What number comes next?  ${seq(E2.slice(0, 5))}, ?`, `What number comes next?  ${seq(E3.slice(0, 5))}, ?`] },
-    { type: 'text', text: `Not this lesson: exact ratios (${seq(GE)}, plain multiplication) and ratios that count up 2, 3, 4, 5 (${seq(FACT)}, multiplying by the counting numbers). Also not a leftover that changes from step to step, such as ${seq(MX)} (double, then add 1, 2, 3, 4): that is a later lesson.` },
     { type: 'check', scope: 'the cue: ratios near k, never exact', questions: [
       { make: (rng) => { const p = d2(rng, 5), ge = geo(rng.int(2, 6), p.k, 5), f = FACT.map((v) => v * rng.int(1, 3)); return pick(rng, 'Which sequence is "multiply, then add a constant"?', seq(p.xs), [[seq(ge), `its ratios are exactly ${p.k}: plain multiplication, no constant`], [seq(f), 'its ratios count up 2, 3, 4, 5']], `The ratios of ${seq(p.xs)} hover near ${p.k}; ${p.k} × each term is always ${neg(Math.abs(p.c))} ${p.c < 0 ? 'more than' : 'less than'} the next.`); } },
+    ] },
+    { type: 'text', text: `Not this lesson: exact ratios (${seq(GE)}, plain multiplication) and ratios that count up 2, 3, 4, 5 (${seq(FACT)}, multiplying by the counting numbers). Also not a leftover that changes from step to step, such as ${seq(MX)} (double, then add 1, 2, 3, 4): that is a later lesson.` },
+    { type: 'check', scope: 'a leftover that changes', questions: [
+      { type: 'choice', q: '1, 3, 8, 19, 42: double, then add what?', options: ['1, 2, 3, 4: a growing leftover', 'the same constant every step', 'nothing: an exact ratio of 2'], answer: 0, traps: { 1: '3 = 2 + 1 but 8 = 6 + 2: the added amount grows', 2: '3/1 and 8/3 are not 2' }, explain: '1 × 2 + 1 = 3 and 3 × 2 + 2 = 8. Then 8 × 2 + 3 = 19 and 19 × 2 + 4 = 42. A later lesson.' },
     ] },
 
     S('why'),
@@ -76,6 +79,9 @@ export default {
       { make: (rng) => { const p = pos(rng, 5); return num(`The ratios of ${seq(p.xs)} are near ${p.k}. What is the leftover, next − ${p.k} × previous?`, p.c, `${neg(p.xs[2])} − ${p.k} × ${par(p.xs[1])} = ${neg(p.c)}, the same on every step.`, [`Compute ${p.k} × a term.`, 'Subtract it from the term after it.']); } },
     ] },
     { type: 'diagram', diagram: 'ladder', spec: { mode: 'ratio', rows: [CH.slice(0, 5), ratios(CH.slice(0, 5))] }, caption: `Ratios of ${seq(CH.slice(0, 5))}: ${ratios(CH.slice(0, 5)).join(', ')}. They creep towards ${CHk} but never reach it. Near-constant ratios are the cue; the leftover test is the proof.` },
+    { type: 'check', scope: 'ratios are the cue', questions: [
+      { type: 'choice', q: 'The ratios of 3, 7, 19, 55, 163 creep toward 3. What do they show?', options: ['a cue: the leftover test is the proof', 'an exact ratio of 3, so multiply by 3', 'nothing at all about the rule'], answer: 0, traps: { 1: '7/3 is not 3: the ratios only approach it', 2: 'near-constant ratios point to multiply-then-add' }, explain: 'The ratios suggest k = 3; the leftover column proves the rule.' },
+    ] },
     { type: 'diagram', diagram: 'ladder', spec: { mode: 'diff', rows: ladderRows(CH.slice(0, 5), 1) }, caption: `The same sequence from the gap side: gaps ${seq(g(CH.slice(0, 5)))}, each ${CHk} × the previous gap. "Multiply then add" always has gaps that multiply by k, which is why the previous lesson's method also works.` },
 
     { type: 'check', scope: 'the gaps multiply by k', questions: [
@@ -105,6 +111,9 @@ export default {
         ] },
     ] },
     { type: 'text', text: `Small starting terms make the ratios misleading. ${seq(SM)} has ratios ${SM.slice(1).map((v, i) => round2(v / SM[i])).join(', ')}: the first says ${SM[1] / SM[0]}, but the rule is × ${SMk}, then ${sgn(SMc)}. Read k from the largest pair, and let the leftover test have the last word: ${SM[3]} − ${SMk} × ${SM[2]} = ${SMc} and ${SM[2]} − ${SMk} × ${SM[1]} = ${SMc}.` },
+    { type: 'check', scope: 'a misleading small start', questions: [
+      { type: 'number', q: '2, 7, 22, 67: the rule is × 3, then + c. What is c?', answer: 1, explain: 'The first ratio 3.5 misleads. 22 − 3 × 7 = 1 and 67 − 3 × 22 = 1: c = 1.' },
+    ] },
     { type: 'explain', prompt: 'Why do the ratios approach k but never equal it, and why is the leftover test more reliable than the ratio?', model: 'next ÷ previous = k + c ÷ previous. As the terms grow, c ÷ previous shrinks, so the ratio creeps towards k but never reaches it while c is not 0. The leftover next − k × previous removes the multiplied part exactly and gives c itself, so it is either constant or not: no rounding judgement is needed.', points: ['ratio = k + c ÷ previous', 'The ratio only approaches k as the terms grow', 'The leftover is exact: constant c or no rule'] },
 
     S('worked'),
@@ -162,7 +171,6 @@ export default {
       { make: (rng) => { const t = rng.int(0, 2), k = 2; let xs; if (t === 0) xs = geo(rng.int(2, 7), k, 5); else if (t === 1) xs = affine(rng.int(1, 9), k, nz(rng, -5, 5), 5); else { xs = [rng.int(1, 6)]; while (xs.length < 5) xs.push(k * xs[xs.length - 1] + xs.length); } const names = ['× 2 exactly', '× 2, then a constant', '× 2, then 1, 2, 3, …']; const trp = [[null, 'the leftover is 0 every time: no constant', 'the leftover is 0, not counting'], ['the leftover is not 0', null, 'the leftover stays the same; it does not count'], ['the leftover is not 0', 'the leftovers change: they count up', null]]; return pick(rng, `${seq(xs)}: which rule?`, names[t], names.map((nm, i) => [nm, trp[t][i]]).filter((_, i) => i !== t), `Leftovers after × 2: ${seq(left(xs, 2))}.`); } },
     ] },
     { type: 'callout', tone: 'edge', text: 'Edge cases: k = 1 is a constant gap c; c = 0 is plain multiplication; a negative k alternates signs; and if k × a + c = a the sequence never moves (a fixed point), which test writers avoid.' },
-    { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: a balance that grows by a fixed percentage and also receives a fixed deposit each period follows k × previous + c. Expected-value recursions in probability, "value = p × value + cost", have the same shape.' },
     { type: 'variation', base: `${seq(E15)}, ?  × ${E1k}, then ${sgn(E1c)}; next ${E1k} × ${E1[4]} ${pm(E1c)} = ${E1[5]}.`, rows: [
       { same: true, change: `Drop the first term: ${seq(E15.slice(1))}, ?`, effect: `Still ${E1[5]}. Every remaining step is still × ${E1k}, then ${sgn(E1c)}; the last term has not moved.` },
       { change: `Flip the constant to ${sgn(-E1c)}: ${seq(NEGC.slice(0, 5))}, ?`, effect: `${neg(NEGC[5])}. Same multiplier, leftover ${sgn(-E1c)} every step: the terms now run below ${E1k} × previous.` },
@@ -174,6 +182,7 @@ export default {
       { make: (rng) => { const c = nz(rng, -9, 9), xs = affine(rng.int(2, 20), 1, c, 6); return num(`${seq(xs.slice(0, 5))}, ? This is k × previous + c with k = 1. What comes next?`, xs[5], `k = 1 means add c every step: ${neg(xs[4])} ${sgn(c)} = ${neg(xs[5])}. A constant gap is the k = 1 case.`); } },
     ] },
 
+    { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: a balance that grows by a fixed percentage and also receives a fixed deposit each period follows k × previous + c. Expected-value recursions in probability, "value = p × value + cost", have the same shape.' },
     { type: 'transfer',
       near: { make: (rng) => { let k, c, a, xs; do { k = 5; c = nz(rng, -5, 5); a = rng.int(1, 5); xs = affine(a, k, c, 6); } while (k * a + c === a || xs[1] <= 0); return num(nextQ(xs.slice(0, 5)), xs[5], `Ratios near ${k}; leftover ${neg(xs[2])} − ${k} × ${xs[1]} = ${neg(c)} every step. Next: ${k} × ${xs[4]} ${pm(c)} = ${xs[5]}.`, ['Read k from the largest pair.', 'Leftover = next − k × previous; then k × last + c.']); } },
       far: { make: (rng) => { const b = rng.pick([1000, 2000, 500]), fee = rng.pick([20, 50, 100]), y = rng.int(2, 3), ans = bank(b, fee, y); return { type: 'number', q: `A savings balance of €${b} earns 10% interest at the end of each year, and then a fixed €${fee} fee is taken. What is the balance after ${y} years?`, answer: ans, tolerance: 0.01, hints: ['Each year: multiply by 1.1, then subtract the fee.', 'Multiply first, then take the fee, once per year.'], explain: `Each year is 1.1 × previous − ${fee}: ${[b, ...Array.from({ length: y }, (_, i) => bank(b, fee, i + 1))].join(' → ')}.` }; } },

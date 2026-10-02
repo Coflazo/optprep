@@ -48,9 +48,12 @@ export default {
     ], q: `Before any teaching: ${seq(CH.slice(0, 4))}, ? What comes next? Try two ways: once with the ratios, once by comparing each term with the square of the one before.`, answer: String(CH[4]), explain: `Ratios ${CH.slice(1, 4).map((v, i) => ratio(CH[i], v)).join(', ')} explode: no fixed multiplier. Squares: ${CH[0]}² = ${CH[0] ** 2} against ${CH[1]}, ${CH[1]}² = ${CH[1] ** 2} against ${CH[2]}, ${CH[2]}² = ${CH[2] ** 2} against ${CH[3]}: always ${sgn(CH[1] - CH[0] ** 2)}. Next: ${CH[3]}² + ${CH[1] - CH[0] ** 2} = ${CH[4]}.` },
     { type: 'text', text: 'Each term is the **square of the term before it, plus the same constant c** (often ±1 or ±2). The growth is the fastest in the test: the number of digits roughly doubles each step, so four or five terms already reach millions.' },
     { type: 'list', items: [`What number comes next?  ${seq(E1.slice(0, 4))}, ?`, `What number comes next?  ${seq(E2.slice(0, 5))}, ?`, `What number comes next?  ${seq(E3.slice(0, 4))}, ?`] },
-    { type: 'text', text: `Not this lesson: the product of the last two terms (${seq(PR.slice(0, 5))}, the previous lesson), a fixed ratio (${seq(GE.slice(0, 4))}) or k × last + c (${seq(AF.slice(0, 4))}), which add a fixed number of digits per step.` },
     { type: 'check', scope: 'the cue: digit counts double', questions: [
       { make: (rng) => { const p = draw(rng), xs = p.xs.slice(0, 4), ge = geo(rng.int(20, 60), rng.pick([4, 5, 6]), 4), pr = prod(rng.int(3, 5), rng.int(6, 9), 0, 5).slice(1); return pick(rng, 'In which sequence is each term the square of the one before, plus a constant?', seq(xs), [[seq(ge), `every ratio is ${ge[1] / ge[0]}: a fixed multiplier`], [seq(pr), `${pr[1]} × ${pr[2]} = ${pr[3]}: the product of two different terms`]], `${par(xs[1])}² = ${xs[1] ** 2} against ${xs[2]}; ${xs[2]}² = ${xs[2] ** 2} against ${xs[3]}: the same leftover ${sgn(p.c)}.`); } },
+    ] },
+    { type: 'text', text: `Not this lesson: the product of the last two terms (${seq(PR.slice(0, 5))}, the previous lesson) or a fixed ratio (${seq(GE.slice(0, 4))}). The same goes for k × last + c (${seq(AF.slice(0, 4))}): those add a fixed number of digits per step.` },
+    { type: 'check', scope: 'the neighbouring rules', questions: [
+      { type: 'choice', q: '2, 11, 56, 281: which rule fits?', options: ['5 × last + 1', 'last squared + 7', 'the product of the last two'], answer: 0, traps: { 1: '2² + 7 = 11 works once, but 11² + 7 = 128, not 56', 2: '2 × 11 = 22, not 56' }, explain: '2 × 5 + 1 = 11, 11 × 5 + 1 = 56, 56 × 5 + 1 = 281: one digit more per step.' },
     ] },
 
     S('why'),
@@ -69,9 +72,13 @@ export default {
       { make: (rng) => { const p = draw(rng); return num(`${seq(p.xs.slice(0, p.n))}: what is the leftover, next − previous², on the last shown step?`, p.c, `${neg(p.xs[p.n - 1])} − ${par(p.xs[p.n - 2])}² = ${neg(p.xs[p.n - 1])} − ${p.xs[p.n - 2] ** 2} = ${neg(p.c)}.`, ['Square the second-last term.', 'Subtract it from the last term.']); } },
     ] },
     { type: 'diagram', diagram: 'bar', spec: { title: `Digits per term of ${seq(CH)}`, xLabel: 'position', yLabel: 'digits', categories: CH.map((_, i) => String(i + 1)), series: [{ name: 'digits', values: CH.map(digits) }], valueLabels: true }, caption: `Digit counts ${seq(CH.map(digits))}: roughly doubling. A product of two terms adds two different lengths; a square adds a length to itself.` },
+    { type: 'check', scope: 'digit counts double', questions: [
+      { type: 'choice', q: 'A square-plus-c rule. The last term has 4 digits. About how many will the next have?', options: ['about 8', 'about 5', 'about 16'], answer: 0, traps: { 1: 'a fixed number of extra digits is a ratio rule', 2: 'squaring doubles the count; it does not square it' }, explain: 'Squaring adds a length to itself: about 4 + 4 = 8 digits.' },
+    ] },
     { type: 'diagram', diagram: 'ladder', spec: { mode: 'ratio', rows: [CH.slice(1, 5), CH.slice(2, 5).map((v, i) => ratio(CH[i + 1], v))] }, caption: `Ratios ${CH.slice(2, 5).map((v, i) => Math.round((10 * v) / CH[i + 1]) / 10).join(', ')}: each is close to the term before it (${seq(CH.slice(1, 4))}). The multiplier is the term itself.` },
     { type: 'check', scope: 'digit counts and ratios', questions: [
       { make: (rng) => { const x = rng.int(1000, 9999), c = rng.pick([-2, -1, 1, 2]); return pick(rng, `A squaring rule has last term ${x}. About how many digits will the next term have?`, `${digits(x * x + c)}`, [[`${digits(x) + 1}`, 'one extra digit is what × 10 does; a square about doubles the length'], [`${2 * digits(x) + 2}`, 'too many: a square of a 4-digit number has 7 or 8 digits']], `${x}²${plusC(c)} = ${x * x + c}: ${digits(x * x + c)} digits.`); } },
+      { type: 'choice', q: 'In a squaring rule, the ratio next ÷ previous is close to:', options: ['the previous term', 'a fixed number like 2', 'the constant c'], answer: 0, traps: { 1: 'a fixed ratio is a different rule', 2: 'c only shifts the result a little' }, explain: 'Squaring multiplies a number by itself, so the ratio is about the term itself.' },
     ] },
 
     S('derivation'),
@@ -99,6 +106,9 @@ export default {
         ] },
     ] },
     { type: 'text', text: 'Why items show only four or five terms: each extra term squares an already large number, so a sixth term would have far too many digits to work with. That leaves two or three steps to find and confirm c, which is exactly enough: one to read the leftover, one or two to check it.' },
+    { type: 'check', scope: 'why so few terms', questions: [
+      { type: 'choice', q: 'Why do square-plus-c items show only four or five terms?', options: ['a sixth term would be far too long', 'the rule changes after five terms', 'c can only be read once'], answer: 0, traps: { 1: 'the rule is the same at every step', 2: 'one step reads c and the others check it' }, explain: 'Each extra term squares an already large number.' },
+    ] },
     { type: 'explain', prompt: 'Why do the digit counts double, and why is the leftover test more reliable than the ratio?', model: 'Squaring a d-digit number gives about 2d digits, so each step doubles the length; the constant is too small to change that. The ratio is next ÷ previous = previous + c ÷ previous, which drifts with every term, while next − previous² removes the square exactly and leaves c itself.', points: ['A square has about twice the digits', 'ratio = previous + c ÷ previous: it never settles', 'next − previous² = c exactly, the same on every step'] },
 
     S('worked'),
@@ -126,6 +136,9 @@ export default {
 
     S('speed'),
     { type: 'callout', tone: 'speed', text: 'Read c from the **smallest** step (the first two terms), where the square is easy in your head, and confirm it on the next step. Save the calculator for the final square.' },
+    { type: 'check', scope: 'c from the smallest step', questions: [
+      { type: 'number', q: '3, 7, 47, ? Read c from the first step: what is c?', answer: -2, explain: '3² = 9 and 7 − 9 = −2. Check: 7² − 2 = 47.' },
+    ] },
     { type: 'callout', tone: 'speed', text: 'Last-digit check: the answer ends in the last digit of (last digit of the last term)² + c. With the digit count (about double), that eliminates most wrong options without the full square.' },
     { type: 'thinkaloud', problem: nextQ(E1.slice(0, 4)), lines: [
       { t: 0, say: `Digit counts ${seq(E1.slice(0, 4).map(digits))}: the length jumps fast.` },
@@ -157,11 +170,11 @@ export default {
       { change: `Start at ${CH[0] + 1} and make the constant ${-(CH[1] - CH[0] ** 2)}`, fusion: true, effect: `Both changes feed every later square, so the list moves a long way: ${seq(sm(CH[0] + 1, -(CH[1] - CH[0] ** 2), 4))}, next ${sm(CH[0] + 1, -(CH[1] - CH[0] ** 2), 5)[4]}.` },
     ] },
     { type: 'callout', tone: 'edge', text: `Edge cases: some starts loop or stall (2² − 2 = 2 forever; 1² − 1 = 0, then −1, 0, −1), so the items avoid them. A start of 0 or a negative start is fine: ${seq(E3.slice(0, 4))} squares from the second term on. Four shown terms are common here, because the fifth would be enormous.` },
-    { type: 'callout', tone: 'transfer', text: `Same idea elsewhere: x² − 2 from 4 (${seq(sm(4, -2, 4))}) is the sequence behind a classic primality test for numbers of the form 2^{p} − 1. Repeated squaring is also how computers raise numbers to large powers quickly: squaring doubles the exponent at every step.` },
     { type: 'check', scope: 'the contrast table and edge cases', questions: [
       { make: (rng) => { const t = rng.int(0, 2); const xs = t === 0 ? draw(rng, 4).xs.slice(0, 4) : t === 1 ? prod(rng.int(2, 3), rng.int(4, 6), 0, 5).slice(1) : affine(rng.int(2, 6), rng.int(3, 5), rng.pick([1, -1, 2]), 4); const names = ['last² + c', 'last × previous', 'k × last + c']; const lo = seq(xs.slice(1).map((v, i) => v - xs[i] ** 2)); const trp = [[null, `${par(xs[1])} × ${xs[2]} = ${xs[1] * xs[2]}, not ${xs[3]}`, 'the lengths double; k × last adds a fixed number of digits'], [`the leftovers after squaring, ${lo}, are not constant`, null, 'the ratio grows; k is not fixed'], [`the leftovers after squaring, ${lo}, are not constant`, `${xs[1]} × ${xs[2]} = ${xs[1] * xs[2]}, not ${xs[3]}`, null]]; return pick(rng, `${seq(xs)}: which rule?`, names[t], names.map((nm, i) => [nm, trp[t][i]]).filter((_, i) => i !== t), 'Test each rule on the last shown step.'); } },
     ] },
 
+    { type: 'callout', tone: 'transfer', text: `Same idea elsewhere: x² − 2 from 4 (${seq(sm(4, -2, 4))}) is the sequence behind a classic primality test for numbers of the form 2^{p} − 1. Repeated squaring is also how computers raise numbers to large powers quickly: squaring doubles the exponent at every step.` },
     { type: 'transfer',
       near: { make: (rng) => { const p = draw(rng, 4); return num(`An index is updated each year by squaring it and adding a fixed adjustment: ${seq(p.xs.slice(0, p.n))}. What is the next value?`, p.xs[p.n], `Adjustment ${neg(p.c)}; ${par(p.xs[p.n - 1])}²${plusC(p.c)} = ${p.xs[p.n]}.`, ['Square one value and compare with the next.', 'Square the last value, then add the adjustment.']); } },
       far: { type: 'number', q: `To compute 3^{16}, a computer squares repeatedly: ${seq(RS.slice(0, 4))}, ?. What is the next number?`, answer: RS[4], explain: `Each number is the square of the one before (constant 0): ${RS[3]}² = ${RS[4]}, which is 3^{16}.`, hints: ['Compare each number with the square of the one before.', 'Square the last number.'] },

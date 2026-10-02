@@ -49,9 +49,12 @@ export default {
       ] },
     { type: 'text', text: `The terms grow faster than squares but with no fixed ratio. Each is a **cube plus a small constant k**, or a cube plus or minus its own base plus k. Numbers such as ${seq(E1.slice(0, 4))} sit right next to ${seq(bases(E1s, 4).map((b) => b ** 3))}.` },
     { type: 'list', items: [`What number comes next?  ${seq(E1.slice(0, 5))}, ?`, `What number comes next?  ${seq(E2.slice(0, 5))}, ?`, `What number comes next?  ${seq(E3x.slice(0, 5))}, ?`] },
-    { type: 'text', text: `Not this lesson: squares plus a constant (${seq(SQ)}, growth too slow, second row constant) and powers of 2 plus a constant (${seq(PW)}, gaps that double).` },
     { type: 'check', scope: 'the cue: terms next to cubes', questions: [
       { make: fair((rng) => { const p = d2(rng, 5), s = rng.int(2, 6), q = Array.from({ length: 5 }, (_, i) => (i + s) ** 2 + rng.int(-3, 3)), pw = geo(rng.int(1, 3), 2, 5).map((v) => v + rng.int(1, 5)); return pick(rng, 'Which sequence is cubes plus a constant?', seq(p.xs), [[seq(q), 'too slow for cubes: those sit next to squares'], [seq(pw), `its gaps ${seq(g(pw))} double: powers of 2`]], `${seq(p.xs)} is ${seq(bases(p.s, 5).map((b) => b ** 3))} ${p.k < 0 ? 'minus' : 'plus'} ${Math.abs(p.k)}.`); }) },
+    ] },
+    { type: 'text', text: `Not this lesson: squares plus a constant (${seq(SQ)}, growth too slow, second row constant) and powers of 2 plus a constant (${seq(PW)}, gaps that double).` },
+    { type: 'check', scope: 'the neighbouring lists', questions: [
+      { type: 'choice', q: '3, 5, 9, 17, 33: which rule fits?', options: ['powers of 2 plus 1: gaps double', 'cubes plus a small constant', 'squares plus a constant: odd gaps'], answer: 0, traps: { 1: 'cube gaps run 7, 19, 37: they do not double', 2: 'square gaps rise by 2; these double' }, explain: 'Gaps 2, 4, 8, 16 double: 2^n + 1.' },
     ] },
 
     S('why'),
@@ -97,6 +100,9 @@ export default {
     ] },
     { type: 'diagram', diagram: 'table', spec: { columns: ['base b', 'b³', 'term', 'leftover'], rows: bases(E3.s, 5).map((b, i) => [String(b), String(b ** 3), neg(E3x[i]), neg(E3x[i] - b ** 3)]) }, caption: `${seq(E3x.slice(0, 5))} is ${form(E3)}: the leftovers ${seq(E3x.slice(0, 5).map((v, i) => v - (E3.s + i) ** 3))} rise by 1, exactly as b does. Next: ${E3.s + 5}³ + ${E3.s + 5} ${sgn(E3.k)} = ${E3x[5]}.` },
     { type: 'text', text: `Why test writers add ± b: it breaks the constant leftover you are looking for, so a hurried candidate who subtracts the cubes, sees leftovers like ${seq(E3x.slice(0, 4).map((v, i) => v - (E3.s + i) ** 3))} and gives up. A leftover that climbs or falls by exactly one per step is not noise; it is the base itself. Continue it one more step, then add it to the next cube. Nothing else about the method changes.` },
+    { type: 'check', scope: 'a leftover that climbs', questions: [
+      { type: 'choice', q: 'You subtract the cubes and the leftovers read 4, 5, 6, 7. What does that mean?', options: ['the base is in the rule: continue it', 'it is noise: give up on cubes', 'the leftover is a constant 4'], answer: 0, traps: { 1: 'a leftover that moves by exactly 1 is the base itself', 2: '4, 5, 6, 7 changes every step' }, explain: 'Continue the leftover one step (8) and add it to the next cube.' },
+    ] },
     { type: 'explain', prompt: 'Why does subtracting cubes expose the rule faster than the three-row ladder, and why does a leftover that rises by 1 each step mean "+ b"?', model: 'Subtracting the cubes removes the fast-growing part in one move, leaving a leftover you can read at a glance, while the ladder needs three rounds of subtraction. The base b goes up by 1 from term to term, so a leftover that also goes up by 1 each step is b plus a fixed constant.', points: ['One subtraction per term removes the cube', 'The ladder needs three rows (third difference 6)', 'A leftover that moves by 1 per step is ± b + constant'] },
 
     S('worked'),
@@ -125,6 +131,9 @@ export default {
 
     S('speed'),
     { type: 'callout', tone: 'speed', text: `Cubes to know: ${seq(CUBES)}. Last digits help you place a big term: 2³ ends in 8 and 8³ in 2, 3³ ends in 7 and 7³ in 3; every other digit cubes to itself in the last place.` },
+    { type: 'check', scope: 'cubes by sight', questions: [
+      { type: 'choice', q: 'Which number is a cube?', options: ['343', '324', '361', '400'], answer: 0, traps: { 1: '18², a square', 2: '19², a square', 3: '20², a square' }, explain: '343 = 7³.' },
+    ] },
     { type: 'callout', tone: 'speed', text: 'Products of three neighbours are cubes in disguise: (b − 1) × b × (b + 1) = b³ − b. And a leftover that moves by 1 is ± b: read it off two rows, never assume it is constant.' },
     { type: 'thinkaloud', problem: nextQ(TAx.slice(0, 5)), lines: [
       { t: 0, say: `Fast growth, no fixed ratio. Near cubes: ${seq(bases(TA.s, 5).map((b) => b ** 3))}.` },
@@ -154,7 +163,6 @@ export default {
       { make: (rng) => { const t = rng.int(0, 2), s = rng.int(2, 5), k = nz(rng, -5, 5); const xs = t === 0 ? Array.from({ length: 5 }, (_, i) => (i + s) ** 2 + k) : t === 1 ? cu(s, k, 0, 5) : geo(2, 2, 5).map((v) => v + Math.abs(k)); const names = ['squares b² plus k', 'cubes b³ plus k', 'powers 2^{b} plus k']; const trp = [[null, 'cubes grow much faster; the second row here is constant', 'the gaps do not double'], ['the second row is not constant: it grows', null, 'the gaps do not double; the third row is 6'], ['the gaps double, which no polynomial does', 'the gaps double; cubes have a constant third row', null]]; return pick(rng, `${seq(xs)}: which reading?`, names[t], names.map((nm, i) => [nm, trp[t][i]]).filter((_, i) => i !== t), `Gaps ${seq(g(xs))}; second row ${seq(g(g(xs)))}.`); } },
     ] },
     { type: 'callout', tone: 'edge', text: 'Edge cases: 0³ = 0, so a list can start at 0 or at k; a leftover of b + k and one of −b + k move in opposite directions; and a list of cubes with k = 0 needs no subtraction at all.' },
-    { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: subtract the dominant part to expose the rest. It is the same move as the leftover test for "multiply, then add" and the same as reading squares under a shift.' },
     { type: 'variation', base: `${seq(E25)}, ?  b³ − ${-E2k} for b = ${seq(bases(E2s, 5))}; next ${E2s + 5}³ − ${-E2k} = ${E2[5]}.`, rows: [
       { same: true, change: `Drop the first term: ${seq(E25.slice(1))}, ?`, effect: `Still ${E2[5]}. Every remaining term is still b³ − ${-E2k}, and the next base is still ${E2s + 5}.` },
       { change: `A shift of +4 instead: ${seq(KUP.slice(0, 5))}, ?`, effect: `${KUP[5]}. Same cubes and bases; only the constant you put back changes.` },
@@ -166,6 +174,7 @@ export default {
       { make: (rng) => { const s = rng.int(2, 5), xs = cu(s, 0, -1, 6); return num(nextQ(xs.slice(0, 5)), xs[5], `Products of three neighbours: ${s + 4} × ${s + 5} × ${s + 6} = ${(s + 5) ** 3} − ${s + 5} = ${xs[5]}.`, ['Factor each term as three neighbours.', 'The next product moves every factor up by 1.']); } },
     ] },
 
+    { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: subtract the dominant part to expose the rest. It is the same move as the leftover test for "multiply, then add" and the same as reading squares under a shift.' },
     { type: 'transfer',
       near: { make: (rng) => { const p = { s: rng.int(9, 12), k: nz(rng, -9, 9), lin: 0 }, xs = cu(p.s, p.k, 0, 6); return num(nextQ(xs.slice(0, 5)), xs[5], `These are ${p.s}³ to ${p.s + 4}³ ${p.k < 0 ? 'minus' : 'plus'} ${Math.abs(p.k)}: next ${p.s + 5}³ ${pmk(p.k)} = ${(p.s + 5) ** 3} ${pmk(p.k)} = ${xs[5]}.`, [`Is ${xs[0]} close to a cube? 10³ = 1000.`, 'Read the bases, then cube the next one and put the shift back.']); } },
       far: { make: (rng) => { const n = rng.int(4, 9); return num(`A big cube is built from ${n} × ${n} × ${n} small cubes, and its whole outside is painted. How many small cubes have no paint at all?`, (n - 2) ** 3, `Strip one layer from every face: the unpainted core is ${n - 2} × ${n - 2} × ${n - 2} = ${n - 2}³ = ${(n - 2) ** 3}.`, ['The unpainted cubes form a smaller cube inside.', 'Its side is two shorter: one layer off each end.']); } },

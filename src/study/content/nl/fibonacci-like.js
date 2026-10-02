@@ -49,9 +49,12 @@ export default {
       ] },
     { type: 'text', text: `Each term is the **sum of the two terms before it**. The famous start is ${seq(fibl(1, 1, 7))}, but any two numbers can start the chain, including negatives and zero. After the start, the terms grow by roughly 1.6 times per step.` },
     { type: 'list', items: [`What number comes next?  ${seq(E1.slice(0, 6))}, ?`, `What number comes next?  ${seq(NEG.slice(0, 6))}, ?`, `Which number replaces the question mark?  ${seq(MISS.slice(0, 3))}, ?, ${seq(MISS.slice(4))}`] },
-    { type: 'text', text: 'Not this lesson: sums of the previous **three** terms, weighted sums such as 2 × last + previous, or products of the last two. Those are later lessons, and the two-step check below tells them apart in seconds.' },
     { type: 'check', scope: 'the cue: each term is the sum of the two before', questions: [
       { make: (rng) => { const f = fresh(rng, 6), a = addIdx(rng.int(1, 5), 6), ge = geo(rng.int(2, 5), 2, 6); return pick(rng, 'In which sequence is every term the sum of the two before it?', seq(f), [[seq(a), `${a[2]} + ${a[3]} is not ${a[4]}: its gaps count up instead`], [seq(ge), `${ge[2]} + ${ge[3]} is not ${ge[4]}: it doubles`]], `${f[2]} + ${f[3]} = ${f[4]} and ${f[3]} + ${f[4]} = ${f[5]}.`); } },
+    ] },
+    { type: 'text', text: 'Not this lesson: sums of the previous **three** terms, weighted sums such as 2 × last + previous, or products of the last two. Those are later lessons, and the two-step check below tells them apart in seconds.' },
+    { type: 'check', scope: 'the two-step check', questions: [
+      { type: 'choice', q: '1, 2, 3, 6, 11, 20: which rule fits?', options: ['the sum of the previous three', 'the sum of the previous two', 'the product of the previous two'], answer: 0, traps: { 1: '3 + 6 = 9, not 11', 2: '3 × 6 = 18, not 11' }, explain: '1 + 2 + 3 = 6, 2 + 3 + 6 = 11, 3 + 6 + 11 = 20: a three-term window.' },
     ] },
 
     S('why'),
@@ -66,6 +69,9 @@ export default {
     S('picture'),
     { type: 'text', text: 'Write the gaps under the terms. The gap row is the sequence itself, shifted two places to the right: the gap into each term is the term two places back. The table view says the same thing as sums, and the ratio view shows the growth settling near 1.6.' },
     { type: 'diagram', diagram: 'ladder', spec: { mode: 'diff', rows: ladderRows(E1.slice(0, 6), 1) }, caption: `${seq(E1.slice(0, 6))}: gaps ${seq(g(E1.slice(0, 6)))}. From the second gap on they read ${seq(g(E1.slice(0, 6)).slice(1))}, the terms from the start again.` },
+    { type: 'check', scope: 'gaps copy the terms', questions: [
+      { type: 'choice', q: '3, 4, 7, 11, 18, 29: the gap into 29 equals which term?', options: ['11, two places back', '18, one place back', '7, three places back'], answer: 0, traps: { 1: '29 − 18 = 11, not 18', 2: 'the gap is 11, not 7' }, explain: 'The gap into each term is the term two places back: 29 − 18 = 11.' },
+    ] },
     { type: 'diagram', diagram: 'table', spec: { columns: ['term n − 2', 'term n − 1', 'their sum', 'term n'], rows: E1.slice(2, 6).map((v, i) => [String(E1[i]), String(E1[i + 1]), String(E1[i] + E1[i + 1]), String(v)]) }, caption: 'Sum of the two before, against the actual term: the last two columns match on every row. Two matching rows are enough to answer.' },
     { type: 'check', scope: 'gaps copy the terms two places back', questions: [
       { make: (rng) => { const f = fresh(rng, 7); return num(nextQ(f.slice(0, 6)), f[6], `${f[4]} + ${f[5]} = ${f[6]}.`, ['Compare each gap with the terms.', 'Add the last two terms.']); } },
@@ -99,6 +105,9 @@ export default {
         ] },
     ] },
     { type: 'text', text: 'Where the 1.6 comes from: if the ratio settles at some r, then next = r × last and last = r × second-last. Put that into next = last + second-last and divide by second-last: r × r = r + 1, whose positive solution is about 1.618. You never need the exact value. Use it as a size check: an option far from 1.6 × the last term is wrong before you add anything.' },
+    { type: 'check', scope: 'the size check near 1.6', questions: [
+      { type: 'choice', q: 'An "add the previous two" run ends with 55. Which option can be the next term?', options: ['89', '110', '60'], answer: 0, traps: { 1: 'that doubles; the growth is about 1.6', 2: 'too little: about 1.6 × 55 ≈ 89' }, explain: '1.6 × 55 ≈ 88, so 89 fits.' },
+    ] },
     { type: 'explain', prompt: 'Why does "each gap equals the term two places back" say the same thing as "each term is the sum of the previous two"?', model: 'The gap into term n is a(n) − a(n − 1). Saying it equals a(n − 2) means a(n) − a(n − 1) = a(n − 2), and adding a(n − 1) to both sides gives a(n) = a(n − 1) + a(n − 2).', points: ['Gap into term n = a(n) − a(n − 1)', 'Setting it equal to a(n − 2) and rearranging gives the sum rule', 'So the gap row is the sequence shifted by two'] },
 
     S('worked'),
@@ -154,7 +163,6 @@ export default {
       [seq(AI), `gaps ${seq(g(AI))} count: not a sum rule`, String(AI[5] + AI.length)],
     ] },
     { type: 'callout', tone: 'edge', text: `Edge cases: negative or zero starts are legal (${seq(NEG.slice(0, 5))}). An equal start pair (a, a) gives a times the classic list. And the rule runs backwards: the term before a, b is b − a.` },
-    { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: counting ways to climb stairs one or two steps at a time gives Fibonacci numbers, because the last move was a single step or a double step. Any "the next state depends on the last two" count, including coin-flip runs with no two heads in a row, has this shape.' },
     { type: 'variation', base: `${seq(E16)}, ?  ${E1[4]} + ${E1[5]} = ${E1[6]}.`, rows: [
       { same: true, change: `Drop the first term: ${seq(E16.slice(1))}, ?`, effect: `Still ${E1[6]}. Every remaining term is still the sum of the two before it.` },
       { change: `Double every term: ${seq(DB.slice(0, 6))}, ?`, effect: `${DB[6]}. The rule survives: the sum of two doubled terms is the doubled sum.` },
@@ -167,6 +175,7 @@ export default {
       { make: (rng) => { const f = fresh(rng, 6); return num(`Which number comes **before** the first term?  ?, ${seq(f)}`, f[1] - f[0], `The term before ${neg(f[0])}, ${neg(f[1])} is ${neg(f[1])} − ${par(f[0])} = ${neg(f[1] - f[0])}: then ${neg(f[1] - f[0])} + ${par(f[0])} = ${neg(f[1])}.`, ['The rule runs backwards by subtraction.', 'Second term minus first term.']); } },
     ] },
 
+    { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: counting ways to climb stairs one or two steps at a time gives Fibonacci numbers. The last move was either a single step or a double step. Any "the next state depends on the last two" count, including coin-flip runs with no two heads in a row, has this shape.' },
     { type: 'transfer',
       near: { make: (rng) => { const [a, b] = [rng.int(2, 9), rng.int(10, 20)], n = rng.int(7, 8), xs = fibl(a, b, n); return num(`A tally grows so that each week's count is the sum of the previous two weeks' counts. Week 1 had ${a} and week 2 had ${b}. What is the count in week ${n}?`, xs[n - 1], `Weeks 1 to ${n}: ${seq(xs)}, each the sum of the two before.`, ['Write the weeks out, adding the last two each time.', `Week 3 is ${a} + ${b} = ${a + b}.`]); } },
       far: { make: (rng) => { const n = rng.int(6, 10); return num(`You climb a staircase of ${n} steps, taking 1 or 2 steps at a time. In how many different ways can you reach the top?`, stairs(n), `The last move is a single or a double step, so ways(n) = ways(n − 1) + ways(n − 2), starting 1, 2: ${Array.from({ length: n }, (_, i) => stairs(i + 1)).join(', ')}.`, ['How many ways for 1 step? For 2 steps?', 'Your last move was a single or a double step: add the two counts before.']); } },

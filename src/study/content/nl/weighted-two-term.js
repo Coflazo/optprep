@@ -60,9 +60,12 @@ export default {
     ], q: `Before any teaching: ${seq(CH.slice(0, 5))}, ? What comes next? Try two ways: once with the ratios, once by building each term from the two before it.`, answer: String(CH[5]), explain: `Ratios ${CH.slice(1, 5).map((v, i) => round2(v / CH[i])).join(', ')} drift, so it is not one multiplication. Two before: ${CH[1]} + ${CH[2]} = ${CH[1] + CH[2]} is too small for ${CH[3]}, but 2 × ${CH[2]} + ${CH[1]} = ${CH[3]} and 2 × ${CH[3]} + ${CH[2]} = ${CH[4]}. Next: 2 × ${CH[4]} + ${CH[3]} = ${CH[5]}.` },
     { type: 'text', text: 'Each term is built from the **two terms before it**, each multiplied by a small whole number: 2 × last + previous, last + 2 × previous, 3 × last + previous, and so on, sometimes with a constant on top. The ratios look almost constant but keep drifting.' },
     { type: 'list', items: [`What number comes next?  ${seq(E1.slice(0, 6))}, ?`, `What number comes next?  ${seq(E2.slice(0, 6))}, ?`, `What number comes next?  ${seq(E4.slice(0, 7))}, ?`] },
-    { type: 'text', text: 'Not this lesson: weights (1, 1), the plain two-term sum; a single previous term times k plus a constant (the multiply-then-add lesson); or an exact ratio.' },
     { type: 'check', scope: 'the cue: two terms, with weights', questions: [
       { make: (rng) => { const p = plain(rng), xs = p.xs.slice(0, 6), f = fibl(rng.int(1, 5), rng.int(6, 9), 6), a = affine(rng.int(1, 5), 2, rng.int(1, 4), 6); return pick(rng, 'Which sequence is a weighted two-term rule (not a plain sum, not k × last + c)?', seq(xs), [[seq(f), `${f[3]} + ${f[4]} = ${f[5]}: weights 1 and 1, the plain sum`], [seq(a), `2 × each term + ${a[1] - 2 * a[0]} gives the next: one previous term only`]], `${seq(xs)} is ${name(p.p, p.q)}: ${ev(p.p, p.q, 0, xs[4], xs[3])} = ${neg(xs[5])}.`); } },
+    ] },
+    { type: 'text', text: 'Not this lesson: weights (1, 1), the plain two-term sum; a single previous term times k plus a constant (the multiply-then-add lesson); or an exact ratio.' },
+    { type: 'check', scope: 'the neighbouring rules', questions: [
+      { type: 'choice', q: '2, 5, 11, 23, 47: which rule fits?', options: ['2 × last + 1', '2 × last + previous', 'last + previous'], answer: 0, traps: { 1: '2 × 11 + 5 = 27, not 23', 2: '11 + 5 = 16, not 23' }, explain: 'One previous term times 2, plus 1: the multiply-then-add lesson.' },
     ] },
 
     S('why'),
@@ -81,6 +84,9 @@ export default {
       { make: (rng) => { const p = plain(rng), xs = p.xs.slice(0, 6); const cands = PQ[3].concat(PQ[4]).filter(([a, b]) => !(a === p.p && b === p.q)).map(([a, b]) => [name(a, b), `${ev(a, b, 0, xs[3], xs[2])} = ${neg(at(a, b, 0, xs, 4))}, not ${neg(xs[4])}`]); return pick(rng, `${seq(xs)}: which rule fits every step?`, name(p.p, p.q), rng.shuffle(cands).slice(0, 3), `${ev(p.p, p.q, 0, xs[3], xs[2])} = ${neg(xs[4])}, and the same on every step.`); } },
     ] },
     { type: 'diagram', diagram: 'ladder', spec: { mode: 'ratio', rows: [LONG.slice(4, 9), LONG.slice(5, 9).map((v, i) => ratio(LONG[i + 4], v))] }, caption: `Ratios of ${name(2, 1)} along a longer run: ${LONG.slice(5, 9).map((v, i) => round2(v / LONG[i + 4])).join(', ')}. They settle near ${round2(settle(2, 1))} but are never exactly equal: that drift is what rules out a geometric sequence.` },
+    { type: 'check', scope: 'drift rules out a ratio', questions: [
+      { type: 'choice', q: 'The ratios of 2 × last + previous settle near 2.41 but never become exact. What does that rule out?', options: ['a geometric sequence', 'a weighted two-term rule', 'a rule that uses two terms'], answer: 0, traps: { 1: 'drift is exactly what a weighted rule shows', 2: 'the rule does use two terms' }, explain: 'A constant ratio would be exact; drift means two weighted terms.' },
+    ] },
     { type: 'diagram', diagram: 'table', spec: { columns: ['weights (last, previous)', 'ratio settles near'], rows: PAIRS.map(([p, q]) => [`${p}, ${q}`, String(round2(settle(p, q)))]) }, caption: `Where each weight pair makes the ratio settle. A ratio near ${round2(settle(2, 1))} points to (2, 1), near ${round2(settle(1, 2))} to (1, 2), near ${round2(settle(3, 1))} to (3, 1). Use it to pick the first pair to test, then let the arithmetic decide.` },
     { type: 'check', scope: 'the ratio points to the weights', questions: [
       { make: (rng) => { const [p, q] = rng.pick([[2, 1], [1, 2], [3, 1], [1, 3]]), xs = wt(p, q, 0, [rng.int(1, 3), rng.int(4, 6)], 9), r = round2(xs[8] / xs[7]); return pick(rng, `Late in a weighted sequence the ratio of neighbours is about ${r}. Which weights (last, previous) should you test first?`, `${p}, ${q}`, [[1, 2], [2, 1], [3, 1], [1, 3]].filter(([a, b]) => !(a === p && b === q)).map(([a, b]) => [`${a}, ${b}`, `those settle near ${round2(settle(a, b))}`]), `${p}, ${q} settles near ${round2(settle(p, q))}.`); } },
@@ -141,6 +147,9 @@ export default {
 
     S('speed'),
     { type: 'callout', tone: 'speed', text: 'Order of tests: plain sum (one addition), then (2, 1), (1, 2), (3, 1), (1, 3). Use the late ratio from the table above to jump straight to the likely pair. Test on the last step first, then one earlier step.' },
+    { type: 'check', scope: 'the order of tests', questions: [
+      { make: (rng) => { const p = draw(rng, 4), xs = p.xs; return num(nextQ(xs.slice(0, 6)), xs[6], `${name(p.p, p.q)}: ${ev(p.p, p.q, 0, xs[5], xs[4])} = ${neg(xs[6])}.`, ['Read the late ratio to guess the pair.', 'Check the pair on two steps, then apply it.']); } },
+    ] },
     { type: 'callout', tone: 'speed', text: `A negative weight such as 3 × last − previous grows more slowly than its big weight suggests (ratio near ${round2(settle(3, -1))}). Growth that is slower than the weights suggest points to a negative weight.` },
     { type: 'thinkaloud', problem: nextQ(E1.slice(0, 6)), lines: [
       { t: 0, say: `Ratios near 2: ${E1.slice(1, 6).map((v, i) => round2(v / E1[i])).join(', ')}.` },
@@ -151,8 +160,9 @@ export default {
       { t: 23, say: `Second step: ${E1[3]} + 2 × ${E1[2]} = ${E1[4]}. Confirmed.` },
       { t: 28, say: `Next: ${E1[5]} + 2 × ${E1[4]} = ${E1[6]}. The doubling guess was off by ${2 * E1[5] - E1[6]}. Answer ${E1[6]}.` },
     ] },
-    { type: 'check', scope: 'the order of tests', questions: [
-      { make: (rng) => { const p = draw(rng, 4), xs = p.xs; return num(nextQ(xs.slice(0, 6)), xs[6], `${name(p.p, p.q)}: ${ev(p.p, p.q, 0, xs[5], xs[4])} = ${neg(xs[6])}.`, ['Read the late ratio to guess the pair.', 'Check the pair on two steps, then apply it.']); } },
+    { type: 'check', scope: 'a negative weight, and the think-aloud', questions: [
+      { type: 'choice', q: 'A rule with weight 3 on the last term grows only about × 2.6 per step. What does that point to?', options: ['a negative weight: 3 × last − previous', 'the weights (3, 1) on last and previous', 'a plain two-term sum of neighbours'], answer: 0, traps: { 1: '(3, 1) grows faster, near 3.3', 2: 'a plain sum grows near 1.6' }, explain: 'Growth slower than the big weight suggests points to a negative weight.' },
+      { type: 'choice', q: 'In the think-aloud, the first try doubled 75 to get 150. What showed it was wrong?', options: ['2 × 37 = 74, not 75', 'the ratios were exactly 2', 'the plain sum fit'], answer: 0, traps: { 1: 'the ratios drift: 1.8, 2.11, 1.95', 2: '19 + 37 = 56, far below 75' }, explain: 'A shown step broke the doubling. Last + 2 × previous fits: 149.' },
     ] },
 
     S('rule'),
@@ -174,11 +184,11 @@ export default {
       { change: 'Swap the weights and add 1 after every sum', fusion: true, effect: `The swap changes which term carries the 2, and the +1 compounds on top: ${seq(wt(1, 2, 1, CH.slice(0, 2), 5))}, next ${wt(1, 2, 1, CH.slice(0, 2), 6)[5]}.` },
     ] },
     { type: 'callout', tone: 'edge', text: `Edge cases: a negative weight (${seq(E3.slice(0, 6))} is ${name(3, -1)}); equal weights (2, 2); and a constant on top (${seq(E4.slice(0, 5))} is ${name(2, 1)}${plusC(E4c)}). The small first terms can fit several pairs, so test the pairs on the later steps.` },
-    { type: 'callout', tone: 'transfer', text: `Same idea elsewhere: ${seq(wt(2, 1, 0, [1, 2], 6))} (2 × last + previous) are the Pell numbers, and neighbouring ratios approach 1 + √2. Any quantity driven by its last two values with fixed weights, like a smoothed signal, follows the same test: fit two weights on two steps, check the rest.` },
     { type: 'check', scope: 'the contrast table and edge cases', questions: [
       { make: (rng) => { const t = rng.int(0, 2); const s = [rng.int(1, 4), rng.int(5, 8)]; const xs = t === 0 ? fibl(...s, 6) : t === 1 ? wt(2, 1, 0, s, 6) : affine(rng.int(1, 5), 2, rng.int(1, 5), 6); const names = ['last + previous', '2 × last + previous', '2 × last + a constant']; const fit = (i) => (i === 0 ? xs[3] + xs[4] : i === 1 ? 2 * xs[4] + xs[3] : 2 * xs[4] + (xs[1] - 2 * xs[0])); return pick(rng, `${seq(xs)}: which rule?`, names[t], names.map((nm, i) => [nm, `on the last step it gives ${fit(i)}, not ${xs[5]}`]).filter((_, i) => i !== t), `Test each rule on the last step: only "${names[t]}" gives ${xs[5]}.`); } },
     ] },
 
+    { type: 'callout', tone: 'transfer', text: `Same idea elsewhere: ${seq(wt(2, 1, 0, [1, 2], 6))} (2 × last + previous) are the Pell numbers, and neighbouring ratios approach 1 + √2. Any quantity driven by its last two values with fixed weights, like a smoothed signal, follows the same test: fit two weights on two steps, check the rest.` },
     { type: 'transfer',
       near: { make: (rng) => { const p = plain(rng), xs = p.xs; return num(`Each year a colony's size is built from the last two years with small whole-number weights: ${seq(xs.slice(0, 6))}. What is next year's size?`, xs[6], `${name(p.p, p.q)}: ${ev(p.p, p.q, 0, xs[5], xs[4])} = ${neg(xs[6])}.`, ['Rule out the plain sum.', 'Try (2, 1), (1, 2), (3, 1), (1, 3) on two steps.']); } },
       far: { type: 'number', q: `The fractions ${PELL2.slice(0, 4).map((v, i) => `${v}/${PELLD[i]}`).join(', ')} get closer and closer to √2. Their numerators ${seq(PELL2.slice(0, 4))} follow one weighted rule. What is the next numerator?`, answer: PELL2[4], explain: `2 × ${PELL2[2]} + ${PELL2[1]} = ${PELL2[3]}, and 2 × ${PELL2[3]} + ${PELL2[2]} = ${PELL2[4]}: 2 × last + previous.`, hints: ['The plain sum is too small.', 'Try 2 × last + previous.'] },

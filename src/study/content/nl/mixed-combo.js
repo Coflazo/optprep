@@ -63,9 +63,12 @@ export default {
     ], q: `Before any teaching: ${seq(CH.slice(0, 6))}, ? What comes next? Try two ways: once with the gaps, once by comparing each term with 2 × the term before it.`, answer: String(CH[6]), explain: `Gaps ${seq(CH.slice(1, 6).map((v, i) => v - CH[i]))}: no clean rule. Against 2 × previous, the leftovers are ${seq(left(CHp, CH.slice(0, 6)))}: they count up. So the next leftover is ${extra(CHp, 6)} and the next term 2 × ${CH[5]} + ${extra(CHp, 6)} = ${CH[6]}.` },
     { type: 'text', text: 'Two simple rules are stacked. A **multiplier** drives the growth (× 2, × 3, or a multiplier that counts up), and a small **leftover** is added each step that follows its own pattern: it counts up, counts down, alternates in sign, or stays constant beside a counting multiplier.' },
     { type: 'list', items: [`What number comes next?  ${seq(E1.slice(0, 6))}, ?`, `What number comes next?  ${seq(E2.slice(0, 6))}, ?`, `What number comes next?  ${seq(E3.slice(0, 6))}, ?`] },
-    { type: 'text', text: `Not this lesson: a constant leftover with a fixed multiplier (${seq(AF.slice(0, 5))}, the multiply-then-add lesson) or a counting multiplier with no leftover (${seq(FACT.slice(0, 5))}, the multiply-by-the-count lesson).` },
     { type: 'check', scope: 'the cue: a leftover that changes', questions: [
       { make: (rng) => { const p = draw(rng, 'plusIndex'), xs = p.xs.slice(0, 6), af = affine(rng.int(1, 5), p.k, rng.int(1, 4), 6); const ge = geo(rng.int(2, 6), p.k, 6); return pick(rng, `All three lists grow by about × ${p.k}. In which one does the leftover after × ${p.k} change from step to step?`, seq(xs), [[seq(af), `its leftovers after × ${p.k} are all ${af[1] - p.k * af[0]}: the multiply-then-add rule`], [seq(ge), `its leftovers are all 0: plain multiplication`]], `Leftovers of ${seq(xs)}: ${seq(left(p, xs))}.`); } },
+    ] },
+    { type: 'text', text: `Not this lesson: a constant leftover with a fixed multiplier (${seq(AF.slice(0, 5))}, the multiply-then-add lesson) or a counting multiplier with no leftover (${seq(FACT.slice(0, 5))}, the multiply-by-the-count lesson).` },
+    { type: 'check', scope: 'one rule, not two', questions: [
+      { type: 'choice', q: '1, 2, 6, 24, 120: what is the leftover?', options: ['none: the multiplier counts up', 'a leftover of 1 each step', 'a leftover that counts up'], answer: 0, traps: { 1: '1 × 2 + 1 = 3, not 2', 2: '2 × 3 = 6 exactly: nothing is added' }, explain: '× 2, × 3, × 4, × 5 with nothing added: the multiply-by-the-count lesson.' },
     ] },
 
     S('why'),
@@ -80,11 +83,17 @@ export default {
     S('picture'),
     { type: 'text', text: 'Line up k × previous against the actual term: the leftover column now changes, but in a simple way. Charting the leftovers shows the three patterns side by side; the ratios, meanwhile, drift towards k.' },
     { type: 'diagram', diagram: 'table', spec: { columns: ['previous', `${CHp.k} × previous`, 'actual next', 'leftover'], rows: CH.slice(0, 5).map((v, i) => [String(v), String(CHp.k * v), String(CH[i + 1]), sgn(CH[i + 1] - CHp.k * v)]) }, caption: `${seq(CH.slice(0, 6))}: the leftovers count ${seq(left(CHp, CH.slice(0, 6)))}. Next: ${CHp.k} × ${CH[5]} + ${extra(CHp, 6)} = ${CH[6]}.` },
-    { type: 'diagram', diagram: 'bar', spec: { title: 'Leftovers after multiplying, step by step', xLabel: 'step', yLabel: 'leftover', categories: ['1', '2', '3', '4', '5'], series: [{ name: `${seq(CH.slice(0, 3))}, … (× 2)`, values: left(CHp, CH.slice(0, 6)) }, { name: `${seq(E1.slice(0, 3))}, … (× 2)`, values: left(E1p, E1.slice(0, 6)) }, { name: `${seq(AF.slice(0, 3))}, … (× 2)`, values: AF.slice(1, 6).map((v, i) => v - 2 * AF[i]) }], valueLabels: true }, caption: 'Three leftover patterns: counting up (this lesson), alternating in sign (this lesson), constant (the multiply-then-add lesson). Name the pattern and you have the second rule.' },
     { type: 'check', scope: 'reading the leftover column', questions: [
       { make: (rng) => { const p = fixedK(rng), xs = p.xs.slice(0, 6); return num(`${seq(xs)}: what is the last leftover, ${neg(xs[5])} − ${p.k} × ${par(xs[4])}?`, extra(p, 5), `${neg(xs[5])} − ${par(p.k * xs[4])} = ${neg(extra(p, 5))}. All leftovers: ${seq(left(p, xs))}.`, [`Multiply the second-last term by ${p.k}.`, 'Subtract from the last term.']); } },
     ] },
+    { type: 'diagram', diagram: 'bar', spec: { title: 'Leftovers after multiplying, step by step', xLabel: 'step', yLabel: 'leftover', categories: ['1', '2', '3', '4', '5'], series: [{ name: `${seq(CH.slice(0, 3))}, … (× 2)`, values: left(CHp, CH.slice(0, 6)) }, { name: `${seq(E1.slice(0, 3))}, … (× 2)`, values: left(E1p, E1.slice(0, 6)) }, { name: `${seq(AF.slice(0, 3))}, … (× 2)`, values: AF.slice(1, 6).map((v, i) => v - 2 * AF[i]) }], valueLabels: true }, caption: 'Three leftover patterns: counting up (this lesson), alternating in sign (this lesson), constant (the multiply-then-add lesson). Name the pattern and you have the second rule.' },
+    { type: 'check', scope: 'three leftover patterns', questions: [
+      { type: 'choice', q: 'Leftovers 5, 5, 5, 5 beside a fixed × 3. Which lesson is it?', options: ['multiply-then-add', 'a leftover that changes', 'add the index'], answer: 0, traps: { 1: 'a constant leftover does not change', 2: 'the gaps are not counting' }, explain: 'A constant leftover with a fixed multiplier is multiply-then-add.' },
+    ] },
     { type: 'diagram', diagram: 'ladder', spec: { mode: 'ratio', rows: [CH.slice(1, 6), CH.slice(2, 6).map((v, i) => ratio(CH[i + 1], v))] }, caption: `Ratios ${CH.slice(2, 6).map((v, i) => (v / CH[i + 1]).toFixed(2)).join(', ')}: they slide towards ${CHp.k} as the terms grow, because the leftover matters less and less. Read the multiplier from the largest pair.` },
+    { type: 'check', scope: 'reading the multiplier', questions: [
+      { type: 'choice', q: 'Ratios 2.40, 2.25, 2.15, 2.09. Read the multiplier from:', options: ['the largest pair: about 2', 'the first pair: 2.4', 'the average of the ratios'], answer: 0, traps: { 1: 'early ratios carry the most leftover', 2: 'an average still carries the leftover' }, explain: 'The leftover matters less as the terms grow, so the last ratio is nearest k = 2.' },
+    ] },
 
     S('derivation'),
     { type: 'text', text: `A second pattern to keep in mind: ${seq(E1.slice(0, 6))}. The ratios sit near ${E1p.k}; the leftovers after × ${E1p.k} are ${seq(left(E1p, E1.slice(0, 6)))}, alternating in sign. Five leftovers shown, so the next is the sixth: ${sgn(extra(E1p, 6))}, and the next term is ${E1p.k} × ${E1[5]}${plus(extra(E1p, 6))} = ${E1[6]}. Whose turn it is matters here, exactly as with two strands.` },
@@ -111,6 +120,9 @@ export default {
         ] },
     ] },
     { type: 'text', text: `The counting-multiplier version, ${seq(E3.slice(0, 6))}: the ratios ${E3.slice(1, 6).map((v, i) => (v / E3[i]).toFixed(1)).join(', ')} climb rather than settle, which rules out a fixed k. Subtract ${[1, 2, 3].map((i) => i + E3p.s).join(', ')}, … times the previous term instead, the multiplier rising by one each step: the leftovers are ${seq(left(E3p, E3.slice(0, 6)))}, constant. Next: ${mult(E3p, 6)} × ${E3[5]}${plus(E3p.c)} = ${E3[6]}.` },
+    { type: 'check', scope: 'a counting multiplier', questions: [
+      { type: 'number', q: 'What comes next?  2, 5, 16, 65, ?', answer: 326, explain: '× 2 + 1, × 3 + 1, × 4 + 1: the ratios climb, so the multiplier counts. Next: 65 × 5 + 1 = 326.' },
+    ] },
     { type: 'explain', prompt: 'Why subtract the multiplied part first, and why must the leftover move on to its next value?', model: 'The multiplier creates almost all of the growth, so it hides the small added part; subtracting k × previous removes it exactly and leaves the added sequence. Each step of the rule uses the next entry of that sequence, so reusing the last leftover applies an old step instead of the new one.', points: ['Multiplication dominates, so remove it to see the rest', 'The leftovers are a sequence of their own', 'The next step uses the next leftover, not the last one'] },
 
     S('worked'),
@@ -138,6 +150,9 @@ export default {
 
     S('speed'),
     { type: 'callout', tone: 'speed', text: 'Read k from the last pair, where the leftover matters least. Then compute only the last three leftovers: three multiplications are enough to name the pattern and extend it.' },
+    { type: 'check', scope: 'k from the last pair, three leftovers', questions: [
+      { make: (rng) => { const p = fixedK(rng), xs = p.xs; return num(nextQ(xs.slice(0, 6)), xs[6], `× ${p.k}; leftovers ${seq(left(p, xs.slice(0, 6)))}, next ${neg(extra(p, 6))}: ${neg(xs[6])}.`, ['k from the last ratio.', 'Three leftovers, name the pattern, extend it.']); } },
+    ] },
     { type: 'callout', tone: 'speed', text: 'Size check: the answer is close to k × last, off by one small leftover. Any option far from k × last is out before you finish.' },
     { type: 'thinkaloud', problem: nextQ(E2.slice(0, 6)), lines: [
       { t: 0, say: `Ratios near ${E2p.k}: ${E2[5]} ÷ ${E2[4]} is about ${(E2[5] / E2[4]).toFixed(2)}. Multiplier ${E2p.k}.` },
@@ -147,8 +162,9 @@ export default {
       { t: 18, say: `${E2p.k} × ${E2[5]} = ${E2p.k * E2[5]}, then ${plus(extra(E2p, 6)).trim()}: ${E2[6]}.` },
       { t: 22, say: `Size check: close to ${E2p.k} × ${E2[5]}, off by one small leftover. Answer ${E2[6]}.` },
     ] },
-    { type: 'check', scope: 'k from the last pair, three leftovers', questions: [
-      { make: (rng) => { const p = fixedK(rng), xs = p.xs; return num(nextQ(xs.slice(0, 6)), xs[6], `× ${p.k}; leftovers ${seq(left(p, xs.slice(0, 6)))}, next ${neg(extra(p, 6))}: ${neg(xs[6])}.`, ['k from the last ratio.', 'Three leftovers, name the pattern, extend it.']); } },
+    { type: 'check', scope: 'the size check, and the think-aloud', questions: [
+      { type: 'choice', q: 'k = 3 and the last term is 304. Which option can be right?', options: ['914', '608', '1216'], answer: 0, traps: { 1: 'that is × 2', 2: 'that is × 4' }, explain: 'The answer is close to 3 × 304 = 912, off by one small leftover.' },
+      { type: 'choice', q: 'In the think-aloud, the first try reused the leftover −6. What was wrong?', options: ['the leftovers count down: next −7', 'the multiplier is 2, not 3', 'the leftover is a constant'], answer: 0, traps: { 1: '915 ÷ 307 ≈ 2.98, so 3', 2: '−2, −3, −4, −5, −6 change every step' }, explain: '3 × 915 − 7 = 2738.' },
     ] },
 
     S('rule'),
@@ -170,11 +186,11 @@ export default {
       { change: 'Multiply by 3 and subtract the counting leftovers', fusion: true, effect: `The faster multiplier dominates and the subtracted leftovers pull each step down a little: ${seq(mc({ v: 'minusIndex', k: 3, s: 0, a: CH[0] }, 6))}, next ${mc({ v: 'minusIndex', k: 3, s: 0, a: CH[0] }, 7)[6]}.` },
     ] },
     { type: 'callout', tone: 'edge', text: `Edge cases: a leftover pattern of 0, 0, 0 is plain multiplication; a constant leftover is the multiply-then-add lesson. With a counting multiplier, the ratios drift upwards (${E3.slice(1, 5).map((v, i) => (v / E3[i]).toFixed(1)).join(', ')}) instead of settling, so subtract n × previous with n rising.` },
-    { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: decomposing a series into a dominant trend plus a small residual, then modelling the residual on its own, is how most forecasting starts. Peel the big effect first; the small one is easier to see once it is alone.' },
     { type: 'check', scope: 'the contrast table and edge cases', questions: [
       { make: (rng) => { const t = rng.int(0, 2); const p = t === 0 ? draw(rng, 'plusIndex') : t === 1 ? draw(rng, 'altConst') : { v: 'aff', k: rng.pick([2, 3]), c: rng.int(1, 5) }; const xs = t === 2 ? affine(rng.int(1, 5), p.k, p.c, 6) : p.xs.slice(0, 6); const lo = xs.slice(1).map((v, i) => v - p.k * xs[i]); const names = ['leftovers count up', 'leftovers alternate in sign', 'leftovers are constant']; return pick(rng, `${seq(xs)}: after × ${p.k}, which pattern do the leftovers follow?`, names[t], names.map((nm, i) => [nm, `the leftovers are ${seq(lo)}`]).filter((_, i) => i !== t), `Leftovers: ${seq(lo)}.`); } },
     ] },
 
+    { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: decomposing a series into a dominant trend plus a small residual, then modelling the residual on its own, is how most forecasting starts. Peel the big effect first; the small one is easier to see once it is alone.' },
     { type: 'transfer',
       near: { make: (rng) => { const p = fixedK(rng), xs = p.xs; return num(`A savings pot is multiplied by ${p.k} each year, then a deposit or withdrawal that follows its own pattern is applied: ${seq(xs.slice(0, 6))}. What is next year's value?`, xs[6], `Leftovers after × ${p.k}: ${seq(left(p, xs.slice(0, 6)))}; next ${neg(extra(p, 6))}: ${p.k} × ${par(xs[5])}${plus(extra(p, 6))} = ${neg(xs[6])}.`, ['Subtract k × last year from each year.', 'Continue the leftovers, then combine.']); } },
       far: { type: 'number', q: `A data series is modelled as 2 × the previous value plus a residual that alternates +${RES} and −${RES}. The last value is ${LASTV} and the last residual was +${RES}. What does the model predict next?`, answer: 2 * LASTV - RES, explain: `Trend: 2 × ${LASTV} = ${2 * LASTV}. The residual alternates, so after +${RES} comes −${RES}: ${2 * LASTV - RES}.`, hints: ['Apply the dominant rule first.', 'Then the next residual, not the last one.'] },

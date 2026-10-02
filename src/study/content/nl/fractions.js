@@ -73,9 +73,12 @@ export default {
     ], q: `Before any teaching: ${frs(CH.N.slice(0, 5), CH.D.slice(0, 5))}, ? What comes next? Try two ways: once with the values of the fractions, once reading the tops and bottoms as two lists.`, answer: lastF(CH, 5), explain: `As values (${CH.N.slice(0, 5).map((v, i) => (v / CH.D[i]).toFixed(2)).join(', ')}) nothing obvious appears. As two lists: tops ${seq(CH.N.slice(0, 5))} add ${CH.N[1] - CH.N[0]}, bottoms ${seq(CH.D.slice(0, 5))} add ${CH.D[1] - CH.D[0]}. Next: ${lastF(CH, 5)}.` },
     { type: 'text', text: 'Every term is a fraction. The value of each fraction rarely follows a rule; instead the **numerators** form one ordinary sequence and the **denominators** another, written one above the other.' },
     { type: 'list', items: [`What number comes next?  ${frs(E1.N.slice(0, 5), E1.D.slice(0, 5))}, ?`, `What number comes next?  ${frs(E2.N.slice(0, 5), E2.D.slice(0, 5))}, ?`, `What number comes next?  ${frs(E3.N.slice(0, 5), E3.D.slice(0, 5))}, ?`] },
-    { type: 'text', text: 'Not this lesson: decimals (the decimal lesson), or two sequences written side by side in alternate positions (the strands lesson). Here the two sequences share every position, one on top, one below.' },
     { type: 'check', scope: 'the cue: two rows in every term', questions: [
       { make: (rng) => { const p = draw(rng, 5); return pick(rng, `${frs(p.N, p.D)}: which two lists do you solve?`, `${seq(p.N)} and ${seq(p.D)}`, [[`${seq(p.N.map((v, i) => v + p.D[i]))} and ${seq(p.D.map((v, i) => v - p.N[i]))}`, 'those are top + bottom and bottom − top; read each row on its own'], [`${p.N.map((v, i) => (v / p.D[i]).toFixed(2)).join(', ')} (the values)`, 'the values rarely follow a rule; the tops and bottoms do']], 'Numerators on top, denominators below.'); } },
+    ] },
+    { type: 'text', text: 'Not this lesson: decimals (the decimal lesson), or two sequences written side by side in alternate positions (the strands lesson). Here the two sequences share every position, one on top, one below.' },
+    { type: 'check', scope: 'where the two sequences sit', questions: [
+      { type: 'choice', q: 'In this lesson, where do the two sequences sit?', options: ['one on top, one below, in every term', 'in alternate positions of the list', 'in the digits after the point'], answer: 0, traps: { 1: 'that is the strands lesson', 2: 'that is the decimals lesson' }, explain: 'Numerators form one sequence and denominators another, sharing every position.' },
     ] },
 
     S('why'),
@@ -94,6 +97,9 @@ export default {
       { make: (rng) => { const p = draw(rng, 6, 3); return num(`${frs(p.N.slice(0, 5), p.D.slice(0, 5))}, ? What is the next **numerator**?`, p.N[5], `Numerators ${seq(p.N.slice(0, 5))}: ${p.nr.say}, next ${p.N[5]}.`, ['Write the numerators as one list.']); } },
     ] },
     { type: 'diagram', diagram: 'ladder', spec: { mode: 'diff', rows: ladderRows(E1.N.slice(0, 5), 1) }, caption: `The rows can follow different rules. In ${frs(E1.N.slice(0, 5), E1.D.slice(0, 5))} the numerators have a constant gap of ${g(E1.N)[0]} ...` },
+    { type: 'check', scope: 'each row has its own rule', questions: [
+      { type: 'number', q: '1/2, 3/4, 5/8, 7/16, 9/32: what is the next numerator?', answer: 11, explain: 'The tops 1, 3, 5, 7, 9 add 2: 11.' },
+    ] },
     { type: 'diagram', diagram: 'ladder', spec: { mode: 'ratio', rows: [E1.D.slice(0, 5), ratios(E1.D.slice(0, 5))] }, caption: `... while the denominators double. Next: ${E1.N[4]} + ${g(E1.N)[0]} = ${E1.N[5]} over ${E1.D[4]} × 2 = ${E1.D[5]}, so ${lastF(E1, 5)}.` },
     { type: 'check', scope: 'each row has its own rule', questions: [
       { make: (rng) => { const p = draw(rng, 6, 4); return num(`${frs(p.N.slice(0, 5), p.D.slice(0, 5))}, ? What is the next **denominator**?`, p.D[5], `Denominators ${seq(p.D.slice(0, 5))}: ${p.dr.say}, next ${p.D[5]}.`, ['Write the denominators as one list.', 'Gaps first; if they grow with the terms, divide.']); } },
@@ -124,6 +130,9 @@ export default {
         ] },
     ] },
     { type: 'text', text: `The rows you will meet are the families from earlier lessons: a constant gap (${seq(CH.D.slice(0, 4))}), doubling (${seq(E1.D.slice(0, 4))}), squares (${seq(E2.N.slice(0, 4))}), primes (${seq(E4.N.slice(0, 4))}) and Fibonacci numbers (${seq(E3.N.slice(0, 4))}). Recognise each row on its own, and the fraction item costs no more than two easy items.` },
+    { type: 'check', scope: 'rows you already know', questions: [
+      { type: 'number', q: '2/3, 4/5, 8/7, 16/11, ? What is the next denominator?', answer: 13, explain: 'The bottoms 3, 5, 7, 11 are the primes: 13. (The tops double: 32.)' },
+    ] },
     { type: 'explain', prompt: 'Why does the value of each fraction not help, and why must both rows advance by exactly one step?', model: 'The rule was applied to the numerators and the denominators separately, so the values are just two independent sequences divided, and they rarely follow a pattern of their own. Each position holds entry k of both rows, so the next position holds entry k + 1 of both: moving one row and not the other, or one row twice, mixes positions.', points: ['Each row has its own rule; the value is only their quotient', 'Position k holds entry k of both rows', 'So both rows advance exactly one step'] },
 
     S('worked'),
@@ -152,6 +161,9 @@ export default {
 
     S('speed'),
     { type: 'callout', tone: 'speed', text: 'Read the columns, never the values. Put your finger on the tops and read them as a list, then the bottoms. Two small integer sequences, about 20 seconds in total.' },
+    { type: 'check', scope: 'rows first, never the values', questions: [
+      { make: (rng) => { const p = draw(rng, 7, 5); return pick(rng, nextOf(p), lastF(p, 5), wrongs(p), `Tops ${p.nr.say}, bottoms ${p.dr.say}: ${lastF(p, 5)}.`); } },
+    ] },
     { type: 'callout', tone: 'speed', text: 'The calculator never helps here: a decimal like 0.6842 hides both rows. Keep every fraction as written; the items already use lowest terms.' },
     { type: 'thinkaloud', problem: nextOf(E2), lines: [
       { t: 0, say: `Fractions. Maybe each one is built from the two before: (${E2.N[3]} + ${E2.N[4]})/(${E2.D[3]} + ${E2.D[4]}) = ${fr(E2.N[3] + E2.N[4], E2.D[3] + E2.D[4])}.`, slip: true },
@@ -160,8 +172,9 @@ export default {
       { t: 16, say: `So ${lastF(E2, 5)}. Some values are above 1; that changes nothing.` },
       { t: 20, say: `Option check: ${fr(E2.N[5], E2.D[4])} leaves the bottom behind, and the mediant is out. Answer ${lastF(E2, 5)}.` },
     ] },
-    { type: 'check', scope: 'rows first, never the values', questions: [
-      { make: (rng) => { const p = draw(rng, 7, 5); return pick(rng, nextOf(p), lastF(p, 5), wrongs(p), `Tops ${p.nr.say}, bottoms ${p.dr.say}: ${lastF(p, 5)}.`); } },
+    { type: 'check', scope: 'no calculator, and the think-aloud', questions: [
+      { type: 'choice', q: 'A calculator shows 0.6842 for one term of a fraction item. What does that tell you?', options: ['nothing: it hides both rows', 'the ratio of the sequence', 'the next term of the item'], answer: 0, traps: { 1: 'the value of each fraction rarely follows a rule', 2: 'the answer comes from the rows, not the values' }, explain: 'Keep every fraction as written and read the two rows.' },
+      { type: 'choice', q: 'In the think-aloud, the first idea built each fraction from the two before. What showed it was wrong?', options: ['a shown step gave 13/12, not 16/9', 'some values were above 1', 'the fractions did not reduce'], answer: 0, traps: { 1: 'values above 1 change nothing', 2: 'the items already use lowest terms' }, explain: 'Testing the idea on a shown step killed it; splitting the rows gave 36/13.' },
     ] },
 
     S('rule'),
@@ -183,12 +196,12 @@ export default {
       { change: `Tops add ${g(CH.N)[0] + 1} and bottoms double, together`, fusion: true, effect: `Each change touches one row only, so they combine without interfering: tops ${seq(arith(CH.N[0], g(CH.N)[0] + 1, 5))}, bottoms ${seq(geo(CH.D[0], 2, 5))}, next ${fr(arith(CH.N[0], g(CH.N)[0] + 1, 6)[5], geo(CH.D[0], 2, 6)[5])}.` },
     ] },
     { type: 'callout', tone: 'edge', text: `Edge cases: a row can be constant (${frs(HALF.N.slice(0, 4), HALF.D.slice(0, 4))}: top 1, bottom doubling), and then the values also follow a rule (they halve); both readings agree. Values above 1 are allowed (${frs(E2.N.slice(2, 4), E2.D.slice(2, 4))}). Every term is already in lowest terms, so never reduce or expand one.` },
-    { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: a ratio of two counts (hits over attempts, wins over games) changes because each count follows its own process. Model the counts, then divide; do not model the ratio directly.' },
     { type: 'check', scope: 'the contrast table and edge cases', questions: [
       { make: (rng) => { const p = draw(rng, 6, 5); return num(`${frs(p.N.slice(0, 5), p.D.slice(0, 5))}, ? What is the next denominator?`, p.D[5], `Bottoms ${seq(p.D.slice(0, 5))}: ${p.dr.say}, next ${p.D[5]}.`, ['Read the bottom row only.', 'Which famous list is it?']); } },
       { make: (rng) => { const k = rng.int(4, 6), D = geo(2, 2, k + 1); return pick(rng, nextQ(D.slice(0, k).map((d) => fr(1, d))), fr(1, D[k]), [[fr(2, D[k]), 'the top row is constant at 1; it does not move'], [fr(1, D[k - 1] + 2), 'the bottom row doubles; it does not add 2']], `Top 1 every time; bottom doubles: ${fr(1, D[k])}. The values halve too.`); } },
     ] },
 
+    { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: a ratio of two counts (hits over attempts, wins over games) changes because each count follows its own process. Model the counts, then divide; do not model the ratio directly.' },
     { type: 'transfer',
       near: { make: (rng) => { const p = draw(rng, 7, 3); return pick(rng, `A player's record after each game (made over attempted) reads ${frs(p.N.slice(0, 5), p.D.slice(0, 5))}. If the pattern holds, what is the record after the next game?`, lastF(p, 5), wrongs(p).slice(0, 3), `Made: ${p.nr.say} → ${p.N[5]}; attempted: ${p.dr.say} → ${p.D[5]}.`); } },
       far: { type: 'number', q: `Two dice. Written over 36, P(sum ≤ 2), P(sum ≤ 3), P(sum ≤ 4), P(sum ≤ 5) are ${DICE.slice(0, 4).map((v) => fr(v, 36)).join(', ')}. What is P(sum ≤ 6)? (Type a fraction.)`, answer: DICE[4] / 36, explain: `The bottoms stay 36; the tops ${seq(DICE.slice(0, 4))} grow by 2, 3, 4, so the next top is ${DICE[3]} + 5 = ${DICE[4]}: ${fr(DICE[4], 36)}.`, hints: ['Read the tops as their own list.', 'Their gaps count up.'] },

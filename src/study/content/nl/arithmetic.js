@@ -50,9 +50,12 @@ export default {
       ] },
     { type: 'text', text: 'The terms move by the **same amount every step**: up or down, starting anywhere, including below zero. The item asks for the next term, or hides one term in the middle and asks what replaces the question mark.' },
     { type: 'list', items: [`What number comes next?  ${seq(UP.slice(0, 5))}, ?`, `What number comes next?  ${seq(DOWN.slice(0, 5))}, ?`, `Which number replaces the question mark?  ${seq(MISS.slice(0, 2))}, ?, ${seq(MISS.slice(3))}`] },
-    { type: 'text', text: `Not this lesson: gaps that change (${seq(T2)}) or terms that multiply (${seq(T1)}). Those fail the first test, and the method ladder sends you to the next rung.` },
     { type: 'check', scope: 'the cue: equal gaps', questions: [
       { make: fair((rng) => { const A = kindSeq(rng, 0), G = kindSeq(rng, 1), Qd = kindSeq(rng, 2); return pick(rng, 'Which sequence belongs to this lesson?', seq(A), [[seq(G), `its gaps ${seq(diffs(G))} grow`], [seq(Qd), `its gaps ${seq(diffs(Qd))} change by a fixed amount`]], `Only ${seq(A)} has equal gaps: ${seq(diffs(A))}.`); }) },
+    ] },
+    { type: 'text', text: `Not this lesson: gaps that change (${seq(T2)}) or terms that multiply (${seq(T1)}). Those fail the first test, and the method ladder sends you to the next rung.` },
+    { type: 'check', scope: 'the next rung', questions: [
+      { type: 'choice', q: '3, 6, 12, 24, 48: what does the first test (equal gaps) say?', options: ['it fails: the gaps are 3, 6, 12, 24', 'it passes: add 3 each time', 'it passes: add 24 each time'], answer: 0, traps: { 1: 'only the first gap is 3', 2: 'only the last gap is 24' }, explain: 'The gaps double, so the terms multiply by 2. The ladder sends you to the next rung.' },
     ] },
     { type: 'text', text: 'The wrong options are built from real slips: the step applied backwards, a gap misread by one, the term after the next one, and rules that fit only the last few terms (repeating the last ratio, adding the last two terms). Each one is tempting for a reason, and each has a quick test that kills it.' },
     { type: 'check', scope: 'where the wrong options come from', questions: [
@@ -71,9 +74,12 @@ export default {
     S('picture'),
     { type: 'text', text: 'Write the gaps under the terms. For this family the gap row is flat: one number repeated. Plot the terms against their position and they sit on a straight line: every step right moves up (or down) by the same d.' },
     { type: 'diagram', diagram: 'ladder', spec: { mode: 'diff', rows: ladderRows(UP, 1), predicted: true }, caption: `Gaps of ${seq(UP.slice(0, 5))}: ${UP[1] - UP[0]} every time. The outlined cells are the continuation: copy the flat row once more, then ${UP[4]} + ${UP[1] - UP[0]} = ${UP[5]}.` },
-    { type: 'diagram', diagram: 'plot', spec: { x: { min: 1, max: 6, label: 'position n' }, y: { min: 0, max: 60, label: 'term' }, curves: [{ label: `add ${UP[1] - UP[0]}`, points: UP.map((v, i) => [i + 1, v]) }, { label: `add ${neg(DOWN[1] - DOWN[0])}`, points: DOWN.map((v, i) => [i + 1, v]) }], markers: [{ x: 6, y: UP[5], label: `next ${UP[5]}` }, { x: 6, y: DOWN[5], label: `next ${DOWN[5]}` }] }, caption: 'Against position, constant-gap sequences are straight lines. The rising line climbs by d per step; the falling one drops. The next term is one more step along the same line.' },
     { type: 'check', scope: 'the flat gap row', questions: [
       { make: (rng) => { const d = nz(rng, -12, 12), xs = arith(rng.int(-15, 60), d, 5); return num(`Every gap of ${seq(xs)} is the same. What is it? (Later minus earlier, with its sign.)`, d, `${neg(xs[1])} − ${neg(xs[0])} = ${neg(d)}, and the same for every pair.`); } },
+    ] },
+    { type: 'diagram', diagram: 'plot', spec: { x: { min: 1, max: 6, label: 'position n' }, y: { min: 0, max: 60, label: 'term' }, curves: [{ label: `add ${UP[1] - UP[0]}`, points: UP.map((v, i) => [i + 1, v]) }, { label: `add ${neg(DOWN[1] - DOWN[0])}`, points: DOWN.map((v, i) => [i + 1, v]) }], markers: [{ x: 6, y: UP[5], label: `next ${UP[5]}` }, { x: 6, y: DOWN[5], label: `next ${DOWN[5]}` }] }, caption: 'Against position, constant-gap sequences are straight lines. The rising line climbs by d per step; the falling one drops. The next term is one more step along the same line.' },
+    { type: 'check', scope: 'the straight line', questions: [
+      { type: 'choice', q: 'Against position, which sequence lies on a straight line?', options: ['7, 11, 15, 19, 23', '2, 4, 8, 16, 32', '1, 4, 9, 16, 25'], answer: 0, traps: { 1: 'doubling bends upward', 2: 'squares bend upward: their gaps grow' }, explain: 'Equal steps: every step right moves up by the same d = 4.' },
     ] },
 
     S('derivation'),
@@ -97,6 +103,9 @@ export default {
     ] },
     { type: 'diagram', diagram: 'numberline', spec: { min: -10, max: 12, step: 2, marks: CROSS.map((v, i) => ({ x: v, label: `t${i + 1}` })) }, caption: `${seq(CROSS)} on a number line: every jump is ${neg(CROSS[1] - CROSS[0])}, before and after zero. Crossing zero changes nothing; only the gap matters.` },
     { type: 'text', text: 'The four moves are the whole method. The first two decide whether this lesson applies at all; the last two use it. When the item hides a middle term, the only change is where you add: from the left neighbour of the blank instead of from the last term, with the right neighbour as a free check.' },
+    { type: 'check', scope: 'a hidden middle term', questions: [
+      { type: 'number', q: 'Which number replaces the question mark?  −13, −7, ?, 5, 11', answer: -1, explain: 'The gap is 6: from the left neighbour, −7 + 6 = −1. The right neighbour checks it: −1 + 6 = 5.' },
+    ] },
     { type: 'explain', prompt: 'Why must you subtract later minus earlier, and why check every gap rather than the first two?', model: 'Later minus earlier gives the step with its sign, so adding it moves in the right direction; the reverse order flips every step. Two equal gaps can be a coincidence at the start of a different rule, so only a fully flat gap row proves "add d".', points: ['Later − earlier keeps the sign of the step', 'Adding a negative gap moves down', 'One unequal gap anywhere means a different rule'] },
 
     S('worked'),
@@ -161,6 +170,9 @@ export default {
       { fusion: true, change: `Double every term, then add 100: ${seq(UP5.map((v) => 2 * v + 100))}, ?`, effect: `${2 * UP[5] + 100}. The doubling reaches the gap (${sgn(2 * dU)}); the 100 cancels in each subtraction, so only the last term carries it.` },
     ] },
     { type: 'callout', tone: 'edge', text: `Edge cases: gap 0 gives a constant sequence (7, 7, 7). Fractions and decimals follow the same rule: ${DEC.slice(0, 4).join(', ')} adds ${DEC[1] - DEC[0]}, next ${DEC[4]}. A blank between two shown terms is also their average, because both gaps around it equal d.` },
+    { type: 'check', scope: 'the edge cases', questions: [
+      { make: (rng) => { const d = nz(rng, -9, 9), xs = arith(rng.int(-20, 40), d, 3); return num(`Which number replaces the question mark?  ${neg(xs[0])}, ?, ${neg(xs[2])}`, xs[1], `Both gaps around the blank equal d, so the blank is the average: (${neg(xs[0])} + ${neg(xs[2])}) ÷ 2 = ${neg(xs[1])}.`, ['The two gaps around the blank are equal.', 'Take the average of the two neighbours.']); } },
+    ] },
     { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: a constant gap is a straight line. Any series that grows by about the same amount each period extrapolates the same way, last value + (periods ahead) × step, which is exactly how you estimate a trend by eye.' },
     { type: 'transfer',
       near: { make: (rng) => { const a = rng.int(12, 30), d = rng.int(2, 6), n = rng.int(12, 25); return num(`Row 1 of a theatre has ${a} seats, and every row has ${d} more seats than the row in front of it. How many seats are in row ${n}?`, a + (n - 1) * d, `Rows are positions with a constant gap of ${d}: row ${n} = ${a} + (${n} − 1) × ${d} = ${a + (n - 1) * d}.`, ['The same number of seats is added from each row to the next.', `Row ${n} is ${n - 1} steps after row 1.`]); } },
@@ -172,9 +184,6 @@ export default {
         'value at step n is n × change, with no start value',
       ], answer: 0, traps: { 1: 'nothing here grows with its own size: seats and lots change by the same amount each step', 2: 'no step looks back two values; each step adds the same amount', 3: 'that drops the starting value: row 1 already has seats before any step is taken' }, explain: 'Seats per row and lots held are constant-gap sequences in disguise: find the step, count the steps from the start, add.' },
     },
-    { type: 'check', scope: 'the edge cases', questions: [
-      { make: (rng) => { const d = nz(rng, -9, 9), xs = arith(rng.int(-20, 40), d, 3); return num(`Which number replaces the question mark?  ${neg(xs[0])}, ?, ${neg(xs[2])}`, xs[1], `Both gaps around the blank equal d, so the blank is the average: (${neg(xs[0])} + ${neg(xs[2])}) ÷ 2 = ${neg(xs[1])}.`, ['The two gaps around the blank are equal.', 'Take the average of the two neighbours.']); } },
-    ] },
 
     S('tryit'),
     { type: 'tryit', family: 'arithmetic', section: 'nl', count: 3 },

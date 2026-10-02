@@ -113,10 +113,13 @@ export default {
   blocks: [
     sec('format', 'What NumberLogic asks'),
     { type: 'text', text: `NumberLogic shows a short list of numbers and a question mark. You pick the number that continues the list. There are **${NL.count} questions** on **one ${NL.totalSeconds / 60}-minute clock**, you may skip a question and come back to it, and scoring is **+1 right, −1 wrong, 0 skipped**.` },
-    { type: 'text', text: `That is about **${PACE} seconds per question** on average. The questions get harder as you go, so the early ones must be faster than average to pay for the late ones.` },
     { type: 'check', scope: 'the format and its scoring', questions: [
       { make: (rng) => { const r = rng.int(13, 21), w = rng.int(1, 5), s = NL.count - r - w; return num(`You answer ${r} questions right, ${w} wrong and skip ${s}. What is your score?`, r - w, `${r} × (+1) + ${w} × (−1) + ${s} × 0 = ${r - w}.`, ['Each right answer is +1, each wrong one −1.', 'Skips score 0: only rights and wrongs count.']); } },
       { type: 'choice', q: 'You are stuck on question 5 after 70 seconds. What does the format let you do?', options: ['Skip it and come back later', 'Nothing: once you move on, it is gone', 'Guess: a blank counts as wrong anyway'], answer: 0, traps: { 1: 'that is the forward-only format of other tasks; NumberLogic lets you return', 2: 'a skip scores 0; a wrong guess scores −1' }, explain: 'One clock for the whole task and free navigation: park it, bank the easy ones, return with the time you saved.' },
+    ] },
+    { type: 'text', text: `That is about **${PACE} seconds per question** on average. The questions get harder as you go, so the early ones must be faster than average to pay for the late ones.` },
+    { type: 'check', scope: 'early questions go faster', questions: [
+      { type: 'choice', q: 'Why must the early questions take less than 57.7 seconds?', options: ['the late ones are harder and slower', 'early questions score double points', 'a skip costs a point off the score'], answer: 0, traps: { 1: 'every question scores +1 or −1', 2: 'a skip scores 0' }, explain: 'The questions get harder, so time saved early pays for the late ones.' },
     ] },
 
     sec('gaps', 'Test 1: subtract neighbours'),
@@ -155,6 +158,9 @@ export default {
         ] },
     ] },
     { type: 'diagram', diagram: 'ladder', spec: { mode: 'diff', rows: ladderRows(E2, 2), predicted: true }, caption: `The whole move on one picture. The bottom row is constant (${diffs(E2g)[0]}); the outlined cells were written in the order bottom, middle, top: ${diffs(E2g)[0]}, then ${E2g[3]} + ${diffs(E2g)[0]} = ${diffs(E2)[4]}, then ${E2shown[4]} + ${diffs(E2)[4]} = ${E2[5]}.` },
+    { type: 'check', scope: 'climbing back up', questions: [
+      { type: 'number', q: 'Bottom row 2, last middle entry 9, last term 30. What is the next term?', answer: 41, explain: 'Bottom up: 9 + 2 = 11, then 30 + 11 = 41.' },
+    ] },
     { type: 'explain', prompt: 'Why may you copy the bottom row but not the gap row? And why does "upper-left entry + entry below" rebuild the row above?', model: 'The bottom row is the first constant row, so its next entry is certain; the gap row changes, so copying it would assume a rule it does not follow. Each entry is the difference of the two entries above it, so the missing upper entry equals its left neighbour plus that difference.', points: ['Only a constant row can be extended by copying', 'Each entry = right term − left term of the row above', 'So the new upper entry = left neighbour + new entry below, climbing one row at a time'] },
 
     sec('polynomial', 'Why the ladder finds every polynomial'),
@@ -179,6 +185,9 @@ export default {
     sec('ratios', 'Test 3: divide neighbours'),
     { type: 'text', text: `Some sequences never settle under subtraction. In ${seq(E4)} the gaps are ${seq(diffs(E4))}: a copy of the sequence itself. The gaps of the gaps are a copy again. That is the fingerprint of **multiplication**: the step is proportional to the current size, so what stays fixed is the ratio, next ÷ previous.` },
     { type: 'diagram', diagram: 'ladder', spec: { mode: 'diff', rows: ladderRows(E4, 2) }, caption: 'Subtracting a doubling sequence gives the same doubling sequence back, row after row. No row will ever be constant: switch tests.' },
+    { type: 'check', scope: 'a row that copies itself', questions: [
+      { type: 'choice', q: 'A row of differences is a copy of the row above it. What does that mean?', options: ['multiplication: switch to ratios', 'subtract once more and it will settle', 'the sequence must be constant'], answer: 0, traps: { 1: 'every further row is another copy', 2: 'a constant sequence has a gap row of zeros' }, explain: 'The step is proportional to the size: divide instead of subtracting.' },
+    ] },
     { type: 'diagram', diagram: 'ladder', spec: { mode: 'ratio', rows: [E4, ratios(E4)] }, caption: `Divide instead: every ratio is ${ratios(E4)[0]}. Next term ${E4[4]} × ${ratios(E4)[0]} = ${E4[4] * 2}.` },
     { type: 'check', scope: 'dividing neighbours', questions: [
       { make: (rng) => { const r = rng.pick([2, 3]), xs = geo(rng.int(2, 7), r, 6); return num(nextQ(xs.slice(0, 5)), xs[5], `Every ratio is ${r}: ${xs[4]} × ${r} = ${xs[5]}.`, ['The gaps grow as fast as the terms: divide instead.', 'Term ÷ previous term is the same every time.']); } },
@@ -245,18 +254,27 @@ export default {
       { from: 'k', to: 'ka', label: 'yes' }, { from: 'k', to: 'skip', label: 'no' },
     ] }, caption: 'The ladder of tests, cheapest first. Most items stop in the first two boxes; each "no" costs a few seconds more.' },
     { type: 'callout', tone: 'speed', text: 'Let the **shape of the gaps** choose the next test instead of walking the list blindly: gaps of steady size → differences; gaps that grow like the terms → ratios; gaps that zigzag → strands; gaps that repeat earlier terms → add the last two; growth that explodes → products or powers.' },
-    { type: 'callout', tone: 'speed', text: `Time budget: about ${PACE} seconds a question on average, less early on. If no layer is constant after about a minute, skip and come back: a fresh look later often sees it at once, and a guess costs a point.` },
     { type: 'check', scope: 'choosing the test', questions: [
       { hinge: true, make: (rng) => { const t = rng.int(0, 3), xs = typedSeq(rng, t); return pick(rng, `${seq(xs)}, ? Which test reveals the rule fastest?`, TESTS[t], TESTS.map((n, i) => [n, WHY_NOT[t][i]]).filter((_, i) => i !== t), `Gaps: ${seq(diffs(xs))}.`); } },
+    ] },
+    { type: 'callout', tone: 'speed', text: `Time budget: about ${PACE} seconds a question on average, less early on. If no layer is constant after about a minute, skip and come back: a fresh look later often sees it at once, and a guess costs a point.` },
+    { type: 'check', scope: 'the time budget', questions: [
+      { type: 'choice', q: 'No layer is constant after about a minute. What do you do?', options: ['skip and come back later', 'guess an option now', 'keep subtracting rows'], answer: 0, traps: { 1: 'a wrong guess costs a point; a skip costs nothing', 2: 'some rules never settle under subtraction' }, explain: 'A fresh look later often sees it at once.' },
     ] },
 
     sec('predict', 'Predict'),
     { type: 'predict', question: `${seq(SQ.slice(1, 6))}, ? Before building anything: which row of the ladder will be constant, what is its value, and what is the next term?`, answer: `The second row, value ${diffs(diffs(SQ))[0]}: these are the squares 2² to 6², so the next is 7² = ${7 * 7}.`, explain: 'Recognising the list and building the ladder give the same answer; the ladder is the fallback when you do not recognise it.' },
 
     sec('rule', 'Rule'),
-    { type: 'callout', tone: 'rule', text: 'Subtract, subtract again, divide, look back two terms, split the strands, match a known list: stop at the first constant layer, extend it, climb back up.' },
     { type: 'callout', tone: 'edge', text: 'Edge cases: a constant sequence (7, 7, 7) is arithmetic with gap 0; a sequence containing 0 cannot be tested with ratios through that 0; a negative ratio shows up as signs that alternate.' },
+    { type: 'check', scope: 'the edge cases', questions: [
+      { type: 'choice', q: 'Which sequence is arithmetic with gap 0?', options: ['7, 7, 7, 7', '7, 14, 21, 28', '7, −7, 7, −7'], answer: 0, traps: { 1: 'the gap is 7, not 0', 2: 'the signs alternate: a ratio of −1' }, explain: 'A constant sequence has every gap equal to 0.' },
+    ] },
     { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: any table that changes step by step (a count by round, a price series) yields to the same question, "which layer is constant?". The difference ladder is also the discrete version of taking derivatives: a polynomial of degree k dies after k + 1 subtractions.' },
+    { type: 'check', scope: 'the ladder as derivatives', questions: [
+      { type: 'number', q: 'A polynomial of degree 3 in the position: after how many subtractions is the row all zeros?', answer: 4, explain: 'Degree k dies after k + 1 subtractions: the third row is constant, the fourth is 0.' },
+    ] },
+    { type: 'callout', tone: 'rule', text: 'Subtract, subtract again, divide, look back two terms, split the strands, match a known list: stop at the first constant layer, extend it, climb back up.' },
 
     sec('mastery', 'Mastery check'),
     { type: 'check', mastery: true, scope: 'the whole ladder', questions: [
