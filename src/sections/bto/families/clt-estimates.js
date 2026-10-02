@@ -7,7 +7,7 @@ import { mcqItem, agree, q, Phi, pic } from '../lib.js';
 export function bell(mu, sd, from, to, xLabel, caption) {
   const r = (x) => Math.round(x * 1000) / 1000;
   const points = Array.from({ length: 81 }, (_, i) => { const x = mu - 4 * sd + (i * sd) / 10; return [r(x), r((1 / (sd * Math.sqrt(2 * Math.PI))) * Math.exp(-(((x - mu) / sd) ** 2) / 2) * 1000) / 1000]; });
-  const ticks = [-3, -2, -1, 0, 1, 2, 3].map((k) => r(mu + k * sd));
+  const ticks = [-3, -2, -1, 0, 1, 2, 3].map((k) => Math.round((mu + k * sd) * 10) / 10); // one decimal reads at a glance
   return pic('density', { xLabel, curves: [{ name: 'normal approximation', points }], shade: [{ from: r(Math.max(from, mu - 4 * sd)), to: r(Math.min(to, mu + 4 * sd)) }], xTicks: ticks }, caption);
 }
 

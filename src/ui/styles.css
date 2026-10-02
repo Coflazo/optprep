@@ -401,6 +401,7 @@ details > summary { cursor: pointer; }
 .option[aria-checked="true"] .key { background: var(--text); border-color: var(--text); color: var(--surface); }
 .option.is-correct { border-color: var(--correct); background: var(--correct-bg); }
 .option.is-correct .key { border-color: var(--correct); color: var(--correct); }
+.option.is-correct[aria-checked="true"] .key { background: var(--correct); border-color: var(--correct); color: var(--surface); }
 .option.is-wrong { border-color: var(--wrong); background: var(--wrong-bg); }
 .option.is-wrong .key { background: var(--wrong); border-color: var(--wrong); color: var(--surface); }
 @media (hover: hover) and (pointer: fine) { .option:hover { border-color: var(--border-strong); } .option:hover:not([aria-checked="true"]) .key { background: var(--brand-bg); } }
@@ -425,6 +426,18 @@ details > summary { cursor: pointer; }
 .linkish { border: 0; background: none; cursor: pointer; color: inherit; font: inherit; text-decoration: underline; text-decoration-color: color-mix(in srgb, currentColor 40%, transparent); text-underline-offset: 3px;
   padding: 6px 2px; margin: -6px 0; border-radius: 4px; transition: text-decoration-color var(--dur-1) ease, background-color var(--dur-1) ease; } /* bigger hit area, same line box */
 @media (hover: hover) and (pointer: fine) { .linkish:hover { text-decoration-color: currentColor; background: var(--surface-2); } }
+
+/* Solution panel: the ask, the picture, the steps, then the fast path and the check. */
+.solution { margin-top: 16px; display: grid; gap: 12px; }
+.solution > h3 { margin: 0; font-size: 15px; color: var(--brand-text); font-weight: 600; }
+.solution-ask { margin: 0; padding: 0 0 10px; border-bottom: 1px dashed var(--border-strong); font-weight: 500; }
+.solution-picture { margin: 0; padding: 12px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface); overflow-x: auto; }
+.solution-picture figcaption { margin-top: 8px; font-size: 13px; color: var(--text-2); }
+.solution-math { margin-top: 4px; font-size: 14px; color: var(--text); background: var(--surface-2); padding: 4px 8px; border-radius: 4px; display: inline-block; max-width: 100%; overflow-x: auto; }
+.solution-fast, .solution-check { padding: 10px 12px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--surface); }
+.solution-fast h4, .solution-check h4 { margin: 0 0 4px; font-size: 13px; font-weight: 600; color: var(--brand-text); }
+.solution-fast p, .solution-check p { margin: 0; }
+.solution-actions { margin-top: 4px; }
 
 /* Progress bar (exam progress inside a run) */
 .bar { height: 6px; background: var(--surface-3); border-radius: 3px; overflow: hidden; }

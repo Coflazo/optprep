@@ -139,7 +139,7 @@ export function runFeedbackSession(root, { sectionId, mode, family, count, store
     const { item, body } = current;
     let response = opts.skip ? { skip: true } : body.view.response();
     if (!response) {
-      if (!opts.timeout) return flash(current.after, 'Choose an answer first, or skip.');
+      if (!opts.timeout) return flash(current.after, { orderbook: 'Tap prices to build a position first.', interval: 'Enter a lower and an upper bound first.', rank: 'Put the statements in order first.' }[item.kind] || 'Choose an answer first, or skip.');
       response = { skip: true };
     }
     current.done = true;
