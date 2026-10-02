@@ -1,4 +1,5 @@
 import { h } from '../dom.js';
+import { prose } from '../../core/format.js';
 
 // Four or five options (item.options decides); keys 1-5 or A-E select, ignoring keys past the last option.
 // Response: { choice } or null.
@@ -8,7 +9,7 @@ export function mcqView(item, { onChange, keys = true, labelledby } = {}) {
   const buttons = item.options.map((o, i) => h('button', {
     class: 'option', type: 'button', role: 'radio', 'aria-checked': 'false',
     onclick: () => select(i),
-  }, h('span', { class: 'key' }, 'ABCDE'[i]), h('span', { class: 'val' }, o.label)));
+  }, h('span', { class: 'key' }, 'ABCDE'[i]), h('span', { class: 'val' }, prose(o.label))));
   function select(i) {
     if (locked) return;
     choice = i;

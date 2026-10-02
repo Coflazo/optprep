@@ -53,7 +53,7 @@ export function renderBlock(b, ctx) {
     case 'erroneous': return erroneousBlock(b);
     case 'thinkaloud': return thinkAloudBlock(b);
     case 'variation': return variationBlock(b);
-    case 'transfer': return h('div', { class: 'study-transfer' }, h('div', { class: 'check-label' }, 'Transfer: same type in a new setting, then the same idea somewhere else'), checkBlock([b.near, b.far, b.principle], ctx, 'the principle of this lesson, in new settings', null, 'transfer: near, far, principle'));
+    case 'transfer': return h('div', { class: 'study-transfer' }, h('h3', { class: 'block-title' }, 'Transfer: same type in a new setting, then the same idea somewhere else'), checkBlock([b.near, b.far, b.principle], ctx, 'the principle of this lesson, in new settings', null, 'transfer: near, far, principle'));
     default: return h('p', { class: 'muted' }, `Unknown block ${b.type}`);
   }
 }
@@ -116,7 +116,8 @@ function predictBlock(b) {
 // 1-3 micro-check questions. onDone fires once every question has been answered.
 export function checkBlock(questions, ctx, scope, onDone, unit = scope) {
   const rng = ctx.rng.fork(`check:${Math.floor(ctx.rng.next() * 1e9)}`);
-  const box = h('div', { class: 'study-check' }, h('div', { class: 'check-label' }, `Check · ${questions.length} question${questions.length > 1 ? 's' : ''}`, scope ? h('span', { class: 'muted' }, ` · uses only: ${scope}`) : null));
+  // The question leads; what it draws on sits under it as a footnote, not a label above it.
+  const box = h('div', { class: 'study-check', role: 'group', 'aria-label': `Check: ${questions.length} question${questions.length > 1 ? 's' : ''}` });
   let open = questions.length, clean = 0, unitClean = true;
   const finished = (first) => {
     clean += first.clean ? 1 : 0; unitClean &&= first.clean; open -= 1;
@@ -129,6 +130,7 @@ export function checkBlock(questions, ctx, scope, onDone, unit = scope) {
     if (open === 0) { if (ctx.lesson?.id && !ctx.noTrack) recordUnit(ctx.store, ctx.lesson.id, unit, unitClean); onDone?.({ n: questions.length, clean }); spiralAfter(box, questions, ctx, unitClean); }
   };
   questions.forEach((spec, qi) => box.append(questionView(resolveQuestion(spec, rng.fork(`q${qi}`)), finished, { spec, rng: rng.fork(`again${qi}`), noHints: ctx.noHints })));
+  if (scope) box.append(h('p', { class: 'check-label' }, `Uses only: ${scope}.`));
   return box;
 }
 
@@ -212,11 +214,11 @@ function questionView(q, onAnswered, { spec, rng, noHints = false } = {}) {
     } }, T(String(o)))));
   } else if (q.type === 'number') {
     const inp = h('input', { type: 'text', inputmode: 'decimal', class: 'study-input', 'aria-label': 'Your answer', placeholder: q.unit ? `answer (${q.unit})` : 'answer' });
-    control = h('div', { class: 'row' }, inp, h('button', { class: 'btn small', type: 'button', onclick: () => { if (inp.value.trim()) done(gradeCheck(q, inp.value)); } }, 'Check'));
+    control = h('div', { class: 'row' }, inp, h('button', { class: 'btn small primary', type: 'button', onclick: () => { if (inp.value.trim()) done(gradeCheck(q, inp.value)); } }, 'Check'));
   } else if (q.type === 'interval') {
     const lo = h('input', { type: 'number', step: 'any', class: 'study-input', 'aria-label': 'Lower', placeholder: 'lower' });
     const hi = h('input', { type: 'number', step: 'any', class: 'study-input', 'aria-label': 'Upper', placeholder: 'upper' });
-    control = h('div', { class: 'row' }, lo, hi, h('button', { class: 'btn small', type: 'button', onclick: () => done(gradeCheck(q, { lower: parseFloat(lo.value), upper: parseFloat(hi.value) })) }, 'Check'));
+    control = h('div', { class: 'row' }, lo, hi, h('button', { class: 'btn small primary', type: 'button', onclick: () => done(gradeCheck(q, { lower: parseFloat(lo.value), upper: parseFloat(hi.value) })) }, 'Check'));
   } else {
     let order = q.items.map((_, i) => i);
     const list = h('ol', { class: 'check-order' });
@@ -235,7 +237,9 @@ function questionView(q, onAnswered, { spec, rng, noHints = false } = {}) {
     hintBtn.textContent = used >= q.hints.length ? 'No more hints' : `Next hint (${used}/${q.hints.length})`;
     hintBtn.disabled = used >= q.hints.length;
   } }, `Stuck? Hint (0/${q.hints.length})`) : null;
-  return h('div', { class: 'check-q' }, h('p', {}, T(q.q)), control, hintBtn, hintBox, fb, again);
+  // The hint sits beside Check on the same row, so the step reads as one action plus a way out.
+  if (hintBtn && control.classList.contains('row')) { hintBtn.classList.add('ghost'); control.append(hintBtn); }
+  return h('div', { class: 'check-q' }, h('p', {}, T(q.q)), control, control.contains(hintBtn) ? null : hintBtn, hintBox, fb, again);
 }
 
 // Productive failure: two attempted approaches and an answer before any teaching.
@@ -258,7 +262,7 @@ function challengeBlock(b, ctx) {
     if (!a1.value.trim() || !a2.value.trim() || !ans.value.trim()) { btn.textContent = 'Write both approaches and an answer first'; return; }
     out.hidden = false; btn.hidden = true;
   } }, 'Compare with the answer');
-  return h('div', { class: 'study-challenge' }, h('div', { class: 'check-label' }, 'Challenge: before any teaching'),
+  return h('div', { class: 'study-challenge' }, h('h3', { class: 'block-title' }, 'Challenge: before any teaching'),
     h('p', {}, T(b.q)), h('p', { class: 'muted small-note' }, 'Struggling here is the point: the lesson builds on what you try. Two genuinely different approaches, then an answer.'), a1, a2, h('div', { class: 'row' }, ans, btn), out);
 }
 
@@ -273,7 +277,7 @@ function explainBlock(b) {
   res.append(h('div', { class: 'feedback' }, h('strong', {}, 'Model: '), T(b.model)),
     h('p', { class: 'small-note' }, 'Tick the key points your explanation covered. Any unticked point is the link to re-read.'),
     h('ul', { class: 'plain' }, b.points.map((pt) => h('li', {}, h('label', {}, h('input', { type: 'checkbox' }), ' ', T(pt))))));
-  return h('div', { class: 'study-explain' }, h('div', { class: 'check-label' }, 'Explain it'), h('p', {}, T(b.prompt)), ta, btn, res);
+  return h('div', { class: 'study-explain' }, h('h3', { class: 'block-title' }, 'Explain it'), h('p', {}, T(b.prompt)), ta, btn, res);
 }
 
 // Erroneous example: a flawed solution; find the step where the reasoning breaks.
@@ -286,7 +290,7 @@ function erroneousBlock(b) {
       if (right) list.children[i].classList.add('broken');
       fb.replaceChildren(h('div', { class: `feedback ${right ? 'ok' : 'no'}` }, h('strong', {}, right ? 'Found it. ' : 'That step is fine. '), right ? T(b.explain) : 'Look for the first move that does not follow.'));
     } }, T(typeof st === 'string' ? st : st.say)))));
-  return h('div', { class: 'study-erroneous' }, h('div', { class: 'check-label' }, 'Find the error'), h('p', {}, T(b.problem)), h('p', { class: 'muted small-note' }, 'One step is wrong. Click it.'), list, fb);
+  return h('div', { class: 'study-erroneous' }, h('h3', { class: 'block-title' }, 'Find the error'), h('p', {}, T(b.problem)), h('p', { class: 'muted small-note' }, 'One step is wrong. Click it.'), list, fb);
 }
 
 // Think-aloud: an expert's inner voice with timestamps. "Play at exam pace" reveals each
@@ -301,12 +305,12 @@ function thinkAloudBlock(b) {
     b.lines.forEach((l, i) => timers.push(setTimeout(() => { items[i].hidden = false; if (i === items.length - 1) all.hidden = true; }, l.t * 1000)));
   } }, `Play at exam pace (${b.lines[b.lines.length - 1].t} s)`);
   const all = h('button', { class: 'btn small', type: 'button', 'data-print-expand': '', onclick: showAll }, 'Show all');
-  return h('div', { class: 'study-think' }, h('div', { class: 'check-label' }, 'Think-aloud: how an expert reads and solves it'), h('p', { class: 'prompt-small' }, T(b.problem)), h('div', { class: 'row' }, play, all), list);
+  return h('div', { class: 'study-think' }, h('h3', { class: 'block-title' }, 'Think-aloud: how an expert reads and solves it'), h('p', { class: 'prompt-small' }, T(b.problem)), h('div', { class: 'row' }, play, all), list);
 }
 
 // Variation: one feature of the base problem changes per row. Predict, then reveal.
 function variationBlock(b) {
-  return h('div', { class: 'study-variation' }, h('div', { class: 'check-label' }, 'Change one thing: predict what happens'), h('p', {}, T(b.base)),
+  return h('div', { class: 'study-variation' }, h('h3', { class: 'block-title' }, 'Change one thing: predict what happens'), h('p', {}, T(b.base)),
     h('table', {}, h('thead', {}, h('tr', {}, h('th', {}, 'What changes'), h('th', {}, 'Effect'))), h('tbody', {}, b.rows.map((r) => {
       const cell = h('td', {});
       const btn = h('button', { class: 'btn small', type: 'button', 'data-print-expand': '', onclick: () => cell.replaceChildren(T(r.effect)) }, 'Predict, then reveal');
@@ -336,7 +340,7 @@ function workedBlock(b, ctx) {
     sol.hidden = false; btn.hidden = true;
   } }, 'I have tried it: show the solution');
   if (b.fade >= 1) return fadedWorked(b, item, ctx);
-  return h('div', { class: 'study-worked' }, h('div', { class: 'check-label' }, `Worked example · difficulty ${item.difficulty}`), b.intro ? h('p', {}, T(b.intro)) : null, body.el, btn, sol);
+  return h('div', { class: 'study-worked' }, h('h3', { class: 'block-title' }, `Worked example · difficulty ${item.difficulty}`), b.intro ? h('p', {}, T(b.intro)) : null, body.el, btn, sol);
 }
 
 // Self-explaining a worked example: steps appear one at a time; each reason stays hidden
@@ -380,7 +384,7 @@ function fadedWorked(b, item, ctx) {
       h('div', { class: 'rule' }, item.solution.rule));
     btn.hidden = true;
   } }, 'Check my finish');
-  return h('div', { class: 'study-worked' }, h('div', { class: 'check-label' }, `Worked example, faded · the last ${b.fade} step${b.fade > 1 ? 's are' : ' is'} yours`), b.intro ? h('p', {}, T(b.intro)) : null,
+  return h('div', { class: 'study-worked' }, h('h3', { class: 'block-title' }, `Worked example, faded · the last ${b.fade} step${b.fade > 1 ? 's are' : ' is'} yours`), b.intro ? h('p', {}, T(b.intro)) : null,
     body.el, h('p', { class: 'small-note muted' }, 'The start of the solution:'), given, btn, rest);
 }
 
@@ -562,7 +566,7 @@ function warmUp(lesson, ctx) {
   if (!pool.length) return null;
   const picks = ctx.rng.shuffle(pool).slice(0, 2);
   const wctx = { ...ctx, noTrack: true, onCheck: null };
-  return h('section', { class: 'study-warmup' }, h('div', { class: 'check-label' }, 'Warm-up from earlier lessons: answer from memory first'),
+  return h('section', { class: 'study-warmup' }, h('h3', { class: 'block-title' }, 'Warm-up from earlier lessons: answer from memory first'),
     checkBlock(picks.map((x) => x.q), wctx, `${[...new Set(picks.map((x) => x.L.title))].join('; ')}`),
     h('p', { class: 'small-note muted' }, 'Missed one? Open ', ...[...new Set(picks.map((x) => x.L))].flatMap((L, i) => [i ? ', ' : '', h('a', { href: `#/study/lesson/${L.id}` }, L.title)]), ' before going on.'));
 }
@@ -580,7 +584,7 @@ function planBlock(lesson, store, faded, root, restore) {
   const hasTry = lesson.blocks.some((b) => b.type === 'section' && b.key === 'tryit') || lesson.blocks.some((b) => b.type === 'check' && b.mastery);
   const toTest = () => (root.querySelector('#s-tryit') || root.querySelector('.study-try'))?.scrollIntoView({ behavior: 'smooth' });
   return h('div', { class: 'panel study-plan' },
-    lesson.objectives?.length ? h('div', {}, h('div', { class: 'check-label' }, 'By the end you can'), h('ul', { class: 'study-list' }, lesson.objectives.map((o) => h('li', {}, T(o))))) : null,
+    lesson.objectives?.length ? h('div', {}, h('h3', { class: 'block-title' }, 'By the end you can'), h('ul', { class: 'study-list' }, lesson.objectives.map((o) => h('li', {}, T(o))))) : null,
     ifThen ? h('div', { class: 'callout callout-rule' }, h('div', { class: 'callout-label' }, 'Your plan from last time'), h('div', {}, `If ${ifThen.if}, then ${ifThen.then}.`)) : null,
     weak.length ? h('div', { class: 'callout callout-trap' }, h('div', { class: 'callout-label' }, 'Missed last time: watch these units'), h('ul', { class: 'study-list' }, weak.map((w) => h('li', {}, w)))) : null,
     h('div', { class: 'small-note' }, 'Before you start: how confident are you with this type? (1 = never seen it, 5 = could teach it)'), conf,
