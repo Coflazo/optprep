@@ -6,26 +6,12 @@ import { SECTIONS } from '../../../config/sections.js';
 import { REPORTED, SOURCES } from '../../../config/presets.js';
 import { SECTION_MODULES } from '../../sections/index.js';
 import { srsDue } from '../../core/srs.js';
-import { roadmap } from '../../core/path.js';
-import { readiness } from '../../core/readiness.js';
 import { buildLibrary, librarySets, setCount } from '../../core/library.js';
-import { lessonForFamily, BOOK_BY_ID } from '../../study/content/index.js';
-import { lessonsOf } from '../../study/schema.js';
-import { statusOf } from '../../study/progress.js';
+import { bookLessons } from '../../study/catalog.js';
+import { sectionMap } from './section-map.js';
 import { bubbles, stamp, setRail } from '../sheet.js';
 import { icon } from '../icons.js';
 import { formatLine } from './format.js';
-
-function checkpoints(store, id) {
-  const cfg = SECTIONS[id];
-  const drills = store.runs(id, 'drill');
-  const sets = Object.values(store.sets(id));
-  return [
-    { id: 'drill', title: 'Drill: 10 questions on the clock', href: `#/run/${id}/drill`, passed: drills.some((r) => r.max && r.score / r.max >= 0.7) },
-    { id: 'set', title: 'Timed set from the library', href: `#/s/${id}/sets`, passed: sets.some((s) => s.mode === 'timed') },
-    { id: 'exam', title: `Exam replica: ${formatLine(cfg)}`, href: `#/run/${id}/exam`, passed: readiness(store.runs(id, 'exam'), cfg.target).ready },
-  ];
-}
 
 // Some 80-in-8 reports write division as 735 : 15. The learner picks; items keep ÷ underneath.
 function notationToggle(store) {
@@ -33,15 +19,6 @@ function notationToggle(store) {
   return h('label', { class: 'check-line small-note' }, box, 'Write division as 735 : 15, as some European tests print it');
 }
 
-export function sectionMap(store, id) {
-  const mod = SECTION_MODULES[id];
-  const book = BOOK_BY_ID[id];
-  const lessons = book && !book.pending ? lessonsOf(book).filter((l) => l.kind !== 'family' && l.kind !== 'game').map((l) => ({ id: l.id, title: l.title, status: statusOf(store, l.id) })) : [];
-  return roadmap({
-    sectionId: id, families: mod.families, lessons, checkpoints: checkpoints(store, id),
-    mastery: store.mastery(), srs: store.srs, lessonFor: (fid) => lessonForFamily(id, fid),
-  });
-}
 
 function row(r, n, id) {
   // One action per row; the title opens the lesson, so the row never needs two buttons.
@@ -83,7 +60,7 @@ export function sectionPage(root, { store, id }) {
         due ? [h('a', { href: `#/run/${id}/mistakes` }, `Review ${due} due`), ' '] : null,
         cfg.variants.map((v, i) => [h('a', { href: `#/run/${id}/exam/v${i}` }, `Exam: ${v.label}`), ' ']),
         h('a', { href: `#/s/${id}/sets` }, `Library, ${nSets} sets`), ' ',
-        BOOK_BY_ID[id] && !BOOK_BY_ID[id].pending ? h('a', { href: `#/study/book/${id}` }, 'Study book') : null),
+        bookLessons(id).length ? h('a', { href: `#/study/book/${id}` }, 'Study book') : null),
       h('p', { class: 'muted small-note' }, `Trainer bar: ${cfg.target.label}. `, rep ? ['Reported pass: ', rep.text, ' (', h('a', { href: SOURCES[rep.source].url, target: '_blank', rel: 'noopener' }, 'source'), ').'] : null),
       id === 'mm' ? notationToggle(store) : null),
     map.units.map((u) => h('section', { class: 'unit' },

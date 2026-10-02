@@ -3,14 +3,13 @@
 import { h, mount } from '../dom.js';
 import { SECTIONS } from '../../../config/sections.js';
 import { PRESETS, activatePreset, activePreset, presetSections } from '../../../config/presets.js';
-import { SECTION_MODULES } from '../../sections/index.js';
-import { GAMES } from '../../zapn/index.js';
+import { FAMILIES, GAMES } from '../../sections/catalog.js';
 import { roadmap, nextStep } from '../../core/path.js';
 import { readiness } from '../../core/readiness.js';
 import { timingAtLeastAsStrict } from '../../../config/presets.js';
 import { bubbles, field, choice, setRail } from '../sheet.js';
 import { icon } from '../icons.js';
-import { sectionMap } from './section.js';
+import { sectionMap } from './section-map.js';
 
 export function presetPicker(store, { onDone, compact = false } = {}) {
   let picked = store.settings().preset?.id || 'full';
@@ -52,7 +51,7 @@ export function pathPage(root, { store }) {
   }
   const active = activePreset();
   const ids = presetSections(active);
-  const maps = ids.filter((id) => id !== 'zapn' && SECTION_MODULES[id]).map((id) => ({ id, map: sectionMap(store, id) }));
+  const maps = ids.filter((id) => id !== 'zapn' && FAMILIES[id]).map((id) => ({ id, map: sectionMap(store, id) }));
   const mapOf = Object.fromEntries(maps.map((m) => [m.id, m.map]));
   const step = nextStep(maps);
   const goal = store.goalMin();

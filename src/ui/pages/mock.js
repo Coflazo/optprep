@@ -2,7 +2,7 @@ import { h, mount } from '../dom.js';
 import { SECTIONS, PORTAL_ORDER } from '../../../config/sections.js';
 import { SECTION_MODULES } from '../../sections/index.js';
 import { runExam } from '../runner.js';
-import { formatLine } from './home.js';
+import { formatLine } from './format.js';
 
 // Full mock: the scored sections in portal order, each on its own clock,
 // with a pause screen between them (the real tasks are separate portal items).

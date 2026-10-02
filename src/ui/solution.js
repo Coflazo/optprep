@@ -2,7 +2,7 @@ import { h } from './dom.js';
 import { fmtNum } from '../core/format.js';
 import { positionOutcome } from '../core/check.js';
 import { renderDiagram } from '../study/diagrams/index.js';
-import { lessonForFamily } from '../study/content/index.js';
+import { lessonForFamily } from '../study/catalog.js';
 
 // Feedback follows the learner profile: on a miss, name the exact false belief
 // first ("your reasoning broke here"), then let the solution unfold one step at a

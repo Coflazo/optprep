@@ -4,16 +4,9 @@ import { makeStore } from './src/core/store.js';
 import { SECTIONS } from './config/sections.js';
 import { activatePreset, activePreset, presetSections } from './config/presets.js';
 import { pathPage } from './src/ui/pages/path.js';
-import { sectionPage } from './src/ui/pages/section.js';
 import { progressPage } from './src/ui/pages/progress.js';
 import { settingsPage } from './src/ui/pages/settings.js';
 import { aboutPage } from './src/ui/pages/about.js';
-import { learnPage } from './src/ui/pages/learn.js';
-import { zapnHub, zapnGame } from './src/ui/pages/zapn.js';
-import { mockPage } from './src/ui/pages/mock.js';
-import { mkPage } from './src/ui/pages/mk.js';
-import { setsPage, setRunPage } from './src/ui/pages/sets.js';
-import { runFeedbackSession, runExam } from './src/ui/runner.js';
 import { brandLockup, wordmark } from './src/ui/logo.js';
 import { icon } from './src/ui/icons.js';
 import { setRail, toast } from './src/ui/sheet.js';
@@ -22,7 +15,17 @@ import { initTheme } from './src/ui/theme.js';
 import { createSync } from './src/ui/sync.js';
 import { initPwa } from './src/ui/pwa.js';
 import { gistConfig, syncNow } from './src/ui/gist.js';
-import { studyHome, bookPage, lessonPage, cheatPage, drillPage, mixedPage, reviewPage, mistakesPage, weekPage } from './src/study/pages.js';
+// Pages that carry question generators, games or lessons load when first opened.
+const sectionPg = () => import('./src/ui/pages/section.js');
+const learnPg = () => import('./src/ui/pages/learn.js');
+const zapnPg = () => import('./src/ui/pages/zapn.js');
+const mockPg = () => import('./src/ui/pages/mock.js');
+const mkPg = () => import('./src/ui/pages/mk.js');
+const setsPg = () => import('./src/ui/pages/sets.js');
+const runnerPg = () => import('./src/ui/runner.js');
+// Study pages carry about 3 MB of lessons, so they load the first time Study opens.
+let studyPages;
+const study = () => (studyPages ??= import('./src/study/pages.js'));
 import { dueLessons, openBeliefs } from './src/study/progress.js';
 
 const sync = createSync();
@@ -43,26 +46,26 @@ const ROUTES = [
   [/^#\/progress(?:\/(\w+))?$/, (m) => progressPage(view, { store, tab: m[1] })],
   [/^#\/settings$/, () => settingsPage(view, { store })],
   [/^#\/about$/, () => aboutPage(view)],
-  [/^#\/s\/(\w+)$/, (m) => sectionPage(view, { store, id: m[1] })],
-  [/^#\/s\/(\w+)\/sets$/, (m) => setsPage(view, { store, id: m[1] })],
-  [/^#\/s\/(\w+)\/sets\/(\d+)\/(practice|timed)$/, (m) => setRunPage(view, { store, id: m[1], n: +m[2], mode: m[3] })],
-  [/^#\/s\/(\w+)\/learn\/([\w-]+)$/, (m) => learnPage(view, { store, id: m[1], family: m[2] })],
-  [/^#\/run\/(\w+)\/exam(?:\/v(\d+))?$/, (m) => runExam(view, { sectionId: m[1], store, variant: m[2] != null ? SECTIONS[m[1]].variants[+m[2]] : null })],
-  [/^#\/run\/(\w+)\/(practice|drill|mistakes)(?:\/([\w-]+))?$/, (m) => runFeedbackSession(view, { sectionId: m[1], mode: m[2], family: m[3], store })],
-  [/^#\/zapn$/, () => zapnHub(view, { store })],
-  [/^#\/zapn\/(\w+)(?:\/(practice|exam))?$/, (m) => zapnGame(view, { store, id: m[1], mode: m[2] || 'practice' })],
-  [/^#\/study$/, () => studyHome(view, { store })],
-  [/^#\/study\/book\/(\w+)$/, (m) => bookPage(view, { store, id: m[1] })],
-  [/^#\/study\/lesson\/(\w+\/[\w-]+)$/, (m) => lessonPage(view, { store, id: m[1] })],
-  [/^#\/study\/lesson\/(\w+\/[\w-]+)\/restore$/, (m) => lessonPage(view, { store, id: m[1], restore: true })],
-  [/^#\/study\/review\/(\w+\/[\w-]+)$/, (m) => reviewPage(view, { store, id: m[1] })],
-  [/^#\/study\/mistakes(?:\/(.+))?$/, (m) => mistakesPage(view, { store, key: decode(m[1]) })],
-  [/^#\/study\/week$/, () => weekPage(view, { store })],
-  [/^#\/study\/cheat\/(\w+)$/, (m) => cheatPage(view, { id: m[1] })],
-  [/^#\/study\/drill\/(\w+)$/, (m) => drillPage(view, { id: m[1] })],
-  [/^#\/study\/mixed\/(\w+)\/(\d+)$/, (m) => mixedPage(view, { store, id: m[1], chapter: +m[2] })],
-  [/^#\/mock$/, () => mockPage(view, { store })],
-  [/^#\/mk$/, () => mkPage(view, { store })],
+  [/^#\/s\/(\w+)$/, (m, pg) => pg.sectionPage(view, { store, id: m[1] }), sectionPg],
+  [/^#\/s\/(\w+)\/sets$/, (m, pg) => pg.setsPage(view, { store, id: m[1] }), setsPg],
+  [/^#\/s\/(\w+)\/sets\/(\d+)\/(practice|timed)$/, (m, pg) => pg.setRunPage(view, { store, id: m[1], n: +m[2], mode: m[3] }), setsPg],
+  [/^#\/s\/(\w+)\/learn\/([\w-]+)$/, (m, pg) => pg.learnPage(view, { store, id: m[1], family: m[2] }), learnPg],
+  [/^#\/run\/(\w+)\/exam(?:\/v(\d+))?$/, (m, pg) => pg.runExam(view, { sectionId: m[1], store, variant: m[2] != null ? SECTIONS[m[1]].variants[+m[2]] : null }), runnerPg],
+  [/^#\/run\/(\w+)\/(practice|drill|mistakes)(?:\/([\w-]+))?$/, (m, pg) => pg.runFeedbackSession(view, { sectionId: m[1], mode: m[2], family: m[3], store }), runnerPg],
+  [/^#\/zapn$/, (m, pg) => pg.zapnHub(view, { store }), zapnPg],
+  [/^#\/zapn\/(\w+)(?:\/(practice|exam))?$/, (m, pg) => pg.zapnGame(view, { store, id: m[1], mode: m[2] || 'practice' }), zapnPg],
+  [/^#\/study$/, (m, pg) => pg.studyHome(view, { store }), study],
+  [/^#\/study\/book\/(\w+)$/, (m, pg) => pg.bookPage(view, { store, id: m[1] }), study],
+  [/^#\/study\/lesson\/(\w+\/[\w-]+)$/, (m, pg) => pg.lessonPage(view, { store, id: m[1] }), study],
+  [/^#\/study\/lesson\/(\w+\/[\w-]+)\/restore$/, (m, pg) => pg.lessonPage(view, { store, id: m[1], restore: true }), study],
+  [/^#\/study\/review\/(\w+\/[\w-]+)$/, (m, pg) => pg.reviewPage(view, { store, id: m[1] }), study],
+  [/^#\/study\/mistakes(?:\/(.+))?$/, (m, pg) => pg.mistakesPage(view, { store, key: decode(m[1]) }), study],
+  [/^#\/study\/week$/, (m, pg) => pg.weekPage(view, { store }), study],
+  [/^#\/study\/cheat\/(\w+)$/, (m, pg) => pg.cheatPage(view, { id: m[1] }), study],
+  [/^#\/study\/drill\/(\w+)$/, (m, pg) => pg.drillPage(view, { id: m[1] }), study],
+  [/^#\/study\/mixed\/(\w+)\/(\d+)$/, (m, pg) => pg.mixedPage(view, { store, id: m[1], chapter: +m[2] }), study],
+  [/^#\/mock$/, (m, pg) => pg.mockPage(view, { store }), mockPg],
+  [/^#\/mk$/, (m, pg) => pg.mkPage(view, { store }), mkPg],
   // Backup moved into Settings; old #/data bookmarks land there.
   [/^#\/data$/, () => location.replace('#/settings')],
 ];
@@ -114,16 +117,23 @@ function route() {
   if (document.startViewTransition && !reduce && !/^#\/(run|zapn\/\w+)/.test(location.hash) && view.childElementCount) { const t = document.startViewTransition(go); t.ready.catch(() => {}); t.finished.catch(() => {}); } else go();
 }
 
-function render() {
+let renderSeq = 0;
+async function render() {
+  const seq = ++renderSeq;
   const hash = location.hash || '#/';
   cleanup?.();
   cleanup = null;
   setRail(Math.min(1, store.todayMs() / 60e3 / store.goalMin()), `${Math.floor(store.todayMs() / 60e3)} of ${store.goalMin()} minutes today`);
   renderNav(hash.startsWith('#/study') ? hash : hash.replace(/\/(practice|exam|drill|mistakes).*$/, ''));
-  for (const [re, fn] of ROUTES) {
+  for (const [re, fn, load] of ROUTES) {
     const m = hash.match(re);
     if (m) {
-      try { const c = fn(m); cleanup = typeof c === 'function' ? c : null; } catch (e) {
+      try {
+        const mod = load ? await load() : null;
+        if (seq !== renderSeq) return; // the reader moved on while this page was loading
+        const c = fn(m, mod); cleanup = typeof c === 'function' ? c : null;
+      } catch (e) {
+        if (seq !== renderSeq) return;
         console.error(e);
         mount(view, h('h1', {}, 'This page failed to load'), h('p', {}, 'Your progress is safe. Reload the page; if it happens again, report it with the details below.'), h('pre', {}, String(e.stack || e)));
       }
@@ -137,6 +147,7 @@ function render() {
     }
   }
   mount(view, h('h1', {}, 'Page not found'), h('p', {}, 'This link does not match any page. ', h('a', { href: '#/' }, 'Go to today')));
+  document.title = 'Page not found · OptPrep';
 }
 
 window.addEventListener('hashchange', route);

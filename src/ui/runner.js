@@ -18,7 +18,7 @@ import { makeCountdown } from '../core/timer.js';
 import { SECTIONS } from '../../config/sections.js';
 import { SECTION_MODULES } from '../sections/index.js';
 import { readiness, runMeetsTarget } from '../core/readiness.js';
-import { lessonForFamily } from '../study/content/index.js';
+import { lessonForFamily } from '../study/catalog.js';
 import { divNotation } from '../core/format.js';
 import { setRail, scanSheet, bubbles, tickTo } from './sheet.js';
 import { mistakeRow } from '../core/mistakes.js';

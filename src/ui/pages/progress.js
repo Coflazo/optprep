@@ -2,12 +2,11 @@
 // behind it, and pace per task. Each pattern and mistake leads straight to practice.
 import { h, mount } from '../dom.js';
 import { SECTIONS } from '../../../config/sections.js';
-import { SECTION_MODULES } from '../../sections/index.js';
+import { familyTitle as famTitle } from '../../sections/catalog.js';
 import { weakPatterns } from '../../core/patterns.js';
 import { dayKey, addDays } from '../../core/activity.js';
-import { lessonForFamily } from '../../study/content/index.js';
+import { lessonForFamily } from '../../study/catalog.js';
 
-const famTitle = (sid, fid) => SECTION_MODULES[sid]?.families.find((f) => f.id === fid)?.title || fid;
 const secTitle = (sid) => SECTIONS[sid]?.title || sid;
 const pct = (x) => `${Math.round(100 * x)}%`;
 const when = (t) => new Date(t).toLocaleDateString([], { day: 'numeric', month: 'short' });
