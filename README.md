@@ -113,4 +113,4 @@ Format reports matter most: they keep the replicas honest. Code and question fam
 
 ## License
 
-[MIT](LICENSE). OptPrep is an independent project. It is not affiliated with or endorsed by Optiver, and it contains no Optiver test content.
+[MIT](LICENSE). OptPrep is a personal project by Coflazo, an econometrics student, shared for free. It is not affiliated with, endorsed by or connected to Optiver, and it contains no Optiver test content. Read the [legal notice](LEGAL.md) and the [privacy notice](PRIVACY.md).

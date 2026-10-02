@@ -569,6 +569,22 @@ details > summary { cursor: pointer; }
 /* Very wide screens: the sheet stays a readable width and centres. */
 @media (min-width: 1600px) { .main { margin: 0 auto; } }
 
+/* ---------- Lesson focus mode: one step on screen ---------- */
+.focus-bar { position: sticky; top: 0; z-index: 5; display: grid; gap: 6px; padding: 10px 0 12px; background: var(--bg); }
+.focus-bar .study-progress { position: static; padding: 0; border: 0; background: transparent; }
+.focus-count { font-size: 13px; color: var(--text-2); }
+.focus-step { min-height: 40vh; }
+.focus-step > * + * { margin-top: 14px; }
+.focus-step .study-section { margin-top: 4px; }
+.focus-nav { position: sticky; bottom: 0; z-index: 5; padding: 12px 0 calc(12px + env(safe-area-inset-bottom, 0px)); margin-top: 24px; background: var(--bg); border-top: 1px solid var(--border); }
+.focus-hint { align-self: center; }
+@media (max-width: 1023px) {
+  .focus-bar { top: calc(64px + env(safe-area-inset-top, 0px)); }
+  .focus-nav { bottom: calc(var(--tabbar) + env(safe-area-inset-bottom, 0px)); }
+}
+.focus-lesson:not(.is-finished) ~ .study-nav { display: none; }
+@media print { .focus-step[hidden] { display: block !important; } .focus-nav, .focus-bar { display: none !important; } }
+
 /* ---------- Study guide ---------- */
 .study-toc { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 13px; padding: 10px 0 14px; border-bottom: 1px solid var(--border); margin-bottom: 8px; }
 .study-toc a { color: var(--text-2); text-decoration: none; display: inline-flex; align-items: center; min-height: 28px; padding: 2px 4px; border-radius: 4px; transition: background-color var(--dur-1) ease, color var(--dur-1) ease; }

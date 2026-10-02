@@ -29,6 +29,8 @@
     "optprep": "bin/optprep.js"
   },
   "files": [
+    "LEGAL.md",
+    "PRIVACY.md",
     "index.html",
     "app.js",
     "config/",

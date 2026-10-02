@@ -1,6 +1,7 @@
 // Lesson renderer. Blocks are data; this turns them into DOM. Text goes through the
 // inline markup (text nodes only). Diagrams come from the study registry. Worked
 // examples and try-it questions come live from the verified generators.
+import { CLOSERS } from './schema.js';
 import { h } from '../ui/dom.js';
 import { renderInline } from './markup.js';
 import { renderDiagram } from './diagrams/index.js';
@@ -120,6 +121,7 @@ export function checkBlock(questions, ctx, scope, onDone, unit = scope) {
   const finished = (first) => {
     clean += first.clean ? 1 : 0; unitClean &&= first.clean; open -= 1;
     ctx.onCheck?.(first);
+    box.dispatchEvent(new CustomEvent('study:answered', { bubbles: true }));
     if (ctx.lesson?.id && ctx.store && !ctx.noTrack) {
       logEvent(ctx.store, { kind: 'check', lesson: ctx.lesson.id, unit, clean: first.clean, hints: first.hints });
       if (first.trap) recordMiss(ctx.store, { belief: first.trap, lesson: ctx.lesson.id, unit });
@@ -469,8 +471,84 @@ export function renderLesson(root, lesson, { store, onProgress, restore = false 
   const toc = h('nav', { class: 'study-toc', 'aria-label': 'Lesson sections' }, lesson.blocks.filter((b) => b.type === 'section').map((b) => h('a', { href: `#s-${b.key}`, onclick: (e) => { e.preventDefault(); root.querySelector(`#s-${b.key}`)?.scrollIntoView({ behavior: 'smooth' }); } }, b.title)));
   const progress = h('div', { class: 'study-progress', role: 'status' }, h('div', { class: 'bar' }, bar), label);
   const plan = planBlock(lesson, store, faded, root, restore);
-  const body = h('article', { class: 'study-body' }, warmUp(lesson, ctx), lesson.blocks.map((b) => renderBlock(b, ctx)));
-  return h('div', {}, plan, toc, progress, body, reflectBlock(lesson, store, tally));
+  if (store?.settings?.().studyFocus === false) {
+    const body = h('article', { class: 'study-body' }, warmUp(lesson, ctx), lesson.blocks.map((b) => renderBlock(b, ctx)));
+    return h('div', {}, plan, toc, progress, body, reflectBlock(lesson, store, tally));
+  }
+  return focusLesson(lesson, ctx, { plan, progress, store, tally });
+}
+
+// Focus mode: one step on screen at a time. A step is one teaching unit and the check that
+// follows it (the cadence rule guarantees one), with its section heading. Continue turns
+// primary once the step's questions are answered; it never locks, so nobody gets stuck.
+const STEP_QUESTIONS = (b) => (b.type === 'check' ? b.questions.length : b.type === 'steps' ? b.steps.reduce((n, st) => n + (st.checks?.length || 0), 0) : b.type === 'transfer' ? 3 : 0);
+function focusLesson(lesson, ctx, { plan, progress, store, tally }) {
+  const steps = [];
+  let cur = null;
+  const open = () => (cur = { els: [], need: 0, section: null, teaches: false });
+  open();
+  const warm = warmUp(lesson, ctx);
+  steps.push({ els: [plan], need: 0, section: null, intro: true });
+  if (warm) steps.push({ els: [warm], need: 0, section: null });
+  for (const b of lesson.blocks) {
+    if (b.type === 'section') {
+      if (cur.teaches || cur.need) { steps.push(cur); open(); }
+      cur.section = b.key;
+    } else cur.teaches = true;
+    cur.els.push(renderBlock(b, ctx));
+    cur.need += STEP_QUESTIONS(b);
+    if (CLOSERS.includes(b.type)) { steps.push(cur); open(); }
+  }
+  if (cur.els.length) steps.push(cur);
+  steps.push({ els: [reflectBlock(lesson, store, tally)], need: 0, section: null, outro: true });
+
+  const answered = steps.map(() => 0);
+  const views = steps.map((st, i) => {
+    const el = h('section', { class: 'focus-step', hidden: true, 'aria-label': `Step ${i + 1} of ${steps.length}` }, st.els);
+    el.addEventListener('study:answered', () => { answered[i] += 1; sync(); });
+    return el;
+  });
+  // Resume where the learner left off (the last section they reached).
+  const last = studyState(store)?.[lesson.id]?.lastSection;
+  let at = last ? Math.max(0, steps.findIndex((st) => st.section === last)) : 0;
+  const count = h('span', { class: 'num focus-count' });
+  const back = h('button', { class: 'btn ghost', type: 'button', onclick: () => go(at - 1) }, 'Back');
+  const next = h('button', { class: 'btn', type: 'button', onclick: () => go(at + 1) }, 'Continue');
+  const hint = h('span', { class: 'small-note muted focus-hint' });
+  function sync() {
+    const st = steps[at];
+    const done = answered[at] >= st.need;
+    count.textContent = `Step ${at + 1} of ${steps.length}`;
+    back.hidden = at === 0;
+    next.hidden = at === steps.length - 1;
+    next.textContent = at === 0 ? 'Start the lesson' : done ? 'Continue' : 'Skip ahead';
+    next.className = `btn ${done ? 'primary' : 'ghost'}`;
+    hint.textContent = done || at === 0 ? '' : `Answer the question${st.need - answered[at] > 1 ? 's' : ''} above to continue.`;
+  }
+  let go = function go(i) {
+    if (i < 0 || i >= steps.length) return;
+    views[at].hidden = true;
+    at = i;
+    views[at].hidden = false;
+    sync();
+    // Bring the new step to the top and put focus on its first heading or question.
+    const target = views[at].querySelector('h2, .study-check, p') || views[at];
+    if (!target.hasAttribute('tabindex')) target.tabIndex = -1;
+    target.focus({ preventScroll: true });
+    views[at].scrollIntoView({ block: 'start' });
+  }
+  views[at].hidden = false;
+  sync();
+  const bar = h('div', { class: 'focus-bar' }, count, progress);
+  const shell = h('div', { class: 'focus-lesson' });
+  // The lesson's own next-lesson buttons show only on the last step, so one action leads at a time.
+  const syncShell = () => shell.classList.toggle('is-finished', at === steps.length - 1);
+  views.forEach((v) => v.addEventListener('focusin', syncShell));
+  shell.append(bar, h('article', { class: 'study-body' }, views), h('div', { class: 'row focus-nav' }, back, hint, h('span', { style: { flex: 1 } }), next));
+  const go0 = go;
+  go = (i) => { go0(i); syncShell(); };
+  syncShell();
+  return shell;
 }
 
 const questionsOf = (b) => (b.type === 'check' ? b.questions : b.type === 'steps' ? b.steps.flatMap((st) => st.checks || []) : []);

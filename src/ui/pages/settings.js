@@ -122,6 +122,9 @@ export function settingsPage(root, { store }) {
     field('Division sign', choice({ legend: 'Division sign', hideLegend: true, name: 'div', value: store.settings().divNotation || 'obelus', columns: true, onChange: (v) => store.setSetting('divNotation', v), options: [
       { value: 'obelus', label: '÷', hint: '84 ÷ 7' },
       { value: 'colon', label: ':', hint: '84 : 7, as some European tests print it' }] })),
+    field('Lessons', choice({ legend: 'Lesson layout', hideLegend: true, name: 'focus', value: store.settings().studyFocus === false ? 'all' : 'steps', columns: true, onChange: (v) => store.setSetting('studyFocus', v === 'steps'), options: [
+      { value: 'steps', label: 'One step at a time', hint: 'A short idea, then a question on it' },
+      { value: 'all', label: 'Whole lesson', hint: 'Scroll through every section' }] })),
     field('Answering', choice({ legend: 'Answer keys', hideLegend: true, name: 'keys', value: store.settings().answerKeys === false ? 'off' : 'on', columns: true, onChange: (v) => store.setSetting('answerKeys', v === 'on'), options: [
       { value: 'on', label: 'Number keys answer', hint: '1 to 4 or A to D pick an option, as in the test' },
       { value: 'off', label: 'Mouse or touch only', hint: 'Stray key presses never answer' }] }),
@@ -132,5 +135,5 @@ export function settingsPage(root, { store }) {
     install ? field('App', h('p', {}, 'Install OptPrep to open it from your dock or home screen and practise offline.'), install) : null,
     field('Backup', ...backup(store), storageLine(store)),
     syncField(store, (then) => { settingsPage(root, { store }); then?.(); }),
-    h('p', { class: 'muted small-note' }, 'OptPrep is free and open source. Not affiliated with or endorsed by Optiver.'));
+    h('p', { class: 'muted small-note' }, 'OptPrep is free and open source. Not affiliated with or endorsed by Optiver. ', h('a', { href: '#/about' }, 'About and legal'), '.'));
 }

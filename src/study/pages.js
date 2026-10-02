@@ -139,7 +139,7 @@ export function lessonPage(root, { store, id, restore = false }) {
     h('p', { class: 'muted' }, h('a', { href: '#/study' }, 'Study guide'), ' / ', h('a', { href: `#/study/book/${b.id}` }, b.title)),
     h('div', { class: 'spread' }, h('h1', {}, L.title), status),
     h('p', { class: 'muted' }, T(L.summary), ` · about ${minutes(L)} min`),
-    k > 0 ? h('div', { class: 'row resume' }, h('button', { class: 'btn primary small', type: 'button', onclick: () => goTo(secs[k].key) }, `Continue at ${secs[k].title} (${k + 1} of ${secs.length})`)) : null,
+    k > 0 && store.settings().studyFocus === false ? h('div', { class: 'row resume' }, h('button', { class: 'btn primary small', type: 'button', onclick: () => goTo(secs[k].key) }, `Continue at ${secs[k].title} (${k + 1} of ${secs.length})`)) : null,
     L.prerequisites?.length ? h('p', { class: 'small-note' }, 'Builds on: ', L.prerequisites.map((p, j) => [j ? ', ' : '', LESSON_BY_ID[p] ? h('a', { href: `#/study/lesson/${p}` }, LESSON_BY_ID[p].title) : p])) : null,
     renderLesson(root, L, { store, onProgress: refresh, restore }),
     h('div', { class: 'row study-nav' },

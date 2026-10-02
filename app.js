@@ -7,6 +7,7 @@ import { pathPage } from './src/ui/pages/path.js';
 import { sectionPage } from './src/ui/pages/section.js';
 import { progressPage } from './src/ui/pages/progress.js';
 import { settingsPage } from './src/ui/pages/settings.js';
+import { aboutPage } from './src/ui/pages/about.js';
 import { learnPage } from './src/ui/pages/learn.js';
 import { zapnHub, zapnGame } from './src/ui/pages/zapn.js';
 import { mockPage } from './src/ui/pages/mock.js';
@@ -36,12 +37,13 @@ activatePreset(store.settings().preset);
 initTheme();
 mount(document.querySelector('.sidebar .brand'),
   h('a', { href: '#/', class: 'brand-link', 'aria-label': 'OptPrep, today' }, brandLockup()));
-mount(document.getElementById('sidebar-foot'), h('div', {}, 'Not affiliated with or endorsed by Optiver.'));
+mount(document.getElementById('sidebar-foot'), h('div', {}, 'Not affiliated with or endorsed by Optiver. ', h('a', { href: '#/about' }, 'About and legal')));
 
 const ROUTES = [
   [/^#?\/?$/, () => pathPage(view, { store, sync })],
   [/^#\/progress(?:\/(\w+))?$/, (m) => progressPage(view, { store, tab: m[1] })],
   [/^#\/settings$/, () => settingsPage(view, { store })],
+  [/^#\/about$/, () => aboutPage(view)],
   [/^#\/s\/(\w+)$/, (m) => sectionPage(view, { store, id: m[1] })],
   [/^#\/s\/(\w+)\/sets$/, (m) => setsPage(view, { store, id: m[1] })],
   [/^#\/s\/(\w+)\/sets\/(\d+)\/(practice|timed)$/, (m) => setRunPage(view, { store, id: m[1], n: +m[2], mode: m[3] })],
