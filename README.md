@@ -99,6 +99,27 @@ OptPrep also keeps a list of the skills and beliefs that keep costing you points
 
 Set a daily goal of five, ten or twenty minutes. Only time spent answering or reading counts toward it.
 
+## What it looks like
+
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/media/screens/today-dark.png">
+    <img src="docs/media/screens/today-light.png" alt="The Today page: today's minutes as answer bubbles, one next step, and each task with its skills mastered." width="880">
+  </picture>
+</p>
+
+| | |
+|---|---|
+| <img src="docs/media/screens/solution.png" alt="A wrong answer: the belief behind the pick, then the solution with a state diagram and its steps."> | <img src="docs/media/screens/result.png" alt="An exam result: each row graded, the net score printed in the corner box."> |
+| A wrong answer names the belief behind your pick, then shows the solution with a picture. | An exam ends with a scan down the sheet. The score prints in the corner. |
+
+<p align="center">
+  <img src="docs/media/screens/phone-lesson.png" alt="A lesson on a phone, one step at a time, with a check question." width="260">
+  &nbsp;
+  <img src="docs/media/screens/phone-exam.png" alt="The 80-in-8 exam on a phone in dark mode, clock at the top right." width="260">
+</p>
+<p align="center">Lessons go one step at a time, and every task runs on a phone.</p>
+
 ## Limits
 
 - Optiver publishes no pass lines. The Ready mark means your last three full exams met OptPrep's bar, which sits above the lines candidates report. It lowers your risk. It cannot promise a pass.
