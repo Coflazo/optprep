@@ -116,7 +116,8 @@ function predictBlock(b) {
 // 1-3 micro-check questions. onDone fires once every question has been answered.
 export function checkBlock(questions, ctx, scope, onDone, unit = scope) {
   const rng = ctx.rng.fork(`check:${Math.floor(ctx.rng.next() * 1e9)}`);
-  const box = h('div', { class: 'study-check' }, h('div', { class: 'check-label' }, `Check · ${questions.length} question${questions.length > 1 ? 's' : ''}`, scope ? h('span', { class: 'muted' }, ` · uses only: ${scope}`) : null));
+  // The question leads; what it draws on sits under it as a footnote, not a label above it.
+  const box = h('div', { class: 'study-check', role: 'group', 'aria-label': `Check: ${questions.length} question${questions.length > 1 ? 's' : ''}` });
   let open = questions.length, clean = 0, unitClean = true;
   const finished = (first) => {
     clean += first.clean ? 1 : 0; unitClean &&= first.clean; open -= 1;
@@ -129,6 +130,7 @@ export function checkBlock(questions, ctx, scope, onDone, unit = scope) {
     if (open === 0) { if (ctx.lesson?.id && !ctx.noTrack) recordUnit(ctx.store, ctx.lesson.id, unit, unitClean); onDone?.({ n: questions.length, clean }); spiralAfter(box, questions, ctx, unitClean); }
   };
   questions.forEach((spec, qi) => box.append(questionView(resolveQuestion(spec, rng.fork(`q${qi}`)), finished, { spec, rng: rng.fork(`again${qi}`), noHints: ctx.noHints })));
+  if (scope) box.append(h('p', { class: 'check-label' }, `Uses only: ${scope}.`));
   return box;
 }
 

@@ -415,7 +415,7 @@ export function runExam(root, { sectionId, variant, store, seed = Date.now(), on
         h('td', { style: { textAlign: 'right' } }, toggle)), detail];
     });
     const sheet = h('div', { class: 'panel exam-review' },
-      h('h2', { class: 'score-print is-pending', style: { marginTop: 0 } }, `${base.title}: ${sectionId === 'iv' ? `${score.toFixed(2)} of ${max} (mean ${(score / max).toFixed(2)})` : `${score} of ${max}`}`),
+      h('h1', { class: 'score-print is-pending', style: { marginTop: 0 } }, `${base.title}: ${sectionId === 'iv' ? `${score.toFixed(2)} of ${max} (mean ${(score / max).toFixed(2)})` : `${score} of ${max}`}`),
       h('p', {}, h('span', { class: `badge ${meets ? 'ok' : 'no'}` }, meets ? 'Target met' : 'Below target'), ` Target: ${target.label}.`),
       setNumber != null ? h('p', { class: 'muted' }, `Set ${setNumber} is fixed practice: it does not count toward readiness. Fresh full exams do.`) : official ? h('p', { class: 'muted' }, ready.ready ? 'Ready: the last 3 exams all met the target. This section is safe to open.' : `Readiness streak ${ready.streak} of ${ready.needed}. The section turns ready after 3 exams in a row at target.`) : h('p', { class: 'muted' }, 'Short variant: good practice, but only the full-length exam counts toward readiness.'),
       h('table', {}, h('thead', {}, h('tr', {}, h('th', {}, '#'), h('th', {}, 'Family'), h('th', {}, 'Result'), h('th', { style: { textAlign: 'right' } }, 'Points'), h('th', {}, h('span', { class: 'visually-hidden' }, 'Solution')))), h('tbody', {}, rows.flat())),
