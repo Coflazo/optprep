@@ -148,7 +148,7 @@ initPwa();
 
 // Active minutes: a 5 s ticker credits time only inside a session, with the tab visible and
 // input in the last 90 s. Saved on the next store write and when the page is hidden.
-const SESSION = /^#\/(run\/|s\/\w+\/(learn|sets\/\d+)|zapn\/\w+|study\/(lesson|review|drill|mixed|cheat)\/|mock)/;
+const SESSION = /^#\/(run\/|s\/\w+\/(learn|sets\/\d+)|zapn\/\w+|study\/(lesson|review|drill|mixed|cheat)\/|mock|mk)/;
 let lastTick = Date.now();
 let lastInputAt = null;
 for (const ev of ['pointerdown', 'keydown', 'input', 'wheel', 'scroll', 'touchstart']) window.addEventListener(ev, () => { lastInputAt = Date.now(); }, { passive: true, capture: true });

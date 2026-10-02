@@ -79,5 +79,8 @@ export function pathPage(root, { store }) {
       step.row.kind === 'skill' ? bubbles(5, step.row.lv, { label: `Level ${step.row.lv} of 5` }) : null,
       h('span', { class: 'btn primary' }, stepVerb, icon('arrow', { size: 18 }))) : null,
     h('div', { class: 'tasks-head' }, h('h2', {}, 'Your tasks'), h('a', { class: 'small-note muted', href: '#/settings' }, `Battery: ${active.title}`)),
-    h('ul', { class: 'task-list' }, ids.map((id) => (id === 'zapn' || mapOf[id] ? taskRow(store, id, mapOf[id]) : null))));
+    h('ul', { class: 'task-list' }, ids.map((id) => (id === 'zapn' || mapOf[id] ? taskRow(store, id, mapOf[id]) : null))),
+    h('ul', { class: 'task-list task-list-after' }, h('li', {}, h('a', { class: 'task-row', href: '#/mk' },
+      h('span', { class: 'task-name' }, 'Market making', h('span', { class: 'task-blurb' }, 'After the online assessment: quote two-sided markets against a trader who knows more than you.')),
+      h('span', { class: 'task-progress num' }, store.zapnRuns('mk').length ? `${store.zapnRuns('mk').length} sessions` : 'bonus')))));
 }
