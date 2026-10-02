@@ -48,9 +48,12 @@ export default {
       ] },
     { type: 'text', text: 'The gaps are not constant, but they move **steadily**: each gap is the previous gap plus the same amount s. The gaps can grow, shrink, or cross zero, so the terms can rise, peak and fall.' },
     { type: 'list', items: [`What number comes next?  ${seq(UP.slice(0, 5))}, ?`, `What number comes next?  ${seq(PEAK.slice(0, 6))}, ?`, `Which number replaces the question mark?  ${seq(ERR.slice(0, 3))}, ?, ${ERR[4]}`] },
-    { type: 'text', text: `Not this lesson: gaps that multiply (${seq(g(DG))}) or gaps that zigzag. Squares, triangular numbers and "add 1, 2, 3, …" are special cases of this lesson; they have shortcut lessons, but this method always works on them.` },
     { type: 'check', scope: 'the cue: steadily changing gaps', questions: [
       { make: (rng) => { const q = easy(rng, 5), a = arith(rng.int(1, 20), rng.int(2, 9), 5), d = [rng.int(1, 9)]; const g0 = rng.int(1, 3); while (d.length < 5) d.push(d[d.length - 1] + g0 * 2 ** (d.length - 1)); return pick(rng, 'Which sequence belongs to this lesson?', seq(q), [[seq(a), `its gaps ${seq(g(a))} are constant: the previous lesson`], [seq(d), `its gaps ${seq(g(d))} double rather than grow by a fixed amount`]], `The gaps of ${seq(q)} are ${seq(g(q))}: they grow by ${sOf(q)} each time.`); } },
+    ] },
+    { type: 'text', text: `Not this lesson: gaps that multiply (${seq(g(DG))}) or gaps that zigzag. Squares, triangular numbers and "add 1, 2, 3, …" are special cases of this lesson; they have shortcut lessons, but this method always works on them.` },
+    { type: 'check', scope: 'special cases', questions: [
+      { type: 'choice', q: 'The squares 1, 4, 9, 16, 25: does this lesson method work on them?', options: ['yes: gaps 3, 5, 7, 9 rise by 2', 'no: squares need their own method', 'no: the gaps multiply'], answer: 0, traps: { 1: 'squares have a shortcut lesson, but this method always works', 2: '3, 5, 7, 9 rise by a fixed 2' }, explain: 'The gaps 3, 5, 7, 9 move steadily, so the second row is a constant 2.' },
     ] },
 
     S('why'),
@@ -65,9 +68,12 @@ export default {
     S('picture'),
     { type: 'text', text: 'Two rows under the terms: the gaps, and beneath them the gaps of the gaps. The bottom row is flat. Against position, the terms trace a smooth curve: bending up when s is positive, bending down to a peak when s is negative.' },
     { type: 'diagram', diagram: 'ladder', spec: { mode: 'diff', rows: ladderRows(UP.slice(0, 6), 2), predicted: true }, caption: `${seq(UP.slice(0, 5))}: gaps ${seq(g(UP.slice(0, 5)))}, second differences all ${sOf(UP)}. The outlined cells continue it bottom-up: ${sOf(UP)}, then ${g(UP)[3]} + ${sOf(UP)} = ${g(UP)[4]}, then ${UP[4]} + ${g(UP)[4]} = ${UP[5]}.` },
-    { type: 'diagram', diagram: 'plot', spec: { x: { min: 1, max: 7, label: 'position n' }, y: { min: 0, max: 60, label: 'term' }, curves: [{ label: `s = ${sOf(UP)}`, points: UP.map((v, i) => [i + 1, v]) }, { label: `s = ${sOf(PEAK)}`, points: PEAK.map((v, i) => [i + 1, v]) }] }, caption: `Positive s bends upward (${seq(UP)}). Negative s bends down: ${seq(PEAK)} rises while its gaps are positive, peaks when a gap hits 0, then falls.` },
     { type: 'check', scope: 'the two-row picture', questions: [
       { make: (rng) => { const xs = any(rng, 5); return num(`What is the constant second difference of ${seq(xs)}?`, sOf(xs), `Gaps ${seq(g(xs))}; their gaps are all ${neg(sOf(xs))}.`, ['Write the gaps first.', 'Subtract neighbouring gaps, later minus earlier.']); } },
+    ] },
+    { type: 'diagram', diagram: 'plot', spec: { x: { min: 1, max: 7, label: 'position n' }, y: { min: 0, max: 60, label: 'term' }, curves: [{ label: `s = ${sOf(UP)}`, points: UP.map((v, i) => [i + 1, v]) }, { label: `s = ${sOf(PEAK)}`, points: PEAK.map((v, i) => [i + 1, v]) }] }, caption: `Positive s bends upward (${seq(UP)}). Negative s bends down: ${seq(PEAK)} rises while its gaps are positive, peaks when a gap hits 0, then falls.` },
+    { type: 'check', scope: 'the shape of the curve', questions: [
+      { type: 'choice', q: 'A sequence with second difference −2, plotted against position: what shape?', options: ['bends down to a peak', 'bends upward like a bowl', 'a straight line rising'], answer: 0, traps: { 1: 'a positive second difference bends upward', 2: 'a straight line has second difference 0' }, explain: 'A negative s shrinks the gaps until they cross zero: the terms rise, peak and fall.' },
     ] },
 
     S('derivation'),
@@ -95,6 +101,9 @@ export default {
     ] },
     { type: 'diagram', diagram: 'ladder', spec: { mode: 'diff', rows: ladderRows(PEAK, 2), predicted: true }, caption: `The same four moves with a negative s: ${seq(PEAK.slice(0, 6))}. Bottom row ${sOf(PEAK)}, next gap ${g(PEAK)[4]} + (${sOf(PEAK)}) = ${g(PEAK)[5]}, next term ${PEAK[5]} + (${g(PEAK)[5]}) = ${PEAK[6]}. Signs are the only extra care.` },
     { type: 'text', text: 'Why five terms are enough: they give four gaps and three second differences, and three equal entries in the bottom row are strong evidence. With six terms you get four, which is why the harder items show six. If the bottom row has only two entries, treat the answer as a hypothesis and check it against every shown term.' },
+    { type: 'check', scope: 'a negative s, and checking', questions: [
+      { type: 'number', q: 'What comes next?  5, 15, 21, 23, 21, ?', answer: 15, explain: 'Gaps 10, 6, 2, −2: s = −4. Next gap −6, so 21 − 6 = 15.' },
+    ] },
     { type: 'explain', prompt: 'Why does a constant second difference turn the gap row into a constant-gap sequence, and why is the new gap (not s) what you add to the last term?', model: 'The second differences are the gaps of the gap row; if they are all s, the gap row adds s each step, which is a constant-gap sequence. The terms are built from the gaps, not from s, so the last term grows by the new gap; s only tells you how the gap changes.', points: ['Second differences are the gaps of the gap row', 'Constant s makes the gap row arithmetic', 'Terms add gaps; gaps add s'] },
 
     S('worked'),
@@ -148,7 +157,6 @@ export default {
       [seq(DG), seq(g(DG)), seq(diffs(g(DG))), 'gaps double: divide the gaps instead'],
     ] },
     { type: 'callout', tone: 'edge', text: `Edge cases: s = 0 is a constant gap. A negative s makes a peak, and a gap of exactly 0 repeats a term (${seq(PEAK.slice(3, 5))}). If the second row is not constant but itself changes steadily, a third row settles it: the same method, one layer deeper.` },
-    { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: a constant second difference is constant acceleration. Distance covered under steady acceleration, or running totals of a steadily growing count, all have this two-row ladder.' },
     { type: 'variation', base: `${seq(UP5)}, ?  Gaps ${seq(g(UP5))}, s = ${sOf(UP)}, next ${UP[5]}.`, rows: [
       { same: true, change: `Drop the first term: ${seq(UP5.slice(1))}, ?`, effect: `Still ${UP[5]}. The gaps ${seq(g(UP5.slice(1)))} still grow by ${sOf(UP)}; the only loss is evidence (two second differences instead of three).` },
       { change: `Add 5, 10, 15, … (5 × position) to the terms: ${seq(LIN.slice(0, 5))}, ?`, effect: `${LIN[5]}. Every gap grows by 5, to ${seq(g(LIN.slice(0, 5)))}, but s stays ${sOf(LIN)}: a constant-gap sequence added on top vanishes in the second row.` },
@@ -161,6 +169,7 @@ export default {
       { make: (rng) => { const xs = quad(rng.int(0, 20), rng.int(10, 16), -rng.int(3, 5), 7); return num(nextQ(xs.slice(0, 6)), xs[6], `Gaps ${seq(g(xs).slice(0, 5))} fall by ${-sOf(xs)}: next gap ${neg(g(xs)[5])}, so ${neg(xs[5])} ${sgn(g(xs)[5])} = ${neg(xs[6])}.`, ['The gaps shrink by the same amount each step.', 'Once a gap is negative, the terms fall.']); } },
     ] },
 
+    { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: a constant second difference is constant acceleration. Distance covered under steady acceleration, or running totals of a steadily growing count, all have this two-row ladder.' },
     { type: 'transfer',
       near: { make: (rng) => { const xs = figs(rng); return num(`A tile pattern uses ${seq(xs.slice(0, 5))} tiles in figures 1 to 5. The number of tiles added per figure grows by the same amount each time. How many tiles does figure 7 use?`, xs[6], `Tiles added: ${seq(g(xs.slice(0, 5)))}, growing by ${sOf(xs)}. Next two: ${g(xs)[4]} and ${g(xs)[5]}, so figure 7 = ${xs[4]} + ${g(xs)[4]} + ${g(xs)[5]} = ${xs[6]}.`, ['Write the tiles added per figure, then how that grows.', 'Figure 7 is two steps on: last + 2 × last gap + 3s.']); } },
       far: { make: (rng) => { const a = rng.int(10, 30), k = rng.int(2, 6), n = rng.int(5, 8); return num(`A new trader makes ${a} trades on day 1, and each day ${k} more than the day before. How many trades in total over the first ${n} days?`, n * a + (k * n * (n - 1)) / 2, `Daily counts ${seq(arith(a, k, n))} have a constant gap ${k}; their running totals have a constant second difference. Total = ${n} × ${a} + ${k} × (0 + 1 + … + ${n - 1}) = ${n * a} + ${k * n * (n - 1) / 2} = ${n * a + (k * n * (n - 1)) / 2}.`, ['The daily counts form a constant-gap sequence.', `Total = ${n} × ${a} + ${k} × (0 + 1 + … + ${n - 1}).`]); } },

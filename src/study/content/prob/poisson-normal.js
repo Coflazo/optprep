@@ -90,6 +90,11 @@ export default {
         checks: [{ make: (rng) => { const r = rng.pick([0.25, 0.5, 2]), pages = rng.pick([10, 12, 20]); return { type: 'number', q: `Typos occur at ${r} per page on average. Expected number of typos in a ${pages}-page report?`, answer: r * pages, explain: `Rates add over pages: ${r} × ${pages} = ${r * pages}.` }; } }] },
     ] },
     { type: 'diagram', diagram: 'table', spec: { columns: ['slots n', `(1 − ${ch.lam}/n)^n`], rows: [...conv, ['limit', `e^−${ch.lam} = ${dec(Math.exp(-ch.lam), 4)}`]] }, caption: `P(no order) for finer and finer slots: it settles at e^{−${ch.lam}} ≈ ${dec(Math.exp(-ch.lam), 3)}.` },
+    { type: 'check', scope: 'the limit table', questions: [
+      mc({ q: `Rate ${ch.lam} per hour. Using the table, P(no order in the hour) is closest to:`, right: dec(Math.exp(-ch.lam), 2), at: 1,
+        wrong: [[dec((1 - ch.lam / 10) ** 10, 2), 'stopped at n = 10, before the value settles'], [dec(1 - Math.exp(-ch.lam), 2), 'that is P(at least one order)']],
+        explain: `The rows settle at e^{−${ch.lam}} ≈ ${dec(Math.exp(-ch.lam), 3)}, about ${dec(Math.exp(-ch.lam), 2)}.` }),
+    ] },
     { type: 'explain', prompt: 'Why does the Poisson appear whenever you only know an average rate of rare events?', model: 'Chop time into tiny slots; each holds an event with a tiny, equal chance, independently. That is a binomial with huge n and tiny p whose mean np is the rate λ. As the slots shrink, the binomial settles into e^{−λ}λ^{k}/k!, which depends only on λ.', points: ['Tiny independent slots make a binomial', 'The mean np equals the rate λ, whatever n is', 'In the limit only λ remains: e^{−λ}λ^{k}/k!'] },
 
     sec('normal', 'The normal curve and 68-95-99.7'),
@@ -128,11 +133,16 @@ export default {
 
     sec('speed'),
     { type: 'callout', tone: 'speed', text: `Anchors: e^{−1} ≈ ${dec(Math.exp(-1), 2)}, e^{−2} ≈ ${dec(Math.exp(-2), 3)}, e^{−3} ≈ ${dec(Math.exp(-3), 3)}. For small λ, P(0) ≈ 1 − λ.` },
-    { type: 'callout', tone: 'speed', text: `Normal one-sided tails: beyond 1 SD about ${T[1]}, beyond 2 SD about ${T[2]}, beyond 3 SD about ${T[3]}.` },
     { type: 'check', scope: 'e^{−λ} anchors', questions: [
       { make: (rng) => { const lam = rng.pick([1, 2, 3]); return mc({ q: `Events arrive at random at ${lam} per minute on average. Which is closest to P(none in the next minute)?`, right: dec(Math.exp(-lam), 3),
         wrong: [[dec(1 - Math.exp(-lam), 3), 'that is P(at least one)'], [dec(lam * Math.exp(-lam), 3), 'that is P(exactly one)'], [dec(1 / (lam + 1), 3), 'a guess from the rate, not e^{−λ}']],
         explain: `e^{−${lam}} ≈ ${dec(Math.exp(-lam), 3)}.` }, rng); } },
+    ] },
+    { type: 'callout', tone: 'speed', text: `Normal one-sided tails: beyond 1 SD about ${T[1]}, beyond 2 SD about ${T[2]}, beyond 3 SD about ${T[3]}.` },
+    { type: 'check', scope: 'one-sided normal tails', questions: [
+      mc({ q: 'A quantity is roughly normal. About what share lies more than 2 SD above the mean?', right: T[2], at: 2,
+        wrong: [[pct(1 - W[2], 0), 'counted both tails'], [T[1], 'used the 1 SD tail'], [T[3], 'used the 3 SD tail']],
+        explain: `Within 2 SD lies ${R[2]}, so one tail holds (100% − ${R[2]})/2 ≈ ${T[2]}.` }),
     ] },
 
     sec('rule'),
@@ -146,11 +156,15 @@ export default {
       ['Use when', 'a fixed number of trials', 'rare events at a known rate', 'measurements and sums of many pieces'],
     ] },
     { type: 'callout', tone: 'edge', text: 'Edge cases: for small λ, P(0) = e^{−λ} ≈ 1 − λ. A normal variable takes any exact value with probability 0: only ranges have probability. The Poisson has no upper limit, but large counts become vanishingly rare.' },
-    { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: density-curve rows in Likelihood List, percentile and waiting-time questions in Intervals, CLT estimates in Beat the Odds, and the next lessons, which turn big sums into normal curves.' },
-    { type: 'check', scope: 'the contrast table', questions: [
+    { type: 'check', scope: 'the contrast table and the edge cases', questions: [
       mc({ q: 'Defaults in a loan book arrive at random at 2 per month. Which model and mean for the number of defaults in 6 months?', right: 'Poisson, mean 12', at: 1,
         wrong: [['Poisson, mean 2', 'the rate is per month: over 6 months the mean is 6 × 2'], ['Normal, mean 12', 'a count of rare events at a rate is Poisson'], ['Binomial, mean 12', 'there is no fixed number of trials']],
         explain: 'Rare events at a rate: Poisson, with λ = 2 × 6 = 12.' }),
+      { type: 'number', q: 'X is normal with mean μ. What is P(X = μ exactly)?', answer: 0, explain: 'A normal variable gives probability only to ranges. Any single exact value has probability 0.' },
+    ] },
+    { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: density-curve rows in Likelihood List, percentile and waiting-time questions in Intervals, and CLT estimates in Beat the Odds. The next lessons turn big sums into normal curves.' },
+    { type: 'check', scope: 'normal tails in a Likelihood List row', questions: [
+      { type: 'choice', q: 'Daily returns are roughly normal with mean 0% and SD 1%. Which is more likely tomorrow?', options: ['a return below −1%', 'a return above +2%', 'equally likely'], answer: 0, stable: true, traps: { 1: 'a 2 SD tail (about 2.5%) is far thinner than a 1 SD tail (about 16%)', 2: 'the two cut-offs sit at different distances from the mean' }, explain: `Below −1% is beyond 1 SD: about ${T[1]}. Above +2% is beyond 2 SD: about ${T[2]}.` },
     ] },
 
     sec('mastery', 'Mastery check'),

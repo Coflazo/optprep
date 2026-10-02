@@ -50,9 +50,12 @@ export default {
     ], q: `Before any teaching: ${seq(CH.slice(0, 6))}, ? What comes next? Try two ways: once with a second row of differences, once by naming the gaps themselves.`, answer: String(CH[6]), explain: `Gaps ${seq(g(CH.slice(0, 6)))}; their gaps ${seq(g(g(CH.slice(0, 6))))} are irregular, so a second row does not help. Named: the gaps are the primes ${seq(g(CH.slice(0, 6)))}, so the next gap is ${g(CH)[5]} and ${CH[5]} + ${g(CH)[5]} = ${CH[6]}.` },
     { type: 'text', text: `The gaps rise, but not steadily: ${seq(PRIMES.slice(0, 5))} jumps by ${seq(diffs(PRIMES.slice(0, 5)))}. No row of differences ever settles. The gap row is a **famous list**, the primes, and you continue it by knowing the next prime.` },
     { type: 'list', items: [`What number comes next?  ${seq(E1.slice(0, 6))}, ?`, `What number comes next?  ${seq(E2.slice(0, 6))}, ?`, `What number comes next?  ${seq(E3.slice(0, 6))}, ?`] },
-    { type: 'text', text: `Not this lesson: gaps that count up 2, 3, 4, 5 (${seq(AI)}, the add-the-index lesson), gaps that are the odd numbers (${seq(SQ)}, squares plus a constant), or terms that are themselves primes (the primes lesson).` },
     { type: 'check', scope: 'the cue: the gap row is the primes', questions: [
       { make: (rng) => { const p = draw(rng), xs = p.xs.slice(0, 6), b = rng.int(1, 20), ai = [b]; while (ai.length < 6) ai.push(ai[ai.length - 1] + ai.length + 1); const o = Array.from({ length: 6 }, (_, i) => (i + 2) ** 2 + rng.int(1, 9)); return pick(rng, 'Which sequence adds consecutive primes?', seq(xs), [[seq(ai), `its gaps ${seq(g(ai))} count up by 1`], [seq(o), `its gaps ${seq(g(o))} are the odd numbers; ${g(o)[2]} is fine, but ${g(o).find((v) => !isPrime(v))} is not prime`]], `Gaps ${seq(g(xs))}: consecutive primes.`); } },
+    ] },
+    { type: 'text', text: `Not this lesson: gaps that count up 2, 3, 4, 5 (${seq(AI)}, the add-the-index lesson), or gaps that are the odd numbers (${seq(SQ)}, squares plus a constant). Also terms that are themselves primes (the primes lesson).` },
+    { type: 'check', scope: 'the neighbouring lists', questions: [
+      { type: 'choice', q: '5, 10, 17, 26, 37, 50: which lesson is it?', options: ['squares plus 1: gaps are odd', 'gaps that are the primes', 'the terms are primes'], answer: 0, traps: { 1: 'the gaps 5, 7, 9, 11, 13 include 9, which is not prime', 2: '10 and 26 are not prime' }, explain: '2² + 1, 3² + 1, …, 7² + 1: gaps run through the odd numbers.' },
     ] },
 
     S('why'),
@@ -75,6 +78,9 @@ export default {
       { hinge: true, make: (rng) => { let i; do i = rng.int(3, 15); while (!oddComposite(PRIMES[i], PRIMES[i + 1])); const p = PRIMES[i], c = oddComposite(p, PRIMES[i + 1]); return pick(rng, `Which number is the next prime after ${p}?`, PRIMES[i + 1], [[c, `${c} = ${fac(c)}: odd, but not prime`], [PRIMES[i + 2], `that skips ${PRIMES[i + 1]}`], [p + 2 === c ? p + 4 : p + 2, `it is not the next number of the list: ${p + 2 === c ? p + 4 : p + 2} ${isPrime(p + 2 === c ? p + 4 : p + 2) ? 'comes later' : 'is not prime'}`]].filter(([v]) => v !== PRIMES[i + 1]), `${PRIMES[i + 1]} is prime, and nothing between ${p} and it is.`); } },
     ] },
     { type: 'diagram', diagram: 'ladder', spec: { mode: 'diff', rows: ladderRows(E1, 1), predicted: true }, caption: `${seq(E1.slice(0, 6))}: gaps ${seq(g(E1.slice(0, 6)))}. Outlined: the next prime ${g(E1)[5]}, then ${E1[5]} + ${g(E1)[5]} = ${E1[6]}.` },
+    { type: 'check', scope: 'continuing the gap row', questions: [
+      { type: 'number', q: 'What comes next?  10, 13, 18, 25, 36, 49, 66, ?', answer: 85, explain: 'Gaps 3, 5, 7, 11, 13, 17: the next prime is 19, so 66 + 19 = 85.' },
+    ] },
 
     S('derivation'),
     { type: 'text', text: `The same moves on a harder item, ${seq(E3.slice(0, 6))}: gaps ${seq(g(E3.slice(0, 6)))}, second row ${seq(g(g(E3.slice(0, 6))))}, irregular. The gaps are consecutive primes starting at ${g(E3)[0]}. After ${g(E3)[4]} come ${arith(g(E3)[4] + 2, 2, (g(E3)[5] - g(E3)[4]) / 2 - 1).map((v) => `${v} = ${fac(v)}`).join(' and ')}, so the next prime is ${g(E3)[5]} and the next term ${E3[5]} + ${g(E3)[5]} = ${E3[6]}. Larger primes only make the last check longer.` },
@@ -127,6 +133,9 @@ export default {
 
     S('speed'),
     { type: 'callout', tone: 'speed', text: `Know the primes to 60 by sight: ${seq(PRIMES.slice(0, 17))}. The odd numbers that are **not** prime in that range are the ones to watch: ${COMPOSITE_ODDS.filter((v) => v < 60).join(', ')}.` },
+    { type: 'check', scope: 'the primes to 60', questions: [
+      { type: 'choice', q: 'Which odd number below 60 is not prime?', options: ['51', '53', '47', '59'], answer: 0, traps: { 1: '53 is prime', 2: '47 is prime', 3: '59 is prime' }, explain: '51 = 3 × 17: its digit sum 6 is divisible by 3.' },
+    ] },
     { type: 'callout', tone: 'speed', text: 'Quick prime test up to 60: an odd number is prime unless it is divisible by 3, 5 or 7 (checks by digit sum, last digit, and one division). Two gaps in, if the gaps are 2, 3, 5 or start on any prime and keep hitting primes, assume the list and verify one more.' },
     { type: 'thinkaloud', problem: nextQ(E2.slice(0, 6)), lines: [
       { t: 0, say: `Gaps: ${seq(g(E2.slice(0, 6)))}. Rising, but unevenly.` },
@@ -157,11 +166,11 @@ export default {
       { change: `Start at ${CH[0] + 6} and begin the gaps at 3, together`, fusion: true, effect: `The start shifts every term and the gap list moves one prime along: ${seq(pg(CH[0] + 6, 1, 6))}, next ${pg(CH[0] + 6, 1, 7)[6]}.` },
     ] },
     { type: 'callout', tone: 'edge', text: 'Edge cases: gaps starting 2, 3 look like "add 2, then 3", a counting rule, until the third gap is 5 instead of 4; so read at least four gaps before deciding. A gap row that starts at a larger prime (7, 11, 13, 17) is the same rule, just further along the list.' },
-    { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: whenever a derived row looks random, compare it with the lists you know (squares, powers, primes, Fibonacci). The fraction lesson uses the same move on its numerator and denominator rows.' },
     { type: 'check', scope: 'the contrast table and edge cases', questions: [
       { make: (rng) => { const t = rng.int(0, 2), a = rng.int(1, 15); let xs; if (t === 0) xs = pg(a, 0, 6); else if (t === 1) { xs = [a]; while (xs.length < 6) xs.push(xs[xs.length - 1] + xs.length + 1); } else xs = Array.from({ length: 6 }, (_, i) => (i + 1) ** 2 + a); const names = ['consecutive primes', 'counting numbers', 'odd numbers']; const trp = [[null, `the third gap is ${g(xs)[2]}, not ${g(xs)[1] + 1}`, `${g(xs)[0]} is even`], [`${g(xs).find((v) => !isPrime(v))} is not prime`, null, 'the gaps rise by 1, not 2'], [`${g(xs).find((v) => !isPrime(v))} is not prime`, 'the gaps rise by 2, not 1', null]]; return pick(rng, `${seq(xs)}: what are the gaps?`, names[t], names.map((nm, i) => [nm, trp[t][i]]).filter((_, i) => i !== t), `Gaps: ${seq(g(xs))}.`); } },
     ] },
 
+    { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: whenever a derived row looks random, compare it with the lists you know (squares, powers, primes, Fibonacci). The fraction lesson uses the same move on its numerator and denominator rows.' },
     { type: 'transfer',
       near: { make: (rng) => { const p = draw(rng); return num(`Markers stand along a road, the distances between them being consecutive primes: ${seq(p.xs.slice(0, 6))}. Where is the next marker?`, p.xs[6], `Gaps ${seq(g(p.xs.slice(0, 6)))}; next prime ${PRIMES[gapAfter(p)]}; ${p.xs[5]} + ${PRIMES[gapAfter(p)]} = ${p.xs[6]}.`, ['Name the gaps.', 'Add the next prime.']); } },
       far: { type: 'number', q: `The running totals of the primes (2, 2 + 3, 2 + 3 + 5, …) are ${seq(CUM.slice(0, 5))}. What is the next running total?`, answer: CUM[5], explain: `The gaps of the running totals are the primes themselves (${seq(g(CUM.slice(0, 5)))}); the next prime is ${PRIMES[5]}, so ${CUM[4]} + ${PRIMES[5]} = ${CUM[5]}.`, hints: ['Take the gaps of the totals.', 'Add the next prime.'] },

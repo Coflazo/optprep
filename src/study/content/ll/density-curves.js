@@ -65,6 +65,9 @@ export default {
         { id: 'wide', label: 'The wider interval wins', approach: 'You put both tails above (b) because they stretch out forever.', breaksAt: 'Area is width × height: half a unit at the peak beats a long, thin tail.' },
       ] },
     { type: 'text', text: 'The prompt shows one or more smooth **density curves**: the P&L of a desk, a measurement X. Statements ask whether the quantity is above a, below a, or between a and b, possibly for different curves. The curves have shapes you can reason with: bells (normal), flat blocks (uniform), triangles, and right-skewed humps.' },
+    { type: 'check', scope: 'the curve shapes', questions: [
+      { type: 'choice', q: '"Desk P&L is a bell centred on 0." Which shape is it?', options: ['normal', 'uniform', 'triangle', 'right-skewed hump'], answer: 0, traps: { 1: 'a uniform is a flat block', 2: 'a triangle has straight sides', 3: 'a bell centred on 0 is symmetric, not skewed' }, explain: 'A bell is the normal shape.' },
+    ] },
     { type: 'text', text: 'Not this lesson: a histogram with counts on the bars (add counts) or a fund chart (count years). Here there are no counts; the area is the probability.' },
     { type: 'check', scope: 'the recognition cues above', questions: [
       mc(null, 'On a density curve, what is the probability that X lies between a and b?', 'the area under the curve between a and b', [['the height of the curve at the midpoint of a and b', 'height is density, not probability: it can even exceed 1'], ['the width b − a', 'width alone ignores how tall the curve is there'], ['the height at b minus the height at a', 'differences of heights mean nothing here']], 'Area = probability; the total area under a density is 1.', { at: 0 }),
@@ -137,9 +140,12 @@ export default {
 
     S('speed'),
     { type: 'callout', tone: 'speed', text: 'Four numbers do most of the work: 0.5 (either side of a symmetric centre), 0.68 (within 1 sd), 0.16 (one tail beyond 1 sd), 0.025 (one tail beyond 2 sd). A band from the mean to 1 sd is 0.34.' },
-    { type: 'callout', tone: 'speed', text: `For flat curves never estimate: overlap width / support width is exact. For triangles use similar triangles: a corner piece of base b has area (b/base)² times the area on that side of the peak. Budget: ${LL.exam.perItemSeconds} seconds is plenty once every statement has a landmark.` },
     { type: 'check', scope: 'landmark areas', questions: [
       { make: (rng) => { const m = rng.int(0, 5), s = rng.pick([1, 2, 3]); return { type: 'number', q: `X is bell-shaped, mean ${m}, sd ${s}. P(${m} < X < ${m + s})? (2 decimals)`, answer: ONE / 2, tolerance: 0.02, hints: ['Half of the 68% band.'], explain: `0.68 / 2 ≈ ${dp(ONE / 2, 2)}.` }; } },
+    ] },
+    { type: 'callout', tone: 'speed', text: `For flat curves never estimate: overlap width / support width is exact. For triangles use similar triangles: a corner piece of base b has area (b/base)² times the area on that side of the peak. Budget: ${LL.exam.perItemSeconds} seconds is plenty once every statement has a landmark.` },
+    { type: 'check', scope: 'flat curves are exact', questions: [
+      { type: 'number', q: 'X is uniform on [−4, 6]. P(X > 4)?', answer: 0.2, tolerance: 1e-9, explain: 'Overlap width over support width: 2/10 = 0.2, exact.' },
     ] },
 
     { type: 'thinkaloud', problem: `Desk A's daily P&L is bell-shaped with mean ${TK.m} and sd ${TK.s}; desk B's is uniform between ${TK.lo} and ${TK.hi}. Rank: (a) A's P&L is above ${TK.m + TK.s}, (b) B's P&L is above ${TK.cut}, (c) A's P&L is between ${TK.m - TK.s} and ${TK.m}.`, lines: [
@@ -163,11 +169,11 @@ export default {
       ['right-skewed hump', 'peak near the left', 'most area to the right of the peak'],
     ] },
     { type: 'callout', tone: 'edge', text: 'Edge cases: P(X = a) is 0 for any single value (no width, no area), so "above a" and "at least a" are equal. An interval outside the curve\'s support has probability 0.' },
-    { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: histograms are densities with thick bars, large-number statements use the bell\'s landmarks for proportions (sd 0.5/√n), and Intervals estimates use the same 68-95 rule for ranges.' },
     { type: 'check', scope: 'the contrast table and edge cases', questions: [
       mc(null, 'X has a smooth density. How do P(X > 2) and P(X ≥ 2) compare?', 'They are equal', [['P(X ≥ 2) is larger', 'counted the single point 2 as having probability, but it has no width'], ['P(X > 2) is larger', 'a strict inequality cannot add area'], ['It depends on the curve', 'for any smooth density a single point has area 0']], 'A single point has zero width, so zero area.', { at: 0 }),
     ] },
 
+    { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: histograms are densities with thick bars. Large-number statements use the bell\'s landmarks for proportions (sd 0.5/√n), and Intervals estimates use the same 68-95 rule for ranges.' },
     { type: 'variation', base: `The challenge: bell centred at ${M}, sd ${SD}. (a) above 4.5 ≈ ${dp(CH.a, 3)}, (b) between 3 and 3.5 ≈ ${dp(CH.b, 3)}, (c) below 2 ≈ ${dp(CH.c, 3)}. Order (b) > (c) > (a).`, rows: [
       { same: true, change: 'Add 10 to the mean and to every number in the statements', effect: 'No change. Areas depend only on where each interval sits relative to the curve, and everything moved together.' },
       { change: 'Double the sd to 2', effect: `The peak flattens and the tails fatten: (a) ≈ ${dp(V2.a, 3)}, (b) ≈ ${dp(V2.b, 3)}, (c) ≈ ${dp(V2.c, 3)}. The narrow band loses its height and drops to last.` },

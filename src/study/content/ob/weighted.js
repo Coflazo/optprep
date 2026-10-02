@@ -164,9 +164,15 @@ export default {
 
     sec('speed'),
     { type: 'callout', tone: 'speed', text: 'Multiply once per leg and add: weight × price. For the tap count, use 1 + the weights added, and check the trade list against it before submitting.' },
-    { type: 'callout', tone: 'speed', text: 'Tap the weighted leg\'s units one after another (A, A, then B) so the trade list reads like the card. A glance then confirms the count, and the net row confirms flatness, before you spend a submit.' },
-    { type: 'callout', tone: 'speed', text: 'Sanity check: a weighted bundle\'s quote should sit near weight × each leg\'s price. If 2A + B trades near A + B, you have misread which leg is weighted.' },
     { type: 'check', scope: 'multiply, add, count', questions: [{ make: edgeQ }] },
+    { type: 'callout', tone: 'speed', text: 'Tap the weighted leg\'s units one after another (A, A, then B) so the trade list reads like the card. A glance then confirms the count, and the net row confirms flatness, before you spend a submit.' },
+    { type: 'check', scope: 'tapping in card order', questions: [
+      { type: 'choice', q: 'You sell 2A + B and hedge with the legs. Which tap order reads like the card?', options: ['A, A, then B', 'A, B, then A', 'B, then A, A'], answer: 0, traps: { 1: 'a mixed order makes the count harder to check', 2: 'the card lists A first' }, explain: 'Tap the weighted leg twice, then B: the list then reads like the card.' },
+    ] },
+    { type: 'callout', tone: 'speed', text: 'Sanity check: a weighted bundle\'s quote should sit near weight × each leg\'s price. If 2A + B trades near A + B, you have misread which leg is weighted.' },
+    { type: 'check', scope: 'the weight sanity check', questions: [
+      { type: 'choice', q: 'A trades near 50 and B near 70. Where should 2A + B trade?', options: ['near 170', 'near 120', 'near 240'], answer: 0, traps: { 1: 'that is A + B: the weight was missed', 2: 'that weights B, not A' }, explain: '2 × 50 + 70 = 170.' },
+    ] },
 
     sec('rule'),
     { type: 'callout', tone: 'rule', text: 'Weighted bundle: contents = weight × leg price on the traded side, added; trade one bundle against weight-many units of each leg.' },
@@ -179,11 +185,11 @@ export default {
       ['2A + B + C', '2 × ask(A) + ask(B) + ask(C)', 'sell it, buy A twice, B once, C once'],
     ] },
     { type: 'callout', tone: 'edge', text: 'Edge cases. 2A + 2B holds two of each: still one bundle tap. Five taps (3A + B, 2A + B + C, 2A + 2B) is normal here. A zero edge after weighting still does not count.' },
-    { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: hidden boards hedge 2A + B with another bundle, (A + B) + A, which crosses one tight spread instead of two wide ones. The weights still have to match unit for unit.' },
     { type: 'check', scope: 'the contrast table', questions: [
       mc({ q: 'Which trades hedge one sold 2A + B + C?', right: 'Buy A twice, B once, C once', wrong: [['Buy A, B and C once each', 'short one A left over'], ['Buy A twice, B twice, C twice', 'long one B and one C left over'], ['Buy two 2A + B + C', 'buying the card back only pays the spread; two copies overshoot']], explain: 'Match the contents: two A, one B, one C.' }),
     ] },
 
+    { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: hidden boards hedge 2A + B with another bundle, (A + B) + A, which crosses one tight spread instead of two wide ones. The weights still have to match unit for unit.' },
     { type: 'variation', base: `Base: ${boardText([A, B, W])}. Sell 2A + B, buy two A and one B: +${px(edgeSell(W, wparts))}.`, rows: [
       { change: `A's ask rises by ${px(bumpA)}`, effect: `Two A are bought, so the cost rises by ${px(2 * bumpA)}: profit ${px(edgeSell(W, [part(card('A', [1, 0], A.bid, A.ask + bumpA), 2), part(B)]))}, no trade.` },
       { change: `B's ask rises by ${px(bumpA)}`, effect: `One B is bought: cost up ${px(bumpA)}, profit ${px(edgeSell(W, [part(A, 2), part(card('B', [0, 1], B.bid, B.ask + bumpA))]))}, no trade.` },

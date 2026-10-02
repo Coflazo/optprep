@@ -67,9 +67,12 @@ export default {
       ] },
     { type: 'text', text: 'There is **no picture**: three statements about fair dice, each from a different experiment (a few throws of one die, a pair of dice, several dice at once, throwing until a six). You rank them by putting a number, or a tight estimate, on each.' },
     { type: 'list', items: ['"At least one six in n throws" or "no six in n throws"', '"The sum of two dice is at least t", "two dice show the same face", "the higher die is exactly k"', '"At least k sixes when 6k dice are thrown", "the first six comes on throw k", "n dice all show different faces"'] },
-    { type: 'text', text: 'Not this lesson: a table or chart of past rolls (count rows instead) and coin strings (patterns inside a sequence).' },
     { type: 'check', scope: 'the recognition cues above', questions: [
       mc(null, 'Which tool prices "at least one six in 5 throws" fastest?', 'the complement: 1 − (5/6)^5', [['counting ordered outcomes directly', '6^5 = 7776 outcomes is far too many to count'], ['5 × 1/6', 'adding the chances double-counts throws with several sixes'], ['a two-dice grid', 'the grid only covers two dice']], 'Every throw missing is one product: (5/6)^5.', { at: 0 }),
+    ] },
+    { type: 'text', text: 'Not this lesson: a table or chart of past rolls (count rows instead) and coin strings (patterns inside a sequence).' },
+    { type: 'check', scope: 'no picture', questions: [
+      { type: 'choice', q: 'A prompt shows a table of 50 past rolls and asks about a random row. Which lesson is it?', options: ['a table lesson: count the rows', 'dice events (this lesson)', 'coin strings'], answer: 0, traps: { 1: 'this lesson has no picture: it prices fair dice', 2: 'these are dice, not coins' }, explain: 'Past rolls in a table are counted row by row; this lesson prices fair dice from first principles.' },
     ] },
 
     S('why'),
@@ -140,9 +143,12 @@ export default {
     S('speed'),
     { type: 'callout', tone: 'speed', text: `Memorise (5/6)^n: it drops below 1/2 at 4 throws (${dp(pw(q(5, 6), 4), 2)}) and is about ${dp(pw(q(5, 6), 6), 2)} at 6. "At least one six" is 1 minus the table.` },
     { type: 'diagram', diagram: 'table', spec: { caption: 'No six in n throws', columns: ['n', '(5/6)^n', 'at least one six'], rows: [1, 2, 3, 4, 5, 6].map((n) => [n, dp(pw(q(5, 6), n)), dp(atLeastOne(n))]) }, caption: 'Six numbers that settle most "at least one six" statements at a glance.' },
-    { type: 'callout', tone: 'speed', text: `Two dice: sums by 6 − |s − 7|, "at least t" from the top as ${TOP.join(', ')}; doubles 6/36; maximum exactly k is (2k − 1)/36. Budget: ${LL.exam.perItemSeconds} seconds, but most triples take 20.` },
     { type: 'check', scope: 'the recall table', questions: [
       { make: (rng) => again(() => { const keys = rng.shuffle(Object.keys(POOL)).slice(0, 3); return rank(rng, 'Rank from most to least likely (fair dice).', keys.map((k) => POOL[k](rng)), 'Price each with its tool; the table and the two-dice counts do most of the work.', { gap: 0.02 }); }) },
+    ] },
+    { type: 'callout', tone: 'speed', text: `Two dice: sums by 6 − |s − 7|, "at least t" from the top as ${TOP.join(', ')}; doubles 6/36; maximum exactly k is (2k − 1)/36. Budget: ${LL.exam.perItemSeconds} seconds, but most triples take 20.` },
+    { type: 'check', scope: 'two-dice values', questions: [
+      { type: 'choice', q: 'Two dice. Which is largest?', options: ['the higher die is exactly 5', 'a double', 'the sum is at least 11'], answer: 0, traps: { 1: 'doubles are 6/36, below 9/36', 2: 'a sum of at least 11 is 3/36' }, explain: 'Maximum exactly 5: (2 × 5 − 1)/36 = 9/36. Doubles 6/36, sum at least 11 is 3/36.' },
     ] },
 
     { type: 'thinkaloud', problem: 'Rank from most to least likely: (a) at least one six in 3 throws of a die, (b) the higher of two dice is exactly 5, (c) at least 2 sixes when 12 dice are thrown.', lines: [
@@ -170,11 +176,11 @@ export default {
       ['at least k sixes in 6k dice', 'binomial tail', 'falls with k'],
     ] },
     { type: 'callout', tone: 'edge', text: 'Edge cases: with n = 1 the complement and n × p agree (1/6). Seven dice can never all differ (only six faces), so that statement is impossible.' },
-    { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: collisions ("all different" with d values instead of 6), card hands (complements as products), coin patterns (count the strings that avoid the event) and large-number statements (binomial tails shrinking with n).' },
     { type: 'check', scope: 'the contrast table and edge cases', questions: [
       { make: (rng) => { const k = rng.int(1, 4); const v = pw(q(5, 6), k - 1).mul(q(1, 6)); return { type: 'number', q: `P(the first six comes on throw ${k})? (3 decimals)`, answer: v.toNumber(), tolerance: 0.0015, hints: [`${k - 1} misses, then a six.`], explain: `(5/6)^${k - 1} × 1/6 = ${dp(v)}.` }; } },
     ] },
 
+    { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: collisions ("all different" with d values instead of 6) and card hands (complements as products). Also coin patterns (count the strings that avoid the event) and large-number statements (binomial tails shrinking with n).' },
     { type: 'variation', base: `The challenge: (a) one six in 4 throws ≈ ${dp(DM.four)}, (b) a double six in 24 throws ≈ ${dp(DM.dbl)}, (c) sum at least 10 ≈ ${dp(DM.ge10)}. Order (a) > (b) > (c).`, rows: [
       { same: true, change: '(a) uses 4 dice thrown at once instead of one die thrown 4 times', effect: 'No change. The dice are independent either way, so "no six" is still (5/6)^4.' },
       { change: 'Give (b) 25 throws instead of 24', effect: `1 − (35/36)^25 ≈ ${dp(DBL25)}: (b) now passes 1/2 but still trails (a). The order holds.` },

@@ -45,9 +45,12 @@ export default {
     ], q: `Before any teaching: ${seq(CH.slice(0, 5))}, ? What comes next? Try two ways: once with the decimal gaps, once after multiplying every term by 4.`, answer: String(CH[5]), explain: `Gaps ${seq(g(CH.slice(0, 5)))} grow by ${g(g(CH))[0]}, so the next gap is ${g(CH)[4]} and ${CH[4]} + ${g(CH)[4]} = ${CH[5]}. Times 4 the list is ${seq(CHq.slice(0, 5))}: gaps ${seq(g(CHq.slice(0, 5)))}, next ${CHq[5]}, and ${CHq[5]} ÷ 4 = ${CH[5]}. Same ladder, friendlier numbers.` },
     { type: 'text', text: 'The terms carry decimals, but no new kind of rule comes with them. Underneath there is an ordinary rule: gaps that grow by a constant (usually in quarters or halves), or a constant ratio that is not a whole number, such as 1.5, 0.5, 2.5 or 0.2.' },
     { type: 'list', items: [`What number comes next?  ${seq(E1.slice(0, 5))}, ?`, `What number comes next?  ${seq(E2.slice(0, 5))}, ?`, `What number comes next?  ${seq(E3.slice(0, 5))}, ?`] },
-    { type: 'text', text: `A ratio like 1.5 can hide for a while: ${seq(E2.slice(0, 5))} are all whole numbers, and the decimal only appears at ${E2[5]}. So treat a sequence with a decimal answer exactly like any other.` },
     { type: 'check', scope: 'the cue: an ordinary rule under the decimals', questions: [
       { make: (rng) => { const p = anyD(rng, 5); const names = ['gaps that grow by a constant', 'a constant ratio']; const t = p.k === 'quad' ? 0 : 1; return pick(rng, `${seq(p.xs)}: which rule is underneath?`, names[t], [[names[1 - t], t === 0 ? `the gaps ${seq(g(p.xs))} grow by ${p.s} each time; the ratios drift` : `every ratio is ${p.r}; the gaps scale with the terms`], ['no rule: decimals are random', 'decimals change the arithmetic, not the rule']], t === 0 ? `Gaps ${seq(g(p.xs))}, growing by ${p.s}.` : `Ratios ${seq(rat(p.xs))}.`); } },
+    ] },
+    { type: 'text', text: `A ratio like 1.5 can hide for a while: ${seq(E2.slice(0, 5))} are all whole numbers, and the decimal only appears at ${E2[5]}. So treat a sequence with a decimal answer exactly like any other.` },
+    { type: 'check', scope: 'a hidden ratio', questions: [
+      { type: 'number', q: '16, 24, 36, 54, 81, ? What comes next?', answer: 121.5, tolerance: 1e-9, explain: '× 1.5 every step: 81 × 1.5 = 121.5. The decimal only shows at the end.' },
     ] },
 
     S('why'),
@@ -62,6 +65,9 @@ export default {
     S('picture'),
     { type: 'text', text: 'The same ladder twice: once in decimals, once in quarters. The shape is identical; only the labels change. For a fractional ratio, the ratio ladder shows one constant row, exactly as for whole numbers. Nothing about the method changes: the flat row is still the row you copy, and you still climb back up one row at a time.' },
     { type: 'diagram', diagram: 'ladder', spec: { mode: 'diff', rows: ladderRows(E1.slice(0, 6), 2), predicted: true }, caption: `${seq(E1.slice(0, 5))}: gaps ${seq(g(E1.slice(0, 5)))}, second row ${g(g(E1))[0]} every time. Outlined: next gap ${g(E1)[3]} + ${g(g(E1))[0]} = ${g(E1)[4]}, next term ${E1[4]} + ${g(E1)[4]} = ${E1[5]}.` },
+    { type: 'check', scope: 'the decimal ladder', questions: [
+      { type: 'number', q: 'What comes next?  1.5, 1.75, 2.25, 3, 4, ?', answer: 5.25, tolerance: 1e-9, explain: 'Gaps 0.25, 0.5, 0.75, 1: the next gap is 1.25, so 4 + 1.25 = 5.25.' },
+    ] },
     { type: 'diagram', diagram: 'ladder', spec: { mode: 'diff', rows: ladderRows(E1q.slice(0, 6), 2), predicted: true }, caption: `Times 4: ${seq(E1q.slice(0, 5))}, second row ${g(g(E1q))[0]}, next ${E1q[5]}. Divide back: ${E1q[5]} ÷ 4 = ${E1[5]}. Whole numbers, no decimal points to line up.` },
     { type: 'check', scope: 'the decimal ladder and its whole-number twin', questions: [
       { make: (rng) => { const p = quarters(rng, 5); return num(`What is the constant second difference of ${seq(p.xs)}?`, p.s, `Gaps ${seq(g(p.xs))}; their gaps are all ${p.s}. In quarters: ${seq(p.q)}, second difference ${p.s * 4}, and ${p.s * 4} ÷ 4 = ${p.s}.`, ['Subtract neighbours, lining up the decimal points.', 'Or multiply everything by 4 first.']); } },
@@ -100,6 +106,9 @@ export default {
         ] },
     ] },
     { type: 'text', text: `The ratio moves on real items. ${seq(E4.slice(0, 4))} has ratio ${rat(E4)[0]}: double ${E4[3]} to ${2 * E4[3]}, add half, ${E4[3] / 2}, and the next term is ${E4[4]}. ${seq(E5.slice(0, 4))} has ratio ${rat(E5)[0]}: ${E5[3]} ÷ 5 = ${E5[4]}. In both, a rough size (about ${Math.round(E4[3] * 2.5)}, about ${round2(E5[3] / 5)}) comes before any exact digit.` },
+    { type: 'check', scope: 'a fractional ratio', questions: [
+      { type: 'number', q: '4, 10, 25, 62.5, ? (ratio 2.5) What comes next?', answer: 156.25, tolerance: 1e-9, explain: 'Double 62.5 to 125 and add half of 62.5 (31.25): 156.25.' },
+    ] },
     { type: 'explain', prompt: 'Why can you multiply every term by 4, solve, and divide the answer by 4, without changing the rule?', model: 'Scaling every term by 4 scales every gap, every second difference and every ratio row consistently: gaps and second differences are multiplied by 4, ratios are unchanged. So the same row is constant, the ladder climbs the same way, and dividing the new term by 4 undoes the scaling.', points: ['Scaling every term scales every difference row by the same factor', 'Ratios do not change at all', 'Dividing the answer back undoes the unit change'] },
 
     S('worked'),
@@ -127,6 +136,9 @@ export default {
 
     S('speed'),
     { type: 'callout', tone: 'speed', text: 'Scale first when the decimals are quarters or halves: × 4 or × 2 turns the list into whole numbers you can read at a glance. Divide only the final answer back; the rows in between can stay in whole numbers.' },
+    { type: 'check', scope: 'scaling and size checks', questions: [
+      { make: (rng) => { const p = quarters(rng, 6); return num(`Scale ${seq(p.xs.slice(0, 5))} by 4, solve, and scale back. What comes next?`, p.xs[5], `× 4: ${seq(p.q.slice(0, 5))}, next ${p.q[5]}; ÷ 4: ${p.xs[5]}.`, ['Multiply every term by 4.', 'Second differences of the whole numbers, then climb.']); } },
+    ] },
     { type: 'callout', tone: 'speed', text: 'Estimate before you pick: round the last term, apply the rule roughly, and discard options of the wrong size. Two seconds, and the ten-times traps are gone.' },
     { type: 'thinkaloud', problem: nextQ(E4.slice(0, 4)), lines: [
       { t: 0, say: `Gaps ${seq(g(E4.slice(0, 4)))} grow with the terms: divide instead.` },
@@ -135,8 +147,9 @@ export default {
       { t: 14, say: `Size check: ${rat(E4)[0]} × ${E4[3]} is about ${Math.round(E4[4] / 10) * 10}, and ${2 * E4[3] + E4[3] / 20} is too small. Half of ${E4[3]} is ${E4[3] / 2}.` },
       { t: 19, say: `${2 * E4[3]} + ${E4[3] / 2} = ${E4[4]}. ${E4[4] * 10} and ${E4[4] / 10} would be place slips. Answer ${E4[4]}.` },
     ] },
-    { type: 'check', scope: 'scaling and size checks', questions: [
-      { make: (rng) => { const p = quarters(rng, 6); return num(`Scale ${seq(p.xs.slice(0, 5))} by 4, solve, and scale back. What comes next?`, p.xs[5], `× 4: ${seq(p.q.slice(0, 5))}, next ${p.q[5]}; ÷ 4: ${p.xs[5]}.`, ['Multiply every term by 4.', 'Second differences of the whole numbers, then climb.']); } },
+    { type: 'check', scope: 'the size check, and the think-aloud', questions: [
+      { type: 'choice', q: '7, 3.5, 1.75, 0.875, ? Which option has the right size?', options: ['0.4375', '4.375', '0.04375'], answer: 0, traps: { 1: 'ten times too big: halving makes it smaller', 2: 'ten times too small' }, explain: 'Halve 0.875: about 0.44. Only 0.4375 has that size.' },
+      { type: 'choice', q: 'In the think-aloud, the first try gave 256.25. What went wrong?', options: ['half of 125 is 62.5, not 6.25', 'the ratio is 2, not 2.5', 'doubling 125 gives 260'], answer: 0, traps: { 1: '20 ÷ 8 = 2.5', 2: '2 × 125 = 250' }, explain: '2.5 × 125 = 250 + 62.5 = 312.5. The size check caught the slip.' },
     ] },
 
     S('rule'),
@@ -158,12 +171,12 @@ export default {
       { change: 'Multiply every term by 4, then add 1', fusion: true, effect: `Scaling multiplies every row by 4 and the 1 only shifts the terms, so the next term is 4 × ${E1[5]} + 1 = ${4 * E1[5] + 1}.` },
     ] },
     { type: 'callout', tone: 'edge', text: 'Edge cases: a ratio below 1 shrinks the terms towards 0 but never reaches it. A ratio of 1.5 keeps a multiple of 16 whole for four steps, so the decimal can arrive only at the answer. And halving an odd number always ends in .5.' },
-    { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: prices quoted in steps of 0.25 or 0.05 are whole numbers of ticks, so order-book arithmetic is easier in ticks. × 1.5 is a 50% rise and × 0.2 an 80% fall: percentage moves are ratios.' },
     { type: 'check', scope: 'the contrast table and edge cases', questions: [
       { make: (rng) => { const opts = [[1.5, 'add half of it'], [0.5, 'take half of it'], [2.5, 'double it, add half'], [0.2, 'divide it by 5']]; const i = rng.int(0, 3), [r, w] = opts[i]; return pick(rng, `Multiplying by ${r} is the same as:`, w, opts.filter((_, j) => j !== i).map(([rr, ww]) => [ww, `that is × ${rr}`]), `× ${r}: ${w}.`); } },
       { make: (rng) => { const a = rng.pick([3, 5, 7, 9, 11]), xs = geoD(a, 1, 2, 6); return num(nextQ(xs.slice(0, 5)), xs[5], `Ratio 0.5: half of ${xs[4]} is ${xs[5]}.`, ['Each term is half the one before.', 'Keep every decimal place when halving.']); } },
     ] },
 
+    { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: prices quoted in steps of 0.25 or 0.05 are whole numbers of ticks, so order-book arithmetic is easier in ticks. × 1.5 is a 50% rise and × 0.2 an 80% fall: percentage moves are ratios.' },
     { type: 'transfer',
       near: { make: (rng) => { const p = quarters(rng, 6); return num(`A price moves in quarter steps: ${seq(p.xs.slice(0, 5))}. If the pattern holds, what is the next price?`, p.xs[5], `Times 4: ${seq(p.q.slice(0, 5))}, next ${p.q[5]}; back to euros: ${p.xs[5]}.`, ['Count in quarters.', 'Second differences of the whole numbers, then divide by 4.']); } },
       far: { type: 'number', q: `A bid moves in ticks of 0.25: ${seq(QUOTES.slice(0, 4))}. The moves are ${seq(TICKS.slice(0, 3))} ticks. If the next move is ${TICKS[3]} ticks, what is the next bid?`, answer: QUOTES[4], explain: `In ticks the moves grow by 1; ${TICKS[3]} ticks is ${TICKS[3] * 0.25}, so ${QUOTES[3]} + ${TICKS[3] * 0.25} = ${QUOTES[4]}.`, hints: ['Work in ticks, not euros.', 'Convert the move back: ticks × 0.25.'] },

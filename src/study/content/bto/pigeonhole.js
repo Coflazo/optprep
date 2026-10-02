@@ -55,9 +55,12 @@ export default {
     ] },
     { type: 'text', text: 'Items are dropped, drawn or chosen **at random**, and the question asks whether **some** category ends up crowded: some box with more than m coins, two socks of one colour, two chosen numbers that add up to a target. When the count forces the event, the randomness is decoration.' },
     { type: 'list', items: ['"61 coins are thrown into 15 boxes. Probability that some box holds more than 4?"', '"A drawer has socks in 4 colours. You take 5 in the dark. Probability of a matching pair?"', '"You pick 6 different numbers from 1 to 10. Probability that two of them add up to 11?"'] },
-    { type: 'text', text: 'Not this lesson: many categories and few items (23 people, 365 birthdays), where a repeat is likely but not forced (bto/birthday); and questions about **one particular** box, which are binomial counts.' },
     { type: 'check', scope: 'the recognition cues above', questions: [
       { type: 'choice', q: 'Which question is most likely to have the answer exactly 1?', options: ['40 coins into 13 boxes: some box has more than 3', '40 coins into 13 boxes: box 1 has more than 3', '23 people: two share a birthday', '5 socks from 5 colours: a matching pair'], answer: 0, traps: { 1: 'one particular box: a binomial tail, far below 1', 2: 'likely (about 1/2) but not forced: 365 boxes, 23 items', 3: '5 socks can all differ when there are 5 colours' }, explain: '13 × 3 = 39 < 40: an even spread cannot keep every box at 3 or fewer.' },
+    ] },
+    { type: 'text', text: 'Not this lesson: many categories and few items (23 people, 365 birthdays), where a repeat is likely but not forced (bto/birthday); and questions about **one particular** box, which are binomial counts.' },
+    { type: 'check', scope: 'forced or only likely', questions: [
+      { type: 'choice', q: '"10 people: probability that two share a birth month?" Which lesson is it?', options: ['bto/birthday: likely, not forced', 'bto/pigeonhole: forced, so 1', 'a binomial count for one month'], answer: 0, traps: { 1: '10 people fit into 12 months without a repeat, so nothing is forced', 2: 'no particular month is named' }, explain: 'Fewer people (10) than months (12): a repeat is likely but not certain.' },
     ] },
 
     S('why'),
@@ -138,6 +141,9 @@ export default {
 
     S('speed'),
     { type: 'callout', tone: 'speed', text: `Do the capacity check first, before any formula: boxes × cap, compare with items. It costs ten seconds of the ${SECTIONS.bto.exam.perItemSeconds} you have. If the check passes, pick 1 and move on.` },
+    { type: 'check', scope: 'the ten-second capacity check', questions: [
+      { make: (rng) => { const k = rng.int(10, 16), m = rng.int(3, 5); const sure = `${k * m + 1} coins into ${k} boxes: some box has more than ${m}`; return mc(rng, 'Which event is certain?', sure, [[`${k * m} coins into ${k} boxes: some box has more than ${m}`, `${k} × ${m} = ${k * m} exactly fits`], [`${k * m + 1} coins into ${k} boxes: box 1 has more than ${m}`, 'one particular box is never forced'], [`${k} coins into ${k} boxes: some box has more than 1`, `${k} coins can take one box each`]], `${k} × ${m} = ${k * m} < ${k * m + 1}.`); } },
+    ] },
     { type: 'callout', tone: 'speed', text: 'Option sanity: if 1 is among the options and the question says "some" or "at least two of the same", run the check. If the check fails, 1 is the trap option and the answer is a complement.' },
     { type: 'thinkaloud', problem: `${TA.n} coins are thrown at random into ${TA.k} boxes. What is the probability that some box holds more than ${TA.m} coins?`, lines: [
       { t: 0, say: 'Coins into boxes, and "some box" gets crowded. Before any formula: can the event be avoided at all?' },
@@ -146,8 +152,9 @@ export default {
       { t: 13, say: `${TA.n} > ${TA.k * TA.m}: even the most even spread overflows. Every outcome is in the event, so P = 1.` },
       { t: 17, say: `Sanity check: the one-box tail would be about ${d3(oneBox(TA.n, TA.k, TA.m))}, a trap option. Answer 1, with ${SECTIONS.bto.exam.perItemSeconds - 17} seconds to spare.` },
     ] },
-    { type: 'check', scope: 'the ten-second capacity check', questions: [
-      { make: (rng) => { const k = rng.int(10, 16), m = rng.int(3, 5); const sure = `${k * m + 1} coins into ${k} boxes: some box has more than ${m}`; return mc(rng, 'Which event is certain?', sure, [[`${k * m} coins into ${k} boxes: some box has more than ${m}`, `${k} × ${m} = ${k * m} exactly fits`], [`${k * m + 1} coins into ${k} boxes: box 1 has more than ${m}`, 'one particular box is never forced'], [`${k} coins into ${k} boxes: some box has more than 1`, `${k} coins can take one box each`]], `${k} × ${m} = ${k * m} < ${k * m + 1}.`); } },
+    { type: 'check', scope: 'option sanity and the think-aloud', questions: [
+      { type: 'choice', q: '"Some box gets at least 2 coins": 10 coins into 12 boxes. One option is 1. What do you do?', options: ['run the check: it fails, so 1 is a trap', 'pick 1: "some" questions are certain', 'pick the smallest option'], answer: 0, traps: { 1: '12 boxes can take 10 coins one each, so the event is not certain', 2: 'no rule says the smallest option wins' }, explain: '12 × 1 = 12 ≥ 10: the coins fit with no box doubled, so 1 is the trap and the answer needs a complement.' },
+      { type: 'choice', q: 'In the think-aloud, the first try started a binomial tail for box 1. What was wrong?', options: ['the event is some box, not box 1', 'the chance per coin is not 1/14', 'the coins are not independent'], answer: 0, traps: { 1: '1/14 per coin is right for one box', 2: 'the coins are thrown independently' }, explain: 'Some box can overflow when box 1 does not. The capacity check 14 × 3 = 42 < 43 forces it: P = 1.' },
     ] },
 
     S('rule'),
@@ -161,11 +168,11 @@ export default {
       ['two share a birthday (23 people)', '23 < 365', 'about 1/2 (bto/birthday)'],
     ] },
     { type: 'callout', tone: 'edge', text: 'Edge cases: n = k·m exactly is the first uncertain case (the perfectly even spread). With a cap of 1 the check reads n > k: more items than boxes forces a repeat, so 366 people guarantee a shared birthday (ignoring leap years).' },
-    { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: whenever a question asks "must", "at least one box", or has 1 or 0 among the options, look for the worst case first. The birthday problem (bto/birthday) is the uncertain side of the same boxes, and in NumberLogic or Intervals a forced value is also found by asking what the extreme case allows.' },
     { type: 'check', scope: 'the contrast table and edge cases', questions: [
       { type: 'number', q: 'Ignoring leap years, how many people guarantee that two share a birthday?', answer: 366, explain: '365 boxes with cap 1 hold 365 people; person 366 forces a repeat.' },
       { type: 'number', q: 'How many people guarantee that three share a birth month?', answer: 12 * 2 + 1, hints: ['Cap 2 per month.', 'Capacity 12 × 2.'], explain: `12 months with at most 2 each hold ${12 * 2}; one more forces three.` },
     ] },
+    { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: whenever a question asks "must", "at least one box", or has 1 or 0 among the options, look for the worst case first. The birthday problem (bto/birthday) is the uncertain side of the same boxes. In NumberLogic or Intervals, too, a forced value comes from asking what the extreme case allows.' },
     { type: 'variation', base: `${N} coins are thrown at random into ${K} boxes. P(some box has more than ${M}) = 1, because ${K} × ${M} = ${K * M} < ${N}.`, rows: [
       { change: 'Drop the coins one at a time and watch them land', effect: 'No change: still 1. The capacity argument only looks at the final counts, never at the order they arrived in.', same: true },
       { change: `Use ${K * M} coins instead of ${N}`, effect: `Below 1. All ${K} boxes at exactly ${M} is now a legal outcome, so the event can be avoided: count 1 − P(every box within ${M}).` },

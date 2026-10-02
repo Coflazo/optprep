@@ -109,6 +109,9 @@ export default {
       { t: 22, say: `No: a factor rounded up makes the product too high. Take the ${round(Math.abs(chg(0.5, TA.b)) * 100, 1)}% off: about ${dec(TA.corr, 0)}.` },
       { t: 30, say: `Check: 700 × 0.5 × 4 = ${700 * 0.5 * 4}, the same size. 3% error: [${dec(TA.band[0], 0)}, ${dec(TA.band[1], 0)}]. (Exact ${dec(TA.exact, 1)}.)` },
     ] },
+    { type: 'check', scope: 'the slip in the think-aloud', questions: [
+      { type: 'choice', q: 'In the think-aloud, the first try added 4.2% after rounding 0.48 up to 0.5. What was wrong?', options: ['rounding up makes it too high', 'pairing 27 with 6.4 was wrong', '0.48 is nearer 0.4 than 0.5'], answer: 0, traps: { 1: '27 ÷ 6.4 ≈ 4.22 was right', 2: '0.48 is 4% below 0.5' }, explain: 'A factor rounded up makes the product too high: take the 4% off, about 1482.' },
+    ] },
 
     sec('predict'),
     { type: 'predict', question: 'Estimate 4.8 × 61 × 2.1 and say which side of 600 the truth is on.', answer: `Above: the ledger nets ${signed(chg(4.8, 5) + chg(61, 60) + chg(2.1, 2))}, so the truth is about ${dec(600 / (1 + chg(4.8, 5) + chg(61, 60) + chg(2.1, 2)), 0)} (exact ${round(4.8 * 61 * 2.1, 4)}).`, explain: 'Two roundings went down and only one up, and the downs were bigger.' },
@@ -132,6 +135,9 @@ export default {
 
     sec('speed'),
     { type: 'callout', tone: 'speed', text: `Decimals as fractions: ${FR.map(([d, f]) => `${round(d, 3)} ≈ ${f}`).join(', ')}. Replace, multiply, and correct by the small difference (0.33 is 1% below 1/3). A fraction often cancels against another number outright, which beats any rounding.` },
+    { type: 'check', scope: 'decimals as fractions', questions: [
+      { type: 'number', q: 'Estimate 0.25 × 368 by turning the decimal into a fraction.', answer: 92, explain: '0.25 = 1/4, and 368 ÷ 4 = 92.' },
+    ] },
     { type: 'callout', tone: 'speed', text: 'Near 100: (100 − a)(100 − b) = 100 × (100 − a − b) + ab, so 97 × 94 = 9100 + 18 = 9118. Squares near 50: 50² = 2500 and each step of d adds 100d + d².' },
     { type: 'check', scope: 'near-square products', questions: [{ make: nearSqQ }] },
 
@@ -153,10 +159,10 @@ export default {
       { fusion: true, change: `${X.a} becomes ${X.a / 10} AND a third factor, 2.9, is added`, effect: `${X.a / 10} × ${X.b} is still exact (${round(X.p / 10, 2)}), but × 2.9 makes it an estimate: ${round(X.p / 10, 2)} × 3 = ${round((X.p / 10) * 3, 2)}, less ${signed(chg(2.9, 3))} for rounding 2.9 up, about ${dec(((X.p / 10) * 3) / (1 + chg(2.9, 3)), 1)}, then a 2% band.` },
     ] },
     { type: 'callout', tone: 'edge', text: 'Edge cases: a factor exactly equal to its friendly value (1.6 stays 1.6) adds 0 to the ledger. Dividing by a number below 1 multiplies. If two roundings cancel (one +3%, one −3%), the friendly product is already close.' },
-    { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: the ledger finishes every Fermi chain, the growth factor in compound interest, and the scale-bar conversion in path lengths. Exact-or-estimate is the first decision on every Intervals question.' },
     { type: 'check', scope: 'contrast and edge cases', questions: [
       mc({ q: 'Estimate 6.1 × 49 × 2.0 as 6 × 50 × 2 = 600. Which ledger is right?', right: `Net ${signed(chg(6.1, 6) + chg(49, 50))}: truth just below 600`, wrong: [[`Net ${signed(chg(6.1, 6) - chg(49, 50))}: truth well above 600`, 'treated 49 → 50 as a downward rounding: it went up'], ['Net 0: truth exactly 600', 'the two roundings nearly cancel, but not exactly']], explain: `6.1 → 6 is ${signed(chg(6.1, 6))}, 49 → 50 is ${signed(chg(49, 50))}: net ${signed(chg(6.1, 6) + chg(49, 50))}, so the truth (${round(6.1 * 49 * 2, 4)}) is just below 600.` }),
     ] },
+    { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: the ledger finishes every Fermi chain, the growth factor in compound interest, and the scale-bar conversion in path lengths. Exact-or-estimate is the first decision on every Intervals question.' },
     { type: 'transfer',
       near: { make: (rng) => { const a = rng.int(21, 89), b = rng.int(21, 89); return ivq(`A trader buys ${a} lots at €${b} each. Total cost in euros? Type your interval.`, a * b, `${a} × ${Math.floor(b / 10) * 10} + ${a} × ${b % 10} = ${a * b}. Exact: a point.`); } },
       far: { type: 'number', q: 'Outside the assessment: a recipe for 4 people uses 350 g of flour. How many grams for 7 people?', answer: (350 * 7) / 4, explain: `350 × 7/4 = 350 × (1 + 3/4) = 350 + 262.5 = ${(350 * 7) / 4} g: split the awkward factor into easy parts.` },

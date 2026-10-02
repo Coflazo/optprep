@@ -128,10 +128,16 @@ export default {
 
     S('speed'),
     { type: 'callout', tone: 'speed', text: 'Never divide for the order between statements that share the lens: compare the denominators instead. Divide only when a marginal (a different numerator) must be placed against them, and then cross-multiply.' },
-    { type: 'callout', tone: 'speed', text: 'Add bars in pairs you can do in your head. You need at most three sums: one group total, one answer total, and everyone.' },
-    { type: 'callout', tone: 'speed', text: 'Sanity check before you submit: the joint must be the smallest of joint and conditionals, and a conditional on a small group can sit far above the marginal. If your order breaks either fact, a denominator is wrong.' },
     { type: 'check', scope: 'comparing denominators', questions: [
       { make: (rng) => again(() => { const s = survey(rng); if (s.inG === s.inK) return null; const r = s.inK < s.inG ? `P(${s.gName} | ${s.kName})` : `P(${s.kName} | ${s.gName})`; return mc(rng, `${s.inG} ${s.gName}, ${s.inK} chose ${s.kName}, ${s.both} did both. Which conditional is larger?`, r, [[s.inK < s.inG ? `P(${s.kName} | ${s.gName})` : `P(${s.gName} | ${s.kName})`, 'picked the larger pool: equal tops, so the larger denominator gives the smaller fraction'], ['They are equal', 'they share only the numerator']], `Numerator ${s.both} each; the smaller pool is ${Math.min(s.inG, s.inK)}.`); }) },
+    ] },
+    { type: 'callout', tone: 'speed', text: 'Add bars in pairs you can do in your head. You need at most three sums: one group total, one answer total, and everyone.' },
+    { type: 'check', scope: 'adding bars in pairs', questions: [
+      { type: 'number', q: 'Traders: Equities 23, Options 4, FX 15, Rates 5. How many traders are there?', answer: 47, explain: 'In pairs: 23 + 4 = 27 and 15 + 5 = 20, so 47.' },
+    ] },
+    { type: 'callout', tone: 'speed', text: 'Sanity check before you submit: the joint must be the smallest of joint and conditionals, and a conditional on a small group can sit far above the marginal. If your order breaks either fact, a denominator is wrong.' },
+    { type: 'check', scope: 'the sanity check', questions: [
+      { type: 'choice', q: '"A respondent is a trader and prefers FX", "a trader prefers FX", "an FX fan is a trader". Which must be smallest?', options: ['the joint: trader and FX', 'a trader prefers FX', 'an FX fan is a trader'], answer: 0, traps: { 1: 'a conditional divides the same count by a smaller pool than everyone', 2: 'same: its pool is smaller than everyone' }, explain: 'All three share the top count. The joint divides it by everyone, the largest pool, so it is smallest.' },
     ] },
 
     { type: 'thinkaloud', problem: `The same survey. Rank: (a) a random engineer prefers FX, (b) a random respondent who prefers FX is an engineer, (c) a random respondent is an engineer who prefers FX.`, lines: [
@@ -157,11 +163,11 @@ export default {
       ['a random person who chose k is in g', 'both', 'answer k', 'P(g | k)'],
     ] },
     { type: 'callout', tone: 'edge', text: 'Edge cases: if the group is everyone, P(k | g) is just P(k). If nobody in g chose k, every statement with that lens is 0. If everyone who chose k is in g, P(g | k) = 1.' },
-    { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: a medical test in Beat the Odds (P(positive | sick) against P(sick | positive): the same lens over different pools), two-way tables, and the scatter-plot strip ("among days with x above 5").' },
     { type: 'check', scope: 'the contrast table and edge cases', questions: [
       mc(null, 'Every respondent who chose Rates is an engineer. P(engineer | Rates) is:', '1', [['the engineers\' share of everyone', 'answered P(engineer), ignoring the condition'], ['0', 'mixed up "every" with "none"'], ['P(Rates | engineer)', 'swapped the direction: engineers can choose other markets too']], 'The pool is the Rates fans, all of them engineers.', { at: 0 }),
     ] },
 
+    { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: a medical test in Beat the Odds (P(positive | sick) against P(sick | positive): the same lens over different pools), two-way tables, and the scatter-plot strip ("among days with x above 5").' },
     { type: 'variation', base: `The challenge: (a) P(Options) = ${K[k0]}/${TOT}, (b) P(Options | trader) = ${BOTH}/${G[g0]}, (c) P(trader | Options) = ${BOTH}/${K[k0]}. Order (c) > (b) > (a).`, rows: [
       { same: true, change: 'Add 20 more engineers who prefer Equities', effect: 'No change to the order. Those people are in neither pool (traders, Options fans) and not in the lens, so (b) and (c) do not move; only (a) gets a bigger denominator, and it stays last.' },
       { change: 'Replace (a) with the joint "a random respondent is a trader who prefers Options"', effect: `${BOTH}/${TOT} = ${dp(P.joint, 2)}. Still last, but now for free: it shares the numerator ${BOTH} and divides by everyone.` },

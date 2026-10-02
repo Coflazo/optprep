@@ -51,6 +51,9 @@ export default {
     ] },
     { type: 'text', text: 'A quantity moves up or down by 1 each step (a bankroll, a price, a particle) until it hits one of **two walls**, a target N or 0. The question asks which wall comes first, or how many steps the game lasts. Each step may be fair (1/2 up) or biased (p up).' },
     { type: 'list', items: ['"You have $10 and bet $1 on a game you win 45% of the time. You stop at $20 or $0. P(reach $20)?"', '"A stock at 3 moves ±1 per minute. P(it hits 10 before 0)?"', '"A particle at 4 on 0 to 10 moves ±1 until it hits an end. Expected number of steps?"'] },
+    { type: 'check', scope: 'which wall, or how long', questions: [
+      { type: 'choice', q: '"$4 moves ±$1 per bet, 1/2 each way, until $0 or $10. How long does it last on average?" What is asked?', options: ['how many steps the game lasts', 'which wall comes first', 'where it is after n steps', 'a biased walk'], answer: 0, traps: { 1: '"how long" asks for the duration, not the winner', 2: 'the walls stop it: no step count is fixed', 3: '1/2 each way is a fair walk' }, explain: '"How long on average" asks for the expected number of steps.' },
+    ] },
     { type: 'text', text: 'Not this lesson: a walk with no walls observed for a fixed number of steps (bto/random-walk-line), and walks around a polygon (bto/polygon-walk, which uses this lesson\'s duration formula).' },
     { type: 'check', scope: 'the recognition cues above', questions: [
       { type: 'choice', q: 'Which question belongs to this lesson?', options: ['A price at 5 moves ±1 until it hits 12 or 0: P(12 first)', 'A price at 5 moves ±1: P(it is above 5 after 10 steps)', 'A price at 5 moves ±1: P(it ever reaches 8 in 10 steps)', 'A token on a hexagon: expected time to the opposite corner'], answer: 0, traps: { 1: 'a fixed number of steps: bto/random-walk-line', 2: 'a fixed horizon, one level: reflection (bto/random-walk-line)', 3: 'a cycle: bto/polygon-walk' }, explain: 'Two walls, and the question is which comes first.' },
@@ -132,6 +135,9 @@ export default {
 
     S('speed'),
     { type: 'callout', tone: 'speed', text: 'Fair: two formulas, i/N and i(N − i). Biased: write r = (down)/(up) first, then sanity check the direction: an edge in your favour must beat i/N, an edge against you must fall short of it.' },
+    { type: 'check', scope: 'direction of the edge', questions: [
+      { make: (rng) => { const p = rng.pick([Q.of(3, 5), Q.of(2, 5), Q.of(11, 20), Q.of(9, 20)]); const up = p.cmp(Q.of(1, 2)) > 0; return mc(rng, `Start 5, walls 0 and 10, up with ${p}. Without computing, P(reach 10) is:`, up ? 'above 1/2' : 'below 1/2', [[up ? 'below 1/2' : 'above 1/2', 'turned the edge the wrong way'], ['exactly 1/2', 'ignored the bias'], [`exactly ${p}`, 'used the one-step probability']], `From the middle, an edge ${up ? 'in' : 'against'} the walker pushes the answer ${up ? 'above' : 'below'} 1/2: ${f3(biased(p, 5, 10))}.`); } },
+    ] },
     { type: 'callout', tone: 'speed', text: `Powers you will need: (11/9)^10 ≈ ${((11 / 9) ** 10).toFixed(2)}, (3/2)^5 ≈ ${(1.5 ** 5).toFixed(2)}, 2^10 = 1024. With r far from 1 and N large, (1 − r^i)/(1 − r^N) ≈ r^(i − N) when r > 1. Budget 45 of the ${SECTIONS.bto.exam.perItemSeconds} seconds for a biased item.` },
     { type: 'thinkaloud', problem: `You have $${TK.i} and bet $1 at a time on a game you win with probability ${TK.p}. You stop at $${TK.N} or $0. What is the probability that you reach $${TK.N}?`, lines: [
       { t: 0, say: 'Two walls, $1 steps, a biased game: gambler\'s ruin with r^wealth.' },
@@ -141,8 +147,9 @@ export default {
       { t: 22, say: `P = (1 − ${f3(qpow(ratio(TK.p), TK.i))})/(1 − ${qpow(ratio(TK.p), TK.N).toNumber().toFixed(2)}) ≈ ${f3(biased(TK.p, TK.i, TK.N))}.` },
       { t: 28, say: `Sanity: below ${Q.of(TK.i, TK.N)}, as the edge is against me. Answer ≈ ${f3(biased(TK.p, TK.i, TK.N))}, ${SECTIONS.bto.exam.perItemSeconds - 28} seconds left.` },
     ] },
-    { type: 'check', scope: 'direction of the edge', questions: [
-      { make: (rng) => { const p = rng.pick([Q.of(3, 5), Q.of(2, 5), Q.of(11, 20), Q.of(9, 20)]); const up = p.cmp(Q.of(1, 2)) > 0; return mc(rng, `Start 5, walls 0 and 10, up with ${p}. Without computing, P(reach 10) is:`, up ? 'above 1/2' : 'below 1/2', [[up ? 'below 1/2' : 'above 1/2', 'turned the edge the wrong way'], ['exactly 1/2', 'ignored the bias'], [`exactly ${p}`, 'used the one-step probability']], `From the middle, an edge ${up ? 'in' : 'against'} the walker pushes the answer ${up ? 'above' : 'below'} 1/2: ${f3(biased(p, 5, 10))}.`); } },
+    { type: 'check', scope: 'r^(i − N) and the think-aloud', questions: [
+      { type: 'choice', q: 'r = down/up = 2, walls 0 and 10, start 4. Using r^(i − N), P(reach 10) is about:', options: ['1/64', '4/10', '1/16', '1/1024'], answer: 0, traps: { 1: 'that is the fair answer i/N', 2: 'used r^(−i) instead of r^(i − N)', 3: 'that is r^(−N)' }, explain: 'r^(i − N) = 2^(−6) = 1/64 ≈ 0.016. The exact 15/1023 ≈ 0.015 is close.' },
+      { type: 'choice', q: 'In the think-aloud, the first try set r = p/q = 2/3. What was wrong?', options: ['r is down over up: 3/2', 'r should be p + q', 'r should be p/N'], answer: 0, traps: { 1: 'p + q = 1 always', 2: 'N enters the formula as a power, not in r' }, explain: 'r = down/up = (3/5)/(2/5) = 3/2. An edge against you must land below i/N = 1/2.' },
     ] },
 
     S('rule'),
@@ -156,10 +163,10 @@ export default {
       ['fair, from 1', f3(Q.of(1, 20)), String(1 * 19)],
     ] },
     { type: 'callout', tone: 'edge', text: 'Edge cases: starting on a wall ends the game at once (P = 0 or 1, 0 steps). As p → 1/2 the biased formula tends to i/N. With the top wall removed (N → ∞) a fair walker is ruined with probability 1, yet the expected time to ruin is infinite.' },
-    { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: a polygon walk is a line whose two walls are the same vertex, so the hitting time from distance k on an n-cycle is k(n − k) (bto/polygon-walk). The "fair quantity" trick is the martingale idea behind option pricing, and first-step equations are the same as in bto/expected-waiting.' },
     { type: 'check', scope: 'the contrast table and edge cases', questions: [
       { type: 'choice', q: 'Fair walk, walls 0 and 20. Which start gives the longest expected game?', options: ['10', '1', '19', 'All the same'], answer: 0, traps: { 1: `from 1: 1 × 19 = 19 steps`, 2: 'symmetric to 1', 3: 'i(N − i) depends on i' }, explain: `i(20 − i) peaks at the middle: ${10 * 10} steps.` },
     ] },
+    { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: a polygon walk is a line whose two walls are the same vertex. So the hitting time from distance k on an n-cycle is k(n − k) (bto/polygon-walk). The "fair quantity" trick is the martingale idea behind option pricing, and first-step equations are the same as in bto/expected-waiting.' },
     { type: 'variation', base: `Fair $1 bets from $4, stop at $10 or $0: P(reach $10) = 4/10 = ${Q.of(4, 10)}.`, rows: [
       { change: 'Bet $2 at a time instead of $1', effect: `No change: ${Q.of(4, 10)}. The game is still fair, so the expected final wealth is still $4 and 10 × P = 4.`, same: true },
       { change: 'Start at $5', effect: 'The middle: 5/10 = 1/2.' },

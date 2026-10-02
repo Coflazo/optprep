@@ -131,9 +131,12 @@ export default {
 
     sec('speed'),
     { type: 'callout', tone: 'speed', text: `C(n, k) = C(n, n − k): always compute with the smaller k. C(12, 10) = C(12, 2) = 12 × 11 / 2 = ${nCr(12, 2)}.` },
-    { type: 'callout', tone: 'speed', text: `Cancel before multiplying: C(10, 3) = 10 × 9 × 8 / 6, and 6 divides 9 × 8 first, so 10 × 12 = ${nCr(10, 3)}. Know by heart: C(52, 2) = ${nCr(52, 2)}, and C(n, 2) = n(n − 1)/2.` },
-    { type: 'check', scope: 'smaller k and cancelling', questions: [
+    { type: 'check', scope: 'compute with the smaller k', questions: [
       { make: (rng) => { const n = rng.int(8, 16), k = rng.int(1, 3); return { type: 'number', q: `C(${n}, ${n - k}) = ?`, answer: nCr(n, k), hints: [`C(${n}, ${n - k}) = C(${n}, ${k}).`, `${Array.from({ length: k }, (_, i) => n - i).join(' × ')} / ${k}!.`], explain: `C(${n}, ${n - k}) = C(${n}, ${k}) = ${nCr(n, k)}.` }; } },
+    ] },
+    { type: 'callout', tone: 'speed', text: `Cancel before multiplying: C(10, 3) = 10 × 9 × 8 / 6, and 6 divides 9 × 8 first, so 10 × 12 = ${nCr(10, 3)}. Know by heart: C(52, 2) = ${nCr(52, 2)}, and C(n, 2) = n(n − 1)/2.` },
+    { type: 'check', scope: 'cancelling first', questions: [
+      { make: (rng) => { const n = rng.int(14, 41); return { type: 'number', q: `C(${n}, 2) = ?`, answer: nCr(n, 2), hints: ['C(n, 2) = n(n − 1)/2.', `Halve the even one of ${n} and ${n - 1} first.`], explain: `${n} × ${n - 1} / 2 = ${nCr(n, 2)}. Halving first keeps the numbers small.` }; } },
     ] },
 
     sec('rule'),
@@ -147,11 +150,17 @@ export default {
       ['Arranging 5 different books', 'yes', 'no', `5! = ${fact(5)}`],
     ] },
     { type: 'callout', tone: 'edge', text: 'Edge cases: 0! = 1 (one way to arrange nothing), so C(n, 0) = C(n, n) = 1 and C(n, 1) = n. Choosing more than you have is impossible: C(3, 5) = 0.' },
-    { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: card-hand and urn questions in Beat the Odds, the Intervals combinatorics estimates, and the draws without replacement later in this book. Each is a ratio of two counts built with these three tools.' },
     { type: 'check', scope: 'the contrast table', questions: [
       { hinge: true, make: (rng) => { const k = rng.int(2, 3); return mc({ q: `A code has ${k} letters from A to Z, repeats allowed. How many codes are there?`, right: String(26 ** k),
         wrong: [[String(nPr(26, k)), 'that count forbids repeats'], [String(nCr(26, k)), 'a code has an order, and C(26, k) also forbids repeats'], [String(26 * k), 'added the stages instead of multiplying']],
         explain: `${k} stages, 26 choices each: 26^{${k}} = ${26 ** k}.` }, rng); } },
+      { type: 'number', q: 'C(7, 0) = ?', answer: 1, explain: '0! = 1, so C(7, 0) = 7! / (0! × 7!) = 1: there is one way to choose nothing.' },
+    ] },
+    { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: card-hand and urn questions in Beat the Odds, the Intervals combinatorics estimates, and the draws without replacement later in this book. Each is a ratio of two counts built with these three tools.' },
+    { type: 'check', scope: 'a ratio of two counts', questions: [
+      mc({ q: 'An urn holds 5 red and 3 blue balls. Two are drawn at once. What is P(both red)?', right: frac(nCr(5, 2), nCr(8, 2)), at: 2,
+        wrong: [[frac(25, 64), 'put the first ball back: drawn at once means no repeats'], [frac(nCr(5, 2), nPr(8, 2)), 'unordered favourable over ordered total'], [frac(5, 8), 'stopped after the first ball']],
+        explain: `Two counts, same convention: C(5, 2) / C(8, 2) = ${nCr(5, 2)}/${nCr(8, 2)} = ${frac(nCr(5, 2), nCr(8, 2))}.` }),
     ] },
 
     sec('mastery', 'Mastery check'),

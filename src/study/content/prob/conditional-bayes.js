@@ -167,6 +167,9 @@ export default {
 
     sec('speed'),
     { type: 'callout', tone: 'speed', text: 'Natural frequencies: pick 1,000 people (10,000 if the rates need it) and write whole numbers on the tree. Never multiply four decimals in your head.' },
+    { type: 'check', scope: 'natural frequencies', questions: [
+      { type: 'number', q: 'Picture 10,000 people. 50 have a condition. The test flags 80% of them and wrongly flags 2% of everyone else. How many of the 10,000 test positive?', answer: 50 * 0.8 + (10000 - 50) * 0.02, hints: ['Sick and flagged: 80% of 50.', 'Healthy and flagged: 2% of 9,950.'], explain: `${50 * 0.8} sick positives + ${(10000 - 50) * 0.02} healthy positives = ${50 * 0.8 + (10000 - 50) * 0.02}. Whole numbers, no decimals multiplied.` },
+    ] },
     { type: 'callout', tone: 'speed', text: `Odds shortcut: posterior odds = prior odds × (hit rate / false-alarm rate). Here ${S.sick} : ${S.healthy} × ${S.hitPct}/${S.faPct} = ${S.tp} : ${S.fp}, so P = ${S.tp}/(${S.tp} + ${S.fp}).` },
     { type: 'check', scope: 'the odds shortcut', questions: [
       { make: (rng) => { const k = rng.pick([9, 19, 49, 99]), lr = rng.pick([9, 10, 18, 19, 45]); return mc({ q: `Prior odds sick : healthy are 1 : ${k}. A positive test is ${lr} times more likely for a sick person than for a healthy one. What is P(sick | positive)?`, right: frac(lr, lr + k),
@@ -185,9 +188,15 @@ export default {
       ['P(+)', 'of everyone, positive', `${S.pos}/${S.n}`],
     ] },
     { type: 'callout', tone: 'edge', text: 'Edge cases: if B is certain, P(A | B) = P(A). If A forces B, P(A | B) = P(A)/P(B). A test with no false alarms makes P(sick | +) = 1 whatever the base rate; a test whose hit rate equals its false-alarm rate tells you nothing.' },
-    { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: Monty Hall and the boxes questions in Beat the Odds (condition on what you were shown), card draws "given the first card was red", conditional dice ("given the sum is 8"). Each one shrinks the sample space to what you were told.' },
-    { type: 'check', scope: 'the four quantities', questions: [
+    { type: 'check', scope: 'the four quantities and the edge cases', questions: [
       { type: 'order', q: 'Order these from largest to smallest for the 1,000-people example.', items: ['P(+ | sick)', 'P(sick | +)', 'P(sick and +)', 'P(+)'], answer: [[0, S.tp / S.sick], [1, S.tp / S.pos], [2, S.tp / S.n], [3, S.pos / S.n]].sort((a, b) => b[1] - a[1]).map(([i]) => i), explain: `${dec(S.tp / S.sick, 2)} > ${dec(S.tp / S.pos, 3)} > ${dec(S.pos / S.n, 3)} > ${dec(S.tp / S.n, 3)}.` },
+      { type: 'number', q: 'A test never flags a healthy person (no false alarms). Someone tests positive. What is P(sick | +)?', answer: 1, explain: 'Every positive is a true positive, so P(sick | +) = 1 whatever the base rate.' },
+    ] },
+    { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: Monty Hall and the boxes questions in Beat the Odds, where you condition on what you were shown. Also card draws "given the first card was red" and conditional dice ("given the sum is 8"). Each one shrinks the sample space to what you were told.' },
+    { type: 'check', scope: 'shrinking to what you were told', questions: [
+      mc({ q: 'Two dice are thrown. Given that the sum is 8, what is P(a double)?', right: frac(1, diceCells((a, b) => a + b === 8).length), at: 2,
+        wrong: [[frac(1, 6), 'ignored the information about the sum'], [frac(1, 36), 'did not shrink the sample space to the sum-8 cells'], [frac(diceCells((a, b) => a + b === 8).length, 36), 'that is P(sum is 8)']],
+        explain: `Sum 8 leaves ${diceCells((a, b) => a + b === 8).length} cells: (2, 6), (3, 5), (4, 4), (5, 3), (6, 2). One of them is a double.` }),
     ] },
 
     sec('mastery', 'Mastery check'),

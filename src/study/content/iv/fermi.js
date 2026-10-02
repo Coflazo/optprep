@@ -103,6 +103,9 @@ export default {
       { t: 18, say: `Check: transatlantic pings are tens of milliseconds, so ${TA.rt} is the right size.` },
       { t: 22, say: `The inputs are given; allow about 5% for "about 200,000": [${dec(TA.rt / B5.f, 1)}, ${dec(TA.rt * B5.f, 1)}].` },
     ] },
+    { type: 'check', scope: 'the slip in the think-aloud', questions: [
+      { type: 'choice', q: 'In the think-aloud, the first try gave 29 ms. What was wrong?', options: ['round trip means there and back', 'the speed was in km per hour', 'the route was 2,900 km'], answer: 0, traps: { 1: 'the speed was per second', 2: 'the route was 5,800 km' }, explain: 'Round trip: 11,600 km at 200 km per ms = 58 ms.' },
+    ] },
 
     sec('predict'),
     { type: 'predict', question: `${num(MS.rate)} messages per second for ${MS.hours} hours: how many million messages?`, answer: `${num(MS.rate)} × ${num(MS.hours * 3600)} = ${num(MS.rate * MS.hours * 3600)} = ${MS.v} million.`, explain: `${MS.hours} hours is ${num(MS.hours * 3600)} seconds; ${dec(sci(MS.rate).m, 2)} × 10^{${sci(MS.rate).k}} × ${dec(sci(MS.hours * 3600).m, 3)} × 10^{${sci(MS.hours * 3600).k}} = ${dec(sci(MS.rate * MS.hours * 3600).m, 2)} × 10^{${sci(MS.rate * MS.hours * 3600).k}}.` },
@@ -126,8 +129,11 @@ export default {
 
     sec('speed'),
     { type: 'callout', tone: 'speed', text: `Memorise the seconds: 1 hour = 3,600, a 6.5-hour day = ${num(6.5 * 3600)}, 8 hours = ${num(8 * 3600)}, 24 hours = ${num(24 * 3600)}. Then a rate per second times a day is one multiplication.` },
-    { type: 'callout', tone: 'speed', text: 'Budget: 10 seconds to write the chain, 25 to multiply mantissas and add exponents, 10 to convert and type. Before typing, check the size against something you know (a day of messages in millions, a transatlantic ping in tens of ms).' },
     { type: 'check', scope: 'seconds per day', questions: [{ make: secQ }] },
+    { type: 'callout', tone: 'speed', text: 'Budget: 10 seconds to write the chain, 25 to multiply mantissas and add exponents, 10 to convert and type. Before typing, check the size against something you know (a day of messages in millions, a transatlantic ping in tens of ms).' },
+    { type: 'check', scope: 'the size check', questions: [
+      { type: 'choice', q: 'A round-trip ping across the Atlantic comes out at 2 seconds. What do you do?', options: ['recheck: it should be tens of ms', 'type it: the chain was right', 'widen the band to cover it'], answer: 0, traps: { 1: 'a size check catches a units slip', 2: 'a wide band around a wrong size still misses' }, explain: 'Transatlantic pings are tens of milliseconds, so 2 seconds means a slipped unit.' },
+    ] },
 
     sec('rule'),
     { type: 'callout', tone: 'rule', text: `All inputs given → chain the units and cancel → mantissas multiply, exponents add → ledger for rounding → convert once to the asked unit → band ×/÷ ${dec(B3.f, 2)} to ${dec(B5.f, 2)}.` },
@@ -145,10 +151,10 @@ export default {
       { fusion: true, change: 'The rate triples AND the day shrinks from 8 to 6.5 hours', effect: `The factors combine: × 3 × 6.5/8 = × ${dec((3 * 6.5) / 8, 4)}, so ${dec((MS.rate * 3 * 6.5 * 3600) / 1e6, 1)} million.` },
     ] },
     { type: 'callout', tone: 'edge', text: 'Edge cases: a rate stated per minute or per day changes the conversion, not the method, and the chain shows it at once. "Steadily" means the average rate applies all day. If an answer comes out absurd (a billion GB, a 0.03 ms transatlantic ping), a power of ten slipped: recount the exponents.' },
-    { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: unit chains price every Orderbooks trade (lots × contract size × price), turn Beat the Odds rates into counts, and are the backbone of classic Fermi questions, where the only difference is that the inputs are guesses.' },
     { type: 'check', scope: 'contrast and edge cases', questions: [
       mc({ q: 'Which question needs the widest band?', right: 'How many coffees are sold in Amsterdam each day?', wrong: [['3,000 orders per hour for 8 hours: orders?', 'every input is given: narrow band'], ['2,500 messages per second for 8 hours: million?', 'every input is given: narrow band'], ['5,800 km fibre round trip at 200 km per ms: ms?', 'every input is given: narrow band']], explain: 'Only the coffee question has unknown inputs, which multiply their uncertainties.' }),
     ] },
+    { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: unit chains price every Orderbooks trade (lots × contract size × price) and turn Beat the Odds rates into counts. They are also the backbone of classic Fermi questions, where the only difference is that the inputs are guesses.' },
     { type: 'transfer',
       near: { make: (rng) => { const t = rng.int(12, 60), ph = rng.int(40, 400), h = rng.pick([7, 8, 8.5, 9]); const v = t * ph * h; return { type: 'number', q: `A desk of ${t} traders each sends ${ph} orders per hour over a ${h}-hour day. How many orders per day? (within 2%)`, answer: v, tolerance: 0.02 * v, explain: `${t} × ${ph} × ${h} = ${num(v)}.` }; } },
       far: { type: 'number', q: 'Outside the assessment: streaming uses 5 MB per minute, 3 hours a day, for 30 days, at €0.02 per MB. Monthly cost in euros?', answer: 0.02 * 5 * 60 * 3 * 30, tolerance: 1e-9, explain: `5 MB/min × 60 min/h × 3 h/day × 30 days = ${num(5 * 60 * 3 * 30)} MB; × €0.02 = €${0.02 * 5 * 60 * 3 * 30}.` },

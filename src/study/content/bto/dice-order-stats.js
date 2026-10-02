@@ -54,6 +54,9 @@ export default {
     ] },
     { type: 'text', text: 'Two fair dice are thrown, and the question is **not** about the sum. It asks about the **larger** face (maximum), the **smaller** face (minimum), a **double**, the **difference** between the faces, or whether one die **beats** the other.' },
     { type: 'list', items: ['"Two dice are rolled. What is the probability that the higher of the two numbers is 5?"', '"What is the chance that the smaller die shows at least 3?"', '"You and a friend each roll a die. What is the chance yours is strictly higher?"', '"Two dice: probability the faces differ by exactly 2?"'] },
+    { type: 'check', scope: 'what the question asks about', questions: [
+      { type: 'choice', q: '"Two dice: probability that the two faces are 3 apart?" What does it ask about?', options: ['the difference', 'the sum', 'the larger face', 'a double'], answer: 0, traps: { 1: 'nothing is added: "3 apart" is the gap between the faces', 2: '"3 apart" fixes the gap, not the larger face', 3: 'a double has a gap of 0' }, explain: '"3 apart" is the difference between the faces, whatever they add up to.' },
+    ] },
     { type: 'text', text: 'Not this lesson: the **sum** of two dice (bto/two-dice-sum) and anything with three dice (bto/three-dice). Same grid idea, different cells.' },
     { type: 'check', scope: 'the recognition cues above', questions: [
       { type: 'choice', q: 'Which question belongs to this lesson?', options: ['Two dice: probability the smaller face is 2 or less', 'Two dice: probability the total is 9 or more', 'Three dice: probability the largest face is 4', 'Two dice: probability the total is odd'], answer: 0, traps: { 1: 'a sum question (bto/two-dice-sum)', 2: 'a maximum, but on three dice: that is bto/three-dice', 3: 'a sum question: parity of the total' }, explain: 'The smaller face is the minimum of two dice: this lesson. Totals belong to the sums lesson, and three dice to their own lesson.' },
@@ -131,6 +134,9 @@ export default {
       { t: 11, say: `Cross-check with the odd list 1, 3, 5, 7, 9, 11: max 5 is the fifth entry, ${maxEq(5)}. Same.` },
       { t: 14, say: `${maxEq(5)}/36 = ${fr(maxEq(5), 36)}. Below max 6 (${maxEq(6)}/36), as a skewed-up max should be. Answer ${fr(maxEq(5), 36)}, with ${SECTIONS.bto.exam.perItemSeconds - 14} seconds spare.` },
     ] },
+    { type: 'check', scope: 'the slip in the think-aloud', questions: [
+      { type: 'choice', q: 'In the think-aloud, the first try gave 10/36. What went wrong?', options: ['counted (5, 5) twice', 'added the faces', 'kept the other die above 5', 'treated the max values as equally likely'], answer: 0, traps: { 1: 'nothing was added: both lists hold cells with a 5', 2: 'both lists kept the other die at 5 or below', 3: 'the try counted cells, not values' }, explain: '(5, 5) sits in both lists of 5. Square minus square: 25 − 16 = 9 cells, so 9/36 = 1/4.' },
+    ] },
 
     S('predict'),
     { type: 'predict', question: 'Without computing: two dice. Is P(max = 6) bigger or smaller than P(min = 6)? By what factor?', answer: `Bigger, ${maxEq(6)} times: ${maxEq(6)}/36 against 1/36.`, explain: 'max = 6 needs at least one six; min = 6 needs two.' },
@@ -154,11 +160,16 @@ export default {
 
     S('speed'),
     { type: 'callout', tone: 'speed', text: `Memorise one list: **1, 3, 5, 7, 9, 11**. These are the cell counts for max = 1, 2, …, 6. The minimum uses the same list backwards: min = 1 has 11, min = 6 has 1. "Strictly higher" is always ${BEATS}/36 = ${fr(BEATS, 36)}, about ${pct(BEATS / 36)}.` },
-    { type: 'callout', tone: 'speed', text: '"At least one die shows k or more" is "max ≥ k": count the complement square, 1 − ((k − 1)/6)². "Both dice show k or more" is "min ≥ k": ((7 − k)/6)². Pick the square, never list cells.' },
-    { type: 'callout', tone: 'speed', text: `Time budget: Beat the Odds allows ${SECTIONS.bto.exam.perItemSeconds} seconds a question. An order-statistic item should take under 20: name the square, subtract, divide by 36, and use the spare time to check the double is counted once.` },
-    { type: 'check', scope: 'the odd-number list and the complement square', questions: [
-      { make: (rng) => { const k = rng.int(2, 6); return { type: 'number', q: `Two dice. How many ordered pairs have at least one die showing ${k} or more?`, answer: 36 - maxLe(k - 1), hints: ['What is the complement of "at least one die ≥ k"?', `Both dice at most ${k - 1}: a square.`], explain: `36 − ${k - 1}² = ${36 - maxLe(k - 1)}.` }; } },
+    { type: 'check', scope: 'the odd-number list', questions: [
       { make: (rng) => { const k = rng.int(1, 6); return { type: 'number', q: `Two dice. How many ordered pairs have smaller face exactly ${k}? (Use the list backwards.)`, answer: minEq(k), explain: `List 11, 9, 7, 5, 3, 1 for min = 1 to 6: min = ${k} has ${minEq(k)}.` }; } },
+    ] },
+    { type: 'callout', tone: 'speed', text: '"At least one die shows k or more" is "max ≥ k": count the complement square, 1 − ((k − 1)/6)². "Both dice show k or more" is "min ≥ k": ((7 − k)/6)². Pick the square, never list cells.' },
+    { type: 'check', scope: 'the complement square', questions: [
+      { make: (rng) => { const k = rng.int(2, 6); return { type: 'number', q: `Two dice. How many ordered pairs have at least one die showing ${k} or more?`, answer: 36 - maxLe(k - 1), hints: ['What is the complement of "at least one die ≥ k"?', `Both dice at most ${k - 1}: a square.`], explain: `36 − ${k - 1}² = ${36 - maxLe(k - 1)}.` }; } },
+    ] },
+    { type: 'callout', tone: 'speed', text: `Time budget: Beat the Odds allows ${SECTIONS.bto.exam.perItemSeconds} seconds a question. An order-statistic item should take under 20: name the square, subtract, divide by 36, and use the spare time to check the double is counted once.` },
+    { type: 'check', scope: 'the time budget', questions: [
+      { type: 'choice', q: 'You finish an order-statistic item in 15 of the 90 seconds. What is the best use of the time left?', options: ['check the double is counted once', 'recount every cell by hand', 'redo it as a sum question', 'move on without a check'], answer: 0, traps: { 1: 'listing cells is the slow route the square replaces', 2: 'a sum is a different question', 3: 'the double is the classic slip, and there is time to check it' }, explain: 'Name the square, subtract, divide by 36, then check that the double sits in the count once.' },
     ] },
 
     S('rule'),
@@ -174,12 +185,12 @@ export default {
       ['first > second', 'triangle below the diagonal', String(BEATS)],
     ] },
     { type: 'callout', tone: 'edge', text: `Edge cases: max = 1 and min = 6 each need a double, 1 cell. A difference of 0 is the doubles diagonal, ${diffEq(0)} cells, not 2 × 6: a zero difference has only one order. Max ≤ 6 is certain (36 cells).` },
-    { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: "the largest is at most k" means "every piece is at most k", so P(max ≤ k) is a product for any number of independent pieces. Three dice give (k/6)³ (bto/three-dice); the expected maximum in EV questions is built from these same P(max = k).' },
     { type: 'check', scope: 'the contrast table and edge cases', questions: [
       { type: 'choice', q: 'Two dice. P(faces differ by 0)?', options: ['1/6', '1/3', '0', '1/36'], answer: 0, traps: { 1: 'doubled the diagonal as if a zero difference had two orders', 2: 'forgot that equal faces have difference 0', 3: 'required one specific double' }, explain: `The ${diffEq(0)} doubles: 6/36 = 1/6.` },
       { make: (rng) => { const k = rng.int(2, 5); return mc(rng, `Three dice. P(largest face ≤ ${k})?`, fr(k ** 3, 216), [[fr(k * k, 36), 'used two dice: three dice need a third factor'], [fr(k, 6), 'used one die'], [fr(3 * k, 18), 'added the dice instead of multiplying']], `Every die at most ${k}: (${k}/6)³ = ${fr(k ** 3, 216)}.`); } },
     ] },
 
+    { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: "the largest is at most k" means "every piece is at most k". So P(max ≤ k) is a product for any number of independent pieces. Three dice give (k/6)³ (bto/three-dice); the expected maximum in EV questions is built from these same P(max = k).' },
     { type: 'variation', base: `Two fair dice. P(larger face = 4) = ${maxEq(4)}/36.`, rows: [
       { change: 'Ask for the smaller face = 3 instead', effect: `No change: min = 3 has 13 − 6 = ${minEq(3)} cells. The minimum is the mirror image of the maximum, and 3 mirrors 4 (3 + 4 = 7).`, same: true },
       { change: 'Paint one die red and one blue', effect: 'No change. The 36 cells were already ordered pairs; colour only shows which die is which.', same: true },

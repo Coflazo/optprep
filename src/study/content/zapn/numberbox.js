@@ -103,9 +103,11 @@ export default {
         { id: 'integers', label: 'Keep every step whole', approach: 'Only tried operations that give whole numbers along the way.', breaksAt: `Some targets need a fraction in the middle, such as ${FR.expr} = ${FR.target}.` },
       ] },
     { type: 'text', text: `NumberBox is the arithmetic game of Zap-N. Four numbers and a target: combine **all four**, each exactly once, with +, −, ×, ÷ and brackets, to hit the target exactly. ${DEFAULTS.rounds} rounds, getting harder; wrong answers can be retried, and Skip shows a solution and moves on. This trainer draws numbers from 1 to 9 and targets from ${DEFAULTS.minTarget} to ${DEFAULTS.maxTarget}; every round is solvable.` },
-    { type: 'text', text: `Arithmetic is exact and follows the usual order: × and ÷ before + and −, brackets first. So fractions in the middle are fine: ${FR.expr} = ${FR.target}. You may not glue digits together (2 and 7 are never 27). Score: targets made. Target: ${TARGET} of ${DEFAULTS.rounds}.` },
     { type: 'check', scope: 'the rules', questions: [
       { type: 'choice', q: 'Numbers 2, 7, 5, 1, target 28. Which answer is accepted?', options: ['7 × (5 − 1)', RULE28, '27 + 1', '(2 + 5) × (7 − 1)'], answer: 1, traps: { 0: 'leaves 2 out: all four numbers must be used', 2: 'glues 2 and 7 into 27 and leaves 5 out', 3: `uses every number once but makes ${check([2, 7, 5, 1], 28, '(2 + 5) × (7 − 1)').value}` }, explain: `${RULE28} = 28, each number once.` },
+    ] },
+    { type: 'text', text: `Arithmetic is exact and follows the usual order: × and ÷ before + and −, brackets first. So fractions in the middle are fine: ${FR.expr} = ${FR.target}. You may not glue digits together (2 and 7 are never 27). Score: targets made. Target: ${TARGET} of ${DEFAULTS.rounds}.` },
+    { type: 'check', scope: 'exact arithmetic', questions: [
       mc({ q: `Is ${FR.expr} an accepted answer for ${FR.target} from ${FR.nums.join(', ')}?`, right: 'yes', at: 0, wrong: [['no: 8 ÷ 3 is not a whole number', 'intermediate fractions are allowed; arithmetic is exact']], explain: `8 ÷ 3 = 8/3, 3 − 8/3 = 1/3, 8 ÷ 1/3 = ${FR.target}.` }),
     ] },
 
@@ -183,6 +185,7 @@ export default {
 
     sec('speed'),
     { type: 'callout', tone: 'speed', text: 'First 5 seconds: is the target big (needs a product) or small (sums and differences)? For a big target, list its factor pairs and those of target ± each number.' },
+    { type: 'check', scope: 'big targets', questions: [{ make: factorQ }] },
     { type: 'callout', tone: 'speed', text: `The game is untimed, so the only budget is your ${DEFAULTS.rounds - TARGET} allowed miss. Skip only when every branch is dead and a fraction route also fails; a skip is a round lost.` },
     { type: 'thinkaloud', problem: `Make ${WK.target} from ${WK.nums.join(', ')}.`, lines: [
       { t: 0, say: `${WK.target}: big, so a product plus or minus a little.` },
@@ -191,7 +194,10 @@ export default {
       { t: 10, say: '15 from 7 and 8: 7 + 8. Every number used once.' },
       { t: 13, say: `Write it with brackets: ${WK.expr}. Check: 15 × 4 = 60, plus 2 is ${WK.target}.` },
     ] },
-    { type: 'check', scope: 'big targets', questions: [{ make: factorQ }] },
+    { type: 'check', scope: 'the think-aloud and the second tip', questions: [
+      { type: 'choice', q: 'Every branch looks dead. When do you skip?', options: ['only when a fraction route fails too', 'at once: a skip costs you nothing', 'never: keep trying forever'], answer: 0, traps: { 1: 'a skip is a round lost', 2: 'one allowed miss is the only budget' }, explain: 'Try a fraction route before giving up the round.' },
+      { type: 'choice', q: 'In the think-aloud, the first idea was 62 ÷ 2 = 31. What happened?', options: ['31 could not be made: back up', 'it worked at the first try', 'the 2 was used twice'], answer: 0, traps: { 1: 'nothing makes 31 from 7, 4, 8', 2: 'each number is used once' }, explain: '62 − 2 = 60 = 15 × 4, so (8 + 7) × 4 + 2.' },
+    ] },
 
     sec('rule'),
     { type: 'callout', tone: 'rule', text: 'NumberBox: target first. For each number n try target ± n and target ÷ n, recurse on three numbers, finish with two. Products for big targets, fractions as the last resort, brackets on every subgoal.' },
@@ -210,6 +216,10 @@ export default {
       { change: 'One of the numbers is 1', effect: 'A free move: × 1 or ÷ 1 changes nothing, + 1 or − 1 fixes an off-by-one.' },
     ] },
     { type: 'callout', tone: 'edge', text: 'Edge cases: repeated numbers (8, 3, 8, 3) are separate numbers, each used once. A subgoal can be a fraction or even negative on the way. Every round in this trainer has at least one solution; the hard rounds have only one or two expression trees.' },
+    { type: 'check', scope: 'the table and the edge cases', questions: [
+      { type: 'choice', q: 'How do you search in NumberBox?', options: ['backwards from the target', 'from memorised patterns', 'bottom-up from a picture'], answer: 0, traps: { 1: 'that is the 24 game, where the target never changes', 2: 'that is Skyscraper' }, explain: 'Undo the last step: target ± a number, or target ÷ a number.' },
+      { type: 'choice', q: 'Numbers 8, 3, 8, 3. How often may you use each 8?', options: ['each 8 once: two separate numbers', 'one 8 only, the other is a copy', 'as often as you like in total'], answer: 0, traps: { 1: 'repeated numbers are separate, each used once', 2: 'each number is used exactly once' }, explain: 'The two 8s are two numbers: each is used exactly once.' },
+    ] },
     { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: undo the last step to shrink a problem is how you solve equations, and how first-step analysis runs a process backwards. Skyscraper plans from the target picture the same way.' },
     { type: 'transfer',
       near: { make: lastStepQ },

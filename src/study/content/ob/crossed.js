@@ -96,11 +96,14 @@ export default {
       ] },
     { type: 'text', text: 'The cue: **one product appears on two or more lines**, labelled by venue ("A (venue 1)", "A (venue 2)"). Every line holds the same single product, so any buy on one line cancels any sell on another.' },
     { type: 'list', items: [`"A (venue 1) ${quote(PV1)}; A (venue 2) ${quote(PV2)}"`, 'Three venues for A, each with its own bid and ask', 'A and B each on two venues: one product crosses, the other only touches'] },
-    { type: 'text', text: 'Not this lesson: a card that holds **several** products (A + B, 2A + B, A − B). Those are priced from their legs in the bundle lessons.' },
     { type: 'check', scope: 'the recognition cues', questions: [
       mc({ q: 'Which board is a crossed-venue board?', right: 'A (venue 1) and A (venue 2)',
         wrong: [['the cards A, B and A + B', 'a bundle board: A + B is priced from its legs'], ['the cards A, B and A − B', 'a spread card: priced from A and B with a sign flip'], ['the cards A, A + B, B + C and C', 'a chain: B has no card of its own']],
         explain: 'Only "A (venue 1) and A (venue 2)" lists one single product on several venues.' }),
+    ] },
+    { type: 'text', text: 'Not this lesson: a card that holds **several** products (A + B, 2A + B, A − B). Those are priced from their legs in the bundle lessons.' },
+    { type: 'check', scope: 'a card with several products', questions: [
+      { type: 'choice', q: 'A board shows A + B 50.0 / 50.5 beside A and B. Which lessons price that card?', options: ['the bundle lessons', 'crossed venues (this lesson)', 'neither: there is no trade'], answer: 0, traps: { 1: 'A + B holds two products, not one product on two venues', 2: 'a bundle is priced from its legs' }, explain: 'A card with several products is priced from its legs in the bundle lessons.' },
     ] },
 
     sec('why'),
@@ -179,6 +182,9 @@ export default {
 
     sec('speed'),
     { type: 'callout', tone: 'speed', text: 'Two numbers per product: the highest bid and the lowest ask. Run your eye down the bid column once, then the ask column once. If the highest bid is not above the lowest ask, the product has nothing, whatever the mids say.' },
+    { type: 'check', scope: 'two numbers per product', questions: [
+      { type: 'choice', q: 'A on two venues: venue 1 100.0 / 100.5, venue 2 100.2 / 100.8. Is there a trade?', options: ['no: 100.2 is not above 100.5', 'yes: buy at 100.0, sell at 100.8', 'yes: the two mids differ'], answer: 0, traps: { 1: 'you buy at an ask and sell at a bid, never the other way', 2: 'mids are not prices you can trade' }, explain: 'Highest bid 100.2, lowest ask 100.5: the bid is not above the ask, so nothing.' },
+    ] },
     { type: 'callout', tone: 'speed', text: `Any positive pair solves the board, so do not agonise over the widest one when the clock is short. But the widest pair is found in the same single scan, so take it. Before submitting, count: one buy and one sell of the same product. A wrong submit costs ${PENALTY} seconds.` },
     { type: 'check', scope: 'the two-number scan', questions: [{ make: bestProfitQ }] },
 
@@ -193,13 +199,13 @@ export default {
       ['One book alone', 'its own bid vs its own ask', 'never: bid < ask on one book'],
     ] },
     { type: 'callout', tone: 'edge', text: 'Edge cases. If the highest bid and the lowest ask are on the **same** venue, there is no arbitrage: that venue\'s bid is below its own ask. Touching (equal) quotes earn 0. With three or more venues, the best pair can skip over a venue in the middle.' },
-    { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: a rich bundle is a crossed market between the bundle and a "second venue" you build from its legs, whose ask is the legs\' asks added. Every Orderbooks type is this comparison with a different replica.' },
     { type: 'check', scope: 'the contrast table and edge cases', questions: [
       mc({ q: 'On a three-venue board, venue 2 has both the highest bid and the lowest ask. What do you do?', right: 'Nothing on A: venue 2\'s bid is below its own ask, so no pair crosses',
         wrong: [['Buy and sell on venue 2', 'one book is never crossed: that pays the spread'], ['Pair venue 1 with venue 3', 'their bids are lower and their asks higher than venue 2\'s, so they cannot cross either'], ['Buy on venue 2, sell on the venue with the next best bid', 'the next best bid is even lower than venue 2\'s bid, which is below every ask']],
         explain: 'Best bid ≤ its own ask ≤ every other ask: no bid anywhere beats any ask.' }),
     ] },
 
+    { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: a rich bundle is a crossed market between the bundle and a "second venue" you build from its legs. That venue\'s ask is the legs\' asks added. Every Orderbooks type is this comparison with a different replica.' },
     { type: 'variation', base: `Base: venue 1 A ${quote(PV1)}, venue 2 A ${quote(PV2)}. Buy on venue 1, sell on venue 2: +${px(PV2.bid - PV1.ask)}.`, rows: [
       { same: true, change: `Venue 1's bid drops by ${px(vDrop)}`, effect: `Nothing: you buy on venue 1, so only its ask counts. Profit stays ${px(PV2.bid - PV1.ask)}.` },
       { change: `Venue 2's bid drops by ${px(PV2.bid - PV1.ask)}`, effect: `It now equals venue 1's ask: profit 0, no trade.` },

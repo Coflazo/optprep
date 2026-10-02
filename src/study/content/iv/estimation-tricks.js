@@ -96,10 +96,13 @@ export default {
     sec('tens', 'Powers of ten'),
     { type: 'text', text: 'Most slips in estimation are a lost or extra zero. Write each number as a × 10^{k} with a between 1 and 10. Multiply the a parts, add the k parts, and fix the result if the a part reaches 10.' },
     { type: 'formula', text: '(a × 10^{j}) × (b × 10^{k}) = ab × 10^{j+k}        (a × 10^{j}) ÷ (b × 10^{k}) = (a/b) × 10^{j−k}' },
-    { type: 'text', text: `Example: ${num(SN.a)} × ${num(SN.b)} = 3.6 × 10^{3} × 2.8 × 10^{4} = ${dec(3.6 * 2.8, 2)} × 10^{7} = ${dec((3.6 * 2.8) / 10, 3)} × 10^{8}, which is ${num(SN.p)}.` },
     { type: 'check', scope: 'mantissa and exponent', questions: [
       { make: (rng) => { const a = rng.pick([3, 4, 6, 7, 8]) * 10 ** rng.int(2, 4), b = rng.pick([2, 5, 9, 12, 25]) * 10 ** rng.int(2, 4); const k = Math.floor(Math.log10(a * b) + 1e-9); return { type: 'number', q: `${num(a)} × ${num(b)} = c × 10^{k} with c between 1 and 10. What is k?`, answer: k, hints: ['Write each number as a × 10^{k} first.', 'Add the exponents; bump by one if the leading parts multiply to 10 or more.'], explain: `${num(a)} × ${num(b)} = ${num(a * b)} = ${dec((a * b) / 10 ** k, 3)} × 10^{${k}}.` }; } },
       { make: (rng) => { const a = rng.pick([6, 8, 9]) * 10 ** rng.int(6, 8), b = rng.pick([2, 3, 4]) * 10 ** rng.int(2, 3); const q = a / b, k = Math.floor(Math.log10(q) + 1e-9); return { type: 'number', q: `${num(a)} ÷ ${num(b)} = c × 10^{k}. What is k?`, answer: k, explain: `${num(a)} ÷ ${num(b)} = ${num(q)} = ${dec(q / 10 ** k, 3)} × 10^{${k}}: subtract the exponents.` }; } },
+    ] },
+    { type: 'text', text: `Example: ${num(SN.a)} × ${num(SN.b)} = 3.6 × 10^{3} × 2.8 × 10^{4} = ${dec(3.6 * 2.8, 2)} × 10^{7} = ${dec((3.6 * 2.8) / 10, 3)} × 10^{8}, which is ${num(SN.p)}.` },
+    { type: 'check', scope: 'fixing the a part', questions: [
+      { type: 'number', q: '4,500 × 30,000 = c × 10^k with c between 1 and 10. What is c?', answer: 1.35, tolerance: 1e-9, explain: '4.5 × 3 = 13.5 reaches 10, so fix it: 1.35 × 10^8.' },
     ] },
 
     sec('bounds', 'Bounding from both sides'),

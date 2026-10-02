@@ -58,6 +58,9 @@ export default {
     ] },
     { type: 'text', text: 'n people (or dice, or random picks) each get one of d equally likely values, independently. The question asks whether **some two** of them share a value, or whether **someone shares yours**. The values can be birthdays, months, die faces, numbers from 1 to 100; only n and d matter.' },
     { type: 'list', items: ['"23 people in a room: probability that two share a birthday?"', '"You throw 4 dice: probability that at least two show the same face?"', '"You and 30 others: probability that someone shares your birthday?"'] },
+    { type: 'check', scope: 'only n and d matter', questions: [
+      { type: 'choice', q: '"You throw 5 dice: probability that at least two show the same face?" What are n and d?', options: ['n = 5, d = 6', 'n = 6, d = 5', 'n = 5, d = 365', 'n = 2, d = 6'], answer: 0, traps: { 1: 'swapped: n counts the picks, d the possible values', 2: 'the values here are die faces, not birthdays', 3: 'n is the number of picks, not the size of a match' }, explain: '5 dice are the picks (n = 5); each lands on one of 6 faces (d = 6).' },
+    ] },
     { type: 'text', text: 'Not this lesson: more people than values, where a repeat is certain (bto/pigeonhole), and items matched back to their owners, such as letters and envelopes (bto/derangements).' },
     { type: 'check', scope: 'the recognition cues above', questions: [
       { type: 'choice', q: 'Which question belongs to this lesson?', options: ['8 traders pick numbers from 1 to 50: two pick the same', '60 traders pick numbers from 1 to 50: two pick the same', '8 traders hand back 8 name cards at random: nobody gets their own', '8 traders pick numbers from 1 to 50: trader 1 picks 7'], answer: 0, traps: { 1: '60 > 50: a repeat is certain (pigeonhole)', 2: 'a matching to owners: derangements', 3: 'one fixed value for one person: 1/50' }, explain: 'Independent uniform values, few people, many values: a collision question.' },
@@ -146,6 +149,9 @@ export default {
 
     S('speed'),
     { type: 'callout', tone: 'speed', text: `Pairs first: n(n − 1)/2, divide by d. Small ratio → that is the answer. Ratio near 1 → 1 − e^(−ratio). Landmarks for 365: 23 → ${f3(coll(365, 23))}, 30 → ${f3(coll(365, 30))}, 40 → ${f3(coll(365, 40))}, 57 → ${f3(coll(365, 57))}.` },
+    { type: 'check', scope: 'the landmarks', questions: [
+      { type: 'choice', q: 'Landmark: 30 people, 365 days. P(some two share a birthday) is closest to:', options: ['0.706', '0.507', '0.891', '0.082'], answer: 0, traps: { 1: 'that is 23 people', 2: 'that is 40 people', 3: 'divided people by days instead of counting pairs' }, explain: '30 people is a landmark: 0.706. Pairs 435/365 ≈ 1.19, and 1 − e^(−1.19) ≈ 0.70 agrees.' },
+    ] },
     { type: 'callout', tone: 'speed', text: `Values of e^(−x) to keep: e^(−0.5) ≈ ${Math.exp(-0.5).toFixed(2)}, e^(−0.7) ≈ ${Math.exp(-0.7).toFixed(2)}, e^(−1) ≈ ${Math.exp(-1).toFixed(2)}, e^(−2) ≈ ${Math.exp(-2).toFixed(2)}. With ${SECTIONS.bto.exam.perItemSeconds} seconds per item, the estimate takes 20 and lands within the option spacing.` },
     { type: 'thinkaloud', problem: `${TK.n} people are in a room, 365 equally likely birthdays. Which value is closest to P(at least two share a birthday)?`, lines: [
       { t: 0, say: `${TK.n} people, 365 days, "at least two share": a collision question. Pairs drive it, not people.` },
@@ -157,6 +163,7 @@ export default {
     ] },
     { type: 'check', scope: 'pairs over d and the e^(−x) values', questions: [
       { make: (rng) => { const [d, n] = rng.pick([[365, 30], [365, 40], [100, 15], [200, 20]]); const r = pairs(n) / d; return mc(rng, `${n} people, ${d} values: pairs/d ≈ ${r.toFixed(2)}. Closest estimate of P(some two share)?`, (1 - Math.exp(-r)).toFixed(2), [[Math.min(r, 0.99).toFixed(2), 'used pairs/d without the exponential, too big when the ratio is near 1'], [Math.exp(-r).toFixed(2), 'answered the complement'], [(n / d).toFixed(2), 'counted people']], `1 − e^(−${r.toFixed(2)}) ≈ ${(1 - Math.exp(-r)).toFixed(2)}; exact ${f3(coll(d, n))}.`); } },
+      { type: 'choice', q: 'In the think-aloud, 40 people gave pairs/d ≈ 2.14. What does that tell you?', options: ['too big: use 1 − e^(−2.14)', 'it is the answer as 2.14%', 'it is the answer as 1/2.14'], answer: 0, traps: { 1: 'pairs/d is a ratio of counts, not a percentage', 2: 'dividing by it has no meaning here' }, explain: 'A probability cannot pass 1. Near or above 1, use 1 − e^(−ratio): 1 − e^(−2.14) ≈ 0.88.' },
     ] },
 
     S('rule'),
@@ -170,10 +177,10 @@ export default {
       ['more people than days', 'forced', 'pigeonhole', '1 (from 366 people)'],
     ] },
     { type: 'callout', tone: 'edge', text: 'Edge cases: one person cannot collide (P = 0). Two people: exactly 1/d. From d + 1 people the collision is certain. With d = 2 (a coin), 3 flips already force a repeat.' },
-    { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: hash collisions, two traders quoting the same price, repeated faces in dice questions (bto/die-repeats). The "pairs" count also drives expected numbers: the expected number of shared pairs is exactly n(n − 1)/2d, by linearity (bto/linearity).' },
     { type: 'check', scope: 'the contrast table and edge cases', questions: [
       { type: 'choice', q: 'Two named people, Ann and Bob. P(they share a birthday)?', options: ['1/365', '2/365', `1/${365 * 365}`, '1/2'], answer: 0, traps: { 1: 'counted the one pair twice, once per direction', 2: 'required both to be born on one fixed day (1/365²)', 3: 'treated it as a coin flip' }, explain: 'One pair, one chance: 1/365.' },
     ] },
+    { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: hash collisions, two traders quoting the same price, repeated faces in dice questions (bto/die-repeats). The "pairs" count also drives expected numbers: the expected number of shared pairs is exactly n(n − 1)/2d, by linearity (bto/linearity).' },
     { type: 'variation', base: `${CH.n} people, ${CH.d} equally likely months. P(at least two share a month) = ${coll(CH.d, CH.n)} ≈ ${f3(coll(CH.d, CH.n))}.`, rows: [
       { change: `Replace the months by a fair ${CH.d}-sided die thrown ${CH.n} times`, effect: `No change: ${f3(coll(CH.d, CH.n))}. Only n and d enter the product; what the values are called does not.`, same: true },
       { change: 'Add a fifth person', effect: `One more factor, ${CH.d - CH.n}/${CH.d}, and ${pairs(CH.n + 1)} pairs instead of ${pairs(CH.n)}: P rises to ${f3(coll(CH.d, CH.n + 1))}.` },

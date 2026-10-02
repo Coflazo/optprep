@@ -55,6 +55,9 @@ export default {
     ] },
     { type: 'text', text: 'Something moves **up or down by 1** each step with equal chance: a particle, a price, a score. The question asks where it is **after n steps** (exactly k, below 0, back at the start) or whether it **ever reaches** a level during the first n steps.' },
     { type: 'list', items: ['"A price starts at 2 and moves ±1 daily. Probability it is below 0 after 8 days?"', '"Probability the particle is back at 0 after 10 steps?"', '"Probability it reaches +3 at some point during the first 10 steps?"'] },
+    { type: 'check', scope: 'after n steps, or ever', questions: [
+      { type: 'choice', q: '"A price moves ±1 a day from 0. Probability it touches +4 at some point in the first 10 days?" Which kind is it?', options: ['whether it ever reaches a level', 'where it is after n steps', 'which of two walls comes first', 'an expected number of steps'], answer: 0, traps: { 1: '"at some point" is about the whole path, not the end', 2: 'there are no walls that stop it', 3: 'it asks a probability' }, explain: '"At some point in the first 10 days" asks whether the path ever reaches +4.' },
+    ] },
     { type: 'text', text: 'Not this lesson: walls that stop the walk and the question of which wall comes first (bto/gamblers-ruin), and walks around a polygon (bto/polygon-walk).' },
     { type: 'check', scope: 'the recognition cues above', questions: [
       { type: 'choice', q: 'Which question belongs to this lesson?', options: ['±1 walk from 0: P(at −2 after 8 steps)', '±1 walk from 3: P(it hits 10 before 0)', '±1 walk on a hexagon: expected return time', 'Die running total: P(it ever equals 8)'], answer: 0, traps: { 1: 'two stopping walls: bto/gamblers-ruin', 2: 'a walk on a cycle: bto/polygon-walk', 3: 'steps only go up: bto/running-sum' }, explain: 'An end point after a fixed number of ±1 steps.' },
@@ -136,6 +139,9 @@ export default {
 
     S('speed'),
     { type: 'callout', tone: 'speed', text: `First move on every item: parity. If n + k is odd, answer 0 and move on. Then convert to up-steps and read the binomial row: n = 6 → ${row(6).join(', ')}; n = 8 → ${row(8).join(', ')}.` },
+    { type: 'check', scope: 'parity first, then the row', questions: [
+      { make: (rng) => { const n = rng.pick([6, 8]), k = rng.pick([0, 2, 4, 3, -1]); return { type: 'number', q: `±1 walk from 0. How many of the 2^${n} paths end at ${k} after ${n} steps?`, answer: Number(paths(n, k)), hints: ['Parity first.', `u = (${n} + ${k})/2.`], explain: (n + k) % 2 ? 'Wrong parity: 0 paths.' : `C(${n}, ${(n + k) / 2}) = ${paths(n, k)}.` }; } },
+    ] },
     { type: 'callout', tone: 'speed', text: `Back at 0 after 2m steps: C(2m, m)/4^m ≈ 1/√(πm). For m = 5: exact ${f4(pEnd(10, 0))}, estimate ${(1 / Math.sqrt(Math.PI * 5)).toFixed(4)}. An end-point item should take 30 of your ${SECTIONS.bto.exam.perItemSeconds} seconds.` },
     { type: 'thinkaloud', problem: `A price starts at ${TK.x} and moves up or down 1 each day with equal chance (it may go negative). What is the probability that it is below 0 after ${TK.n} days?`, lines: [
       { t: 0, say: `±1 moves and a question about day ${TK.n}: an end-point question. Price = ${TK.x} + S_${TK.n}.` },
@@ -145,8 +151,9 @@ export default {
       { t: 20, say: `At most ${(TK.n - TK.x - 1) / 2} up-days: (${upTo(TK.n, (TK.n - TK.x - 1) / 2)})/${2 ** TK.n} = ${pRange(TK.n, -TK.n, -TK.x - 1)} ≈ ${f3(pRange(TK.n, -TK.n, -TK.x - 1))}.` },
       { t: 28, say: `Sanity: below 1/2, since the price starts with a cushion of ${TK.x}. Answer ${pRange(TK.n, -TK.n, -TK.x - 1)}, ${SECTIONS.bto.exam.perItemSeconds - 28} seconds left.` },
     ] },
-    { type: 'check', scope: 'parity first, then the row', questions: [
-      { make: (rng) => { const n = rng.pick([6, 8]), k = rng.pick([0, 2, 4, 3, -1]); return { type: 'number', q: `±1 walk from 0. How many of the 2^${n} paths end at ${k} after ${n} steps?`, answer: Number(paths(n, k)), hints: ['Parity first.', `u = (${n} + ${k})/2.`], explain: (n + k) % 2 ? 'Wrong parity: 0 paths.' : `C(${n}, ${(n + k) / 2}) = ${paths(n, k)}.` }; } },
+    { type: 'check', scope: 'back at 0 and the think-aloud', questions: [
+      { type: 'choice', q: 'A ±1 walk from 0. P(back at 0 after 50 steps) is closest to:', options: ['0.11', '0.5', '0.02', '0.25'], answer: 0, traps: { 1: 'being back at one fixed time is far less likely than 1/2', 2: 'used 1/50, one over the number of steps', 3: 'that is about right for 10 steps, not 50' }, explain: '1/√(πm) with m = 25: 1/√78.5 ≈ 0.113.' },
+      { type: 'choice', q: 'In the think-aloud, the first try reached for reflection. Why was it wrong?', options: ['it asks where the walk ends, not if it dipped', 'reflection only works for a walk that starts at 0', 'the walk in the question is biased, not fair'], answer: 0, traps: { 1: 'reflection works from any start; it answers "ever" questions', 2: 'the walk is fair' }, explain: 'Reflection is for "ever reaches". This asks about day 6 only: a plain binomial sum, 11/32.' },
     ] },
 
     S('rule'),
@@ -160,10 +167,10 @@ export default {
       ['at 1 after 10 steps', 'wrong parity', '0'],
     ] },
     { type: 'callout', tone: 'edge', text: 'Edge cases: |k| > n is unreachable (0). k = n needs every step up: 1/2^n. Starting at a level (a = 0) means it has already been reached: P = 1, and the formula agrees since P(S_n ≥ 0) + P(S_n > 0) = 1.' },
-    { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: add walls that stop the walk and you get gambler\'s ruin (bto/gamblers-ruin); glue the ends of a line into a circle and you get polygon walks (bto/polygon-walk). For many steps the end point is roughly normal with sd √n (bto/clt-estimates).' },
     { type: 'check', scope: 'the contrast table and edge cases', questions: [
       { type: 'choice', q: 'Which is largest for a 10-step walk?', options: ['reaches 2 at some point', 'at or above 2 after 10 steps', 'at exactly 2 after 10 steps', 'at 1 after 10 steps'], answer: 0, traps: { 1: 'misses paths that touched 2 and fell back', 2: 'one end point only', 3: 'wrong parity: impossible' }, explain: `${f4(pEver(10, 2))} > ${f4(pAtLeast(10, 2))} > ${f4(pEnd(10, 2))} > 0.` },
     ] },
+    { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: add walls that stop the walk and you get gambler\'s ruin (bto/gamblers-ruin); glue the ends of a line into a circle and you get polygon walks (bto/polygon-walk). For many steps the end point is roughly normal with sd √n (bto/clt-estimates).' },
     { type: 'variation', base: `±1 walk from 0: P(at 2 after 6 steps) = C(6, 4)/2⁶ = ${pEnd(6, 2)}.`, rows: [
       { change: 'Ask for −2 instead of 2', effect: `No change: ${pEnd(6, -2)}. Swapping ups and downs mirrors every path, so ±k are equally likely.`, same: true },
       { change: 'Ask for 3 instead of 2', effect: '0: after 6 steps the position is even, so 3 is unreachable.' },

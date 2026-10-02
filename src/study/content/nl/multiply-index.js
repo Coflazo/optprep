@@ -53,9 +53,12 @@ export default {
       ] },
     { type: 'text', text: 'Each term is the previous term times a **multiplier that goes up by 1** every step: ×2, ×3, ×4, ×5. Growth is explosive, faster than any fixed ratio. The multiplier can start at 1 or 3 instead of 2, and a harder version adds a small constant after each multiplication, which makes the ratios only nearly whole.' },
     { type: 'list', items: [`What number comes next?  ${seq(FAC.slice(0, 5))}, ?`, `What number comes next?  ${seq(E2.slice(0, 5))}, ?`, `What number comes next?  ${seq(E3.slice(0, 5))}, ?`] },
-    { type: 'text', text: `Not this lesson: a fixed ratio (${seq(G2.slice(0, 5))}, geometric) or a fixed ratio plus a constant (${seq(AF)}, the previous lesson). Here the multiplier itself changes. Also not the addition version, where the gaps count (${seq(AI)}). One division per pair separates all three in a few seconds.` },
     { type: 'check', scope: 'the cue: ratios that count up', questions: [
       { make: fair((rng) => { const p = d2(rng, 5), ge = geo(rng.int(1, 5), 3, 5), ad = [rng.int(1, 9)]; while (ad.length < 5) ad.push(ad[ad.length - 1] + ad.length); return pick(rng, 'In which sequence do the ratios count up (×2, ×3, ×4, …)?', seq(p.xs), [[seq(ge), 'its ratios are all 3: a fixed multiplier'], [seq(ad), 'there the gaps count, not the ratios']], `Ratios of ${seq(p.xs)}: ${ratios(p.xs).join(', ')}.`); }) },
+    ] },
+    { type: 'text', text: `Not this lesson: a fixed ratio (${seq(G2.slice(0, 5))}, geometric) or a fixed ratio plus a constant (${seq(AF)}, the previous lesson). Here the multiplier itself changes. Also not the addition version, where the gaps count (${seq(AI)}). One division per pair separates all three in a few seconds.` },
+    { type: 'check', scope: 'one division per pair', questions: [
+      { type: 'choice', q: '1, 2, 4, 7, 11: which rule fits?', options: ['the gaps count up: +1, +2, +3', 'the ratios count up: ×2, ×3, ×4', 'a fixed ratio of 2'], answer: 0, traps: { 1: '4/2 = 2 but 7/4 is not 3', 2: '7/4 is not 2' }, explain: 'Gaps 1, 2, 3, 4: the addition version, not this lesson.' },
     ] },
 
     S('why'),
@@ -70,9 +73,12 @@ export default {
     S('picture'),
     { type: 'text', text: `Divide neighbours and write the ratios under the terms: the ratio row counts. Put the same start through a fixed ×2 and through ×2, ×3, ×4, … and the counting multiplier runs away: by the sixth term it is more than ${Math.floor(FAC[5] / G2[5])} times bigger.` },
     { type: 'diagram', diagram: 'ladder', spec: { mode: 'ratio', rows: [E2, ratios(E2)], predicted: true }, caption: `${seq(E2.slice(0, 5))}: ratios ${ratios(E2).slice(0, 4).join(', ')} count up, so the next ratio is ${ratios(E2)[4]} and the next term is ${E2[4]} × ${ratios(E2)[4]} = ${E2[5]} (outlined).` },
-    { type: 'diagram', diagram: 'bar', spec: { title: 'Same start, fixed ×2 against ×2, ×3, ×4, …', xLabel: 'term', yLabel: 'value', categories: FAC.slice(0, 6).map((_, i) => String(i + 1)), series: [{ name: 'fixed ×2', values: G2 }, { name: '×2, ×3, ×4, …', values: FAC.slice(0, 6) }], valueLabels: true }, caption: `By term 6 the fixed ratio reaches ${G2[5]}; the counting multiplier reaches ${FAC[5]}. Explosive growth with whole-number ratios is the fingerprint of this family.` },
     { type: 'check', scope: 'the counting ratio row', questions: [
       { make: (rng) => { const p = d2(rng, 6); return num(`${seq(p.xs.slice(0, 5))}, ? What is the next multiplier?`, mult(p, 5), `Ratios ${ratios(p.xs.slice(0, 5)).join(', ')} count up by 1: next ${mult(p, 5)}.`, ['Divide each term by the one before.', 'The ratios go up by 1 each step.']); } },
+    ] },
+    { type: 'diagram', diagram: 'bar', spec: { title: 'Same start, fixed ×2 against ×2, ×3, ×4, …', xLabel: 'term', yLabel: 'value', categories: FAC.slice(0, 6).map((_, i) => String(i + 1)), series: [{ name: 'fixed ×2', values: G2 }, { name: '×2, ×3, ×4, …', values: FAC.slice(0, 6) }], valueLabels: true }, caption: `By term 6 the fixed ratio reaches ${G2[5]}; the counting multiplier reaches ${FAC[5]}. Explosive growth with whole-number ratios is the fingerprint of this family.` },
+    { type: 'check', scope: 'a counting multiplier runs away', questions: [
+      { type: 'number', q: 'Start at 1 and multiply by 2, 3, 4, 5, 6 in turn. What do you reach?', answer: 720, explain: '1 × 2 × 3 × 4 × 5 × 6 = 720, against 2^5 = 32 for a fixed × 2.' },
     ] },
 
     S('derivation'),
@@ -100,6 +106,9 @@ export default {
     ] },
     { type: 'text', text: `Plain or with a constant? Look at how close the ratios are to whole numbers. Exact ratios mean no constant. Ratios such as ${E3.slice(1, 5).map((v, i) => round2(v / E3[i])).join(', ')} sit just above whole numbers, so a small constant was added (just below means one was subtracted). The later the pair, the closer to whole, because the constant matters less as the terms grow.` },
     { type: 'diagram', diagram: 'table', spec: { columns: ['previous', 'multiplier', 'm × previous', 'actual next', 'leftover'], rows: E3.slice(0, 4).map((v, i) => [String(v), String(mult({ s: E3s }, i + 1)), String(mult({ s: E3s }, i + 1) * v), String(E3[i + 1]), sgn(E3[i + 1] - mult({ s: E3s }, i + 1) * v)]) }, caption: `${seq(E3.slice(0, 5))}: the multiplier counts ${seq([1, 2, 3, 4].map((i) => mult({ s: E3s }, i)))} and the leftover is ${sgn(E3c)} every row. Next: ${mult({ s: E3s }, 5)} × ${E3[4]}${plusC(E3c)} = ${E3[5]}.` },
+    { type: 'check', scope: 'plain or with a constant', questions: [
+      { type: 'choice', q: 'Ratios 3, 3.33, 4.1, 5.02 sit just above whole numbers. What does that say?', options: ['a small constant is added', 'a small constant is subtracted', 'there is no constant at all'], answer: 0, traps: { 1: 'just below whole numbers would mean subtracted', 2: 'exact ratios mean no constant' }, explain: 'Ratios just above whole numbers come from adding a small constant after each multiplication.' },
+    ] },
     { type: 'explain', prompt: 'Why does a counting multiplier outgrow any fixed ratio, and how does the leftover test carry over from the previous lesson?', model: 'A fixed ratio r multiplies by the same amount forever, but a counting multiplier soon exceeds r and keeps growing, so every later step is a bigger multiplication. With a constant added, subtracting m × previous removes the multiplied part exactly as with a fixed k; only m changes from step to step.', points: ['The multiplier eventually beats any fixed r and keeps rising', 'Leftover = next − m × previous, with m counting up', 'A constant leftover confirms m × previous + c'] },
 
     S('worked'),
@@ -128,6 +137,9 @@ export default {
 
     S('speed'),
     { type: 'callout', tone: 'speed', text: `Know the factorials by sight: ${seq(FAC)}. A term from that list, or a small multiple of one, gives the rule away before you divide anything.` },
+    { type: 'check', scope: 'factorials by sight', questions: [
+      { type: 'choice', q: 'Which term gives away a counting multiplier?', options: ['720', '512', '729', '625'], answer: 0, traps: { 1: '2^9: a fixed × 2', 2: '3^6: a fixed × 3', 3: '5^4: a fixed × 5' }, explain: '720 = 6!, a factorial.' },
+    ] },
     { type: 'callout', tone: 'speed', text: 'With a constant, read m from the last pair (last ÷ second-last, rounded to a whole number) and c from one subtraction. The multiplier is then the next whole number up.' },
     { type: 'thinkaloud', problem: nextQ(TA.slice(0, 5)), lines: [
       { t: 0, say: `Gaps explode, so divide: ${TA[4]} ÷ ${TA[3]} ≈ ${round2(TA[4] / TA[3])}, ${TA[3]} ÷ ${TA[2]} ≈ ${round2(TA[3] / TA[2])}. Near whole numbers that count up.` },
@@ -154,6 +166,10 @@ export default {
       [seq(AF), seq(g(AF)), 'near 2', 'multiply by 2, then add 1'],
     ] },
     { type: 'callout', tone: 'edge', text: `Edge cases: a multiplier that starts at ×1 repeats the first term (${seq(PRED.slice(0, 4))}). With a constant the ratios are near-whole but still count up, and with a negative constant they sit just below the whole numbers.` },
+    { type: 'check', scope: 'the contrast table and edge cases', questions: [
+      { make: (rng) => { const t = rng.int(0, 2); let xs; if (t === 0) { xs = [rng.int(1, 9)]; while (xs.length < 5) xs.push(xs[xs.length - 1] + xs.length); } else if (t === 1) xs = geo(rng.int(1, 5), 3, 5); else xs = d2(rng, 5).xs; const names = ['add 1, 2, 3, …', 'multiply by a fixed number', 'multiply by 2, 3, 4, …']; const trp = [[null, 'the ratios drift; the gaps are what count', 'the gaps count, not the ratios'], ['the gaps grow by a factor, not a count', null, 'the ratios are all the same; they do not count'], ['the growth is multiplicative, far too fast for counting gaps', 'the ratios change; they count up', null]]; return pick(rng, `${seq(xs)}: which rule?`, names[t], names.map((nm, i) => [nm, trp[t][i]]).filter((_, i) => i !== t), `Gaps ${seq(g(xs))}; ratios ${ratios(xs).join(', ')}.`); } },
+      { make: (rng) => { const a = rng.int(2, 9), xs = mi(a, 0, 0, 6); return num(nextQ(xs.slice(0, 5)), xs[5], `Ratios ${ratios(xs.slice(0, 5)).join(', ')}: the multiplier started at 1. Next ×${mult({ s: 0 }, 5)}: ${xs[4]} × ${mult({ s: 0 }, 5)} = ${xs[5]}.`, ['Why are the first two terms equal?', 'List the ratios, including the first.']); } },
+    ] },
     { type: 'callout', tone: 'transfer', text: `Same idea elsewhere: factorials count orderings. 5 × 4 × 3 × 2 × 1 = ${5 * 4 * 3 * 2} ways to line up five items; when 24, 120 or 720 appears in a probability question, an ordering count is usually behind it.` },
     { type: 'variation', base: `${seq(E25)}, ?  Ratios ${ratios(E25).join(', ')}; next ${E2[4]} × ${ratios(E2)[4]} = ${E2[5]}.`, rows: [
       { same: true, change: `Drop the first term: ${seq(E25.slice(1))}, ?`, effect: `Still ${E2[5]}. The ratios ${ratios(E25.slice(1)).join(', ')} still count up to the next multiplier ${ratios(E2)[4]}.` },
@@ -161,10 +177,6 @@ export default {
       { change: `Let the multiplier start at 1: ${seq(FROM1.slice(0, 5))}, ?`, effect: `${FROM1[5]}. Ratios ${ratios(FROM1.slice(0, 5)).join(', ')}: the ×1 step repeats the first term, and the next multiplier is ${ratios(FROM1)[4]}.` },
       { change: `Add 1 after each multiplication: ${seq(PLUS1.slice(0, 5))}, ?`, effect: `${PLUS1[5]}. Ratios become nearly whole (${PLUS1.slice(1, 5).map((v, i) => round2(v / PLUS1[i])).join(', ')}); the leftover after × m is +1 every step.` },
       { fusion: true, change: `Multiplier from 1 and add 1: ${seq(BOTH.slice(0, 5))}, ?`, effect: `${BOTH[5]}. The count starts at ×1 (so read m as ${seq([1, 2, 3, 4].map((i) => mult({ s: 0 }, i)))}), and the leftover is +1: next = ${mult({ s: 0 }, 5)} × ${BOTH[4]} + 1.` },
-    ] },
-    { type: 'check', scope: 'the contrast table and edge cases', questions: [
-      { make: (rng) => { const t = rng.int(0, 2); let xs; if (t === 0) { xs = [rng.int(1, 9)]; while (xs.length < 5) xs.push(xs[xs.length - 1] + xs.length); } else if (t === 1) xs = geo(rng.int(1, 5), 3, 5); else xs = d2(rng, 5).xs; const names = ['add 1, 2, 3, …', 'multiply by a fixed number', 'multiply by 2, 3, 4, …']; const trp = [[null, 'the ratios drift; the gaps are what count', 'the gaps count, not the ratios'], ['the gaps grow by a factor, not a count', null, 'the ratios are all the same; they do not count'], ['the growth is multiplicative, far too fast for counting gaps', 'the ratios change; they count up', null]]; return pick(rng, `${seq(xs)}: which rule?`, names[t], names.map((nm, i) => [nm, trp[t][i]]).filter((_, i) => i !== t), `Gaps ${seq(g(xs))}; ratios ${ratios(xs).join(', ')}.`); } },
-      { make: (rng) => { const a = rng.int(2, 9), xs = mi(a, 0, 0, 6); return num(nextQ(xs.slice(0, 5)), xs[5], `Ratios ${ratios(xs.slice(0, 5)).join(', ')}: the multiplier started at 1. Next ×${mult({ s: 0 }, 5)}: ${xs[4]} × ${mult({ s: 0 }, 5)} = ${xs[5]}.`, ['Why are the first two terms equal?', 'List the ratios, including the first.']); } },
     ] },
 
     { type: 'transfer',

@@ -52,6 +52,9 @@ export default {
     ] },
     { type: 'text', text: 'Quantities are chosen **uniformly at random** from an interval (arrival times, break points on a stick, numbers in [0, 1], points on a circle) and the question asks for the probability of a condition on them: meeting, forming a triangle, a sum or product below a level.' },
     { type: 'list', items: ['"A stick is broken at two random points: P(the pieces form a triangle)?"', '"X, Y uniform on [0, 1]: P(X + Y < 3/4)?"', '"Three random points on a circle: P(they lie in some semicircle)?"'] },
+    { type: 'check', scope: 'what is uniform', questions: [
+      { type: 'choice', q: '"Two friends arrive at random between 12:00 and 13:00 and each waits 15 minutes. Probability they meet?" What is chosen uniformly?', options: ['the two arrival times', 'the 15-minute wait', 'whether they meet', 'the length of the hour'], answer: 0, traps: { 1: 'the wait is fixed', 2: 'that is the event you compute', 3: 'the hour is the interval the times come from' }, explain: 'Each arrival time is uniform on the hour; the condition (meeting) is a region of that square.' },
+    ] },
     { type: 'text', text: 'Not this lesson: **expected** positions of uniform points (bto/expected-extremes), and sums of many uniforms, where the normal curve takes over (bto/clt-estimates).' },
     { type: 'check', scope: 'the recognition cues above', questions: [
       { type: 'choice', q: 'Which question belongs to this lesson?', options: ['X, Y uniform on [0, 1]: P(|X − Y| < 1/4)', 'X, Y uniform on [0, 1]: E|X − Y|', 'Two dice: P(the difference is at most 1)', '100 uniforms: P(their sum exceeds 55)'], answer: 0, traps: { 1: 'an expectation: bto/expected-extremes', 2: 'discrete dice: count cells, not areas', 3: 'many uniforms: bto/clt-estimates' }, explain: 'Two continuous uniforms and a condition: an area in the unit square.' },
@@ -137,6 +140,9 @@ export default {
 
     S('speed'),
     { type: 'callout', tone: 'speed', text: 'Draw first, always: a square with the event shaded takes ten seconds and prevents every trap above. Corners are faster than bands; triangles are half a square.' },
+    { type: 'check', scope: 'draw first', questions: [
+      { type: 'choice', q: 'X, Y uniform on [0, 1]. P(X + Y > 3/2)?', options: ['1/8', '1/4', '3/4', '1/2'], answer: 0, traps: { 1: 'took the corner square, not the triangle', 2: 'treated X + Y as uniform on [0, 2]', 3: 'cut the square along the wrong line' }, explain: 'Shade the corner above x + y = 3/2: a triangle with legs 1/2, area 1/8.' },
+    ] },
     { type: 'callout', tone: 'speed', text: `Landmarks: meeting with wait w: 1 − (1 − w)² (15 minutes in an hour → ${meet(Q.of(1, 4))}); triangle 1/4; three points in a semicircle 3/4; P(X + Y < 1) = 1/2; E|X − Y| = 1/3. Budget 30 of the ${SECTIONS.bto.exam.perItemSeconds} seconds.` },
     { type: 'thinkaloud', problem: `X and Y are independent and uniform on [0, 1]. What is the probability that X + Y < ${TK}?`, lines: [
       { t: 0, say: 'Two independent uniforms and an inequality: draw the unit square, shade the event, measure the area.' },
@@ -148,6 +154,7 @@ export default {
     ] },
     { type: 'check', scope: 'landmarks', questions: [
       { make: (rng) => { const [txt, v] = rng.pick([['a stick broken at two uniform points forms a triangle', Q.of(1, 4)], ['three uniform points on a circle lie in a semicircle', semi(3)], ['X + Y < 1 for independent uniforms X, Y', Q.of(1, 2)], ['two people waiting 15 minutes in an hour meet', meet(Q.of(1, 4))]]); return { type: 'number', q: `Probability that ${txt}? (Decimals are fine.)`, answer: v.toNumber(), tolerance: 0.001, explain: `${v}.` }; } },
+      { type: 'choice', q: 'In the think-aloud, the first try said X + Y is uniform on [0, 2]. What is wrong with that?', options: ['X + Y piles up near 1', 'X + Y is uniform on [0, 1]', 'X and Y are not independent'], answer: 0, traps: { 1: 'X + Y can reach 2', 2: 'they are independent' }, explain: 'Back to the square: the event is an area, and X + Y peaks at 1.' },
     ] },
 
     S('rule'),
@@ -162,10 +169,10 @@ export default {
       ['E|X − Y|', 'an expectation, not an area', '1/3 (bto/expected-extremes)'],
     ] },
     { type: 'callout', tone: 'edge', text: `Edge cases: a wait of 0 gives P(meet) = 0; a wait of the whole window gives 1. X + Y < 2 is certain. A disc of radius r around the centre of the unit square has probability πr² only while r ≤ 1/2; beyond that the disc spills out of the square.` },
-    { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: the gaps picture for expected minimum and maximum of uniforms (bto/expected-extremes) and the continuity-correction bars of the normal approximation (bto/clt-estimates) are the same "probability is a length or an area" idea. Intervals items with areas and shapes reward the same habit of drawing first.' },
     { type: 'check', scope: 'the contrast table and edge cases', questions: [
       { type: 'choice', q: 'X, Y uniform on [0, 1]. Which is largest?', options: ['P(X + Y < 3/2)', 'P(|X − Y| ≤ 1/4)', 'P(X + Y < 1/2)', 'P(XY < 1/2)'], answer: 0, traps: { 1: `the band is ${meet(Q.of(1, 4))}`, 2: 'a small corner: 1/8', 3: `about ${f3(prod(0.5))}, just below 7/8` }, explain: `1 − (1/2)²/2 = ${sumBelow(Q.of(3, 2))}.` },
     ] },
+    { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: the gaps picture for the expected minimum and maximum of uniforms (bto/expected-extremes) uses the same idea. So do the continuity-correction bars of the normal approximation (bto/clt-estimates): probability is a length or an area. Intervals items with areas and shapes reward the same habit of drawing first.' },
     { type: 'variation', base: `Two friends arrive uniformly between 12:00 and 13:00, independently, and each waits ${CH.w} minutes: P(meet) = 1 − (${CH.T - CH.w}/${CH.T})² = ${meet(W)}.`, rows: [
       { change: 'The window is 15:00 to 16:00 instead', effect: `No change: ${meet(W)}. Only the wait as a fraction of the window, w = ${W}, enters the square.`, same: true },
       { change: 'Only the first to arrive waits; the other leaves at once if alone', effect: `Still ${meet(W)}: the first to arrive is always the one waiting, so the band is the same. Only "a named friend waits" halves it.`, same: true },

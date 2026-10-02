@@ -66,9 +66,12 @@ export default {
         { id: 'glance', label: 'Answer whatever catches the eye', approach: 'Answered the first block you read.', breaksAt: 'The other block answers a different question and agrees with the right answer only half the time.' },
       ] },
     { type: 'text', text: `The Switch is the task-switching game of Zap-N. Every round shows two blocks: a sum or difference on top and two sets of arrows below. One block is highlighted. **Top** highlighted: is the result odd? **Bottom** highlighted: do both arrow sets point the same way? Answer Yes (right arrow or Y) or No (left arrow or N).` },
-    { type: 'text', text: `${R} rounds, ${deadlineMs / 1000} s each; no answer in time counts as wrong. The highlight moves unpredictably: exactly ${SWITCHES} of the ${R - 1} changes of round are switches. Accuracy is the tracked target, ${pct(TARGET)}; the game score also weighs speed.` },
     { type: 'check', scope: 'the two questions', questions: [
       mc({ q: 'Bottom highlighted. Top: 12 + 5. Bottom: →→→ over ←←←←. Answer?', right: 'no', at: 1, wrong: [['yes', 'answered the top block (17 is odd): the bottom is highlighted']], explain: 'The sets point right and left: not the same way.' }),
+    ] },
+    { type: 'text', text: `${R} rounds, ${deadlineMs / 1000} s each; no answer in time counts as wrong. The highlight moves unpredictably: exactly ${SWITCHES} of the ${R - 1} changes of round are switches. Accuracy is the tracked target, ${pct(TARGET)}; the game score also weighs speed.` },
+    { type: 'check', scope: 'no answer in time', questions: [
+      { type: 'choice', q: 'No answer within 4 seconds. How does the round count?', options: ['as wrong', 'as skipped', 'as right'], answer: 0, traps: { 1: 'there is no skip: a timeout is an error', 2: 'no answer is never right' }, explain: 'A timeout counts as wrong.' },
     ] },
 
     sec('why'),
@@ -143,6 +146,7 @@ export default {
 
     sec('speed'),
     { type: 'callout', tone: 'speed', text: 'Keep both fingers on the Yes and No keys. Look at the highlight first, say the task, then glance at exactly one thing: two last digits, or two first arrows.' },
+    { type: 'check', scope: 'first arrows only', questions: [{ make: arrowQ }] },
     { type: 'callout', tone: 'speed', text: `The game score gives speed and accuracy equal weight, but the tracked target is accuracy. ${deadlineMs / 1000} s is long; spend the extra few hundred milliseconds a switch costs rather than risk an error.` },
     { type: 'thinkaloud', problem: 'Round 12. Last round was "odd". Now: top 46 + 18, bottom →→→→ over →→→, and the bottom block is highlighted.', lines: [
       { t: 0, say: `46 + 18: last digits 6 and 8, both even, so ${odd('46 + 18') ? 'odd' : 'even'}: No.`, slip: true },
@@ -151,7 +155,10 @@ export default {
       { t: 1, say: 'Same way: Yes.' },
       { t: 1.2, say: `Check: the top block would have said ${odd('46 + 18') ? 'yes' : 'no'}, so the old task would have cost this round.` },
     ] },
-    { type: 'check', scope: 'first arrows only', questions: [{ make: arrowQ }] },
+    { type: 'check', scope: 'the think-aloud and the second tip', questions: [
+      { type: 'choice', q: 'Accuracy is the target. A switch round costs a few hundred milliseconds more. What do you do?', options: ['spend the time and avoid the error', 'answer at the pace you had before', 'guess to save the time'], answer: 0, traps: { 1: '4 s is long: the extra time costs nothing', 2: 'a guess risks the tracked score' }, explain: 'Accuracy is tracked; a few hundred milliseconds are cheap.' },
+      { type: 'choice', q: 'In the think-aloud, the first answer judged 46 + 18. What was wrong?', options: ['the highlight had moved to the bottom', '46 + 18 is odd', 'the arrows point opposite ways'], answer: 0, traps: { 1: '64 is even, but the top block was not the task', 2: 'both first arrows point right' }, explain: 'Look at the highlight first: bottom, so "same?" Yes.' },
+    ] },
 
     sec('rule'),
     { type: 'callout', tone: 'rule', text: 'The Switch: read the highlight, say "odd" or "same", then check one thing: last digits (odd when exactly one is odd) or first arrows (same direction).' },
@@ -171,6 +178,10 @@ export default {
       { same: true, change: 'The previous round was also top', effect: 'Nothing changes: name the task from the highlight every round.' },
     ] },
     { type: 'callout', tone: 'edge', text: 'Edge cases: a difference like 25 − 24 = 1 is odd; every difference in the game is positive, so you never meet 0. A round can have both blocks agreeing, which hides an error on that round; the habit, not the round, is what the score measures over 35 rounds.' },
+    { type: 'check', scope: 'the table and the edge cases', questions: [
+      { type: 'choice', q: 'In The Switch, what decides which question you answer?', options: ['the highlighted block', 'the number of the round', 'the colour of a word'], answer: 0, traps: { 1: 'switches are unpredictable, not tied to rounds', 2: 'that is the Stroop test' }, explain: 'The highlight decides, and it moves unpredictably.' },
+      { type: 'choice', q: '25 − 24 = 1 with the top block highlighted. Answer?', options: ['Yes: 1 is odd', 'No: differences are even', 'No: 1 is too small'], answer: 0, traps: { 1: 'a difference can be odd', 2: '1 is odd' }, explain: '1 is odd, so the answer is Yes.' },
+    ] },
     { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: parity from last digits is a NumberLogic and mental-arithmetic shortcut, and "decide which rule applies before computing" is the recognition step of every lesson in this guide.' },
     { type: 'transfer',
       near: { make: answerQ },

@@ -57,9 +57,12 @@ export default {
         { id: 'pairsfixed', label: 'Count pairs for (b) too', approach: 'You priced (b) from the pairs among all 101 people, as if any two could match.', breaksAt: 'Only matches with your one birthday count: 100 chances, 1 − (364/365)^100.' },
       ] },
     { type: 'text', text: 'There is **no picture**: statements about people (or dice, or PINs) each taking one of d equally likely values, independently. Two shapes appear: **some two** of them match (a collision among themselves), or **someone** matches one fixed value (yours). A third, "all different", is the complement of the first.' },
-    { type: 'text', text: 'Not this lesson: dice sums or card hands. Here only the pattern of repeats matters: how many values, how many draws, and whether the target is fixed.' },
     { type: 'check', scope: 'the recognition cues above', questions: [
       mc(null, '"Among 40 people, someone shares the teacher\'s birthday." Which shape is it?', 'someone matches a fixed value', [['some two match each other', 'the teacher\'s birthday is fixed: only matches with it count'], ['all different', 'that would be about no repeats at all'], ['a certain event by pigeonhole', 'forty is far below 365 values']], 'One fixed target: 40 independent chances at 1/365 each.', { at: 0 }),
+    ] },
+    { type: 'text', text: 'Not this lesson: dice sums or card hands. Here only the pattern of repeats matters: how many values, how many draws, and whether the target is fixed.' },
+    { type: 'check', scope: 'what matters', questions: [
+      { type: 'choice', q: '"30 PINs drawn from 10,000: two of them match." What decides the chance?', options: ['how many values and draws', 'the digits in each PIN', 'the sum of all the PINs'], answer: 0, traps: { 1: 'only the pattern of repeats matters', 2: 'sums belong to dice items' }, explain: 'd = 10,000 values and n = 30 draws, with no fixed target.' },
     ] },
 
     S('why'),
@@ -129,6 +132,9 @@ export default {
 
     S('speed'),
     { type: 'callout', tone: 'speed', text: `Landmarks: ${N23} people for an even chance of a shared birthday; about ${NYOU} others for an even chance of someone sharing yours. For small d, multiply the chain in your head: months ${[3, 4, 5].map((n) => `n = ${n}: ${dp(anyPair(n, 12), 2)}`).join(', ')}.` },
+    { type: 'check', scope: 'the landmarks', questions: [
+      { type: 'choice', q: 'About how many people give an even chance that two share a birthday?', options: ['23', '183', '253', '365'], answer: 0, traps: { 1: 'half of 365: pairs grow much faster than people', 2: 'that is for someone sharing your birthday', 3: 'that is the number of days' }, explain: '23 people make 253 pairs: an even chance of a shared birthday.' },
+    ] },
     { type: 'callout', tone: 'speed', text: `Ask one question per statement: pairs or a fixed target? Then pairs/d (collision) or n/d (fixed target) tells you the size at a glance. Budget: ${LL.exam.perItemSeconds} seconds; the ranking rarely needs more than those estimates.` },
     { type: 'check', scope: 'pairs or a fixed target', questions: [
       { make: (rng) => again(() => { const keys = rng.shuffle(Object.keys(POOL)).slice(0, 3); return rank(rng, 'All values equally likely and independent. Rank from most to least likely.', keys.map((k) => POOL[k](rng)), 'Pairs for "two share", people for a fixed target, a product for "all different".', { gap: 0.02 }); }) },
@@ -158,11 +164,11 @@ export default {
       ['n > d, some two share', 'pigeonhole', '1'],
     ] },
     { type: 'callout', tone: 'edge', text: 'Edge cases: two people share a birthday with exactly 1/365 (one pair). With n = d + 1 a collision is certain, even though "all different" is only just impossible.' },
-    { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: dice repeats in Beat the Odds (d = 6), card hands with "two of the same rank", and hash collisions in code. Anything with many pairs and few values collides early.' },
     { type: 'check', scope: 'the contrast table and edge cases', questions: [
       mc(null, 'P(two given people share a birthday)?', '1/365', [['2/365', 'counted each person as a separate chance, but there is one pair'], ['1/365^2', 'required both to match one fixed day'], ['364/365', 'answered the complement']], 'Whatever the first birthday is, the second matches it with 1/365.', { at: 0 }),
     ] },
 
+    { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: dice repeats in Beat the Odds (d = 6), card hands with "two of the same rank", and hash collisions in code. Anything with many pairs and few values collides early.' },
     { type: 'variation', base: `The challenge: (c) 5 people share a month ≈ ${dp(anyPair(5, 12))} > (a) 23 people share a birthday ≈ ${dp(anyPair(23, 365))} > (b) someone of 100 shares yours ≈ ${dp(matchYou(100))}.`, rows: [
       { same: true, change: 'Reword (a) as "not all 23 birthdays are different"', effect: 'No change. It is the same event: "some two share" is exactly the complement of "all different".' },
       { change: 'Change (b) to "two of the 100 share a birthday"', effect: `Now ${pairs(100)} pairs: ${dp(B100, 7)}. Same people, collision shape: (b) jumps from last to first.` },

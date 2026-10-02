@@ -56,9 +56,12 @@ export default {
     ], q: `Before any teaching: ${seq(CH.slice(0, 6))}, ? What comes next? Try two ways: once by taking differences until a row is constant, once by looking hard at the gaps.`, answer: String(CH[6]), explain: `Differences: gaps ${seq(g(CH.slice(0, 6)))}, then ${seq(g2(CH.slice(0, 6)))}, then ${seq(g3(CH.slice(0, 6)))}: the third row is constant. Climbing back gives ${CH[6]}. The shortcut: the gaps are the squares 2² to 6², so the next gap is 7² = ${g(CH)[5]} and ${CH[5]} + ${g(CH)[5]} = ${CH[6]}.` },
     { type: 'text', text: 'Subtract neighbours: the gaps are not constant. Subtract again: the second row is not constant either, but it moves **steadily**, rising or falling by the same amount. That means a third subtraction flattens it. The rule is a cubic in the position, and you never need its formula.' },
     { type: 'list', items: [`What number comes next?  ${seq(E1.slice(0, 6))}, ?`, `What number comes next?  ${seq(E2.slice(0, 6))}, ?`, `What number comes next?  ${seq(E3.slice(0, 6))}, ?`] },
-    { type: 'text', text: `Not this lesson: a second row that is already constant (stop at two rows), or a second row that copies the gaps, as in ${seq(DG)} with gaps ${seq(g(DG))}: subtraction never settles there, so divide instead.` },
     { type: 'check', scope: 'the cue: the second row moves steadily', questions: [
       { make: (rng) => { const c = draw(rng, 6, 3), q = quad(rng.int(10, 40), rng.int(3, 9), rng.int(2, 4), 6), d = dgs(rng.int(10, 40), rng.int(2, 4), 6); return pick(rng, 'Which sequence needs **three** rounds of subtraction before a row is constant?', seq(c), [[seq(q), `its second row ${seq(g2(q))} is already constant: two rounds`], [seq(d), `its rows ${seq(g(d))}, ${seq(g2(d))} keep doubling: no row of subtraction settles, divide instead`]], `${seq(c)}: second row ${seq(g2(c))}, third row ${seq(g3(c))}.`); } },
+    ] },
+    { type: 'text', text: `Not this lesson: a second row that is already constant (stop at two rows), or a second row that copies the gaps, as in ${seq(DG)} with gaps ${seq(g(DG))}: subtraction never settles there, so divide instead.` },
+    { type: 'check', scope: 'rows that never settle', questions: [
+      { type: 'choice', q: '3, 4, 6, 10, 18, 34: what do you do?', options: ['divide: the gaps double', 'subtract a third time', 'stop at two rows'], answer: 0, traps: { 1: 'the rows copy themselves, so subtraction never settles', 2: 'the second row 1, 2, 4, 8 is not constant' }, explain: 'Gaps 1, 2, 4, 8, 16 double: divide instead of subtracting.' },
     ] },
 
     S('why'),
@@ -120,6 +123,9 @@ export default {
       ['gaps', neg(g(E2)[4]), sgn(g2(E2)[4]), neg(g(E2)[5])],
       ['terms', neg(E2[5]), sgn(g(E2)[5]), neg(E2[6])],
     ] }, caption: `The climb on one card. Read it top to bottom: only the right-hand edge of the ladder is used, and each new entry feeds the row above it.` },
+    { type: 'check', scope: 'the climb on one card', questions: [
+      { type: 'number', q: 'A ladder edge reads: last term 60, last gap 20, last second-row entry 8, third row 3. What is the next term?', answer: 91, explain: 'Bottom up: 8 + 3 = 11, then 20 + 11 = 31, then 60 + 31 = 91.' },
+    ] },
     { type: 'explain', prompt: 'Why is the third row the one you copy, and why must you climb through the second row and the gaps instead of adding t to the last term?', model: 'Only the flat row has a known next entry; the rows above change, and each of their entries is the difference of the two above it. So the new second difference is the old one plus t, the new gap is the old gap plus that, and the new term is the old term plus that gap. Adding t to the term skips two rows that are still changing.', points: ['Only a constant row can be extended by copying', 'Each new upper entry = left neighbour + new entry below', 'The climb goes through every row: second row, gaps, terms'] },
 
     S('worked'),
@@ -147,6 +153,9 @@ export default {
 
     S('speed'),
     { type: 'callout', tone: 'speed', text: 'Only the **right edge** matters. Write four numbers: last term x, last gap g, last second difference s, third difference t. Then s′ = s + t, g′ = g + s′, x′ = x + g′. Three additions, about 20 seconds after the rows.' },
+    { type: 'check', scope: 'the right edge', questions: [
+      { make: (rng) => { const xs = draw(rng, 7), e = edge(xs, 6); return num(`The right edge of a ladder reads: last term ${neg(e.x)}, last gap ${neg(e.gl)}, last second difference ${neg(e.sl)}, third difference ${neg(e.t)}. What is the next term?`, xs[6], `s′ = ${neg(e.sl)} ${sgn(e.t)} = ${neg(e.sl + e.t)}; g′ = ${neg(e.gl)} ${sgn(e.sl + e.t)} = ${neg(g(xs)[5])}; x′ = ${neg(e.x)} ${sgn(g(xs)[5])} = ${neg(xs[6])}.`, ['Start at the bottom: s + t.', 'Then g + s′, then x + g′.']); } },
+    ] },
     { type: 'callout', tone: 'speed', text: `Named shortcut: if the gaps are a list you know (squares ${seq(CH.slice(1, 5).map((v, i) => v - CH[i]))}, or cubes), extend that list. Sums of squares have third difference ${g3(CH)[0]}; cubes have ${g3(CU)[0]}.` },
     { type: 'thinkaloud', problem: nextQ(E3.slice(0, 6)), lines: [
       { t: 0, say: `Six terms, and the gaps are not constant: ${seq(g(E3.slice(0, 6)))}.` },
@@ -156,8 +165,7 @@ export default {
       { t: 20, say: `Right edge: second difference ${neg(g2(E3)[3])}, gap ${g(E3)[4]}, term ${E3[5]}. ${neg(g2(E3)[3])} ${sgn(g3(E3)[0])} = ${neg(g2(E3)[4])}; ${g(E3)[4]} ${sgn(g2(E3)[4])} = ${g(E3)[5]}.` },
       { t: 26, say: `${E3[5]} + ${g(E3)[5]} = ${E3[6]}. Shape check: the next gap ${g(E3)[5]} is a bit below ${g(E3)[4]}, as a falling second row says. Answer ${E3[6]}.` },
     ] },
-    { type: 'check', scope: 'the right edge and the named shortcut', questions: [
-      { make: (rng) => { const xs = draw(rng, 7), e = edge(xs, 6); return num(`The right edge of a ladder reads: last term ${neg(e.x)}, last gap ${neg(e.gl)}, last second difference ${neg(e.sl)}, third difference ${neg(e.t)}. What is the next term?`, xs[6], `s′ = ${neg(e.sl)} ${sgn(e.t)} = ${neg(e.sl + e.t)}; g′ = ${neg(e.gl)} ${sgn(e.sl + e.t)} = ${neg(g(xs)[5])}; x′ = ${neg(e.x)} ${sgn(g(xs)[5])} = ${neg(xs[6])}.`, ['Start at the bottom: s + t.', 'Then g + s′, then x + g′.']); } },
+    { type: 'check', scope: 'the named shortcut', questions: [
       { make: (rng) => { const s0 = rng.int(1, 4), a = rng.int(1, 20), xs = [a]; for (let i = 0; i < 6; i++) xs.push(xs[i] + (s0 + i) ** 2); return num(`${seq(xs.slice(0, 6))}, ? The gaps are consecutive squares. What comes next?`, xs[6], `Gaps ${seq(g(xs).slice(0, 5))} are ${s0}² to ${s0 + 4}²; the next gap is ${s0 + 5}² = ${(s0 + 5) ** 2}, so ${xs[5]} + ${(s0 + 5) ** 2} = ${xs[6]}.`, ['Which squares are the gaps?', 'Add the next square to the last term.']); } },
     ] },
 
@@ -179,12 +187,12 @@ export default {
       { change: 'Double every term and then add 10', fusion: true, effect: `The doubling scales every row (the third difference becomes ${2 * g3(E1)[0]}); the 10 only shifts the terms. So the next term is 2 × ${E1[6]} + 10 = ${2 * E1[6] + 10}.` },
     ] },
     { type: 'callout', tone: 'edge', text: 'Edge cases: a negative t makes the second row fall, so the gaps grow more slowly and can turn round. If the third row is not constant either, do not go looking for a fourth row: try ratios, recurrences and strands first; NumberLogic items stop at three rows.' },
-    { type: 'callout', tone: 'transfer', text: `Same idea elsewhere: the ladder is a discrete derivative. A rule of degree k has a constant k-th row, just as the k-th derivative of a degree-k polynomial is constant. Stacked cannonballs (${seq(CH.slice(0, 4))}, the sums of squares) and volumes of cubes are the everyday cubics.` },
     { type: 'check', scope: 'the contrast table and edge cases', questions: [
       { make: (rng) => { const t = rng.int(0, 3); const xs = t === 0 ? arith(rng.int(1, 30), rng.int(2, 9), 6) : t === 1 ? quad(rng.int(1, 20), rng.int(1, 6), rng.int(1, 3), 6) : t === 2 ? draw(rng, 6, 3) : dgs(rng.int(1, 9), rng.int(1, 3), 6); const names = ['the gap row', 'the second row', 'the third row', 'none of them']; const why = (i) => (i < t ? `that row is not constant here: ${seq([g, g2, g3][i](xs))}` : t === 3 ? 'every row keeps doubling; subtraction never settles' : 'too deep: an earlier row is already constant'); return pick(rng, `${seq(xs)}: which row is the first constant one?`, names[t], names.map((nm, i) => [nm, why(i)]).filter((_, i) => i !== t), `Gaps ${seq(g(xs))}; second row ${seq(g2(xs))}; third row ${seq(g3(xs))}.`); } },
       { type: 'number', q: 'How many shown terms do you need to see **three** equal entries in the third row?', answer: 6, explain: 'Each row is one entry shorter than the row above: 6 terms give 5 gaps, 4 second differences and 3 third differences.', hints: ['Each subtraction loses one entry.', 'You want 3 entries after three subtractions.'] },
     ] },
 
+    { type: 'callout', tone: 'transfer', text: `Same idea elsewhere: the ladder is a discrete derivative. A rule of degree k has a constant k-th row, just as the k-th derivative of a degree-k polynomial is constant. Stacked cannonballs (${seq(CH.slice(0, 4))}, the sums of squares) and volumes of cubes are the everyday cubics.` },
     { type: 'transfer',
       near: { make: (rng) => { const xs = draw(rng, 7); return num(`A quantity is recorded on six days: ${seq(xs.slice(0, 6))}. Its third differences are constant. What is the reading on day 7?`, xs[6], `Third row ${neg(g3(xs)[0])}; next second difference ${neg(g2(xs)[4])}, next gap ${neg(g(xs)[5])}, reading ${neg(xs[6])}.`, ['Build three rows of differences.', 'Copy the flat row, then climb.']); } },
       far: { type: 'number', q: `How many different 3-card hands can be dealt from n cards? For n = 3, 4, 5, 6, 7 the counts are ${seq(TET.slice(0, 5))}. Using differences only, what is the count for n = 8?`, answer: TET[5], explain: `Gaps ${seq(g(TET.slice(0, 5)))}, second row ${seq(g2(TET.slice(0, 5)))}, third row ${seq(g3(TET.slice(0, 5)))}. Climb: ${g2(TET)[2]} + 1 = ${g2(TET)[3]}, ${g(TET)[3]} + ${g2(TET)[3]} = ${g(TET)[4]}, ${TET[4]} + ${g(TET)[4]} = ${TET[5]}.`, hints: ['The count is a cubic in n.', 'Three rows of differences, then climb.'] },

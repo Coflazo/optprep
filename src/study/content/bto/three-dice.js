@@ -58,6 +58,9 @@ export default {
     ] },
     { type: 'text', text: 'Three fair dice are thrown at once (or one die three times, which is the same thing). The question asks about the **shape** of the result (all different, a pair, three of a kind), the **sum**, the **highest face**, or a property such as an even product.' },
     { type: 'list', items: ['"Three dice are rolled. What is the probability that the total is 10?"', '"Three dice: what is the chance that exactly two match?"', '"Three dice: probability the highest number shown is 5?"', '"Three dice are rolled and the faces multiplied. Probability the product is even?"'] },
+    { type: 'check', scope: 'the four kinds of three-dice question', questions: [
+      { type: 'choice', q: '"Three dice: probability that exactly two faces match?" What does it ask about?', options: ['the shape: a pair', 'the sum', 'the highest face', 'a property of the product'], answer: 0, traps: { 1: 'no faces are added', 2: 'which face is highest does not decide a pair', 3: 'matching faces is a shape, not a property of a product' }, explain: 'Two faces matching and one different is the pair shape.' },
+    ] },
     { type: 'text', text: 'Not this lesson: two dice (bto/two-dice-sum, bto/dice-order-stats) and long runs of throws where only agreement matters (bto/die-repeats). Three dice is where the counting first gets big enough that shortcuts matter.' },
     { type: 'check', scope: 'the recognition cues above', questions: [
       { type: 'choice', q: 'Which question belongs to this lesson?', options: ['Three dice: probability the sum is 12', 'Two dice: probability the sum is 12', 'A die thrown until the first six: probability it takes 3 throws', 'Two dice: probability both are even'], answer: 0, traps: { 1: 'two dice: bto/two-dice-sum', 2: 'a waiting question: bto/first-success', 3: 'two dice' }, explain: 'Three dice and a sum: 216 ordered triples.' },
@@ -88,9 +91,11 @@ export default {
     ] },
     { type: 'text', text: 'For a sum, fix the first two dice on the familiar 6 × 6 grid. For each cell, the third die must show s − first − second. The cell counts when that number is a real face, 1 to 6. The grid below does it for a sum of 10: each highlighted cell shows the face the third die needs.' },
     { type: 'diagram', diagram: 'grid', spec: sumGrid(10), caption: `Sum 10: ${ways3(10)} highlighted cells, so ${ways3(10)} ordered triples. A dot means the third die would need a face below 1 or above 6.` },
-    { type: 'diagram', diagram: 'bar', spec: { title: 'Ordered triples per sum', xLabel: 'sum', yLabel: 'triples', categories: SUMS.map(String), series: [{ name: 'triples', values: SUMS.map(ways3) }], valueLabels: true }, caption: `Doing that for every sum gives a bell: ${SUMS.slice(0, 6).map(ways3).join(', ')}, … up to ${ways3(10)} at 10 and 11, then back down. The chart is symmetric: sum s and 21 − s have the same count.` },
-    { type: 'check', scope: 'fixing two dice; the symmetry s ↔ 21 − s', questions: [
+    { type: 'check', scope: 'fixing two dice', questions: [
       { make: (rng) => { const s = rng.int(4, 7); return { type: 'number', q: `Three dice. How many ordered triples have sum ${s}? (Fix the first two dice.)`, answer: ways3(s), hints: [`For which (first, second) is ${s} − first − second between 1 and 6?`, `The first two dice must sum to between ${s - 6} and ${s - 1}.`], explain: `Count (a, b) with 1 ≤ ${s} − a − b ≤ 6: ${ways3(s)} cells.` }; } },
+    ] },
+    { type: 'diagram', diagram: 'bar', spec: { title: 'Ordered triples per sum', xLabel: 'sum', yLabel: 'triples', categories: SUMS.map(String), series: [{ name: 'triples', values: SUMS.map(ways3) }], valueLabels: true }, caption: `Doing that for every sum gives a bell: ${SUMS.slice(0, 6).map(ways3).join(', ')}, … up to ${ways3(10)} at 10 and 11, then back down. The chart is symmetric: sum s and 21 − s have the same count.` },
+    { type: 'check', scope: 'the symmetry s ↔ 21 − s', questions: [
       { type: 'choice', q: 'Three dice. Which sum is as likely as a sum of 7?', options: ['14', '13', '11', '8'], answer: 0, traps: { 1: 'mirrored about 10 instead of 10.5', 2: 'guessed the peak', 3: `took the neighbouring sum: 8 has ${ways3(8)} triples, 7 has ${ways3(7)}` }, explain: `Swap every face x for 7 − x: sum s becomes 21 − s. So 7 ↔ 14, both ${ways3(7)} triples.` },
     ] },
 
@@ -134,6 +139,9 @@ export default {
       { t: 12, say: `Cross-check with the triangular list for sums 3 to 8: ${SUMS.slice(0, 3).map(ways3).join(', ')}, so sum 5 has ${ways3(5)}. Same.` },
       { t: 16, say: `P = ${ways3(16)}/216 = ${fr(ways3(16), T)} ≈ ${(ways3(16) / T).toFixed(3)}. Tiny, as an extreme sum should be. Answer ${fr(ways3(16), T)}.` },
     ] },
+    { type: 'check', scope: 'the slip in the think-aloud', questions: [
+      { type: 'choice', q: 'In the think-aloud, the first try gave 2/216. What went wrong?', options: ['counted combinations as single outcomes', 'mirrored 16 to the wrong sum', 'missed a combination for sum 5', 'used the wrong total of 216'], answer: 0, traps: { 1: '21 − 16 = 5 is the right mirror', 2: '{1, 1, 3} and {1, 2, 2} are all of them', 3: '216 ordered triples is the right total' }, explain: 'Each pair shape stands for 3 ordered triples: 2 × 3 = 6 of 216, so 1/36.' },
+    ] },
 
     S('predict'),
     { type: 'predict', question: 'Without computing: three dice. Is P(all three different) above or below 1/2? And is a sum of 10 more or less likely than a sum of 9?', answer: `Above: ${fr(ALL_DIFF, T)} ≈ ${Math.round(ALL_DIFF / T * 1000) / 1000}. And 10 beats 9, ${ways3(10)} triples against ${ways3(9)}.`, explain: `Both sums have six unordered partitions, but 9 includes (3,3,3), which has only one order.` },
@@ -157,10 +165,16 @@ export default {
 
     S('speed'),
     { type: 'callout', tone: 'speed', text: `Memorise **${ALL_DIFF} / ${PAIR} / ${TRIPLE}** (all different / exactly a pair / three of a kind). As fractions: ${fr(ALL_DIFF, T)}, ${fr(PAIR, T)}, ${fr(TRIPLE, T)}.` },
+    { type: 'check', scope: '120 / 90 / 6', questions: [
+      { type: 'choice', q: 'Three dice. P(exactly a pair)?', options: ['5/12', '5/9', '1/36', '5/36'], answer: 0, traps: { 1: 'that is all different, 120 of 216', 2: 'that is three of a kind, 6 of 216', 3: 'counted the 30 pair shapes without their 3 orders' }, explain: '90 of 216 = 5/12.' },
+    ] },
     { type: 'callout', tone: 'speed', text: `Sums 3 to 8 have ${SUMS.slice(0, 6).map(ways3).join(', ')} triples: the triangular numbers. Then ${ways3(9)}, ${ways3(10)}, ${ways3(11)}, ${ways3(12)} in the middle. Anything above 10.5 mirrors: count sum s as 21 − s.` },
-    { type: 'callout', tone: 'speed', text: `Time budget: ${SECTIONS.bto.exam.perItemSeconds} seconds a question. Shape and product items are 10-second recalls; sums and maxima take 30 with the grid or the cube.` },
     { type: 'check', scope: 'the memorised split and the sum list', questions: [
       { make: (rng) => { const s = rng.pick([13, 14, 15, 16, 17]); return mc(rng, `Three dice. P(sum = ${s})?`, fr(ways3(s), T), [[fr(ways3(s - 1), T), 'mirrored to the wrong sum (21 − s is the partner)'], ['1/16', 'treated the 16 sums as equally likely'], [fr(multisets(s), 56), 'counted unordered combinations over 56']], `Sum ${s} mirrors sum ${21 - s}: ${ways3(s)} triples, ${fr(ways3(s), T)}.`); } },
+    ] },
+    { type: 'callout', tone: 'speed', text: `Time budget: ${SECTIONS.bto.exam.perItemSeconds} seconds a question. Shape and product items are 10-second recalls; sums and maxima take 30 with the grid or the cube.` },
+    { type: 'check', scope: 'the time budget', questions: [
+      { type: 'choice', q: 'Which three-dice item is a 10-second recall?', options: ['P(three of a kind)', 'P(the sum is 11)', 'P(the highest face is 4)'], answer: 0, traps: { 1: 'sums take about 30 seconds with the list', 2: 'maxima take about 30 seconds with the cube' }, explain: 'Shape items come straight from 120 / 90 / 6: three of a kind is 6/216 = 1/36.' },
     ] },
 
     S('rule'),
@@ -176,12 +190,12 @@ export default {
       ['all the same', '6/36', `${TRIPLE}/216`],
     ] },
     { type: 'callout', tone: 'edge', text: `Edge cases: sum 3 and sum 18 each have exactly one triple (1/216). A sum of 9 and a sum of 10 each have six unordered combinations, yet 9 has ${ways3(9)} triples and 10 has ${ways3(10)}, because (3,3,3) counts once while mixed combinations count 3 or 6 times.` },
-    { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: whenever outcomes are described as combinations, weight each combination by its number of orders (6 for all different, 3 for a pair, 1 for a triple). Poker hands, Likelihood List rankings of dice totals and multinomial counts all use this weighting.' },
     { type: 'check', scope: 'the contrast table and edge cases', questions: [
       { type: 'choice', q: 'Three dice. Which is more likely?', options: ['sum = 10', 'sum = 9', 'They are equally likely'], answer: 0, traps: { 1: '9 includes (3,3,3), a combination with a single order', 2: 'both have six combinations, but combinations carry different numbers of orders' }, explain: `${ways3(10)} against ${ways3(9)} ordered triples.` },
       { type: 'number', q: 'Three dice. How many ordered triples does the combination {2, 2, 5} stand for?', answer: 3, explain: '(2,2,5), (2,5,2), (5,2,2): a pair shape has 3 orders.' },
     ] },
 
+    { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: when outcomes are described as combinations, weight each one by its number of orders. That is 6 for all different, 3 for a pair, 1 for a triple. Poker hands, Likelihood List rankings of dice totals and multinomial counts all use this weighting.' },
     { type: 'variation', base: `Three dice. P(sum = 10) = ${ways3(10)}/216 = ${fr(ways3(10), T)}.`, rows: [
       { change: 'Ask for sum 11 instead', effect: `No change: ${ways3(11)} triples. 10 and 11 mirror each other (21 − 10 = 11), the twin peaks of the bell.`, same: true },
       { change: 'Throw one die three times instead of three dice at once', effect: 'No change. Three throws are three ordered positions, exactly like three labelled dice.', same: true },

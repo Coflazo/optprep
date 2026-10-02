@@ -51,9 +51,12 @@ export default {
       ] },
     { type: 'text', text: `Each term is a **product of two whole numbers a fixed distance apart**: b × (b + 1), or b × (b + 3), with b counting up. The terms look like squares that are slightly off: ${E1[0]} sits between ${E1s ** 2} and ${(E1s + 1) ** 2}, ${E1[2]} between ${(E1s + 2) ** 2} and ${(E1s + 3) ** 2}.` },
     { type: 'list', items: [`What number comes next?  ${seq(E1.slice(0, 5))}, ?`, `What number comes next?  ${seq(E2.slice(0, 5))}, ?`, `What number comes next?  ${seq(E3.slice(0, 5))}, ?`] },
-    { type: 'text', text: `Not this lesson: squares plus a constant (${seq(SQ1)}) and triangular numbers (${seq(TRI)}), which are half of b(b + 1). The factoring test below separates them: only this family splits every term into two factors the same distance apart.` },
     { type: 'check', scope: 'the cue: products of close numbers', questions: [
       { make: fair((rng) => { const p = small(rng, 5), s = rng.int(2, 6), q = Array.from({ length: 5 }, (_, i) => (i + s) ** 2 + rng.pick([1, 2, 3])), t = Array.from({ length: 5 }, (_, i) => tri(i + s)); return pick(rng, 'Which list is products of two numbers a fixed distance apart?', seq(p.xs), [[seq(q), 'squares plus a constant: no single factor distance fits every term'], [seq(t), 'those are triangular numbers, half of b(b + 1)']], `${seq(p.xs)} = ${fac(p.s, p.c, 5)}.`); }) },
+    ] },
+    { type: 'text', text: `Not this lesson: squares plus a constant (${seq(SQ1)}) and triangular numbers (${seq(TRI)}), which are half of b(b + 1). The factoring test below separates them: only this family splits every term into two factors the same distance apart.` },
+    { type: 'check', scope: 'the factoring test', questions: [
+      { type: 'choice', q: '3, 6, 10, 15, 21: why is it not this lesson?', options: ['each term is half of b(b + 1)', 'the terms are squares plus 2', 'the terms are all primes'], answer: 0, traps: { 1: '10 − 2 = 8 is not a square', 2: '6 and 10 are not prime' }, explain: 'Triangular numbers are b(b + 1)/2: 6 = 3 × 4 / 2. Doubled, they would belong here.' },
     ] },
 
     S('why'),
@@ -98,6 +101,9 @@ export default {
     ] },
     { type: 'diagram', diagram: 'table', spec: { columns: ['term', 'b', 'b + c', 'b²', '(b + 1)²'], rows: E1.slice(0, 5).map((v, i) => [String(v), String(E1s + i), String(E1s + i + E1c), String((E1s + i) ** 2), String((E1s + i + 1) ** 2)]) }, caption: `Each term of ${seq(E1.slice(0, 5))} sits between two neighbouring squares, and its factors are the two bases of those squares. The square root points straight at the pair.` },
     { type: 'text', text: 'Why the square root is the right starting point: b(b + c) is close to (b + c/2)², so the square root of a term sits halfway between its two factors. Take the two whole numbers around the root with the right distance and you have the pair. For large terms this is much faster than trial division.' },
+    { type: 'check', scope: 'start from the square root', questions: [
+      { type: 'choice', q: '√600 ≈ 24.5. Which two numbers 1 apart multiply to 600?', options: ['24 × 25', '20 × 30', '23 × 26'], answer: 0, traps: { 1: '20 and 30 are 10 apart', 2: '23 × 26 = 598' }, explain: 'The root sits halfway between the two factors: 24 × 25 = 600.' },
+    ] },
     { type: 'explain', prompt: 'Why must the distance between the factors be the same for every term, and why does b(b + c) have a second difference of 2?', model: 'Many numbers split into several factor pairs; the rule picks the pair whose distance is c every time, so a changing distance means the wrong pairing. b(b + c) = b² + cb: the cb part adds a constant c to each gap and the b² part makes the gaps grow by 2, so the second row is 2.', points: ['The same factor distance identifies the right pairing', 'b(b + c) = b² + cb', 'The b² part gives second difference 2; cb only shifts the gaps'] },
 
     S('worked'),
@@ -126,6 +132,9 @@ export default {
 
     S('speed'),
     { type: 'callout', tone: 'speed', text: `Know the products of neighbours by sight: ${seq(NB)}. Any of these in the list gives the rule away.` },
+    { type: 'check', scope: 'products of neighbours by sight', questions: [
+      { type: 'choice', q: 'Which of these is a product of two neighbours?', options: ['110', '100', '120', '121'], answer: 0, traps: { 1: '10², a square', 2: '10 × 12: two apart, not neighbours', 3: '11², a square' }, explain: '110 = 10 × 11.' },
+    ] },
     { type: 'callout', tone: 'speed', text: `Large terms: take the square root, round, and test the pairs around it with the distance from the first term. ${LB * (LB + 1)} is just under ${LB + 1}², so try ${LB} × ${LB + 1}. One multiplication confirms it.` },
     { type: 'thinkaloud', problem: nextQ(TA.slice(0, 5)), lines: [
       { t: 0, say: `Gaps ${seq(g(TA.slice(0, 5)))} grow by 2: a quadratic. Factor near the square roots.` },
@@ -155,7 +164,6 @@ export default {
       { make: (rng) => { const t = rng.int(0, 2), s = rng.int(2, 7); const xs = t === 0 ? pr(s, 1, 5) : t === 1 ? Array.from({ length: 5 }, (_, i) => (i + s) ** 2 + 1) : Array.from({ length: 5 }, (_, i) => tri(i + s)); const names = ['b(b + 1)', 'b² + 1', 'b(b + 1)/2']; const trp = [[null, `${xs[0]} − 1 is not a square`, 'these are twice as big as the triangular numbers'], ['the factor distance does not stay fixed', null, 'triangular gaps count by 1; these gaps grow by 2'], ['these are half of b(b + 1)', `${xs[0]} − 1 is not a square`, null]]; return pick(rng, `${seq(xs)}: which reading fits?`, names[t], names.map((nm, i) => [nm, trp[t][i]]).filter((_, i) => i !== t), `Gaps: ${seq(g(xs))}.`); } },
     ] },
     { type: 'callout', tone: 'edge', text: `Edge cases: c can be negative, as in ${fac(E3s, E3c, 3)} = ${seq(E3.slice(0, 3))}; an even c makes the list a square minus a constant too; and b(b + 1) is always even, so an odd term rules it out at once.` },
-    { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: factoring near the square root is how you split any number into two close factors, from areas of rectangles to counting pairs: b(b − 1) is the number of ordered pairs of different items from b.' },
     { type: 'variation', base: `${seq(E15)}, ?  ${fac(E1s, E1c, 5)}; next ${fac(E1s + 5, E1c, 1)} = ${E1[5]}.`, rows: [
       { same: true, change: `Drop the first term: ${seq(E15.slice(1))}, ?`, effect: `Still ${E1[5]}. The remaining factor pairs keep distance ${E1c}, and the next pair is still ${fac(E1s + 5, E1c, 1)}.` },
       { change: `Distance 3 instead of ${E1c}: ${seq(WIDE.slice(0, 5))}, ?`, effect: `${WIDE[5]} = ${fac(E1s + 5, 3, 1)}. Same smaller factors; the larger one sits 3 above.` },
@@ -167,6 +175,7 @@ export default {
       { make: (rng) => { const s = rng.int(4, 9), xs = pr(s, -2, 6); return num(nextQ(xs.slice(0, 5)), xs[5], `${fac(s, -2, 5)}: the larger factor is 2 less. Next ${fac(s + 5, -2, 1)} = ${xs[5]}.`, ['Factor each term into two numbers 2 apart.', 'The first factor is the larger one here.']); } },
     ] },
 
+    { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: factoring near the square root is how you split any number into two close factors, from areas of rectangles to counting pairs: b(b − 1) is the number of ordered pairs of different items from b.' },
     { type: 'transfer',
       near: { make: (rng) => { const n = rng.int(6, 14); return num(`In a league every team plays every other team twice, home and away. With 2 teams there are 2 games, with 3 teams 6, with 4 teams 12, with 5 teams 20. How many games with ${n} teams?`, n * (n - 1), `The counts are ${fac(2, -1, 4)}: b(b − 1). With ${n} teams: ${n} × ${n - 1} = ${n * (n - 1)}.`, ['Factor 2, 6, 12, 20 as two neighbouring numbers.', `${n} × ${n - 1}.`]); } },
       far: { make: (rng) => { const b = rng.int(12, 30), c = rng.pick([2, 3, 4]); return num(`A rectangle's long side is ${c} cm longer than its short side, and its area is ${b * (b + c)} cm². How long is the short side?`, b, `√${b * (b + c)} ≈ ${Math.round(Math.sqrt(b * (b + c)) * 10) / 10}; the sides sit either side of it, ${c} apart: ${b} × ${b + c} = ${b * (b + c)}.`, ['Start near the square root of the area.', `Look for two factors ${c} apart.`]); } },

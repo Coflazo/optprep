@@ -64,6 +64,9 @@ export default {
         { id: 'wholeclass', label: 'Divide (c) by the class', approach: `You scored (c) as ${P80gM80}/${N}: the right rows over all ${N} students.`, breaksAt: `(c) picks only from the ${M80.length} students with Maths ≥ 80, so that is the denominator.` },
       ] },
     { type: 'text', text: 'The prompt is a **table with one row per student** and a score per subject. One student is picked at random, or from a subgroup ("among students who ..."). Statements set thresholds: at least v in a subject, below v, at least v in **both** of two subjects, in **either**, higher in one subject than another, or an **average** of at least v.' },
+    { type: 'check', scope: 'the kinds of statement', questions: [
+      { type: 'choice', q: '"A random student scored at least 70 in Maths or in Physics." Which kind of statement is it?', options: ['either: at least one subject', 'both subjects at once', 'an average of the two', 'one subject above the other'], answer: 0, traps: { 1: '"or" needs only one of the two', 2: 'nothing is averaged', 3: 'the two subjects are not compared' }, explain: '"Or" counts a student who reaches 70 in at least one of the two subjects.' },
+    ] },
     { type: 'text', text: 'Not this lesson: a 2 × 2 table of counts (two-way tables), where you read cells instead of counting rows, and match results (football), where each row is a match.' },
     { type: 'check', scope: 'the recognition cues above', questions: [
       mc(null, 'Which prompt belongs to this lesson?', 'A table of 12 students with a Maths and a Physics score each', [
@@ -147,10 +150,16 @@ export default {
 
     S('speed'),
     { type: 'callout', tone: 'speed', text: 'One pass, not three. Run down the rows once and keep a tally per statement. For "both", look only at the smaller of the two scores; for "either", only the larger.' },
-    { type: 'callout', tone: 'speed', text: 'Skip counts with containment: a "both" statement and its single-subject parent order themselves. Spend your counting on the conditional and on statements with no nesting.' },
-    { type: 'callout', tone: 'speed', text: `Time budget: ${LL.exam.perItemSeconds} seconds per item. A single pass down a dozen rows with three tallies takes about 20 seconds; three separate passes take a minute and leave no time to check the conditional's denominator.` },
     { type: 'check', scope: 'min for both, max for either, sum for average', questions: [
       { make: (rng) => { const r = rng.pick(st), v = rng.pick(V); const ok = Math.min(r.Maths, r.Economics) >= v; return mc(rng, `${r.name} scored ${r.Maths} in Maths and ${r.Economics} in Economics. Does ${r.name} count for "at least ${v} in both Maths and Economics"?`, ok ? 'Yes' : 'No', [[ok ? 'No' : 'Yes', ok ? 'checked the wrong score: both scores are at least the threshold' : `looked at the larger score; the smaller, ${Math.min(r.Maths, r.Economics)}, decides "both"`]], `The smaller score is ${Math.min(r.Maths, r.Economics)}, ${ok ? 'at least' : 'below'} ${v}.`); } },
+    ] },
+    { type: 'callout', tone: 'speed', text: 'Skip counts with containment: a "both" statement and its single-subject parent order themselves. Spend your counting on the conditional and on statements with no nesting.' },
+    { type: 'check', scope: 'containment', questions: [
+      { type: 'choice', q: '"At least 80 in Maths" and "at least 80 in both Maths and Physics". How do they order?', options: ['both ≤ Maths alone, no counting', 'both is the more likely one', 'you must count both to know'], answer: 0, traps: { 1: '"both" adds a condition, so it can only lose students', 2: 'a "both" statement and its parent order themselves' }, explain: 'Every student in "both" is also in "Maths", so the "both" count can never be larger.' },
+    ] },
+    { type: 'callout', tone: 'speed', text: `Time budget: ${LL.exam.perItemSeconds} seconds per item. A single pass down a dozen rows with three tallies takes about 20 seconds; three separate passes take a minute and leave no time to check the conditional's denominator.` },
+    { type: 'check', scope: 'the time budget', questions: [
+      { type: 'choice', q: 'Why make one pass with three tallies rather than three passes?', options: ['it leaves time to check the conditional', 'three passes give different answers', 'tallies are more exact than counts'], answer: 0, traps: { 1: 'the counts are the same either way; only the time differs', 2: 'a tally is a count' }, explain: 'One pass takes about 20 seconds, three take a minute. The spare time goes on the conditional and its denominator.' },
     ] },
 
     { type: 'thinkaloud', problem: 'The same table. Rank: (a) a random student scored at least 70 in Physics, (b) among students with at least 80 in Physics, a random one scored at least 80 in Maths, (c) a random student averaged at least 75.', lines: [
@@ -179,11 +188,11 @@ export default {
       ['among X ≥ a, Y ≥ b', 'Y ≥ b', 'students with X ≥ a'],
     ] },
     { type: 'callout', tone: 'edge', text: 'Edge cases: a subgroup with one student makes its statement 0 or 1; a threshold nobody reaches gives 0. When a tie decides a row ("higher in Maths than Physics" with equal scores), the row does not qualify.' },
-    { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: football tables (a row per match, team statements shrink the scope), fund returns (a row per year) and scatter plots (a row per point, a strip as the subgroup) are all "count rows in scope".' },
     { type: 'check', scope: 'the contrast table and edge cases', questions: [
       mc(null, 'Only one student has at least 90 in Maths, and she has 85 in Physics. P(at least 80 in Physics | at least 90 in Maths)?', '1', [['1/10', 'divided by the class instead of the one-student subgroup'], ['0', 'mixed up the thresholds: 85 is at least 80'], ['1/2', 'treated the one student as a coin flip']], 'The subgroup has one student, and she qualifies: 1/1.', { at: 0 }),
     ] },
 
+    { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: football tables (a row per match, team statements shrink the scope) and fund returns (a row per year). Scatter plots (a row per point, a strip as the subgroup) work the same way: count rows in scope.' },
     { type: 'variation', base: `The challenge: (a) at least 70 in Maths (${M70}/${N}), (b) at least 70 in both Maths and Physics (${MP70}/${N}), (c) among Maths ≥ 80, Physics ≥ 80 (${P80gM80}/${M80.length}). Order (c) > (a) > (b).`, rows: [
       { same: true, change: 'Sort the table by Physics score instead of by name', effect: 'No change. A random pick treats every row alike, so the order of the rows changes no count.' },
       { change: 'Change (b) from "both" to "either"', effect: `Either tests the larger score: ${EI70}/${N}. It moves from inside (a) to around it, so from last to first, even above (c) (${dp(P80gM80 / M80.length, 2)}).` },

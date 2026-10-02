@@ -146,9 +146,11 @@ export default {
       explain: `The narrow one hits only about ${pct(Phi(Math.log(1.05) / CH.s) - Phi(Math.log(0.95) / CH.s), 0)} of the time. The wide one always hits but scores ${dec(1 / 4, 2)}. The best trade-off is ${CH.m} ×/÷ ${dec(CH.f, 2)}, which hits ${pct(CH.hit, 0)} of the time and scores ${dec(1 / (CH.f * CH.f), 2)} when it does. This lesson derives that number.` },
     { type: 'text', text: `Every Intervals question asks for a positive quantity. You type a **lower** bound L and an **upper** bound U. If the true value T satisfies L ≤ T ≤ U (ends included), you score **L ÷ U**. If T is outside, you score **0**. The section has ${IV.exam.count} questions at ${IV.exam.perItemSeconds} seconds each, forward only.` },
     { type: 'diagram', diagram: 'numberline', spec: { min: 30, max: 60, step: 5, barriers: [EX.L, EX.U], marks: [{ x: EX.inT, label: `T = ${EX.inT}: ${dec(score(EX.L, EX.U, EX.inT), 2)}` }, { x: EX.outT, label: `T = ${EX.outT}: 0` }] }, caption: `The interval [${EX.L}, ${EX.U}]. A truth inside scores ${EX.L}/${EX.U} = ${dec(EX.L / EX.U, 2)}, wherever inside it lands. A truth outside scores 0, however close.` },
-    { type: 'text', text: 'Two edge rules: a lower bound of 0 or below always scores 0, and a lower bound above the upper bound scores 0. Both are easy to type by accident under time pressure.' },
     { type: 'check', scope: 'the scoring rule', questions: [
       { make: scoreQ },
+    ] },
+    { type: 'text', text: 'Two edge rules: a lower bound of 0 or below always scores 0, and a lower bound above the upper bound scores 0. Both are easy to type by accident under time pressure.' },
+    { type: 'check', scope: 'the two edge rules', questions: [
       mc({ q: 'You type [0, 500] to be safe, and the truth is 120. What do you score?', right: '0', wrong: [['1', 'thought a guaranteed hit guarantees points'], [dec(120 / 500, 2), 'divided the truth by the upper bound'], ['0.5', 'assumed a hit scores a fixed half point']], explain: 'A lower bound of 0 scores 0/500 = 0 even though 120 is inside. The lower bound must be above 0.' }),
     ] },
 
@@ -167,6 +169,9 @@ export default {
 
     sec('exact', 'Exact answers: zero width'),
     { type: 'text', text: 'If you can compute the answer exactly, type it as both bounds: [T, T] scores T ÷ T = 1, the maximum. Any width you add only lowers the score, because the truth was never in doubt.' },
+    { type: 'check', scope: 'exact means zero width', questions: [
+      { type: 'choice', q: 'You computed the answer exactly: 18. What do you type?', options: ['[18, 18]', '[17, 19]', '[17.9, 18.1]'], answer: 0, traps: { 1: 'width only lowers the score: 17/19 ≈ 0.89', 2: 'still below the 1 that [18, 18] scores' }, explain: '[T, T] scores T ÷ T = 1, the maximum.' },
+    ] },
     { type: 'text', text: `If the exact value does not terminate (5/12 = ${sig(P512, 7)}…%), you cannot type it. A rounded point [${round(P512, 2)}, ${round(P512, 2)}] **misses** the truth by a fraction of a hundredth and scores 0. Bracket it instead with the two-decimal values either side: [${lo512}, ${hi512}], which scores ${dec(lo512 / hi512, 4)}.` },
     { type: 'check', scope: 'exact answers and brackets', questions: [
       mc({ q: `You have computed P = 5/12 exactly; the question asks in percent. What do you type?`, right: `[${lo512}, ${hi512}]`, at: 1, wrong: [[`[${round(P512, 2)}, ${round(P512, 2)}]`, `a rounded point: ${round(P512, 2)} is not ${sig(P512, 7)}…, so the truth is outside`], [`[41, 42]`, `a "safety" width on an exact answer: it scores ${dec(41 / 42, 3)} for no reason`], [`[0.41, 0.42]`, 'answered as a decimal, but the question asks in percent'], ['[40, 45]', `estimation habits on an exact question: ${dec(40 / 45, 3)}`]], explain: `5/12 = ${sig(P512, 7)}…%. The two-decimal bracket [${lo512}, ${hi512}] contains it and scores ${dec(lo512 / hi512, 4)}.` }),
@@ -195,17 +200,21 @@ export default {
     { type: 'text', text: `Rule of thumb from the table: with an error of a few percent, cover about ${dec(BEST[0.02].z, 1)} SDs each way; at ${Math.round(0.1 * 100)}%, about ${dec(BEST[0.1].z, 1)}; at ${Math.round(0.3 * 100)}%, about ${dec(BEST[0.3].z, 1)}. The expected score is set mostly by s itself: halving your error from 10% to 5% lifts the best score from ${dec(BEST[0.1].e, 2)} to ${dec(bestLog(0.05).e, 2)}. Accuracy earns points; width only avoids losing them.` },
     { type: 'check', scope: 'the optimal band', questions: [{ make: chooseQ }] },
     { type: 'text', text: `The curve is lopsided. At s = 10%, a band ${dec(0.75, 2)} SDs narrower than the best loses ${dec(lossNarrow, 3)} expected points; ${dec(0.75, 2)} SDs wider loses only ${dec(lossWide, 3)}. When you are unsure between two widths, take the wider.` },
-    { type: 'text', text: `Counts are different: an error of "± 2 dots" is the same size whether the count is high or low, so the truth is normal in units, not in percent. Then a higher interval has a better ratio for the same width, and the optimum **leans high**. For a count of ${CNT.m} ± ${CNT.sd}, the best interval is about [${dec(CNT.lo, 1)}, ${dec(CNT.hi, 1)}]: ${dec(CNT.below, 2)} SDs below, ${dec(CNT.above, 2)} above.` },
-    { type: 'check', scope: 'lopsided costs and leaning high', questions: [
+    { type: 'check', scope: 'lopsided costs', questions: [
       mc({ q: 'You are torn between z = 1 and z = 2.5 for a 10% error. Which costs less expected score?', right: 'z = 2.5 (too wide)', wrong: [['z = 1 (too narrow)', 'assumed width and misses cost the same: misses cost everything at once'], ['They cost the same', 'the curve is not symmetric about its peak']], explain: `E(1) = ${dec(eLog(0.1, -1, 1), 3)}, E(2.5) = ${dec(eLog(0.1, -2.5, 2.5), 3)}, best ${dec(b10.e, 3)} at z = ${dec(b10.z, 2)}.` }),
+    ] },
+    { type: 'text', text: `Counts are different: an error of "± 2 dots" is the same size whether the count is high or low. So the truth is normal in units, not in percent. Then a higher interval has a better ratio for the same width, and the optimum **leans high**. For a count of ${CNT.m} ± ${CNT.sd}, the best interval is about [${dec(CNT.lo, 1)}, ${dec(CNT.hi, 1)}]: ${dec(CNT.below, 2)} SDs below, ${dec(CNT.above, 2)} above.` },
+    { type: 'check', scope: 'counts lean high', questions: [
       mc({ q: `You counted ${CNT.m} items and trust the count to ± ${CNT.sd}. Where should the interval sit?`, right: 'A little more room above than below', wrong: [['Exactly symmetric around the count', 'symmetric is optimal on the log scale, not for a ± count'], ['More room below the count than above', 'a lower interval has a worse ratio for the same width'], ['Zero width, right at the count', 'the count is uncertain, so a point misses most of the time']], explain: `For the same width in units, a higher interval has a larger L ÷ U. Best: about [${dec(CNT.lo, 1)}, ${dec(CNT.hi, 1)}].` }),
     ] },
 
     sec('wide', 'When to go wide'),
     { type: 'text', text: `Go wide when the method itself could be off, not just the arithmetic: you are unsure which formula applies, or a factor of 10 could have slipped. With a ${Math.round(WIDE.s * 100)}% error the best band is m ×/÷ ${dec(WIDE.f, 2)}, which still earns ${dec(WIDE.e, 2)} on average. A narrow band built on a shaky method earns close to 0.` },
-    { type: 'text', text: `Go slightly wide on exact answers that need many steps (a long inclusion-exclusion, a big multiplication): a 2 to 4% band costs ${pct(1 - 1 / 1.02 ** 2, 0)} to ${pct(1 - 1 / 1.04 ** 2, 0)} of the score, while one slipped digit inside a zero-width answer costs all of it.` },
-    { type: 'check', scope: 'when to go wide', questions: [
+    { type: 'check', scope: 'when the method is shaky', questions: [
       mc({ q: 'Which situation calls for the widest band?', right: 'You are not sure whether the answer is n·p or n/p', wrong: [['You counted 40 coins twice and got 40 both times', 'a double-checked count is nearly exact'], ['You computed 5/12 exactly', 'exact: bracket it, no width'], ['You multiplied three rounded numbers with a 2% ledger', 'a known small error: a few percent each way']], explain: 'Model doubt (which formula?) can put you off by a large factor, so the band must be wide. Arithmetic doubt is small and known.' }),
+    ] },
+    { type: 'text', text: `Go slightly wide on exact answers that need many steps (a long inclusion-exclusion, a big multiplication): a 2 to 4% band costs ${pct(1 - 1 / 1.02 ** 2, 0)} to ${pct(1 - 1 / 1.04 ** 2, 0)} of the score, while one slipped digit inside a zero-width answer costs all of it.` },
+    { type: 'check', scope: 'long exact computations', questions: [
       { make: (rng) => { const s = rng.pick([0.02, 0.04]); const b = bestLog(s); return { type: 'number', q: `A long exact computation where you allow a ${Math.round(s * 100)}% slip (one SD). What does the best band score when it hits? (2 decimal places)`, answer: round(1 / (b.f * b.f), 2), tolerance: 0.011, hints: ['Find the best z for this s (table above), then f = e^{zs}.', `z ≈ ${dec(b.z, 1)}, f ≈ ${dec(b.f, 3)}; the hit score is 1/f².`], explain: `Best z ≈ ${dec(b.z, 2)}, f = ${dec(b.f, 3)}, so 1/f² = ${dec(1 / (b.f * b.f), 3)}: a small, cheap insurance against a slip.` }; } },
     ] },
 

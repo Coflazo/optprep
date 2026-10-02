@@ -87,9 +87,12 @@ export default {
         { id: 'arrows', label: 'Count incoming arrows', approach: `You ranked A first because ${INT[0]} arrows point into it.`, breaksAt: 'An arrow is a road, not traffic: its flow is how often its source is visited times its label.' },
       ] },
     { type: 'text', text: 'The prompt is a **directed graph**: nodes joined by arrows, each arrow labelled with a probability, and the arrows leaving any node add to 1. Something (a signal, a customer, a price state) moves one arrow per step. Statements ask where it is after a fixed number of steps from a known start, or where it is at a random moment after running for a very long time.' },
-    { type: 'text', text: 'Not this lesson: "until" questions with an absorbing end (first-step analysis in the foundations) and a single conditional probability. Here the process never stops.' },
     { type: 'check', scope: 'the recognition cues above', questions: [
       mc(null, 'Node B has arrows B→A labelled 1/4 and B→C labelled 1/2, and no other arrows except possibly a self-loop. What must the self-loop B→B be?', '1/4', [['0', 'forgot that the arrows leaving a node must add to 1'], ['1/2', 'copied another label instead of taking what is left'], ['3/4', 'added the two labels instead of subtracting them from 1']], '1 − 1/4 − 1/2 = 1/4.', { at: 1 }),
+    ] },
+    { type: 'text', text: 'Not this lesson: "until" questions with an absorbing end (first-step analysis in the foundations) and a single conditional probability. Here the process never stops.' },
+    { type: 'check', scope: 'a process that never stops', questions: [
+      { type: 'choice', q: '"Starting at A, what is P(it ever reaches the absorbing node D)?" Which lesson is it?', options: ['first-step analysis', 'Markov graphs (this lesson)', 'a single conditional'], answer: 0, traps: { 1: 'an absorbing end and "ever reaches" belong to first-step analysis', 2: 'there is a process over many steps' }, explain: 'An "until" question with an absorbing end is first-step analysis. Here the process never stops.' },
     ] },
 
     S('why'),
@@ -161,9 +164,12 @@ export default {
 
     S('speed'),
     { type: 'callout', tone: 'speed', text: 'Cut shortcut: split the nodes into two groups; in the long run the flow across the split is equal both ways. For two nodes this gives the ratio in one line; for three, use the cut around a node with one incoming arrow first.' },
-    { type: 'callout', tone: 'speed', text: `Self-loops do not move probability, so leave them out of every cut equation. Budget: ${LL.exam.perItemSeconds} seconds; a three-node balance is two substitutions and one normalisation.` },
     { type: 'check', scope: 'the cut shortcut', questions: [
       { make: (rng) => { const p = rng.pick([[1, 2], [1, 3], [1, 4], [3, 4]]), r = rng.pick([[1, 2], [2, 3], [1, 5], [3, 5]]); const pv = p[0] / p[1], rv = r[0] / r[1]; const ans = rv > pv ? 'A' : rv < pv ? 'B' : 'equal'; return mc(rng, `Two nodes: A leaves to B with ${p[0]}/${p[1]}, B leaves to A with ${r[0]}/${r[1]} (otherwise each stays). Which is visited more?`, ans === 'equal' ? 'They are equal' : ans, [['A', 'reversed the cut ratio: the node that is harder to leave is visited more'], ['B', 'reversed the cut ratio: the node that is harder to leave is visited more'], ['They are equal', 'two nodes are equal only when the leaving probabilities match']].filter(([v]) => v !== (ans === 'equal' ? 'They are equal' : ans)), `π_A/π_B = P(B→A)/P(A→B) = ${dp(rv / pv, 3)}.`); } },
+    ] },
+    { type: 'callout', tone: 'speed', text: `Self-loops do not move probability, so leave them out of every cut equation. Budget: ${LL.exam.perItemSeconds} seconds; a three-node balance is two substitutions and one normalisation.` },
+    { type: 'check', scope: 'self-loops stay out', questions: [
+      { type: 'choice', q: 'A → A 1/2, A → B 1/2, B → A 1. Which arrow do you leave out of the cut between A and B?', options: ['the self-loop A → A', 'the arrow A → B', 'the arrow B → A'], answer: 0, traps: { 1: 'flow from A to B crosses the cut', 2: 'flow back from B crosses the cut' }, explain: 'π_A × 1/2 = π_B × 1, so π_A = 2/3 and π_B = 1/3.' },
     ] },
 
     { type: 'thinkaloud', problem: 'The three-node picture chain (A → B ½, A → C ½, B → A ⅓, B → C ⅔, C → A 1). Observed at a random moment after a long time, rank: at A, at B, at C.', lines: [
@@ -189,11 +195,11 @@ export default {
       ['until an absorbing node', 'yes', 'first-step analysis (foundations)'],
     ] },
     { type: 'callout', tone: 'edge', text: 'Edge cases: a node with a self-loop close to 1 soaks up most of the long-run time even with one thin incoming arrow. A chain that alternates between two nodes with probability 1 has long-run fractions ½ each, but after an even number of steps from A it is always at A.' },
-    { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: first-step analysis in Beat the Odds (the same equations with a boundary), race-to-k series, and order-flow models on a trading desk, where what matters is the traffic along a route, not how many routes exist.' },
     { type: 'check', scope: 'the contrast table and edge cases', questions: [
       mc(null, 'A goes to B with probability 1 and B goes to A with probability 1. Starting at A, where is the signal after exactly 4 steps?', 'at A', [['at B', 'counted an odd number of moves'], ['at A or B, half each', 'used the long-run fractions for a fixed step count'], ['it cannot be known', 'the moves are certain, so the position is too']], 'Each pair of steps returns to A.', { at: 0 }),
     ] },
 
+    { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: first-step analysis in Beat the Odds (the same equations with a boundary) and race-to-k series. Order-flow models on a trading desk use it too: what matters is the traffic along a route, not how many routes exist.' },
     { type: 'variation', base: `The three-node picture chain, long run: A ${PI3[0]}, C ${PI3[2]}, B ${PI3[1]}. Order A > C > B.`, rows: [
       { same: true, change: 'Start the signal at C instead of A', effect: 'No change. The long run forgets the start: the balance equations never mention it.' },
       { change: 'Ask where it is after exactly 2 steps from A', effect: `Now the start matters: A ${TWO_A[0]}, C ${TWO_A[2]}, B ${TWO_A[1]} (no two-step path from A ends at B). Same order, different method and numbers.` },

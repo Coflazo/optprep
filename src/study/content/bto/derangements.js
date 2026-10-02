@@ -55,6 +55,9 @@ export default {
     ] },
     { type: 'text', text: 'n items belong to n owners and are handed back **at random, one each**: letters and envelopes, hats, coats, Secret Santa names. The question asks for the chance that **nobody** gets their own, that **at least one** does, or that **exactly k** do.' },
     { type: 'list', items: ['"5 letters go into 5 addressed envelopes at random. Probability no letter is in the right envelope?"', '"6 traders draw names from a hat. Probability that exactly 2 draw their own name?"', '"7 coats handed back at random. Probability that exactly 6 people get their own coat?"'] },
+    { type: 'check', scope: 'nobody, at least one, or exactly k', questions: [
+      { type: 'choice', q: '"8 people draw names in a Secret Santa. Probability that someone draws their own name?" Which form is it?', options: ['at least one gets their own', 'nobody gets their own', 'exactly one gets their own', 'the expected number who do'], answer: 0, traps: { 1: 'that is the complement of the question', 2: '"someone" allows more than one', 3: 'it asks a probability, not an average' }, explain: '"Someone draws their own" means at least one does.' },
+    ] },
     { type: 'text', text: 'Not this lesson: values drawn independently with repeats allowed (bto/birthday), and the **expected** number who get their own, which is always 1 (bto/linearity).' },
     { type: 'check', scope: 'the recognition cues above', questions: [
       { type: 'choice', q: 'Which question belongs to this lesson?', options: ['6 hats returned at random, one each: nobody gets their own', '6 people each pick a random hat size from 6 sizes: two pick the same', '6 hats returned at random: expected number of people with their own hat', 'A die is thrown 6 times: face 1 never appears'], answer: 0, traps: { 1: 'independent picks with repeats: a birthday question', 2: 'an expectation: linearity gives 1 at once', 3: 'independent throws: a complement product' }, explain: 'A random one-to-one handing back: a permutation question.' },
@@ -140,6 +143,9 @@ export default {
 
     S('speed'),
     { type: 'callout', tone: 'speed', text: `Memorise D(n) for n = 1 to 7: ${[1, 2, 3, 4, 5, 6, 7].map(D).join(', ')}. Each is n·D(n − 1) ± 1 (plus for even n, minus for odd): ${D(5)} = 5 × ${D(4)} − 1, ${D(6)} = 6 × ${D(5)} + 1.` },
+    { type: 'check', scope: 'D(n) values and the 1/e shortcut', questions: [
+      { make: (rng) => { const n = rng.int(5, 7); return { type: 'number', q: `D(${n - 1}) = ${D(n - 1)}. Use D(n) = n·D(n − 1) ± 1 to get D(${n}).`, answer: D(n), hints: [`${n} × ${D(n - 1)} = ${n * D(n - 1)}.`, n % 2 ? 'n is odd: subtract 1.' : 'n is even: add 1.'], explain: `${n} × ${D(n - 1)} ${n % 2 ? '−' : '+'} 1 = ${D(n)}.` }; } },
+    ] },
     { type: 'callout', tone: 'speed', text: `For n ≥ 5, answer 1/e ≈ ${E1.toFixed(3)} for "nobody" and 1 − 1/e ≈ ${(1 - E1).toFixed(3)} for "at least one". Exactly k for large n: e^(−1)/k!. That takes five seconds of the ${SECTIONS.bto.exam.perItemSeconds}.` },
     { type: 'thinkaloud', problem: `${TK} traders draw names from a hat for Secret Santa, one each. What is the probability that nobody draws their own name?`, lines: [
       { t: 0, say: 'Names handed back one each at random: a permutation. "Nobody" means a derangement.' },
@@ -149,8 +155,9 @@ export default {
       { t: 22, say: `${D(TK)}/${fact(TK)} ≈ ${f3(none(TK))}, right on 1/e as expected for n ≥ 5. The independent ${f3(indep(TK))} is the trap one option away.` },
       { t: 26, say: `Answer ${f3(none(TK))}, with ${SECTIONS.bto.exam.perItemSeconds - 26} seconds left.` },
     ] },
-    { type: 'check', scope: 'D(n) values and the 1/e shortcut', questions: [
-      { make: (rng) => { const n = rng.int(5, 7); return { type: 'number', q: `D(${n - 1}) = ${D(n - 1)}. Use D(n) = n·D(n − 1) ± 1 to get D(${n}).`, answer: D(n), hints: [`${n} × ${D(n - 1)} = ${n * D(n - 1)}.`, n % 2 ? 'n is odd: subtract 1.' : 'n is even: add 1.'], explain: `${n} × ${D(n - 1)} ${n % 2 ? '−' : '+'} 1 = ${D(n)}.` }; } },
+    { type: 'check', scope: 'the 1/e shortcut and the think-aloud', questions: [
+      { type: 'choice', q: '8 letters go into 8 envelopes at random. P(at least one is in its own envelope) is closest to:', options: ['0.632', '0.368', '0.125', '1'], answer: 0, traps: { 1: 'that is P(nobody)', 2: 'that is one given letter, 1/8', 3: 'a match is likely, not certain' }, explain: 'For n ≥ 5, P(at least one) ≈ 1 − 1/e ≈ 0.632.' },
+      { type: 'choice', q: 'In the think-aloud, the first try gave (5/6)^6 ≈ 0.335. What was wrong?', options: ['treated the draws as independent', 'used 6 traders instead of 5', 'forgot to subtract from 1'], answer: 0, traps: { 1: 'there were 6 traders', 2: '(5/6)^6 aimed at nobody, so no subtraction was needed' }, explain: 'Names are drawn one each, so two traders cannot draw the same name. Count arrangements: 265/720 ≈ 0.368.' },
     ] },
 
     S('rule'),
@@ -164,10 +171,10 @@ export default {
       ['expected matches (permutation)', 'linearity', '1 match on average'],
     ] },
     { type: 'callout', tone: 'edge', text: `Edge cases: n = 1 cannot be deranged (D(1) = 0, P = 0). n = 2: the only derangement is the swap, P = 1/2. Exactly n − 1 matches: 0 for every n. Exactly n: 1/n!.` },
-    { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: the expected number of fixed points is exactly 1 for every n (bto/linearity), even though P(no match) ≈ 1/e. Inclusion-exclusion over forced matches is the tool for any "none of these events" question with dependent events (prob/inclusion-exclusion).' },
     { type: 'check', scope: 'the contrast table and edge cases', questions: [
       { type: 'choice', q: '2 people swap hats at random (one each). P(nobody gets their own)?', options: ['1/2', '1/4', '0', '1/e'], answer: 0, traps: { 1: 'the independent model (1/2)²', 2: 'the swap is a derangement', 3: 'the large-n limit, wrong for n = 2' }, explain: 'Two equally likely arrangements: keep or swap. Only the swap works.' },
     ] },
+    { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: the expected number of fixed points is exactly 1 for every n (bto/linearity), even though P(no match) ≈ 1/e. Inclusion-exclusion over forced matches is the tool for any "none of these events" question with dependent events (prob/inclusion-exclusion).' },
     { type: 'variation', base: `4 letters go into their 4 envelopes at random, one each. P(no letter in its own envelope) = ${D(4)}/${fact(4)} = ${none(4)}.`, rows: [
       { change: 'Fill the envelopes in a different order (envelope d first)', effect: `No change: ${none(4)}. Every one of the ${fact(4)} arrangements is still equally likely; the order of filling does not matter.`, same: true },
       { change: 'Ask for exactly 1 letter in its own envelope', effect: `Choose the one at home, then the other 3 must all miss: ${nCr(4, 1)} × D(3) = ${nCr(4, 1) * D(3)}, so ${exactly(4, 1)}.` },

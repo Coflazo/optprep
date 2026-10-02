@@ -62,6 +62,9 @@ export default {
     ] },
     { type: 'text', text: 'Something is added up step by step (die faces, or coin flips worth 1 and 2 points) and the question asks whether the running total ever **lands exactly on** a number, or how many steps it takes to **reach or pass** it.' },
     { type: 'list', items: ['"You keep a running total of die throws. Probability that it is ever exactly 10?"', '"Heads add 1, tails add 2. Probability the total ever equals 7?"', '"Expected number of die throws until the total is at least 20?"'] },
+    { type: 'check', scope: 'lands on, or reaches', questions: [
+      { type: 'choice', q: '"Keep adding die throws. Probability that the total is ever exactly 6?" Which kind is it?', options: ['the total lands exactly on a number', 'throws needed to reach or pass it', 'the total after a fixed number of throws', 'a walk that can move down'], answer: 0, traps: { 1: '"exactly 6" must be hit, not passed', 2: 'no number of throws is fixed', 3: 'die faces only add, so the total never falls' }, explain: '"Ever exactly 6" asks whether the running total lands on 6.' },
+    ] },
     { type: 'text', text: 'Not this lesson: a total after a **fixed** number of throws (bto/three-dice, bto/clt-estimates), and walks that can move down as well as up (bto/random-walk-line).' },
     { type: 'check', scope: 'the recognition cues above', questions: [
       { type: 'choice', q: 'Which question belongs to this lesson?', options: ['Add die throws: P(the running total ever hits 12)', 'Throw 3 dice: P(the total is 12)', 'Throw 30 dice: P(the total is at least 120)', 'A ±1 walk: P(it ever reaches 12)'], answer: 0, traps: { 1: 'a fixed number of dice: bto/three-dice', 2: 'a fixed number of dice, estimated: bto/clt-estimates', 3: 'steps can go down: bto/random-walk-line' }, explain: 'A total that only grows, and a question about landing on a value.' },
@@ -143,6 +146,9 @@ export default {
 
     S('speed'),
     { type: 'callout', tone: 'speed', text: `Small targets: p(n) = (7/6)^(n−1)/6: ${[1, 2, 3, 4, 5, 6].map((n) => f3(PD[n])).join(', ')} for n = 1 to 6. Large targets (12 or more): answer 2/7 ≈ 0.286; the exact value is within ${(Math.ceil(ERR12 * 1000) / 1000).toFixed(3)} of it, far inside the option spacing.` },
+    { type: 'check', scope: 'small and large targets', questions: [
+      { make: (rng) => { const n = rng.pick([1, 2, 3, 12, 18, 25]); return { type: 'number', q: `Die running total. P(ever exactly ${n}), to 3 decimals?`, answer: Number(PD[n].toNumber().toFixed(3)), tolerance: 0.0015, hints: [n <= 6 ? 'Small target: (7/6)^(n−1)/6.' : 'Large target: the limit.'], explain: `${f4(PD[n])}.` }; } },
+    ] },
     { type: 'callout', tone: 'speed', text: `Expected throws to pass a large n: about n/3.5 + ${OVER.toFixed(2)}, the extra paying for the overshoot past n. Check: E(20) = ${f3(ED[20])} against 20/3.5 + ${OVER.toFixed(2)} = ${(20 / 3.5 + OVER).toFixed(3)}. Budget 20 of the ${SECTIONS.bto.exam.perItemSeconds} seconds.` },
     { type: 'thinkaloud', problem: 'You keep a running total of fair die throws. What is the probability that the total is ever exactly 6?', lines: [
       { t: 0, say: 'Running total, landing exactly on a target: condition on the last throw.' },
@@ -151,8 +157,9 @@ export default {
       { t: 15, say: `(7/6)⁵ ≈ ${((7 / 6) ** 5).toFixed(2)}, over 6 gives ${f3(PD[6])}.` },
       { t: 23, say: `Sanity: 6 is the peak of the curve, the last target one throw can still reach, so it should beat 2/7. ${f3(PD[6])} does. Answer ${f3(PD[6])}.` },
     ] },
-    { type: 'check', scope: 'small and large targets', questions: [
-      { make: (rng) => { const n = rng.pick([1, 2, 3, 12, 18, 25]); return { type: 'number', q: `Die running total. P(ever exactly ${n}), to 3 decimals?`, answer: Number(PD[n].toNumber().toFixed(3)), tolerance: 0.0015, hints: [n <= 6 ? 'Small target: (7/6)^(n−1)/6.' : 'Large target: the limit.'], explain: `${f4(PD[n])}.` }; } },
+    { type: 'check', scope: 'throws to pass n and the think-aloud', questions: [
+      { type: 'choice', q: 'Expected die throws until the running total reaches or passes 35?', options: ['10.5', '10', '17.5'], answer: 0, traps: { 1: 'forgot the overshoot past 35', 2: 'divided by 2 instead of the mean throw 3.5' }, explain: '35/3.5 + 0.48 ≈ 10.48: the 0.48 pays for the overshoot.' },
+      { type: 'choice', q: 'In the think-aloud, the first try used 2/7 for a target of 6. What was wrong?', options: ['2/7 is for targets far from the start', '2/7 is the chance for a target of 1', 'the die is not fair'], answer: 0, traps: { 1: 'a target of 1 needs a first throw of 1: 1/6', 2: 'the die is fair' }, explain: 'Up to 6, p(n) = (7/6)^(n−1)/6, so p(6) ≈ 0.360.' },
     ] },
 
     S('rule'),
@@ -166,10 +173,10 @@ export default {
       ['total after 3 throws exactly n', 'count triples (bto/three-dice)', f3(Q.of(T3, 216))],
     ] },
     { type: 'callout', tone: 'edge', text: 'Edge cases: p(0) = 1, p(1) = 1/6 (only a first throw of 1 lands on 1). With steps of exactly 1 every total is hit (p = 1 = 1/(mean step)). "At least n" is certain because the total grows without bound.' },
-    { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: "condition on the last step" is the first-step method run backwards (prob/first-step-markov). The long-run 1/(mean step) is a renewal fact, the same one that makes a hexagon walk return in 6 steps on average (bto/polygon-walk).' },
     { type: 'check', scope: 'the contrast table and edge cases', questions: [
       { type: 'choice', q: 'Die running total. Which is certain?', options: ['the total is at least 10 at some point', 'the total is exactly 10 at some point', 'the total is exactly 10 after 3 throws', 'the total skips 10'], answer: 0, traps: { 1: `it can jump over 10: about ${f3(PD[10])}`, 2: `a fixed number of throws: ${T3} of 216`, 3: 'hitting 10 is possible' }, explain: 'The total grows by at least 1 each throw, so it passes every level.' },
     ] },
+    { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: "condition on the last step" is the first-step method run backwards (prob/first-step-markov). The long-run 1/(mean step) is a renewal fact, the same one that makes a hexagon walk return in 6 steps on average (bto/polygon-walk).' },
     { type: 'variation', base: `Die running total: P(ever exactly 4) = ${PD[4]} ≈ ${f3(PD[4])}.`, rows: [
       { change: 'Start the total at 100 and ask for exactly 104', effect: `No change: ${f3(PD[4])}. Only the distance still to cover matters, not where the count started.`, same: true },
       { change: 'Ask for exactly 20', effect: `Far from the start: about 2/7 (exactly ${f4(PD[20])}).` },

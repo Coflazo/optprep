@@ -54,6 +54,9 @@ export default {
     ] },
     { type: 'text', text: 'Several cards are dealt from one shuffled deck, so they are drawn **without replacement**, and the question asks about the hand: both aces, a pair, same suit or colour, all red, at least one ace or heart, no two of the same rank, a flush.' },
     { type: 'list', items: ['"Two cards are dealt. Probability both are aces?"', '"Two cards: probability they have the same rank?"', '"Five cards: probability of at least one ace?"', '"Five cards: probability all five are the same suit?"'] },
+    { type: 'check', scope: 'a hand without replacement', questions: [
+      { type: 'choice', q: '"Three cards are dealt. Probability that all three have different ranks?" What does it ask about?', options: ['the hand: no two of one rank', 'one card at a position', 'a pair in the hand', 'a flush'], answer: 0, traps: { 1: 'three cards dealt together are judged as a hand', 2: 'a pair needs two of the same rank', 3: 'a flush is about suits, not ranks' }, explain: 'All different ranks is a property of the hand: no two cards share a rank.' },
+    ] },
     { type: 'text', text: 'Not this lesson: one card at a position (bto/card-symmetry) and balls of two colours (bto/urn-draws, same maths with simpler groups). Here the hand has several cards and both counts shrink with every draw.' },
     { type: 'check', scope: 'the recognition cues above', questions: [
       { type: 'choice', q: 'Which question belongs to this lesson?', options: ['Four cards: probability all are hearts', 'The 20th card: probability it is a heart', 'Top card shown as a heart: probability the bottom card is a heart', 'First ace before first king'], answer: 0, traps: { 1: 'one position: bto/card-symmetry', 2: 'one position after a seen card: bto/card-symmetry', 3: 'relative order: bto/card-symmetry' }, explain: 'A hand of four cards dealt without replacement.' },
@@ -132,6 +135,9 @@ export default {
       { t: 12, say: `1 × 12/51 × 11/50 = ${SAME3}.` },
       { t: 16, say: `Check: it should be four times "all hearts", one per suit: 4 × ${allFrom(13, 3)} = ${allFrom(13, 3).mul(Q.of(4))}. Matches. Answer ${SAME3}.` },
     ] },
+    { type: 'check', scope: 'the slip in the think-aloud', questions: [
+      { type: 'choice', q: 'In the think-aloud, the first try gave 11/850. What went wrong?', options: ['computed all hearts, but no suit was named', 'put the cards back after each draw', 'used too many factors', 'needed combinations, not factors'], answer: 0, traps: { 1: 'the counts dropped with each card, as they should', 2: 'three cards, three factors', 3: 'ordered factors work; the slip was naming a suit' }, explain: 'The first card only sets the suit: 1 × 12/51 × 11/50 = 22/425, four times "all hearts".' },
+    ] },
 
     S('predict'),
     { type: 'predict', question: 'Two cards. Is P(same colour) above, below or equal to 1/2?', answer: `Below: ${fr(25, 51)} ≈ ${d3(Q.of(25, 51))}.`, explain: 'The first card removes one card of its own colour, so the second is slightly more likely to differ.' },
@@ -155,6 +161,9 @@ export default {
 
     S('speed'),
     { type: 'callout', tone: 'speed', text: `Two-card staples: pair ${fr(3, 51)}, same suit ${fr(12, 51)}, same colour ${fr(25, 51)}, two aces ${TWO_ACES}. Five-card flush ${FLUSH} ≈ ${d4(FLUSH)} (about 1 in ${Math.round(1 / FLUSH.toNumber())}).` },
+    { type: 'check', scope: 'two-card staples', questions: [
+      { type: 'choice', q: 'Two cards are dealt. P(they form a pair)?', options: ['1/17', '4/17', '1/221', '25/51'], answer: 0, traps: { 1: 'that is same suit', 2: 'that is two aces', 3: 'that is same colour' }, explain: 'The second card must match the rank of the first: 3/51 = 1/17.' },
+    ] },
     { type: 'callout', tone: 'speed', text: `Estimation: for a small hand the "with replacement" answer is close and a little too big for "all good". Use it to throw out options, then compute the chain. Time budget ${SECTIONS.bto.exam.perItemSeconds} seconds: two-card items are recall; five-card chains take a minute, so reduce fractions as you go.` },
     { type: 'check', scope: 'staples and estimation', questions: [
       { type: 'choice', q: 'Four cards dealt. Closest value to P(all four red)?', options: [d3(allFrom(26, 4)), d3(qpow(Q.of(1, 2), 4)), d3(allFrom(26, 4).mul(Q.of(2))), '0.500'], answer: 0, traps: { 1: 'with replacement: a little too big', 2: 'all the same colour', 3: 'one card only' }, explain: `${chainText(26, 4)} ≈ ${d3(allFrom(26, 4))}, just under (1/2)⁴ = 0.0625.` },
@@ -172,12 +181,12 @@ export default {
       ['at least one ace', Q.of(1).sub(qpow(Q.of(48, 52), 2)).toString(), atLeastOne(4, 2).toString()],
     ] },
     { type: 'callout', tone: 'edge', text: 'Edge cases: 5 aces in a 5-card hand is impossible (the chain hits 0/48). Any 3 cards include two of the same colour, and any 14 include two of the same rank: the chain for "all different" hits a zero factor (0/50 for colours, 0/39 for ranks).' },
-    { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: urns are decks with two groups (bto/urn-draws), and when the question counts how many of each colour you hold, counting hands with C(n, k) is faster than chains. Die throws are the with-replacement column (bto/die-repeats).' },
     { type: 'check', scope: 'the contrast table and edge cases', questions: [
       { type: 'number', q: 'Fewest cards you must deal to be certain two share a rank?', answer: 14, explain: '13 ranks: 13 cards can all differ, the 14th must repeat one.' },
       { type: 'choice', q: 'Two cards. P(one ace and one king, in either order)?', options: [Q.of(2).mul(Q.of(4, 52)).mul(Q.of(4, 51)).toString(), Q.of(4, 52).mul(Q.of(4, 51)).toString(), Q.of(4, 52).mul(Q.of(3, 51)).toString()], answer: 0, traps: { 1: 'counted only ace-then-king: mixed hands have two orders', 2: 'used the both-aces chain' }, explain: `Two paths, each 4/52 × 4/51: ${Q.of(2).mul(Q.of(4, 52)).mul(Q.of(4, 51))}.` },
     ] },
 
+    { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: urns are decks with two groups (bto/urn-draws). When the question counts how many of each colour you hold, counting hands with C(n, k) is faster than chains. Die throws are the with-replacement column (bto/die-repeats).' },
     { type: 'variation', base: `Two cards are dealt. P(same rank) = 1 × 3/51 = ${fr(3, 51)}.`, rows: [
       { change: 'Deal the two cards one at a time instead of together', effect: 'No change. Dealing together or in turn gives the same uniform pair of different cards.', same: true },
       { change: 'Ask for the same suit', effect: `Card 1 is still free; 12 of its suit remain: ${fr(12, 51)}.` },

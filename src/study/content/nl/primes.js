@@ -66,9 +66,12 @@ export default {
       ] },
     { type: 'text', text: 'The terms are **consecutive primes**, or every prime transformed the same way: doubled plus a constant, shifted by a constant, or squared. No difference row and no ratio ever settles, because the gaps between primes are irregular by nature.' },
     { type: 'list', items: [`What number comes next?  ${seq(E1.slice(0, 6))}, ?`, `What number comes next?  ${seq(E2.slice(0, 5))}, ?`, `What number comes next?  ${seq(E3.slice(0, 5))}, ?`] },
-    { type: 'text', text: `Not this lesson: the odd numbers (${seq(ODD)}, a constant gap of 2) and lists whose **gaps** are the primes (${seq(PG)} adds ${seq(g(PG))}), which is a later lesson.` },
     { type: 'check', scope: 'the cue: irregular gaps that never settle', questions: [
       { make: (rng) => { const p = d2(rng, 6), o = arith(rng.int(1, 20) * 2 + 1, 2, 6), q = quad(rng.int(1, 10), rng.int(1, 4), 2, 6); return pick(rng, 'Which list is consecutive primes?', seq(p.xs), [[seq(o), `constant gap 2: odd numbers, and ${o.find((v) => !isPrime(v)) ?? o[5] + 2} is not prime`], [seq(q), `its gaps ${seq(g(q))} grow steadily`]], `${seq(p.xs)}: gaps ${seq(g(p.xs))}, irregular, and every term is prime.`); } },
+    ] },
+    { type: 'text', text: `Not this lesson: the odd numbers (${seq(ODD)}, a constant gap of 2) and lists whose **gaps** are the primes (${seq(PG)} adds ${seq(g(PG))}), which is a later lesson.` },
+    { type: 'check', scope: 'the neighbouring lists', questions: [
+      { type: 'choice', q: '1, 3, 6, 11, 18, 29: which rule fits?', options: ['the gaps are the primes', 'the terms are primes', 'the odd numbers'], answer: 0, traps: { 1: '1, 6 and 18 are not prime', 2: 'the gaps 2, 3, 5, 7, 11 are not a constant 2' }, explain: 'The gaps 2, 3, 5, 7, 11 are the primes: a later lesson.' },
     ] },
 
     S('why'),
@@ -113,6 +116,9 @@ export default {
     ] },
     { type: 'diagram', diagram: 'table', spec: { columns: ['term', 'undo: − 1, ÷ 2', 'prime?'], rows: E2.slice(0, 5).map((v) => [String(v), String((v - 1) / 2), isPrime((v - 1) / 2) ? 'yes' : 'no']) }, caption: `${seq(E2.slice(0, 5))} is 2p + 1. Undoing gives ${seq(E2.slice(0, 5).map((v) => (v - 1) / 2))}, consecutive primes. Next prime ${PRIMES[6]}, so the next term is 2 × ${PRIMES[6]} + 1 = ${E2[5]}.` },
     { type: 'text', text: 'Which transform? Look at the first term and the size of the gaps. Gaps that are all even and about twice the usual prime gaps suggest 2p + c; terms that are primes shifted by a small constant have prime-sized gaps; gaps that grow fast and the terms 4, 9, 25 at the start mean squares. Undo your guess on two terms: if both give primes, undo the rest.' },
+    { type: 'check', scope: 'which transform', questions: [
+      { type: 'number', q: '9, 13, 21, 25, 33: undo 2p + c. What comes next?', answer: 37, explain: 'Add 1 and halve: 5, 7, 11, 13, 17, consecutive primes. Next prime 19: 2 × 19 − 1 = 37.' },
+    ] },
     { type: 'explain', prompt: 'Why can no difference ladder find primes, and why must you undo the transform before reading the list?', model: 'Every ladder row of a formula eventually becomes constant, but primes follow no formula, so their gaps stay irregular at every depth. A transform hides the familiar numbers; only after undoing it do you see 7, 11, 13 instead of 15, 23, 27.', points: ['Primes have no polynomial or ratio rule, so no layer settles', 'The transform is the same for every term, so it can be undone', 'Read the primes, step to the next, then redo the transform'] },
 
     S('worked'),
@@ -141,6 +147,9 @@ export default {
 
     S('speed'),
     { type: 'callout', tone: 'speed', text: `The primes below 100, decade by decade: ${DECADES.map((d) => d.join(' ')).join(' | ')}.` },
+    { type: 'check', scope: 'the primes below 100', questions: [
+      { type: 'number', q: 'What is the next prime after 73?', answer: 79, explain: '75 = 3 × 25 and 77 = 7 × 11, so 79.' },
+    ] },
     { type: 'callout', tone: 'speed', text: `The odd numbers below 100 that look prime but are not: ${seq(ODDC)}. To test any n below 100, try dividing by 3, 5 and 7 (after checking it is odd); if none divides it, it is prime.` },
     { type: 'thinkaloud', problem: nextQ(TA.slice(0, 5)), lines: [
       { t: 0, say: `Gaps ${seq(g(TA.slice(0, 5)))}: all even, irregular. No layer will settle, so think primes.` },
@@ -170,7 +179,6 @@ export default {
       { make: (rng) => { const t = rng.int(0, 2); let xs; if (t === 0) xs = d2(rng, 6).xs; else if (t === 1) { do { xs = [rng.int(1, 9)]; const s = rng.int(0, 3); while (xs.length < 6) xs.push(xs[xs.length - 1] + PRIMES[s + xs.length - 1]); } while (xs.every(isPrime)); } else xs = arith(rng.int(1, 30) * 2 + 1, 2, 6); const names = ['the terms are primes', 'the gaps are primes', 'odd numbers']; const trp = [[null, `the gaps ${seq(g(xs))} are not consecutive primes`, `the gaps ${seq(g(xs))} are not all 2`], [`the terms include ${xs.find((v) => !isPrime(v))}, which is not prime`, null, `the gaps ${seq(g(xs))} are not all 2`], ['odd numbers step by 2 and include non-primes', 'a constant gap of 2 is not a run of primes', null]]; return pick(rng, `${seq(xs)}: which reading?`, names[t], names.map((nm, i) => [nm, trp[t][i]]).filter((_, i) => i !== t), `Gaps: ${seq(g(xs))}.`); } },
     ] },
     { type: 'callout', tone: 'edge', text: `Edge cases: 2 is the only even prime, so a list starting 2, 3, 5 has a gap of 1 first; 1 is not prime; and squared primes (${seq(E3.slice(0, 5))}) are the one transform whose gaps look quadratic at first but never settle.` },
-    { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: when no formula settles, switch from computing to recognising. The same switch applies to digit rules and to Fibonacci numbers hidden inside another rule.' },
     { type: 'variation', base: `${seq(E16)}, ?  Consecutive primes; next ${E1[6]}.`, rows: [
       { same: true, change: `Drop the first term: ${seq(E16.slice(1))}, ?`, effect: `Still ${E1[6]}. The list is still consecutive primes ending at ${E1[5]}.` },
       { change: `Double every term: ${seq(vrow(T2x).slice(0, 6))}, ?`, effect: `${vrow(T2x)[6]}. Halve to read the primes, take ${E1[6]}, double back.` },
@@ -182,6 +190,7 @@ export default {
       { make: (rng) => { const s = rng.int(0, 3), xs = run(TS, s, 6); return num(nextQ(xs.slice(0, 5)), xs[5], `Square roots ${seq(PRIMES.slice(s, s + 5))} are consecutive primes; next ${PRIMES[s + 5]}² = ${xs[5]}.`, ['Take square roots.', 'Square the next prime.']); } },
     ] },
 
+    { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: when no formula settles, switch from computing to recognising. The same switch applies to digit rules and to Fibonacci numbers hidden inside another rule.' },
     { type: 'transfer',
       near: { make: (rng) => { const i = rng.pick(BIG.slice(0, 6)), xs = PRIMES.slice(i, i + 6); return num(`${nextQ(xs.slice(0, 5))} (Above 100, test 3, 5, 7 and 11.)`, xs[5], `Consecutive primes above 100. Between ${xs[4]} and ${xs[5]}: ${Array.from({ length: (xs[5] - xs[4]) / 2 - 1 }, (_, k) => xs[4] + 2 * (k + 1)).map((c) => `${c} = ${fac(c)}`).join(', ') || 'no odd number'}. Next prime ${xs[5]}.`, ['The terms are primes: check each odd number after the last one.', 'Up to 168, a number is prime if 2, 3, 5, 7 and 11 do not divide it.']); } },
       far: { make: (rng) => { const n = rng.pick([10, 12, 20, 30]), k = PRIMES.filter((p) => p <= n).length; return { type: 'number', q: `A fair ${n}-sided die (faces 1 to ${n}) is rolled. What is the probability that the result is prime? (A fraction or a decimal to three places.)`, answer: k / n, tolerance: 0.001, hints: [`List the primes from 1 to ${n}; 1 is not prime.`, `Count them and divide by ${n}.`], explain: `The primes up to ${n} are ${PRIMES.filter((p) => p <= n).join(', ')}: ${k} of ${n} faces, so ${k}/${n}.` }; } },

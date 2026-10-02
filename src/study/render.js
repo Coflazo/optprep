@@ -14,6 +14,7 @@ import { solutionPanel } from '../ui/solution.js';
 import { recordTry, markRead, recordReflection, statusOf, recordUnit, studyState, scaffoldsOff, logEvent, recordMiss } from './progress.js';
 import { LESSON_BY_ID } from './content/index.js';
 import { checkItem } from '../core/check.js';
+import { nextSpiral, spiralQuestion } from './spiral.js';
 
 const T = (s) => renderInline(s, h);
 const TONE_LABEL = { idea: 'Idea', trap: 'Trap', speed: 'Speed', rule: 'Rule', contrast: 'Contrast', edge: 'Edge case', transfer: 'Same idea elsewhere' };
@@ -123,10 +124,23 @@ export function checkBlock(questions, ctx, scope, onDone, unit = scope) {
       logEvent(ctx.store, { kind: 'check', lesson: ctx.lesson.id, unit, clean: first.clean, hints: first.hints });
       if (first.trap) recordMiss(ctx.store, { belief: first.trap, lesson: ctx.lesson.id, unit });
     }
-    if (open === 0) { if (ctx.lesson?.id && !ctx.noTrack) recordUnit(ctx.store, ctx.lesson.id, unit, unitClean); onDone?.({ n: questions.length, clean }); }
+    if (open === 0) { if (ctx.lesson?.id && !ctx.noTrack) recordUnit(ctx.store, ctx.lesson.id, unit, unitClean); onDone?.({ n: questions.length, clean }); spiralAfter(box, questions, ctx, unitClean); }
   };
   questions.forEach((spec, qi) => box.append(questionView(resolveQuestion(spec, rng.fork(`q${qi}`)), finished, { spec, rng: rng.fork(`again${qi}`), noHints: ctx.noHints })));
   return box;
+}
+
+// Quick recall: after a lesson check, maybe re-ask one earlier check (the choice is spiral.js).
+function spiralAfter(box, questions, ctx, clean) {
+  const blocks = ctx.lesson?.blocks || [], block = blocks.findIndex((b) => b.questions === questions);
+  if (ctx.noTrack || block < 0 || blocks[block].mastery) return;
+  const log = (ctx.spiralLog ||= []);
+  log.push({ block, clean });
+  const pick = nextSpiral(blocks, log);
+  if (pick == null) return;
+  const spec = blocks[pick].questions[spiralQuestion(blocks[pick].questions)], rng = ctx.rng.fork(`spiral${log.length}`);
+  box.after(h('div', { class: 'study-check study-spiral' }, h('p', { class: 'small-note' }, h('strong', {}, 'Quick recall')),
+    questionView(resolveQuestion(spec, rng), (first) => log.push({ block: pick, clean: first.clean, spiral: true }), { spec, rng: rng.fork('again'), noHints: ctx.noHints })));
 }
 
 // Mastery check for lessons without a question family (foundations): fresh generated

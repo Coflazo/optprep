@@ -66,6 +66,9 @@ export default {
         { id: 'risky', label: 'Volatile means less likely', approach: `You put every ${B.name} statement low because ${B.name} is the risky fund.`, breaksAt: `Spread fattens both tails: ${B.name} wins statements about extremes, ${A.name} wins "positive".` },
       ] },
     { type: 'text', text: 'The prompt is a **bar chart of yearly returns** for two funds, one pair of bars per year. A year is picked at random (for "given" statements, from the years that qualify). Statements: a fund was positive, returned more or less than v%, one fund beat the other, both lost money, or a fund was positive **given** it was positive the year before.' },
+    { type: 'check', scope: 'who is picked from', questions: [
+      { type: 'choice', q: '"In a random year when Fund A was positive, Fund B was positive too." Which years are picked from?', options: ['the years when Fund A was positive', 'all the years on the chart', 'the years when Fund B was positive'], answer: 0, traps: { 1: 'a "given" statement picks only from the years that qualify', 2: 'the condition is on Fund A' }, explain: 'Count Fund B positive among the years when Fund A was positive, over those years only.' },
+    ] },
     { type: 'text', text: 'Not this lesson: a histogram (bars are counts of values, not years) and density curves (smooth areas). Here every bar is a single year\'s outcome and you count bars.' },
     { type: 'check', scope: 'the recognition cues above', questions: [
       mc(null, 'In a fund-return chart, what is one equally likely outcome?', 'one year (a pair of bars)', [['one bar height', 'a height is a return, not an outcome: you count years'], ['one percentage point', 'returns are measurements, not outcomes to count'], ['one fund', 'the fund is part of the statement, not the random pick']], 'A random year is picked, so each year counts once.', { at: 0 }),
@@ -139,10 +142,16 @@ export default {
 
     S('speed'),
     { type: 'callout', tone: 'speed', text: 'Use the shape before counting. If one statement is about an extreme and another about being positive, the volatile and steady funds usually take one each, and a quick count only confirms it.' },
+    { type: 'check', scope: 'shape before counting', questions: [
+      { type: 'choice', q: '"Above +15%" and "positive": which fund usually wins each?', options: ['volatile for the extreme, steady for positive', 'steady for the extreme, volatile for positive', 'steady for both, since it never loses much'], answer: 0, traps: { 1: 'the steady fund rarely reaches an extreme year', 2: 'a steady fund misses the big years' }, explain: 'Big swings reach the extremes; small steady returns are positive more often.' },
+    ] },
     { type: 'callout', tone: 'speed', text: 'Count the short side: "positive in 8 of 10 years" is faster as "lost in 2". For "beat", scan for the years where the steady fund wins; there are usually few.' },
-    { type: 'callout', tone: 'speed', text: `Budget: ${LL.exam.perItemSeconds} seconds. Ten years and three statements is thirty bar reads; with the shape check first you usually need only the one statement the shape does not decide.` },
     { type: 'check', scope: 'counting the short side', questions: [
       { make: (rng) => again(() => { const s1 = thresholds(rng), s2 = thresholds(rng); if (s1.text === s2.text) return null; return rank(rng, 'From the chart, rank from most to least likely for a random year.', [[`${s1.text}.`, s1.k / N], [`${s2.text}.`, s2.k / N], [`${B.name} beat ${A.name}.`, bBeat / N]], 'Count each on its short side.'); }) },
+    ] },
+    { type: 'callout', tone: 'speed', text: `Budget: ${LL.exam.perItemSeconds} seconds. Ten years and three statements is thirty bar reads; with the shape check first you usually need only the one statement the shape does not decide.` },
+    { type: 'check', scope: 'the time budget', questions: [
+      { type: 'choice', q: 'Ten years, three statements. Which statements do you count bar by bar?', options: ['only the one the shape does not decide', 'all three, reading every bar', 'none: the shape decides all three'], answer: 0, traps: { 1: 'thirty bar reads waste the budget when the shape settles two', 2: 'the shape usually leaves one open' }, explain: 'Check the shape first; count only the statement it leaves open.' },
     ] },
 
     { type: 'thinkaloud', problem: `The same chart. Rank for a random year: (a) ${B.name} lost money, (b) ${A.name} returned more than 5%, (c) ${A.name} was positive, given it was positive the year before.`, lines: [
@@ -170,11 +179,11 @@ export default {
       ['A positive | positive the year before', 'A positive again', 'years after an A-positive year'],
     ] },
     { type: 'callout', tone: 'edge', text: 'Edge cases: a fund that is never positive has no years in scope for persistence, so the statement has no meaning (items avoid this). A tie year does not count for "beat".' },
-    { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: large-number statements (a small hospital, like a volatile fund, has more extreme days), density curves (a wide curve has fatter tails), and Markov chains (the state last step changes what happens next).' },
     { type: 'check', scope: 'the contrast table and edge cases', questions: [
       mc(null, 'Two funds with the same average: one with a wide spread, one narrow. Which is more likely to lose more than 10% in a random year?', 'the wide one', [['the narrow one', 'reversed: a narrow spread keeps returns near the average'], ['equally likely', 'the same average does not mean the same tails']], 'Spread puts more years in both tails.', { at: 0 }),
     ] },
 
+    { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: large-number statements, where a small hospital, like a volatile fund, has more extreme days. Also density curves (a wide curve has fatter tails) and Markov chains (the state last step changes what happens next).' },
     { type: 'variation', base: `The challenge: (a) ${A.name} positive ${aPos}/${N}, (b) ${B.name} above 10% ${bGt10}/${N}, (c) ${B.name} beat ${A.name} ${bBeat}/${N}. Order (a) > (c) > (b).`, rows: [
       { same: true, change: 'Shuffle the order of the years', effect: 'No change. A random year treats every year alike, and "beat" compares within one year. (A persistence statement would change: it depends on which year comes before which.)' },
       { change: `Change (b) to "${B.name} returned more than 10% or less than −10%"`, effect: `Both tails now count: ${bExt}/${N}. Volatility wins extremes on both sides, so (b) climbs from last to second.` },

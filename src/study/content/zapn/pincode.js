@@ -80,10 +80,13 @@ export default {
         { id: 'order', label: 'Memorise the order, then sort', approach: 'Held the code as shown and sorted it in your head while typing.', breaksAt: 'Sorting in your head needs every digit in play at once, and the order was never needed.' },
       ] },
     { type: 'text', text: `Pincode is the memory game of Zap-N. A digit code appears, then disappears; you type it and press Enter. Mode 1 types it **as shown**, mode 2 **reversed**, mode 3 **sorted** from low to high. The code is shown for ${DEFAULTS.msPerDigit / 1000} s per digit (at least ${DEFAULTS.minShowMs / 1000} s): ${secs(9)} s for 9 digits.` },
-    { type: 'text', text: `Codes start at ${DEFAULTS.startLen} digits. Two right answers at a length add a digit; two wrong answers at a length end the mode. The score is your **forward span**: the longest code you typed correctly in mode 1. Target: ${TARGET} digits. No pen and paper.` },
     { type: 'check', scope: 'the three modes and the display time', questions: [
       mc({ q: 'The code was 5 2 9. Reverse mode. What do you type?', right: '925', at: 1, wrong: [['529', 'typed it forward'], ['259', 'sorted it instead of reversing'], ['952', 'reversed only the last two digits']], explain: 'Reverse: last digit first, 9 2 5.' }),
       { make: (rng) => { const n = rng.int(3, 14); return { type: 'number', q: `How many seconds is a ${n}-digit code shown?`, answer: showMs(n) / 1000, hints: [`${DEFAULTS.msPerDigit / 1000} s per digit, but never less than ${DEFAULTS.minShowMs / 1000} s.`], explain: `max(${DEFAULTS.minShowMs / 1000}, ${n} × ${DEFAULTS.msPerDigit / 1000}) = ${secs(n)} s.` }; } },
+    ] },
+    { type: 'text', text: `Codes start at ${DEFAULTS.startLen} digits. Two right answers at a length add a digit; two wrong answers at a length end the mode. The score is your **forward span**: the longest code you typed correctly in mode 1. Target: ${TARGET} digits. No pen and paper.` },
+    { type: 'check', scope: 'the forward span', questions: [
+      { type: 'number', q: 'Mode 1: you type one 7-digit code right, then miss two 7-digit codes. What is your forward span?', answer: 7, explain: 'The span is the longest code typed right in mode 1: 7. The two misses end the mode.' },
     ] },
 
     sec('why'),
@@ -158,6 +161,9 @@ export default {
 
     sec('speed'),
     { type: 'callout', tone: 'speed', text: `Build the chunks while the code is still on screen: ${DEFAULTS.msPerDigit / 1000} s per digit is enough to say each chunk twice. Name repeats as one feature ("double seven") and say zeros as "oh".` },
+    { type: 'check', scope: 'building chunks at speed', questions: [
+      { make: (rng) => { const n = rng.int(6, 12); return { type: 'number', q: `A ${n}-digit code: how many seconds per chunk of 3 do you get while it is on screen?`, answer: showMs(n) / 1000 / Math.ceil(n / 3), tolerance: 0.01, hints: [`It is shown for ${secs(n)} s.`, `Divide by ${Math.ceil(n / 3)} chunks.`], explain: `${secs(n)} s ÷ ${Math.ceil(n / 3)} = ${dec(showMs(n) / 1000 / Math.ceil(n / 3), 2)} s per chunk.` }; } },
+    ] },
     { type: 'callout', tone: 'speed', text: 'Train it outside the game: glance at a licence plate or a receipt number, look away, and recite it in chunks. For sorted mode, use only the tally method for a whole session until it is automatic.' },
     { type: 'thinkaloud', problem: `Forward mode, ${F.length} digits: ${[...F].join(' ')}, on screen for ${secs(F.length)} s.`, lines: [
       { t: 0, say: `Nine digits: three chunks. "${chunk3(F)[0]}".` },
@@ -167,8 +173,9 @@ export default {
       { t: round(showMs(F.length) / 1000 + 0.4, 1), say: `The middle chunk is off: on screen I said "${chunk3(F)[1]}". Rehearse: ${chunk3(F).join(', ')}.` },
       { t: round(showMs(F.length) / 1000 + 0.9, 1), say: `Input is open: type ${F} straight away. Nine digits typed, count matches the three chunks.` },
     ] },
-    { type: 'check', scope: 'building chunks at speed', questions: [
-      { make: (rng) => { const n = rng.int(6, 12); return { type: 'number', q: `A ${n}-digit code: how many seconds per chunk of 3 do you get while it is on screen?`, answer: showMs(n) / 1000 / Math.ceil(n / 3), tolerance: 0.01, hints: [`It is shown for ${secs(n)} s.`, `Divide by ${Math.ceil(n / 3)} chunks.`], explain: `${secs(n)} s ÷ ${Math.ceil(n / 3)} = ${dec(showMs(n) / 1000 / Math.ceil(n / 3), 2)} s per chunk.` }; } },
+    { type: 'check', scope: 'the think-aloud and the second tip', questions: [
+      { type: 'choice', q: 'How do you train sorted mode?', options: ['the tally method only, for a session', 'sorting the digits in your head', 'with pen and paper'], answer: 0, traps: { 1: 'the tally stores counts, not order', 2: 'no pen and paper in the game, so train without it' }, explain: 'Use only the tally until it is automatic.' },
+      { type: 'choice', q: 'In the think-aloud, the rehearsal came out as 472, 951, 836. What fixed it?', options: ['the chunk said on screen: 915', 'typing it straight away', 'reading the code once more'], answer: 0, traps: { 1: 'typing a wrong chunk loses the round', 2: 'the code was hidden by then' }, explain: 'The middle chunk had been said as 915 on screen, so the rehearsal was corrected.' },
     ] },
 
     sec('rule'),
@@ -190,6 +197,10 @@ export default {
       { change: 'The code has a repeat, like 4 7 7', effect: 'Hold "four, double seven" as one chunk; in sorted mode the tally says 7 × 2.' },
     ] },
     { type: 'callout', tone: 'edge', text: `Edge cases: a leading zero is a digit like any other; type it. Codes grow up to ${DEFAULTS.maxLen} digits. A mode ends after two wrongs at one length even if you had rights at that length, so one careful answer at a new length is worth more than a fast one.` },
+    { type: 'check', scope: 'what each mode stores', questions: [
+      mc({ q: 'Which mode lets you forget the order of the digits the moment you have seen them?', right: 'sorted', at: 2, wrong: [['forward', 'you type them in the shown order'], ['reverse', 'reversing needs the order'], ['none of them', 'sorting throws the order away']], explain: 'Sorted needs only the counts.' }),
+      { type: 'choice', q: 'The code starts with 0. What do you type?', options: ['the 0, like any digit', 'nothing for the leading 0', 'the letter O'], answer: 0, traps: { 1: 'a leading zero is a digit like any other', 2: 'codes are digits only' }, explain: 'Type every digit, a leading zero included.' },
+    ] },
     { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: chunking by 3 is also the CodeCompare reading method, and "store only what the answer needs" (the tally) is the same move as tracking only the eliminated values in Figure It Out.' },
     { type: 'transfer',
       near: { make: (rng) => (rng.chance(0.5) ? reverseQ(rng) : sortedQ(rng)) },
@@ -198,9 +209,6 @@ export default {
         wrong: [['store everything exactly as it was shown, to be safe', 'more to hold means more to lose'], ['rehearse for longer before you start to answer', 'rehearsal fades once it stops; start answering at once'], ['split everything into single items, one per digit', 'single items overflow working memory fastest']],
         explain: 'A tally (sorted mode) and a running count (orders) both keep only what the answer uses.' }),
     },
-    { type: 'check', scope: 'what each mode stores', questions: [
-      mc({ q: 'Which mode lets you forget the order of the digits the moment you have seen them?', right: 'sorted', at: 2, wrong: [['forward', 'you type them in the shown order'], ['reverse', 'reversing needs the order'], ['none of them', 'sorting throws the order away']], explain: 'Sorted needs only the counts.' }),
-    ] },
 
     sec('tryit'),
     { type: 'tryit', game: 'pincode' },

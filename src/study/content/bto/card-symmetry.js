@@ -48,6 +48,9 @@ export default {
     ] },
     { type: 'text', text: 'A deck is shuffled and the question points at a **position** (the 11th card, the bottom card), at cards **thrown away unseen**, at a card you **did** see, or at the **order** in which special cards appear ("the first ace before the first king").' },
     { type: 'list', items: ['"The top 10 cards are discarded face down. Probability the next card is red?"', '"Probability the 15th card has the same suit as the top card?"', '"You see the top card is a heart. Probability the bottom card is a heart?"', '"Cards are turned over one by one. Probability the first ace comes before the first king?"'] },
+    { type: 'check', scope: 'the four kinds of card question', questions: [
+      { type: 'choice', q: '"The top 5 cards are burned face down. Probability that the 6th card is an ace?" What kind is it?', options: ['cards thrown away unseen', 'a card you did see', 'the order of special cards', 'a hand dealt at once'], answer: 0, traps: { 1: 'nobody looked at the burned cards', 2: 'one card is asked about, not which of two kinds comes first', 3: 'a single position is asked about, not a hand' }, explain: 'Burned face down means thrown away unseen.' },
+    ] },
     { type: 'text', text: 'Not this lesson: hands of several cards dealt at once, like "two aces in two cards" (bto/card-draws). Here the question is about one position or about relative order, and symmetry answers it without a product.' },
     { type: 'check', scope: 'the recognition cues above', questions: [
       { type: 'choice', q: 'Which question belongs to this lesson?', options: ['Probability the 30th card dealt is a spade', 'Probability a 5-card hand is a flush', 'Probability two drawn cards are both aces', 'Probability of at least one ace in 4 cards'], answer: 0, traps: { 1: 'a hand: bto/card-draws', 2: 'two cards together: bto/card-draws', 3: 'an at-least-one hand: bto/card-draws' }, explain: 'A single position: symmetry says 13/52.' },
@@ -118,6 +121,9 @@ export default {
       { t: 12, say: `12 hearts among the 51 other cards: ${fr(12, 51)}.` },
       { t: 15, say: `Check: a little under 1/4, because one heart is already gone. Answer ${fr(12, 51)}, most of the ${SECTIONS.bto.exam.perItemSeconds} seconds left.` },
     ] },
+    { type: 'check', scope: 'the slip in the think-aloud', questions: [
+      { type: 'choice', q: 'In the think-aloud, the first try gave 12/48. What went wrong?', options: ['let the unseen discards change the odds', 'forgot the seen heart', 'used 13 hearts in 52', 'divided by the number of suits'], answer: 0, traps: { 1: 'the seen heart was removed in that try', 2: 'the try used 12 in 48', 3: 'nothing was divided by 4' }, explain: 'Face-down cards tell you nothing. Only the seen heart leaves: 12 hearts in 51 cards = 4/17.' },
+    ] },
 
     S('predict'),
     { type: 'predict', question: 'You burn 51 cards unseen. What is the chance the last card is the ace of spades?', answer: '1/52, exactly as for the top card.', explain: 'Nothing was seen, so the last card is still a uniform card.' },
@@ -141,9 +147,12 @@ export default {
 
     S('speed'),
     { type: 'callout', tone: 'speed', text: 'Three words decide these questions: **seen or unseen?** Unseen → the answer is the starting fraction (26/52, 13/52, 4/52). Seen → remove the card from the deck and from its group (12/51, 25/51, 3/51). Order → count only the special cards (m/k).' },
-    { type: 'callout', tone: 'speed', text: `The speed win is large: a symmetry item takes 5 to 10 seconds of the ${SECTIONS.bto.exam.perItemSeconds} available. Spend the spare time rereading the wording for "you see", "face up" or "revealed", the words that break the symmetry.` },
     { type: 'check', scope: 'seen or unseen', questions: [
       { type: 'choice', q: 'The top card is turned face up: it is red. The next 5 cards are discarded face down. P(the 7th card is red)?', options: [fr(25, 51), '1/2', fr(25, 46), fr(20, 46)], answer: 0, traps: { 1: 'ignored the card you saw', 2: 'shrank the deck by the unseen discards', 3: 'assumed all 5 unseen discards were red' }, explain: 'Remove the seen red; ignore the unseen five: 25/51.' },
+    ] },
+    { type: 'callout', tone: 'speed', text: `The speed win is large: a symmetry item takes 5 to 10 seconds of the ${SECTIONS.bto.exam.perItemSeconds} available. Spend the spare time rereading the wording for "you see", "face up" or "revealed", the words that break the symmetry.` },
+    { type: 'check', scope: 'words that break the symmetry', questions: [
+      { type: 'choice', q: 'Which phrase in a card question breaks the symmetry?', options: ['"turned face up"', '"after shuffling"', '"discarded face down"', '"the 20th card"'], answer: 0, traps: { 1: 'shuffling is what creates the symmetry', 2: 'face-down discards are unseen, so they keep it', 3: 'a position alone keeps the symmetry' }, explain: 'A card you see leaves the deck and its group. Reread the wording for "you see", "face up" or "revealed".' },
     ] },
 
     S('rule'),
@@ -158,11 +167,11 @@ export default {
       ['first heart before first spade', 'only the 26 hearts and spades matter', '13/26'],
     ] },
     { type: 'callout', tone: 'edge', text: 'Edge cases: burn 51 cards unseen and the last card is still red with 1/2. See all 26 reds and the rest are certainly black. With one special card of each kind (the ace of spades against the king of spades) the order is still 1/2; with 4 aces against 1 king it becomes 4/5.' },
-    { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: the third ball drawn from an urn is red with r/(r + b), exactly like the first (bto/urn-draws). "Seen versus unseen" is the heart of Monty Hall, where what the host shows depends on what he knows (bto/monty-hall). And P(the second card is an ace) = 4/52 before you look at the first (bto/card-draws).' },
     { type: 'check', scope: 'the contrast table and edge cases', questions: [
       { type: 'choice', q: 'You see the top card is a spade. P(the bottom card is a heart)?', options: [fr(13, 51), fr(12, 51), fr(13, 52), fr(12, 52)], answer: 0, traps: { 1: 'removed a heart, but the seen card was a spade', 2: 'ignored the seen card', 3: 'removed a heart and ignored the deck shrinking' }, explain: 'The spade leaves the deck but not the hearts: 13/51.' },
     ] },
 
+    { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: the third ball drawn from an urn is red with r/(r + b), exactly like the first (bto/urn-draws). "Seen versus unseen" is the heart of Monty Hall, where what the host shows depends on what he knows (bto/monty-hall). And P(the second card is an ace) = 4/52 before you look at the first (bto/card-draws).' },
     { type: 'variation', base: 'Shuffled deck, top 10 cards discarded face down. P(the 11th card is red) = 1/2.', rows: [
       { change: 'Discard 30 cards instead of 10', effect: 'No change: 1/2. More unseen cards are still no information.', same: true },
       { change: 'Ask about the bottom card instead of the 11th', effect: 'No change: every position of a fair shuffle is a uniform card.', same: true },

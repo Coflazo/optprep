@@ -128,6 +128,9 @@ export default {
       { t: 25, say: `Check: 23 people give about half, and ${TA.n} is a few more, so a bit over half is right.` },
       { t: 31, say: `The shortcut runs about a point low: centre near ${dec(TA.approx + 1, 0)}, error 2.5 points, leaning high: [${dec(TA.band.lo, 1)}, ${dec(TA.band.hi, 1)}]. (Truth ${dec(TA.exact, 2)}%.)` },
     ] },
+    { type: 'check', scope: 'the slip in the think-aloud', questions: [
+      { type: 'choice', q: 'In the think-aloud, the first try gave 25/365 ≈ 7%. What was wrong?', options: ['it counted people, not pairs', 'it should use 366 days', 'it forgot to double'], answer: 0, traps: { 1: 'leap days change almost nothing', 2: 'nothing needs doubling: matches come from pairs' }, explain: '25 people make 300 pairs: 1 − e^(−300/365) ≈ 56%.' },
+    ] },
 
     sec('predict'),
     { type: 'predict', question: `${PRED.n} people: is P(some shared birthday) above or below 50%? Decide before computing.`, answer: `Just above: ${dec(PRED.exact, 2)}%. The shortcut gives e^{−${PRED.n}·${PRED.n - 1}/730} = e^{−${dec((PRED.n * (PRED.n - 1)) / 730, 3)}}, and ${dec((PRED.n * (PRED.n - 1)) / 730, 3)} is almost exactly ln 2, so ${PRED.approx.toFixed(1)}%.`, explain: `There are ${(PRED.n * (PRED.n - 1)) / 2} pairs of people, each matching with chance 1/365. Pairs, not people, drive birthday matches.` },
@@ -151,8 +154,11 @@ export default {
 
     sec('speed'),
     { type: 'callout', tone: 'speed', text: `Exponential anchors: e^{−0.5} ≈ ${dec(Math.exp(-0.5), 3)}, e^{−1} ≈ ${dec(Math.exp(-1), 3)}, e^{−2} ≈ ${dec(Math.exp(-2), 3)}, e^{−3} ≈ ${dec(Math.exp(-3), 3)}. Combine them: e^{−1.5} = e^{−1} × e^{−0.5} ≈ ${dec(Math.exp(-1.5), 3)}.` },
-    { type: 'callout', tone: 'speed', text: `Normal tails to know: ${Z_ROWS.map((z) => `z = ${z} → ${dec(tail(z), 2)}%`).join(', ')}. Between them, interpolate on the ratio: each extra 0.5 in z divides the tail by roughly 2.5 to 4.` },
     { type: 'check', scope: 'exponential anchors', questions: [{ make: expQ }] },
+    { type: 'callout', tone: 'speed', text: `Normal tails to know: ${Z_ROWS.map((z) => `z = ${z} → ${dec(tail(z), 2)}%`).join(', ')}. Between them, interpolate on the ratio: each extra 0.5 in z divides the tail by roughly 2.5 to 4.` },
+    { type: 'check', scope: 'normal tails', questions: [
+      { type: 'choice', q: 'A normal tail at z = 2 is about:', options: ['2.28%', '15.87%', '0.13%', '5%'], answer: 0, traps: { 1: 'that is z = 1', 2: 'that is z = 3', 3: 'that is z = 1.645' }, explain: 'Beyond 2 SDs on one side: about 2.28%.' },
+    ] },
 
     sec('rule'),
     { type: 'callout', tone: 'rule', text: 'Many trials → complement → e^{−Σ} for products near 1, 1/e for hats, normal with a half-integer cut for sums → band: ± about 2 of your point-errors in the middle, ×/÷ 1.3 in the tails.' },
@@ -173,10 +179,10 @@ export default {
       { fusion: true, change: `${CH.n} people become 40 AND the year has 400 days`, effect: `Both feed the same exponent, pairs over days: 40·39/800 = ${dec((40 * 39) / 800, 3)}, so about ${dec((1 - Math.exp(-(40 * 39) / 800)) * 100, 1)}%. More people push it up, more days pull it down.` },
     ] },
     { type: 'callout', tone: 'edge', text: `Edge cases: with few trials (up to about 5 dice or 6 coins) compute exactly instead. Hats with n ≥ 7 are 36.79% to two decimals, so a tight bracket like [${dec(100 / Math.E - 0.01, 2)}, ${dec(100 / Math.E + 0.01, 2)}] is safe. Near 100%, the band cannot go above 100: put the spare width below.` },
-    { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: e^{−x} for products near 1 is the Poisson limit (rare events), the normal cut is the CLT from Beat the Odds, and "size the band from the method\'s error" is how every Intervals estimate is finished.' },
     { type: 'check', scope: 'contrast and edge cases', questions: [
       mc({ q: '9 hats are returned at random. Which interval is best for P(nobody gets their own), in percent?', right: `[${dec(derange(9) - 0.01, 2)}, ${dec(derange(9) + 0.01, 2)}]`, wrong: [[`[${dec(derange(9) - 2.5, 1)}, ${dec(derange(9) + 2.5, 1)}]`, 'a central-value band for a value that is known to 4 decimals'], ['[11.1, 11.1]', 'used 1/n: the chance one given person gets their own hat'], [`[${dec(100 - 100 / Math.E, 2)}, ${dec(100 - 100 / Math.E + 0.02, 2)}]`, 'gave the complement: someone gets their own hat']], explain: `Exact ${dec(derange(9), 4)}%, the same as 1/e to four decimals, so a hair-thin bracket is safe.` }),
     ] },
+    { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: e^{−x} for products near 1 is the Poisson limit (rare events), and the normal cut is the CLT from Beat the Odds. "Size the band from the method\'s error" is how every Intervals estimate is finished.' },
     { type: 'transfer',
       near: { make: (rng) => { const n = rng.int(12, 20); let q = 1; for (let i = 0; i < n; i++) q *= (100 - i) / 100; return ivq(`${n} traders each pick one of 100 stocks at random. Estimate P(at least two pick the same stock), in percent, and type your interval.`, (1 - q) * 100, `Pairs ${n}·${n - 1}/2 = ${(n * (n - 1)) / 2}, over 100: e^{−${dec((n * (n - 1)) / 200, 2)}} ≈ ${dec(Math.exp(-(n * (n - 1)) / 200), 3)}, so about ${dec((1 - Math.exp(-(n * (n - 1)) / 200)) * 100, 1)}%. Exact ${dec((1 - q) * 100, 2)}%.`); } },
       far: { type: 'number', q: 'A desk makes 40 independent trades a day, each with a 2% chance of a booking error. Estimate P(at least one error), in percent. (1 decimal place)', answer: round((1 - 0.98 ** 40) * 100, 1), tolerance: 1.05, explain: `Complement and exponential: 1 − 0.98^{40} ≈ 1 − e^{−0.8} = ${dec((1 - Math.exp(-0.8)) * 100, 1)}%. Exact ${dec((1 - 0.98 ** 40) * 100, 2)}%.` },

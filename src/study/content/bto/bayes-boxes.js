@@ -53,6 +53,9 @@ export default {
     ] },
     { type: 'text', text: 'An object is picked at random from a few kinds (a fair or a double-headed coin, box A or box B, one of several two-sided cards). You observe something it produced (heads several times, a red ball, a red face) and are asked which object you are holding, or what its hidden side shows.' },
     { type: 'list', items: ['"One of 10 coins is double-headed. You pick one, flip it 3 times: 3 heads. Probability it is the double-headed coin?"', '"Box A has 2 red, 1 blue; box B has 1 red, 3 blue. Pick a box at random, draw red. Probability it was box A?"', '"Three two-sided cards; you see a red face. Probability the back is red?"'] },
+    { type: 'check', scope: 'the hidden object and the evidence', questions: [
+      { type: 'choice', q: '"Box A has 2 red and 1 blue; box B has 1 red and 3 blue. A random box gives a red ball." What is hidden?', options: ['which box was picked', 'the colour of the ball', 'what each box holds', 'a population rate'], answer: 0, traps: { 1: 'the red ball is what you observed', 2: 'the box contents are given', 3: 'no rates are given: the evidence comes from the object itself' }, explain: 'You see the ball; the box it came from is the hidden object.' },
+    ] },
     { type: 'text', text: 'Not this lesson: rates of a signal in a population (bto/bayes-test), and a host who chooses what to reveal (bto/monty-hall). Here the evidence is produced by the object itself.' },
     { type: 'check', scope: 'the recognition cues above', questions: [
       { type: 'choice', q: 'Which question belongs to this lesson?', options: ['Urn X has 3 white, urn Y has 1 white and 2 black; a random urn gives white: P(urn X)?', '2% of emails are spam; a filter flags 90% of spam and 5% of others: P(spam | flagged)?', 'A host who knows the car opens a goat door: switch?', 'Draw 2 balls from one urn: P(both white)?'], answer: 0, traps: { 1: 'rates in a population: bto/bayes-test', 2: 'a host choosing what to show: bto/monty-hall', 3: 'no hidden object to infer: bto/urn-draws' }, explain: 'A hidden urn, evidence it produced, which urn was it.' },
@@ -122,6 +125,9 @@ export default {
       { t: 12, say: `Equal priors cancel: ${Q.of(2, 3)} / (${Q.of(2, 3)} + ${Q.of(1, 4)}) = ${boxA(2, 1, 1, 3)}.` },
       { t: 16, say: `Check: A is the redder box, so the answer is above 1/2. ${boxA(2, 1, 1, 3)} ≈ ${d3(boxA(2, 1, 1, 3))}. Answer ${boxA(2, 1, 1, 3)}.` },
     ] },
+    { type: 'check', scope: 'the slip in the think-aloud', questions: [
+      { type: 'choice', q: 'In the think-aloud, the first try gave 2/3. What went wrong?', options: ['pooled the balls, but each box has 1/2', 'counted the red balls in each box wrong', 'gave the boxes unequal priors', 'swapped box A and box B'], answer: 0, traps: { 1: '2 red in A and 1 in B is right', 2: 'the priors are equal; the try left them out', 3: 'A is the box with 2 reds, as counted' }, explain: 'Weigh boxes, not balls: likelihoods 2/3 and 1/4 with equal priors give 8/11.' },
+    ] },
 
     S('predict'),
     { type: 'predict', question: 'A jar of 10 coins has one double-headed coin. You pick one and see three heads. Above or below 1/2 that you hold the double-headed coin?', answer: `Below: ${dh(10, 3)} ≈ ${d3(dh(10, 3))}.`, explain: 'Odds 1 : 9 times 8 : 1 = 8 : 9. One more head would tip it.' },
@@ -144,6 +150,9 @@ export default {
 
     S('speed'),
     { type: 'callout', tone: 'speed', text: 'Write the weights, not the formula: one line per object, "prior × likelihood", then divide one by the sum. With equal priors, skip the priors entirely. With a double-headed coin, use odds: 1 : (m − 1), doubled per head.' },
+    { type: 'check', scope: 'weights and odds', questions: [
+      { type: 'choice', q: 'One of 4 coins is double-headed. You pick one at random and flip it twice: two heads. P(double-headed)?', options: ['4/7', '1/4', '2/5', '3/7'], answer: 0, traps: { 1: 'ignored the two heads', 2: 'doubled the odds for one head only', 3: 'that is P(fair coin)' }, explain: 'Odds 1 : 3 to start, doubled per head: 2 : 3, then 4 : 3. P = 4/7.' },
+    ] },
     { type: 'callout', tone: 'speed', text: `Sanity: the posterior moves toward the object that makes the evidence more likely, never past certainty. Evidence that is equally likely under every object leaves the priors unchanged. Time budget ${SECTIONS.bto.exam.perItemSeconds} seconds; a two-object question takes 30.` },
     { type: 'check', scope: 'weights and sanity', questions: [
       { type: 'choice', q: 'Box A: 2 red, 2 blue. Box B: 5 red, 5 blue. A random box gives red. P(box A)?', options: ['1/2', '2/7', '2/5', '1/4'], answer: 0, traps: { 1: 'pooled the reds', 2: 'mixed a likelihood with a count', 3: 'multiplied prior and likelihood without dividing' }, explain: 'Both boxes give red with 1/2: the evidence is uninformative, so the prior stays.' },
@@ -160,11 +169,11 @@ export default {
       ['test with rates (bto/bayes-test)', 'true against false positives', 'the hit rate', 'depends on the base rate'],
     ] },
     { type: 'callout', tone: 'edge', text: 'Edge cases: evidence that is impossible under an object sends it to 0 (a tail rules out the double-headed coin at once). Evidence that is certain under every object teaches nothing. A single object in the bag is certain before and after.' },
-    { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: Monty Hall is this lesson with one extra wrinkle, the host chooses what to show, so his rule sets the likelihoods (bto/monty-hall). Updating on several pieces of evidence one at a time gives the same answer as updating on all at once, which is how traders revise a view trade by trade.' },
     { type: 'check', scope: 'the contrast table and edge cases', questions: [
       { type: 'choice', q: '9 coins, one double-headed. You flip the chosen coin: heads, heads, tails. P(double-headed)?', options: ['0', dh(9, 2).toString(), '1/9', '1/2'], answer: 0, traps: { 1: 'ignored the tail', 2: 'kept the prior', 3: 'a coin flip' }, explain: 'A double-headed coin cannot show tails.' },
     ] },
 
+    { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: Monty Hall is this lesson with one extra wrinkle, the host chooses what to show, so his rule sets the likelihoods (bto/monty-hall). Updating on several pieces of evidence one at a time gives the same answer as updating on all at once. Traders revise a view that way, trade by trade.' },
     { type: 'variation', base: `Three cards, RR, RB and BB. A red face is seen. P(back red) = ${cards(1, 1)}.`, rows: [
       { change: 'Add a second black-black card', effect: `No change: ${cards(1, 1)}. Black-black cards never show red, so they are ruled out either way.`, same: true },
       { change: 'Replace BB with a second RB card', effect: `Red faces: 2 on RR, 2 on the RB cards: ${cards(1, 2)}.` },

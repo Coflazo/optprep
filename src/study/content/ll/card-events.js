@@ -64,9 +64,12 @@ export default {
         { id: 'replace', label: 'Square the chance', approach: 'You priced (c) as (1/2)^2 = 1/4, as if the first card went back into the deck.', breaksAt: 'Without replacement the second red is 25/51: one red fewer and one card fewer.' },
       ] },
     { type: 'text', text: 'There is **no picture**: three statements about cards from a well-shuffled 52-card deck. They come in three shapes: two cards dealt (pair, same suit, colours, exactly one ace), a hand of k cards (at least one ace, at least one heart, a pair or better, a flush), and the position of one named card (the ace of spades in the top k, the next card after some are burned).' },
-    { type: 'text', text: 'Not this lesson: dice (independent throws, no removal) and coin strings. Cards are drawn **without replacement**: each card dealt changes what is left, and that single fact is behind every value below.' },
     { type: 'check', scope: 'the recognition cues above', questions: [
       mc(null, '"The ace of spades is among the top 10 cards." Which shape is it?', 'the position of one named card', [['two cards dealt', 'ten cards are involved, but only one card is named'], ['a hand of k cards with at least one of a kind', 'there is exactly one ace of spades, so this is about where it sits'], ['a dice statement', 'a deck is dealt without replacement']], 'One named card: symmetry makes its position uniform.', { at: 0 }),
+    ] },
+    { type: 'text', text: 'Not this lesson: dice (independent throws, no removal) and coin strings. Cards are drawn **without replacement**: each card dealt changes what is left, and that single fact is behind every value below.' },
+    { type: 'check', scope: 'without replacement', questions: [
+      { type: 'choice', q: 'Why are card events different from dice events?', options: ['each card dealt changes what is left', 'a deck has more faces than a die', 'cards must be dealt in a fixed order'], answer: 0, traps: { 1: 'the number of faces is not the point: removal is', 2: 'order matters only for position questions' }, explain: 'Cards are drawn without replacement, so every value shifts after each card.' },
     ] },
 
     S('why'),
@@ -136,6 +139,9 @@ export default {
 
     S('speed'),
     { type: 'callout', tone: 'speed', text: `Memorise the two-card ladder: pair ${TX.pair}, same suit ${TX.suit}, both red ${TX.red}, same colour ${TX.sameCol}, different colours ${TX.diffCol}. Most two-card triples are then a lookup.` },
+    { type: 'check', scope: 'the two-card ladder', questions: [
+      { type: 'choice', q: 'Two cards. P(same suit)?', options: ['12/51', '1/4', '3/51', '25/51'], answer: 0, traps: { 1: 'the first card used up one of its suit', 2: 'that is a pair', 3: 'that is same colour' }, explain: '12 cards of the first card suit remain among 51.' },
+    ] },
     { type: 'callout', tone: 'speed', text: `Hand landmarks: at least one ace in 5 cards ≈ ${dp(ACE(5), 2)}, a pair or better in 5 ≈ ${dp(PAIR5, 2)}, no ace in 13 ≈ ${dp(NOACE13, 2)}, a flush ≈ ${dp(FLUSH, 4)}. Budget: ${LL.exam.perItemSeconds} seconds; with the ladder most items take 20.` },
     { type: 'check', scope: 'the ladder and hand landmarks', questions: [
       { make: (rng) => again(() => { const keys = rng.shuffle(Object.keys(POOL)).slice(0, 3); return rank(rng, 'Rank from most to least likely (a well-shuffled 52-card deck).', keys.map((k) => POOL[k](rng)), 'Ladder values, hand complements and k/52 for a named card.', { gap: 0.02 }); }) },
@@ -166,11 +172,11 @@ export default {
       ['ace of spades in the top 13', 'symmetry', q(13, 52).toString()],
     ] },
     { type: 'callout', tone: 'edge', text: 'Edge cases: five cards always contain two of the same suit (four suits, pigeonhole), so that statement is certain. A 13-card hand can hold all four aces, so "no ace" is neither 0 nor 1.' },
-    { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: urn draws in Beat the Odds (without replacement), collisions ("all different" as a shrinking product), and impossible-and-certain statements (pigeonhole with suits).' },
     { type: 'check', scope: 'the contrast table and edge cases', questions: [
       mc(null, 'P(5 dealt cards include at least two of the same suit)?', '1', [[`${dp(PAIR5, 3)}`, 'answered "two of the same rank", a different statement'], [TX.suit, 'used the two-card same-suit fact for five cards'], ['3/4', 'guessed; five cards into four suits must repeat one']], 'Four suits, five cards: pigeonhole.', { at: 0 }),
     ] },
 
+    { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: urn draws in Beat the Odds (without replacement), collisions ("all different" as a shrinking product), and impossible-and-certain statements (pigeonhole with suits).' },
     { type: 'variation', base: `The challenge: (b) different colours ${TX.diffCol} > (c) both red ${TX.red} > (a) same suit ${TX.suit}.`, rows: [
       { same: true, change: 'Burn 5 cards face down, unseen, before dealing the two', effect: 'No change. Unseen cards carry no information: by symmetry, the two dealt cards are a uniform pair either way.' },
       { change: 'Change (a) to "the same colour"', effect: `25 of the other 51: ${TX.sameCol}. (a) climbs to second, one 51st below different colours.` },

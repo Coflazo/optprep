@@ -127,6 +127,9 @@ export default {
       { t: 19, say: `E[min] = ${TA.m + 1} − ${dec(Emax(TA.m).toNumber(), 4)} = ${dec(Emin(TA.m).toNumber(), 4)}. Check: below the one-die mean ${(TA.m + 1) / 2}, as it must be.` },
       { t: 25, say: `It terminates, so I type ${entry(Emin(TA.m))}.` },
     ] },
+    { type: 'check', scope: 'the slip in the think-aloud', questions: [
+      { type: 'choice', q: 'In the think-aloud, the first try set E[min] = E[max]. What was wrong?', options: ['they mirror around the middle', 'E[max] itself was miscounted', 'the dice have 6 sides'], answer: 0, traps: { 1: 'E[max] = 7.15 is right', 2: 'these dice have 10 sides' }, explain: 'max + min = X + Y, so E[min] = 11 − E[max] = 3.85.' },
+    ] },
 
     sec('predict'),
     { type: 'predict', question: 'Two dice give E[max] ≈ 4.47. With three six-sided dice, is E[max] closer to 4.5, 5 or 5.5?', answer: `Closer to 5: E[max of 3] = Σ k(k³ − (k − 1)³)/216 = ${show(Emax3)}.`, explain: 'Each extra die pushes the maximum up, but by less each time: the maximum can never pass 6.' },
@@ -150,6 +153,9 @@ export default {
 
     sec('speed'),
     { type: 'callout', tone: 'speed', text: `Six-sided values to know: E[max of 2] = ${show(Emax(6))}, E[min of 2] = ${show(Emin(6))}, E[|difference|] = ${show(Eabs(6))}, one reroll = ${show(Ereroll(6))}, E[product of 2] = ${3.5 ** 2}. Each saves the whole computation.` },
+    { type: 'check', scope: 'values to know', questions: [
+      { type: 'choice', q: 'Six-sided dice: E[max of 2] is:', options: ['4.4722', '2.5278', '1.9444', '4.25'], answer: 0, traps: { 1: 'that is E[min of 2]', 2: 'that is E[|difference|]', 3: 'that is one reroll' }, explain: 'E[max of 2] = 161/36 = 4.4722.' },
+    ] },
     { type: 'callout', tone: 'speed', text: `Mirror shortcut: once you have E[max], E[min] = (m + 1) − E[max]. And a third decimal is free: ${entry(CH)} scores ${dec(exactEntry(CH.toNumber()).score, 4)}, where [4.47, 4.48] scores ${dec(4.47 / 4.48, 4)}.` },
     { type: 'check', scope: 'the mirror shortcut', questions: [{ make: mirrorQ }] },
 
@@ -172,10 +178,10 @@ export default {
       { same: true, change: 'The dice are thrown one after the other instead of together', effect: 'No change: timing does not change the 36 equally likely outcomes, so the expected total is still 7.' },
     ] },
     { type: 'callout', tone: 'edge', text: 'Edge cases: with an odd m, the reroll average (m + 1)/2 is a face; keeping it or rerolling it gives the same value, so either choice is right. With one die, max = min = the die. E[product] with a repeated die (X × X) is not ((m + 1)/2)².' },
-    { type: 'callout', tone: 'transfer', text: 'Same tools elsewhere: linearity and indicators power the coupon collector and "expected number of" questions in Beat the Odds; P(max ≤ k) = (k/m)^{n} is the same move for "highest of n dice" probabilities; the keep-or-reroll threshold is the first step of every optimal stopping game.' },
     { type: 'check', scope: 'contrast and edge cases', questions: [
       mc({ q: 'Fair 5-sided die, one reroll allowed. Is it right to keep a first roll of 3?', right: 'Keeping or rerolling 3 gives the same value', wrong: [['No: always reroll a 3, it is below average', 'the reroll is worth exactly 3, so nothing is gained'], ['Yes, and keep a 2 as well, since both are low', '2 is below the reroll value 3']], explain: 'The reroll averages (1 + 5)/2 = 3, a tie with the face you hold.' }),
     ] },
+    { type: 'callout', tone: 'transfer', text: 'Same tools elsewhere: linearity and indicators power the coupon collector and "expected number of" questions in Beat the Odds; P(max ≤ k) = (k/m)^{n} is the same move for "highest of n dice" probabilities; the keep-or-reroll threshold is the first step of every optimal stopping game.' },
     { type: 'transfer',
       near: { make: (rng) => { const m = rng.pick([5, 7, 9, 12]), q = Emax(m); return ivq(`Two fair ${m}-sided dice. Type the best interval for the expected larger number.`, q.toNumber(), `(m + 1)(4m − 1)/(6m) = ${show(q)}. Type ${entry(q)}.`); } },
       far: { type: 'number', q: 'Two traders each quote a whole-number price, equally likely from 1 to 10, independently. The desk takes the higher quote. Expected price taken? (2 decimal places)', answer: round(Emax(10).toNumber(), 2), tolerance: 0.006, explain: `The same maximum of two uniform choices: (11 × 39)/60 = ${show(Emax(10))}.` },

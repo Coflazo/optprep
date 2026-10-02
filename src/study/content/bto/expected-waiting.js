@@ -50,6 +50,9 @@ export default {
     ] },
     { type: 'text', text: 'Something is repeated **until** a target happens, and the question asks for the **expected number** of trials: the first six, a double, a 1 and a 2 both seen, two sixes in a row, three heads in a row, a throw that repeats the one before.' },
     { type: 'list', items: ['"You throw two dice until they show a double. Expected number of throws?"', '"A die is thrown until a 5 and a 6 have both appeared. Expected throws?"', '"Expected number of flips until three heads in a row?"'] },
+    { type: 'check', scope: 'the quantity asked for', questions: [
+      { type: 'choice', q: 'What does an expected-waiting question ask for?', options: ['the average number of trials until the target', 'the chance the target comes on trial k', 'the chance the target ever comes', 'which of two targets comes first'], answer: 0, traps: { 1: 'that is a first-success probability', 2: 'a repeated fair trial reaches the target eventually', 3: 'that is a race between patterns' }, explain: 'It asks for an expected number of trials, not a probability.' },
+    ] },
     { type: 'text', text: 'Not this lesson: the **probability** that the wait ends on throw k (bto/first-success), which pattern of coin flips comes first (bto/pattern-waiting), and collecting **all** of n types (bto/coupon-collector).' },
     { type: 'check', scope: 'the recognition cues above', questions: [
       { type: 'choice', q: 'Which question belongs to this lesson?', options: ['Throw a die until a 6 follows a 6: expected throws', 'Throw a die until a 6: probability it takes exactly 3 throws', 'Flip until HH or TH: which comes first', 'Throw a die until all six faces appear: expected throws'], answer: 0, traps: { 1: 'a probability of one position: bto/first-success', 2: 'a race between patterns: bto/pattern-waiting', 3: 'all n types: bto/coupon-collector' }, explain: 'An expected number of throws until a target with progress (a six, then another).' },
@@ -136,6 +139,9 @@ export default {
 
     S('speed'),
     { type: 'callout', tone: 'speed', text: `Know these cold: one six 6; any repeat of the previous face 7; a 1 and a 2 ${stageSum(6, 2)}; two sixes in a row ${twoInRow(6)}; HH ${run(2)}; HHH ${run(3)}; both sides of a fair coin 3. Each saves a full computation.` },
+    { type: 'check', scope: 'the landmark waits', questions: [
+      { make: (rng) => { const [txt, v] = rng.pick([['a fair coin until HH', run(2)], ['a fair coin until HHH', run(3)], ['a die until two sixes in a row', twoInRow(6)], ['a die until a throw repeats the one before', 7]]); return { type: 'number', q: `Expected number of throws or flips: ${txt}?`, answer: v, explain: `Landmark value: ${v}.` }; } },
+    ] },
     { type: 'callout', tone: 'speed', text: `Sanity check: a wait with resets is always longer than the "fresh attempt" guess (${twoInRow(6)} > 36, ${run(2)} > 4). A stage sum is always shorter than separate waits added (${stageSum(6, 2)} < 12). Budget: ${SECTIONS.bto.exam.perItemSeconds} seconds; two-state equations take about 40.` },
     { type: 'thinkaloud', problem: 'A fair coin is flipped until three heads in a row appear. What is the expected number of flips?', lines: [
       { t: 0, say: 'Until a run of heads: a tail can wipe out progress, so this is a reset wait. States, not a stage sum.' },
@@ -145,8 +151,9 @@ export default {
       { t: 20, say: `Check with the landmark 2^(k+1) − 2 = ${2 ** 4} − 2 = ${run(3)}. Longer than the fresh guess, as a reset wait must be.` },
       { t: 24, say: `Answer ${run(3)}, with ${SECTIONS.bto.exam.perItemSeconds - 24} seconds left.` },
     ] },
-    { type: 'check', scope: 'the landmark waits', questions: [
-      { make: (rng) => { const [txt, v] = rng.pick([['a fair coin until HH', run(2)], ['a fair coin until HHH', run(3)], ['a die until two sixes in a row', twoInRow(6)], ['a die until a throw repeats the one before', 7]]); return { type: 'number', q: `Expected number of throws or flips: ${txt}?`, answer: v, explain: `Landmark value: ${v}.` }; } },
+    { type: 'check', scope: 'the sanity rule and the think-aloud', questions: [
+      { type: 'choice', q: 'Expected throws until a 5 and a 6 have both appeared. Separate waits add to 6 + 6 = 12. The true answer is:', options: ['below 12', 'exactly 12', 'above 12'], answer: 0, stable: true, traps: { 1: 'the first stage accepts either face, so the stages overlap', 2: 'a stage sum is shorter, never longer, than separate waits added' }, explain: 'Stages: 6/2 = 3 for the first of the two faces, then 6 for the other: 9 < 12.' },
+      { type: 'choice', q: 'In the think-aloud, the first try guessed about 8 blocks of three flips. What was wrong?', options: ['it ignored resets: a tail ends the run', 'HHH has chance 1/16 per block', 'the flips here are not independent'], answer: 0, traps: { 1: 'HHH has chance 1/8', 2: 'the flips are independent; the run is what resets' }, explain: 'Fresh-attempt guesses are too short when there are resets. E_k = 2E_(k−1) + 2 gives 14.' },
     ] },
 
     S('rule'),
@@ -161,10 +168,10 @@ export default {
       ['HH (coin)', 'reset after a tail', String(run(2))],
     ] },
     { type: 'callout', tone: 'edge', text: 'Edge cases: p = 1 gives E = 1 (the first trial always succeeds). As p shrinks, E = 1/p grows without bound. A biased coin until both sides appear: 1 + p/q + q/p, which is 3 for a fair coin and larger for any bias.' },
-    { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: coupon collecting is the stage sum with n stages (bto/coupon-collector); pattern races use the same state equations (bto/pattern-waiting); random walks and gambler\'s ruin are first-step equations with a position as the state (bto/gamblers-ruin).' },
     { type: 'check', scope: 'the contrast table and edge cases', questions: [
       { type: 'choice', q: 'A coin with heads 1/3. Expected flips until both a head and a tail have appeared?', options: [one.add(Q.of(1, 2)).add(Q.of(2)).toString(), '3', Q.of(3).add(Q.of(3, 2)).toString(), '2'], answer: 0, traps: { 1: 'used the fair-coin answer', 2: 'added two waits from scratch: after the first flip only the other side is missing', 3: 'assumed two flips always suffice' }, explain: `1 + (1/3)/(2/3) + (2/3)/(1/3) = ${one.add(Q.of(1, 2)).add(Q.of(2))}.` },
     ] },
+    { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: coupon collecting is the stage sum with n stages (bto/coupon-collector); pattern races use the same state equations (bto/pattern-waiting); random walks and gambler\'s ruin are first-step equations with a position as the state (bto/gamblers-ruin).' },
     { type: 'variation', base: `A fair die is thrown until a 1 and a 2 have both appeared: E = ${stageText(6, 2)} = ${stageSum(6, 2)}.`, rows: [
       { change: 'Wait for a 5 and a 6 instead', effect: `No change: ${stageSum(6, 2)}. Only the number of special faces and sides enters the stages, not which faces they are.`, same: true },
       { change: 'Require the 1 first and the 2 after it', effect: 'Now a 2 before the 1 is wasted, so the first stage waits for the 1 alone: 6 + 6 = 12.' },

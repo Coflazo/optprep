@@ -59,9 +59,12 @@ export default {
     ], q: `Before any teaching: ${seq(CH.slice(0, 6))}, ? What comes next? Try two ways: once by adding the last two terms, once by checking what that sum misses on the shown steps.`, answer: String(CH[6]), explain: `Plain sum: ${CH[4]} + ${CH[5]} = ${CH[4] + CH[5]}. But on the shown steps the sum always misses by ${CH[2] - CH[1] - CH[0]}: ${CH[0]} + ${CH[1]} = ${CH[0] + CH[1]} against ${CH[2]}, ${CH[3]} + ${CH[4]} = ${CH[3] + CH[4]} against ${CH[5]}. So next = ${CH[4]} + ${CH[5]}${plusC(CHc)} = ${CH[6]}.` },
     { type: 'text', text: 'Each term is the sum of the previous two (or three) terms **plus the same constant c**. The plain sum rule misses on every step, but always by the same amount, and that constant miss is part of the rule rather than a sign that the idea was wrong.' },
     { type: 'list', items: [`What number comes next?  ${seq(E1.slice(0, 6))}, ?`, `What number comes next?  ${seq(E2.slice(0, 6))}, ?`, `What number comes next?  ${seq(E3.slice(0, 7))}, ?`] },
-    { type: 'text', text: `Not this lesson: an exact sum (${seq(FB.slice(0, 6))}, the miss is 0), a miss that copies earlier terms (a wider window: the three-term lesson) or a miss that counts up, as in ${seq(CNT.slice(0, 6))} (misses ${seq(miss(CNT.slice(0, 6), 2))}).` },
     { type: 'check', scope: 'the cue: a constant miss', questions: [
       { make: (rng) => { const p = draw(rng, 3), f = fibl(rng.int(1, 5), rng.int(6, 9), 6), q = [rng.int(1, 4), rng.int(5, 8)]; while (q.length < 6) q.push(q[q.length - 1] + q[q.length - 2] + q.length - 1); return pick(rng, 'Which sequence is "sum of the previous two, plus a constant"?', seq(p.xs.slice(0, 6)), [[seq(f), 'the sum is exact on every step: the constant is 0 (the Fibonacci lesson)'], [seq(q), `its misses ${seq(miss(q, 2))} count up, they are not constant`]], `Misses of ${seq(p.xs.slice(0, 6))}: ${seq(miss(p.xs.slice(0, 6), 2))}.`); } },
+    ] },
+    { type: 'text', text: `Not this lesson: an exact sum (${seq(FB.slice(0, 6))}, the miss is 0), a miss that copies earlier terms (a wider window: the three-term lesson) or a miss that counts up, as in ${seq(CNT.slice(0, 6))} (misses ${seq(miss(CNT.slice(0, 6), 2))}).` },
+    { type: 'check', scope: 'a miss that counts up', questions: [
+      { type: 'choice', q: '2, 3, 6, 11, 20, 35: the previous two plus what?', options: ['1, 2, 3, 4: a miss that grows', 'the same constant each step', 'nothing: an exact sum'], answer: 0, traps: { 1: '2 + 3 + 1 = 6 but 3 + 6 + 2 = 11: the miss grows', 2: '2 + 3 = 5, not 6' }, explain: 'Misses 1, 2, 3, 4: they count up, so it is not a constant miss.' },
     ] },
 
     S('why'),
@@ -84,6 +87,9 @@ export default {
       { make: (rng) => { const t = rng.int(0, 2); let xs; if (t === 0) xs = draw(rng, 3).xs.slice(0, 6); else if (t === 1) { const a = rng.int(1, 4); xs = trib(a, a + rng.int(1, 3), a + rng.int(5, 8), 6); } else { xs = [rng.int(1, 4), rng.int(5, 8)]; while (xs.length < 6) xs.push(xs[xs.length - 1] + xs[xs.length - 2] + xs.length - 1); } const names = ['add a constant after the sum', 'widen the window to three terms', 'the extra part counts up']; const m = miss(xs, 2); return pick(rng, `The misses of the two-term sum in ${seq(xs)} are ${seq(m)}. What do they say?`, names[t], names.map((nm, i) => [nm, i === 0 ? 'the misses are not all equal' : i === 1 ? `the misses do not copy the earlier terms ${seq(xs.slice(0, 4))}` : 'the misses do not rise by 1 each step']).filter((_, i) => i !== t), `Misses: ${seq(m)}.`); } },
     ] },
     { type: 'diagram', diagram: 'ladder', spec: { mode: 'diff', rows: ladderRows(CH.slice(0, 6), 1) }, caption: `The gap view of ${seq(CH.slice(0, 6))}: gaps ${seq(g(CH.slice(0, 6)))}. Each gap is the term two places back plus ${CHc} (${seq(CH.slice(0, 4).map((v) => v + CHc))}): the Fibonacci fingerprint, shifted by c.` },
+    { type: 'check', scope: 'the gap view', questions: [
+      { type: 'number', q: 'In 3, 4, 8, 13, 22, 36 each gap is the term two places back plus 1. What is the gap into 36?', answer: 14, explain: 'The term two places back is 13, plus 1: 14. Check: 22 + 14 = 36.' },
+    ] },
 
     S('derivation'),
     { type: 'text', text: `A three-term example first: ${seq(E3.slice(0, 7))}. The two-term misses are ${seq(miss(E3.slice(0, 7), 2))}: they change. The three-term misses are ${seq(miss(E3.slice(0, 7), 3))}: constant. So the window is three wide and c = ${miss(E3, 3)[0]}, giving ${E3[4]} + ${E3[5]} + ${E3[6]}${plusC(miss(E3, 3)[0])} = ${E3[7]}. The moves below make each of those decisions separately.` },
@@ -110,6 +116,9 @@ export default {
         ] },
     ] },
     { type: 'text', text: 'Order matters when you test. Start with the two-term window because it is the most common; if its misses change, compute the three-term misses before giving up on sums. Only when neither window gives equal misses do you move on to weights, products or digits.' },
+    { type: 'check', scope: 'the order of tests', questions: [
+      { type: 'choice', q: 'The two-term misses change from step to step. What do you test next?', options: ['the three-term misses', 'weights such as 2 × last', 'products of neighbours'], answer: 0, traps: { 1: 'weights come only after both windows fail', 2: 'products come after sums and weights' }, explain: 'Widen the window before giving up on sums.' },
+    ] },
     { type: 'explain', prompt: 'Why is a constant miss part of the rule and not a failed test?', model: 'If term − (sum of the window) is the same c on every step, then term = sum + c on every step: that is a rule that reproduces every shown term. A rule that is wrong misses by amounts that change from step to step; a constant miss is exactly what an added constant looks like.', points: ['term − sum = c on every step means term = sum + c', 'A wrong rule misses by changing amounts', 'The same c applies to the next step'] },
 
     S('worked'),
@@ -137,6 +146,9 @@ export default {
 
     S('speed'),
     { type: 'callout', tone: 'speed', text: 'Measure the miss on the **last** step, then confirm it on one earlier step. Two subtractions decide the rule; one more addition gives the answer.' },
+    { type: 'check', scope: 'the miss from the last step', questions: [
+      { make: (rng) => { const p = draw(rng, 3), xs = p.xs; return num(`${seq(xs.slice(0, 6))}, ? Read the miss on the last step, confirm it once, and answer.`, xs[6], `Miss ${neg(xs[5])} − ${par(xs[3] + xs[4])} = ${neg(p.c)}; next ${neg(xs[4])} + ${par(xs[5])}${plusC(p.c)} = ${neg(xs[6])}.`, ['Last term minus the sum of the two before it.', 'Add the last two terms and that miss.']); } },
+    ] },
     { type: 'callout', tone: 'speed', text: 'Gap shortcut for a two-term window: every gap equals the term two places back plus c. Compare one gap with its term two back and c falls out.' },
     { type: 'thinkaloud', problem: nextQ(E3.slice(0, 7)), lines: [
       { t: 0, say: `Two-term misses: ${seq(miss(E3.slice(0, 7), 2))}.` },
@@ -145,8 +157,9 @@ export default {
       { t: 14, say: `Window of three, c = ${miss(E3, 3)[0]}. Next: ${E3[4]} + ${E3[5]} + ${E3[6]} = ${E3[4] + E3[5] + E3[6]}, plus ${miss(E3, 3)[0]} is ${E3[7]}.` },
       { t: 19, say: `Trap check: dropping c gives ${E3[4] + E3[5] + E3[6]}; a four-term window gives more. Answer ${E3[7]}.` },
     ] },
-    { type: 'check', scope: 'the miss from the last step', questions: [
-      { make: (rng) => { const p = draw(rng, 3), xs = p.xs; return num(`${seq(xs.slice(0, 6))}, ? Read the miss on the last step, confirm it once, and answer.`, xs[6], `Miss ${neg(xs[5])} − ${par(xs[3] + xs[4])} = ${neg(p.c)}; next ${neg(xs[4])} + ${par(xs[5])}${plusC(p.c)} = ${neg(xs[6])}.`, ['Last term minus the sum of the two before it.', 'Add the last two terms and that miss.']); } },
+    { type: 'check', scope: 'the gap shortcut, and the think-aloud', questions: [
+      { type: 'number', q: '5, 6, 9, 13, 20, 31: the gap into 31 is 11, and the term two places back is 13. What is c?', answer: -2, explain: 'Gap = term two back + c: 11 = 13 + c, so c = −2. Check: 5 + 6 − 2 = 9.' },
+      { type: 'choice', q: 'In the think-aloud, the two-term misses changed. What was the slip?', options: ['dropping sums before a wider window', 'computing the misses at all', 'using c = 2 at the end'], answer: 0, traps: { 1: 'the misses are how the rule is found', 2: 'c = 2 is right for the three-term window' }, explain: 'Changing two-term misses can mean a wider window: the three-term misses were all 2.' },
     ] },
 
     S('rule'),
@@ -167,11 +180,11 @@ export default {
       { change: `A window of three and the constant ${-CHc}, together`, fusion: true, effect: `The wider window makes the terms grow faster, and the negative constant pulls every step down a little: ${seq(sp(3, -CHc, CH.slice(0, 3), 6))}, next ${sp(3, -CHc, CH.slice(0, 3), 7)[6]}.` },
     ] },
     { type: 'callout', tone: 'edge', text: `Edge cases: a negative c can make early terms shrink or repeat (${seq(sp(2, -3, [2, 3], 5))}); the rule still holds on every step. With a three-term window, the two-term misses copy earlier terms plus c, so always check both windows.` },
-    { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: a model that is off by the same amount every time has a missing constant, not a wrong structure. Measure the residual before you throw a model away; a constant residual is an intercept.' },
     { type: 'check', scope: 'the contrast table and edge cases', questions: [
       { make: (rng) => { let p; do p = draw(rng); while (p.c > -2); const xs = p.xs; return num(nextQ(xs.slice(0, p.n)), xs[p.n], `Window of ${kw(p.k)}, c = ${neg(p.c)}: ${xs.slice(p.n - p.k, p.n).map(par).join(' + ')} − ${-p.c} = ${neg(xs[p.n])}.`, ['A negative c: the sums overshoot.', 'Sum the window, then subtract.']); } },
     ] },
 
+    { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: a model that is off by the same amount every time has a missing constant, not a wrong structure. Measure the residual before you throw a model away; a constant residual is an intercept.' },
     { type: 'transfer',
       near: { make: (rng) => { const p = draw(rng, 3), xs = p.xs; return num(`A club's members each month equal the total of the previous two months plus the same number of walk-ins: ${seq(xs.slice(0, 6))}. How many next month?`, xs[6], `The misses of the two-month sum are all ${neg(p.c)}: ${xs[4]} + ${xs[5]}${plusC(p.c)} = ${xs[6]}.`, ['Measure the miss of the two-month sum.', 'Add the last two months and the miss.']); } },
       far: { type: 'number', q: `A program finds the n-th Fibonacci number by calling itself for n − 1 and n − 2. The total number of calls for n = 1 to 6 is ${seq(CALLS.slice(0, 6))}. How many calls for n = 7?`, answer: CALLS[6], explain: `Each call makes the two smaller calls plus itself: calls(n) = calls(n − 1) + calls(n − 2) + 1. So ${CALLS[5]} + ${CALLS[4]} + 1 = ${CALLS[6]}.`, hints: ['Measure the miss of the two-term sum.', 'The miss is the same every time.'] },
