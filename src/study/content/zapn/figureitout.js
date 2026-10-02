@@ -99,11 +99,14 @@ export default {
         { id: 'total', label: 'Count every possible figure', approach: `Counted ${R1.join(' × ')} = ${R1.reduce((a, b) => a * b, 1)} figures and feared that many guesses.`, breaksAt: 'Per-property marks let the properties be searched in parallel, so the worst case is the largest single count.' },
       ] },
     { type: 'text', text: 'Figure It Out is the deduction game of Zap-N. A hidden figure has one value for each property: shape, colour, fill, and in later rounds size, count and border. You build a guess by picking a value for every property; the feedback marks **each property** right or wrong. The round ends when every property is right.' },
-    { type: 'text', text: `${ROUNDS.length} rounds, from ${ROUNDS[0].length} properties to ${ROUNDS[ROUNDS.length - 1].length}. The score is guesses above the optimum (the expected count of a perfect strategy: ${dec(OPT1.expected, 2)} in round 1), averaged over rounds. Target: at most ${TARGET} above. Time is recorded but the guess count is what matters.` },
     { type: 'check', scope: 'what the feedback says', questions: [
       mc({ q: 'Guess: circle, blue, solid. Feedback: shape ✗, colour ✓, fill ✗. What do you know?', right: 'colour is blue; shape is not circle; fill is not solid', at: 1,
         wrong: [['only that one property is right', 'the feedback names which one: colour'], ['shape and fill are both wrong, so try circle again with another colour', 'circle is already ruled out, and blue is already known'], ['nothing until all three are right', 'every mark is certain information']],
         explain: 'Per-property feedback: a ✓ fixes that value, a ✗ removes the value you tried.' }),
+    ] },
+    { type: 'text', text: `${ROUNDS.length} rounds, from ${ROUNDS[0].length} properties to ${ROUNDS[ROUNDS.length - 1].length}. The score is guesses above the optimum (the expected count of a perfect strategy: ${dec(OPT1.expected, 2)} in round 1), averaged over rounds. Target: at most ${TARGET} above. Time is recorded but the guess count is what matters.` },
+    { type: 'check', scope: 'the score', questions: [
+      { type: 'number', q: 'Round 1 has an optimum of 3.25 guesses. You solve it in 5. How many guesses above the optimum is that?', answer: 1.75, tolerance: 1e-9, explain: '5 − 3.25 = 1.75 above the optimum.' },
     ] },
 
     sec('why'),
@@ -174,6 +177,7 @@ export default {
 
     sec('speed'),
     { type: 'callout', tone: 'speed', text: 'Before each submit, say the count left per property ("shape 2, colour done, fill 1"). A property with one value left is not a guess: set it and move on.' },
+    { type: 'check', scope: 'counting what is left', questions: [{ make: remainingQ }] },
     { type: 'callout', tone: 'speed', text: `Keyboard: up and down pick the property, left and right change its value, Enter submits. Set every ✗ property to its next untried value in one pass, top to bottom. You go above the optimum only by retrying a wrong value or leaving a ✗ property unchanged.` },
     { type: 'thinkaloud', problem: `Round 3 (values ${ROUNDS[2].join(', ')}). Guess 1 was circle, blue, solid, small: shape ✗, colour ✗, fill ✓, size ✗.`, lines: [
       { t: 0, say: 'Fill is solid: lock it. Shape, colour and size are wrong.' },
@@ -183,7 +187,10 @@ export default {
       { t: 9, say: 'Next untried in each: square, orange, medium. Fill stays solid.' },
       { t: 12, say: 'Check before Enter: no ✓ touched, no ✗ value repeated. Submit square, orange, solid, medium.' },
     ] },
-    { type: 'check', scope: 'counting what is left', questions: [{ make: remainingQ }] },
+    { type: 'check', scope: 'the think-aloud and the second tip', questions: [
+      { type: 'choice', q: 'You go above the optimum only by doing what?', options: ['retrying a wrong value', 'changing every ✗ property', 'using the arrow keys'], answer: 0, traps: { 1: 'changing every ✗ property is the right move', 2: 'the keys only make you faster' }, explain: 'Every ✗ property gets its next untried value; a repeat is the only waste.' },
+      { type: 'choice', q: 'In the think-aloud, the first idea changed only the shape. What was wrong?', options: ['the marks already say which are wrong', 'the shape was right all along', 'the size cannot change'], answer: 0, traps: { 1: 'shape was marked ✗', 2: 'size was marked ✗ too' }, explain: 'Change all three wrong properties at once: square, orange, medium.' },
+    ] },
 
     sec('rule'),
     { type: 'callout', tone: 'rule', text: 'Figure It Out: keep every ✓, move every ✗ to an untried value, every guess. The round lasts as long as the property with the most values.' },
@@ -202,6 +209,10 @@ export default {
       { change: 'Feedback says only how many properties are right', effect: 'The properties are no longer separate puzzles; you must choose guesses that split the possibilities, and rounds take longer.' },
     ] },
     { type: 'callout', tone: 'edge', text: 'Edge cases: when a property has one value left, it is certain but still has to be submitted. A lucky first guess can finish below the optimum; the optimum is an average, so luck evens out over the five rounds.' },
+    { type: 'check', scope: 'the table and the edge cases', questions: [
+      { type: 'choice', q: 'What does Figure It Out tell you after a guess, unlike Mastermind?', options: ['which properties are right', 'only how many are right', 'nothing until the end'], answer: 0, traps: { 1: 'that is Mastermind', 2: 'feedback comes after every guess' }, explain: 'Each property is marked right or wrong, so the searches run in parallel.' },
+      { type: 'choice', q: 'One value is left for a property. What do you do?', options: ['submit it: it still has to be set', 'leave the property blank', 'try another value to be safe'], answer: 0, traps: { 1: 'every guess needs a value for every property', 2: 'the last value left is certain' }, explain: 'Certain is not done: set it in the next guess.' },
+    ] },
     { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: run independent searches in parallel and the total time is the slowest one, not the sum. Elimination (keep only what is still possible) is also how CodeCompare and multiple-choice questions are won.' },
     { type: 'transfer',
       near: { make: nextGuessQ },

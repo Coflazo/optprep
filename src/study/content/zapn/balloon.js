@@ -75,12 +75,15 @@ export default {
         { id: 'same', label: 'One target for both rounds', approach: `Use the round-1 answer, ${T1} pumps, in round 2 as well.`, breaksAt: 'A round-2 pop also costs half the round-2 bank, so the best target falls as the bank grows.' },
       ] },
     { type: 'text', text: `Balloon is the risk game of Zap-N. Each pump adds money to the balloon; at any moment you cash in (bank it) or pump again. If it pops first, that balloon pays nothing. **Round 1**: ${R1.balloons} balloons at ${c1}c per pump. **Round 2**: ${R2.balloons} balloons at ${c2}c per pump, and a pop also costs half of the money banked in round 2 so far. The game is untimed.` },
-    { type: 'text', text: `The real pop distribution is not published. This trainer draws each balloon's pop point uniformly from 1 to ${N}; the method below works for any distribution you can estimate. You are scored against the expected-value-optimal policy on the same balloons, so luck cancels: target ${pct(TARGET)} of its bank.` },
     { type: 'check', scope: 'the rules of the two rounds', questions: [
       mc({ q: 'Round 1. A balloon with 6 pumps on it pops. What do you lose?', right: `the ${6 * c1}c on that balloon only`, at: 1,
         wrong: [['half of your round-1 bank', 'the bank penalty exists only in round 2'], ['everything banked so far', 'banked money is never lost in round 1'], ['nothing, the balloon was never banked', 'the pumps had earned money that the pop wipes out']],
         explain: 'In round 1 a pop wipes out only the money on the current balloon; the bank is safe.' }),
       { make: (rng) => { const bank = 20 * rng.int(5, 40); return { type: 'number', q: `Round 2. Your round-2 bank is ${bank}c and the current balloon (5 pumps) pops. What is your round-2 bank now, in cents?`, answer: bank - halfBank(bank), hints: ['The balloon money is gone, and the pop costs half the round-2 bank.', `Half of ${bank} is ${bank / 2}.`], explain: `The balloon's ${5 * c2}c is lost and the pop takes floor(${bank} × 0.5) = ${halfBank(bank)}c of the bank: ${bank} − ${halfBank(bank)} = ${bank - halfBank(bank)}c.` }; } },
+    ] },
+    { type: 'text', text: `The real pop distribution is not published. This trainer draws each balloon's pop point uniformly from 1 to ${N}; the method below works for any distribution you can estimate. You are scored against the expected-value-optimal policy on the same balloons, so luck cancels: target ${pct(TARGET)} of its bank.` },
+    { type: 'check', scope: 'how the bank is scored', questions: [
+      { type: 'choice', q: 'Your bank is scored against what?', options: ['the best policy on the same balloons', 'the highest bank anyone has made', 'a fixed bank of 1,000 cents'], answer: 0, traps: { 1: 'the same balloons for both cancel your luck', 2: 'the target is 85% of the best policy bank' }, explain: 'You are compared with the expected-value-optimal policy on the same balloons.' },
     ] },
 
     sec('why'),
@@ -147,6 +150,9 @@ export default {
         checks: [mc({ q: 'State B after one more safe pump (5 pumps on the balloon). Pump or cash?', right: 'cash', at: 1, wrong: [['pump', `the survival chance is still high, but ${B.risk5}c is now at risk against a ${c2}c gain`]], explain: `Expected change ${dec(B.d5, 2)}c: cash in.` })] },
     ] },
     { type: 'diagram', diagram: 'zapn-balloon', spec: { kind: 'ev', centsPerPump: c2, bankCents: B.bank, bankPenalty: R2.bankPenalty, rows: [3, 4, 5, 6, 7].map((t) => ({ t, safe: `${N - t}/${N}`, ev: ev(t, c2, B.bank) })), best: bestT(c2, B.bank) }, caption: `State B as plans: with ${money(B.bank)} banked, the one-balloon expected gain peaks at ${bestT(c2, B.bank)} pumps, not ${T1}.` },
+    { type: 'check', scope: 'state B', questions: [
+      { type: 'choice', q: 'State B, $4.00 banked in round 2: where does the one-balloon expected gain peak?', options: ['at 5 pumps', 'at 10 pumps', 'at 1 pump'], answer: 0, traps: { 1: '10 is round 1, where a pop costs no bank', 2: 'one pump gives up most of the value' }, explain: 'With bank at risk, the peak moves down from 10 to 5.' },
+    ] },
 
     sec('predict'),
     { type: 'predict', question: `If the pop point were uniform on 1 to 30 instead of 1 to ${N}, what round-1 plan would maximise the expected gain, and what would it be worth per balloon?`, answer: `${bestT(c1, 0, 30)} pumps, ${ev(bestT(c1, 0, 30), c1, 0, 30)}c per balloon.`, explain: `The extra pump now pays ${c1}(29 − 2t)/30, positive while t ≤ ${bestT(c1, 0, 30) - 1}. For a uniform pop point the best plan is half the range.` },
@@ -171,6 +177,9 @@ export default {
 
     sec('speed'),
     { type: 'callout', tone: 'speed', text: `Round 1 needs no thought: count the pumps under your breath and cash at ${T1}. The game is untimed, so the only speed that matters is never changing your mind mid-balloon.` },
+    { type: 'check', scope: 'round 1 needs no thought', questions: [
+      { type: 'choice', q: 'Round 1, you are at 9 pumps and feel lucky. What do you do?', options: ['pump once more and cash at 10', 'keep pumping on to 15 this time', 'cash in right now at 9 pumps'], answer: 0, traps: { 1: 'changing the plan mid-balloon is the costly mistake', 2: 'the round-1 rule is 10, not 9' }, explain: 'Count to 10 and cash. Never re-decide mid-balloon.' },
+    ] },
     { type: 'callout', tone: 'speed', text: `Round 2: before each balloon, read the round-2 bank in dollars and set the target to about 11 minus that. Once the bank passes $10, pump at most twice. The optimum expects about ${money(R1EV)} in round 1 and ${money(R2EV)} in round 2.` },
     { type: 'thinkaloud', problem: `Round 2, balloon ${POLICY_I + 1} of ${R2.balloons}. Your round-2 bank is $3.00 and a fresh balloon is up. What is your plan?`, lines: [
       { t: 0, say: 'Fresh balloon, bank $3.00.' },
@@ -184,6 +193,7 @@ export default {
       { make: (rng) => { const d = rng.int(2, 9); return mc({ q: `Round 2, early balloon, round-2 bank $${d}.00. Which target?`, right: String(11 - d),
         wrong: [[String(T1), `round-1 target: ignores the ${money(halfBank(100 * d))} a pop now costs`], [String(Math.max(0, 11 - 2 * d)), 'cut two pumps per dollar: too timid for early balloons'], ['0', 'stopped pumping with a small bank: early pops at small banks are cheap']],
         explain: `About 11 − ${d} = ${11 - d}.` }, rng); } },
+      { type: 'choice', q: 'In the think-aloud, the first plan was 10 pumps in round 2. What was wrong?', options: ['a pop now also costs half the bank', 'round 2 needs more than 10 pumps', 'the bank was $10'], answer: 0, traps: { 1: 'round-2 targets sit below 10', 2: 'the bank was $3.00' }, explain: 'Round 2 puts bank at stake: 11 − 3 = 8 pumps.' },
     ] },
 
     sec('rule'),
@@ -204,6 +214,9 @@ export default {
       { change: 'A pop also costs half the round-2 bank, and $4 is banked', effect: `The extra downside moves the break-even earlier: ${bestT(c2, 400)} pumps on the last balloon, ${policyT(400)} on balloon ${POLICY_I + 1}.` },
     ] },
     { type: 'callout', tone: 'edge', text: `Edge cases: on the **last** balloon of round 2 the one-balloon formula is exact (${optimalTarget(R2, LAST, 0)} pumps at an empty bank). Earlier balloons run about one pump higher at small banks: money banked early is still exposed to every later pop, so it is worth less than face value and risking it is cheaper.` },
+    { type: 'check', scope: 'the contrast table', questions: [
+      { make: (rng) => { const n = rng.pick([16, 24, 30, 40]); const t = bestT(c1, 0, n); return { type: 'number', q: `Round 1 rules, but the pop point is uniform on 1 to ${n}. How many pumps should you plan?`, answer: t, hints: [`One more pump pays ${c1}(${n - 1} − 2t)/${n}.`, `Positive while t < ${(n - 1) / 2}.`], explain: `Half the range: ${t} pumps.` }; } },
+    ] },
     { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: every "stop or continue" game in Beat the Odds (roll again or take the money) is solved by comparing what one more step adds with what it risks, and the round-2 table is first-step analysis run backwards over the balloons.' },
     { type: 'transfer',
       near: { make: (rng) => { const n = rng.pick([12, 16, 24, 30]), c = rng.pick([5, 10, 25]), t = rng.int(2, n - 3), go = (n - 2 * t - 1) > 0; return mc({ q: `Balloon with ${c}c per pump and a pop point uniform on 1 to ${n}. The balloon has survived ${t} pumps. Pump or cash?`, right: go ? 'pump' : 'cash', at: go ? 0 : 1, wrong: [[go ? 'cash' : 'pump', go ? `the gain (${c}c on ${n - t - 1} of ${n - t} pop points) still beats the loss (${c * t}c on 1 of them)` : `${c * t}c at risk on 1 of ${n - t} pop points outweighs ${c}c on the other ${n - t - 1}`]], explain: `Next pump: (${n - t - 1} × ${c} − ${c * t})/${n - t} = ${dec(((n - t - 1) * c - c * t) / (n - t), 2)}c.` }); } },
@@ -212,9 +225,6 @@ export default {
         wrong: [['stop once losing becomes more likely than winning on the next step', 'the chance alone ignores how much is at risk: at 10 pumps a pop is only 1 in 10 and still not worth it'], ['stop at half of the largest prize the game can possibly pay out', 'half the range is special to a uniform pop point, not the principle'], ['always continue while the prize keeps growing with every step', 'a growing prize is exactly what makes each step riskier']],
         explain: 'Both games compare the gain of one more step with its expected loss, and the loss grows with what you already hold.' }),
     },
-    { type: 'check', scope: 'the contrast table', questions: [
-      { make: (rng) => { const n = rng.pick([16, 24, 30, 40]); const t = bestT(c1, 0, n); return { type: 'number', q: `Round 1 rules, but the pop point is uniform on 1 to ${n}. How many pumps should you plan?`, answer: t, hints: [`One more pump pays ${c1}(${n - 1} − 2t)/${n}.`, `Positive while t < ${(n - 1) / 2}.`], explain: `Half the range: ${t} pumps.` }; } },
-    ] },
 
     sec('tryit'),
     { type: 'tryit', game: 'balloon' },

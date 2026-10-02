@@ -74,11 +74,13 @@ export default {
         { id: 'nearest', label: 'Park on the nearest free tower', approach: 'Put every block that had to step aside on whichever tower was free.', breaksAt: 'A block parked on a future base has to move again.' },
       ] },
     { type: 'text', text: 'Skyscraper is the planning game of Zap-N. Three towers hold lettered, coloured blocks; each tower has a height cap. Only the **top** block of a tower moves, and only onto a tower that still has room. You rebuild a target picture in as few moves as possible, over 10 levels from 3 blocks (2 moves) to 6 blocks (9 moves).' },
-    { type: 'text', text: `Scoring is moves above the minimum, averaged over the levels. Target: at most ${TARGET}. Your planning pause before the first move is recorded separately, so thinking is cheap and wasted moves are not. A reset puts the blocks back but the moves still count.` },
-    { type: 'check', scope: 'the rules and the score', questions: [
+    { type: 'check', scope: 'the rules', questions: [
       mc({ q: 'Tower 1 holds A, B, C (C on top), tower 2 holds D, tower 3 is empty. Which blocks can move right now?', right: 'C and D', at: 2,
         wrong: [['only C', 'every tower has its own top block: D is the top of tower 2'], ['A, B, C and D', 'only the top block of a tower moves'], ['C only onto tower 3', 'C can also go onto D: tower 2 has room']],
         explain: 'Each non-empty tower offers exactly one movable block, its top: C on tower 1 and D on tower 2.' }),
+    ] },
+    { type: 'text', text: `Scoring is moves above the minimum, averaged over the levels. Target: at most ${TARGET}. Your planning pause before the first move is recorded separately, so thinking is cheap and wasted moves are not. A reset puts the blocks back but the moves still count.` },
+    { type: 'check', scope: 'the score', questions: [
       mc({ q: 'You plan for 20 seconds, then solve a 6-move level in 6 moves. Another candidate starts at once and solves it in 8. Who scores better on this level?', right: 'you: 0 extra moves against 2', at: 0,
         wrong: [['the other candidate: faster start', 'planning time is recorded separately; the score is moves above the minimum'], ['equal: both solved it', 'solving is not enough; every extra move counts']],
         explain: 'The score is moves above the minimum. A long plan that saves moves is a good trade.' }),
@@ -146,6 +148,9 @@ export default {
         checks: [{ type: 'number', q: 'How many moves above the lower bound did this level need?', answer: W.opt - W.lb, explain: `${W.opt} − ${W.lb} = ${W.opt - W.lb}: A's park.` }] },
     ] },
     { type: 'diagram', diagram: 'zapn-tower', spec: { caps: W.caps, start: W.start, target: W.target, path: W.path, frames: true, opt: W.opt }, caption: 'The five frames. Only A moves twice; everything else goes straight home.' },
+    { type: 'check', scope: 'the five frames', questions: [
+      { type: 'choice', q: 'In the five frames, which block moves twice?', options: ['A, parked once', 'every block', 'none of them'], answer: 0, traps: { 1: 'only one park is needed: 4 blocks in 5 moves', 2: '5 moves for 4 blocks means one moves twice' }, explain: 'Lower bound 4 plus one park: A steps aside once, then goes home.' },
+    ] },
 
     sec('predict'),
     { type: 'predict', question: 'Caps 3, 3, 3. Tower 1 holds A, B, C (A at the bottom). Move the whole tower to tower 2 in the same order. Minimum moves?', answer: `${PR.opt}: the lower bound is ${PR.lb}, and B and C must both be parked.`, explain: 'A must reach the bottom of tower 2 first, so C and B have to leave tower 1 and must not land on tower 2: both park on tower 3 (C, then B on C), then A, B, C go home.' },
@@ -168,6 +173,9 @@ export default {
 
     sec('speed'),
     { type: 'callout', tone: 'speed', text: 'The 3-second count: per tower, count matching blocks from the bottom; lower bound = blocks − matches. Then ask of each block that must leave early: "is my home ready?" Each "no" is one park.' },
+    { type: 'check', scope: 'the lower-bound count', questions: [
+      { make: (rng) => { const L = generateLevel(rng, LEVELS[rng.int(5, 8)]); return { type: 'number', q: `${levelText(L)} Lower bound on the moves?`, answer: bound(L.start, L.target), hints: ['Count matching blocks from the bottom of each tower.', `Subtract them from ${L.blocks}.`], explain: `${L.blocks} − ${L.blocks - bound(L.start, L.target)} = ${bound(L.start, L.target)}. (The minimum here is ${L.opt}.)` }; } },
+    ] },
     { type: 'callout', tone: 'speed', text: 'Say the whole move list before touching anything ("D to 3, A to 3, B to 2, C to 2, A to 1"), check its length against lower bound + parks, then execute without stopping. The pause is free; a mid-level rethink usually costs a move.' },
     { type: 'thinkaloud', problem: `Caps ${TA.caps.join(', ')}. Start: ${desc(TA.start)}. Target: ${desc(TA.target)}. Plan it before the first move.`, lines: [
       { t: 0, say: `Target bottoms first: tower 1 needs B, tower 2 needs D, tower 3 needs A. No start tower shares a bottom block, so the lower bound is ${TA.lb}.` },
@@ -177,8 +185,9 @@ export default {
       { t: 14, say: `No: C belongs on D in tower 2, so B there would block it. Tower 3 is finished with A: ${TAm(2)}.` },
       { t: 18, say: `Then ${TAm(3)} and ${TAm(4)}. That is ${TA.opt} moves: lower bound ${TA.lb} plus one park. The count matches, so I move without stopping.` },
     ] },
-    { type: 'check', scope: 'the lower-bound count', questions: [
-      { make: (rng) => { const L = generateLevel(rng, LEVELS[rng.int(5, 8)]); return { type: 'number', q: `${levelText(L)} Lower bound on the moves?`, answer: bound(L.start, L.target), hints: ['Count matching blocks from the bottom of each tower.', `Subtract them from ${L.blocks}.`], explain: `${L.blocks} − ${L.blocks - bound(L.start, L.target)} = ${bound(L.start, L.target)}. (The minimum here is ${L.opt}.)` }; } },
+    { type: 'check', scope: 'the think-aloud and the second tip', questions: [
+      { type: 'choice', q: 'When do you say the whole move list?', options: ['before touching any block', 'after the first two moves', 'only if you get stuck'], answer: 0, traps: { 1: 'a mid-level rethink usually costs a move', 2: 'the pause is free; planning late is not' }, explain: 'Plan the whole list, check its length against lower bound + parks, then move without stopping.' },
+      { type: 'choice', q: 'In the think-aloud, the first idea parked B on tower 2. What was wrong?', options: ['C belongs on D in tower 2', 'tower 2 had no room for B', 'B could not move yet'], answer: 0, traps: { 1: 'tower 2 had room', 2: 'B was the top of tower 1 by then' }, explain: 'B on tower 2 would block C. Tower 3 was finished with A, so B parks there.' },
     ] },
 
     sec('rule'),
@@ -198,6 +207,9 @@ export default {
       { same: true, change: 'Blocks C and D instead of A and B', effect: `Still ${V.relabel}: only positions matter, never which letters or colours the blocks carry.` },
     ] },
     { type: 'callout', tone: 'edge', text: 'Edge cases: a cap of 1 or 2 limits where you can park, which can force an extra park. A level can have zero parks (minimum = lower bound): then every move goes straight home, bottom-up. Every generated level is reachable and has a search-verified minimum.' },
+    { type: 'check', scope: 'the contrast table', questions: [
+      { make: (rng) => { const n = rng.int(3, 6); return { type: 'number', q: `Tower of Hanoi with ${n} disks: minimum number of moves?`, answer: 2 ** n - 1, explain: `2^{${n}} − 1 = ${2 ** n - 1}.` }; } },
+    ] },
     { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: a lower bound plus the unavoidable extras is how you estimate any minimum quickly, and breadth-first search is the shortest path in any puzzle where every move costs the same. NumberBox uses the same planning discipline: work out the full route before the first keystroke.' },
     { type: 'transfer',
       near: { make: (rng) => { const L = generateLevel(rng, LEVELS[rng.int(1, 4)]); return { type: 'number', q: `${levelText(L)} Minimum number of moves?`, answer: L.opt, hints: [`Lower bound first: ${L.blocks} blocks minus the shared bottom blocks.`, 'Add one for every block that must step aside before its home is ready.'], explain: `Lower bound ${bound(L.start, L.target)}, plus ${L.opt - bound(L.start, L.target)} park${L.opt - bound(L.start, L.target) === 1 ? '' : 's'}: ${L.opt}.` }; } },
@@ -206,9 +218,6 @@ export default {
         wrong: [['one move per item that is out of place, and nothing more', 'forgets the items that must wait somewhere else first'], ['the 2^{n} − 1 count from the Tower of Hanoi formula', 'that count comes from the Hanoi size rule, which neither puzzle has'], ['try moves until the target appears, then count them', 'no plan: extra moves are exactly what gets scored']],
         explain: 'Lower bound (every item that must move) plus the forced parks gives the minimum in both.' }),
     },
-    { type: 'check', scope: 'the contrast table', questions: [
-      { make: (rng) => { const n = rng.int(3, 6); return { type: 'number', q: `Tower of Hanoi with ${n} disks: minimum number of moves?`, answer: 2 ** n - 1, explain: `2^{${n}} − 1 = ${2 ** n - 1}.` }; } },
-    ] },
 
     sec('tryit'),
     { type: 'tryit', game: 'skyscraper' },
