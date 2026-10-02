@@ -1,6 +1,6 @@
 {
   "name": "optprep",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Offline practice app for the Optiver online assessment: Beat the Odds, NumberLogic, Likelihood List, Intervals, Orderbooks and Zap-N. Not affiliated with Optiver.",
   "keywords": [
     "optiver",
