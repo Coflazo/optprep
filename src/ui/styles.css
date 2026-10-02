@@ -421,6 +421,13 @@ details > summary { cursor: pointer; }
 .stage { position: relative; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); min-height: 360px; padding: 20px; user-select: none; }
 .stage .hud { display: flex; justify-content: space-between; font-size: 13px; color: var(--text-2); margin-bottom: 12px; font-family: var(--mono); }
 
+/* Market making: bid and ask side by side with form-ink labels, sizes in one row */
+.mk-prices { display: flex; flex-wrap: wrap; gap: 12px 16px; margin: 4px 0 16px; }
+.mk-prices label { display: grid; gap: 4px; font-size: 13px; font-weight: 600; color: var(--brand-text); }
+.mk-prices input { width: 7.5em; min-height: 44px; color: var(--text); font-weight: 400; } /* the candidate's marks are navy */
+.mk-quote .choice-columns { grid-template-columns: repeat(3, minmax(0, 1fr)); max-width: 360px; }
+.mk .btn.primary { min-height: 44px; }
+
 /* Rank */
 .rank-list { list-style: none; padding: 0; margin: 8px 0 0; display: grid; gap: 8px; }
 .rank-row { display: grid; grid-template-columns: 28px minmax(0, 1fr) auto auto; gap: 12px; align-items: center; padding: 10px 12px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface); cursor: grab; transition: border-color var(--dur-1) ease, transform var(--dur-press) var(--ease-out); }

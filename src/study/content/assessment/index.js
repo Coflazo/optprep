@@ -182,6 +182,42 @@ const howToStudy = {
   ],
 };
 
+// Not part of the online assessment: practice for the market-making games in later interview
+// rounds. Numbers match src/mk/engine.js (cap 4 on three dice; the other trader sees one die).
+const marketMaking = {
+  id: 'assessment/market-making', book: 'assessment', kind: 'strategy', title: 'How market-making rounds work',
+  summary: 'After the online assessment: quote around fair value, as wide as allowed, and treat every trade as news.',
+  blocks: [
+    sec('market', 'A market is two prices'),
+    { type: 'text', text: 'After the online assessment, Optiver\'s later interview rounds can include market-making games, and the Market making page in this app practises them. You quote two prices on a number nobody has seen yet: a **bid**, where you buy, and an **ask**, where you sell. The other trader can buy from you at your ask, sell to you at your bid, or pass.' },
+    { type: 'check', scope: 'bid and ask', questions: [
+      { type: 'choice', q: 'You quote 9.5 / 11.5 on the sum of three dice and the other trader buys 5 from you. The dice add to 13. What is your P&L?', options: ['−7.5', '+7.5', '−17.5', '−1.5'], answer: 0, traps: { 1: 'sign flipped: you sold, and the number came in above your price', 2: 'used your bid: it bought, so you sold at your ask of 11.5', 3: 'forgot the size: 5 lots, not 1' }, explain: 'It bought at your ask, so you sold 5 at 11.5: −5 × (13 − 11.5) = −7.5.' },
+    ] },
+    { type: 'text', text: 'Put the middle of your market on the **fair value**: the exact expected value of the number. For a sum, add the averages: one die averages 3.5, so three dice average 10.5.' },
+    { type: 'check', scope: 'fair value', questions: [
+      { type: 'number', q: 'Fair value of the sum of two cards dealt from ten cards numbered 1 to 10?', answer: 11, tolerance: 1e-9, explain: 'Each card averages 5.5, and dealing without replacement does not change the average of the sum: 2 × 5.5 = 11.' },
+    ] },
+    sec('picked', 'Who trades with you'),
+    { type: 'text', text: 'The other trader sees part of the answer, say one of the three dice, and works out its own expected value. It buys when that value is above your ask and sells when it is below your bid. So many of your trades come from someone who knows more than you. This is **adverse selection**.' },
+    { type: 'check', scope: 'the other trader\'s view', questions: [
+      { type: 'number', q: 'The other trader sees a 6 on one of the three dice. What does it expect the sum to be?', answer: 13, tolerance: 1e-9, explain: '6 plus two unseen dice at 3.5 each: 6 + 7 = 13.' },
+    ] },
+    { type: 'diagram', diagram: 'numberline', spec: { min: 7, max: 14, step: 1, barriers: [8.5, 12.5], marks: [{ x: 8, label: 'sees a 1' }, { x: 10.5, label: 'fair' }, { x: 13, label: 'sees a 6' }] }, caption: 'A 4-wide market, 8.5 / 12.5, on three dice. After seeing one die, the other trader expects anywhere from 8 to 13. Only a 1 or a 6 puts its estimate outside your prices.' },
+    { type: 'check', scope: 'adverse selection', questions: [
+      { type: 'choice', q: 'You quote 8.5 / 12.5 on three dice. The other trader sees a 6. What does it do, and is that good for you?', options: ['Buys at 12.5; bad for you', 'Sells at 8.5; good for you', 'Passes; 13 is inside', 'Buys at 12.5; good for you'], answer: 0, traps: { 1: 'a 6 pushes its estimate up, so it wants to buy, not sell', 2: '13 is above your ask of 12.5, so it is outside your market', 3: 'you sold above 10.5, but it knows the sum is likely near 13: you lose 0.5 a lot on average' }, explain: 'It expects 13, above your ask, so it buys. On average you lose 13 − 12.5 = 0.5 a lot. A trade against you is news: move your estimate toward it.' },
+    ] },
+    sec('width', 'Width and size'),
+    { type: 'text', text: 'A wider market gets picked off less, so games cap the width: in this app, at most 4 on three dice. Centre on fair value and use the full width. The other trader also trades for reasons of its own, and those trades pay you the spread. Once the market is centred and full width, trade the big size.' },
+    { type: 'check', scope: 'width and size', questions: [
+      { type: 'choice', q: 'Three dice, maximum width 4. Which market do you quote?', options: ['8.5 / 12.5', '9.5 / 11.5', '10 / 14', '6.5 / 14.5'], answer: 0, traps: { 1: 'only 2 wide: picked off whenever the other trader sees a high or low die', 2: 'centred on 12, not on the fair value of 10.5', 3: '8 wide, twice the cap' }, explain: 'Centred on 10.5 and exactly 4 wide.' },
+    ] },
+    sec('rule', 'Rule'),
+    { type: 'callout', tone: 'rule', text: 'Fair value first, mid on it, the full allowed width, then size up. A trade against you is news: move your fair value toward it.' },
+    sec('predict', 'Predict'),
+    { type: 'predict', question: 'Higher of two dice, maximum width 2. Fair value is 161/36, about 4.47. What market do you quote?', answer: 'About 3.5 / 5.5: centred near 4.47 and 2 wide.', explain: 'Then play a session on the Market making page and compare your markets with the coach\'s notes.' },
+  ],
+};
+
 export default {
   id: 'assessment',
   title: 'How the assessment works',
@@ -190,6 +226,7 @@ export default {
     { title: 'The tasks', lessons: [sixTasks, pacing] },
     { title: 'Scoring strategy', lessons: [minusOne, closest, calibration] },
     { title: 'Training', lessons: [howToStudy, training] },
+    { title: 'After the online assessment', lessons: [marketMaking] },
   ],
   tree: { diagram: 'flow', spec: { root: 'q', nodes: [
     { id: 'q', text: 'What do you need?', kind: 'q' },
