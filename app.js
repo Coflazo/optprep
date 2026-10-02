@@ -10,6 +10,7 @@ import { settingsPage } from './src/ui/pages/settings.js';
 import { learnPage } from './src/ui/pages/learn.js';
 import { zapnHub, zapnGame } from './src/ui/pages/zapn.js';
 import { mockPage } from './src/ui/pages/mock.js';
+import { mkPage } from './src/ui/pages/mk.js';
 import { dataPage } from './src/ui/pages/data.js';
 import { setsPage, setRunPage } from './src/ui/pages/sets.js';
 import { runFeedbackSession, runExam } from './src/ui/runner.js';
@@ -60,6 +61,7 @@ const ROUTES = [
   [/^#\/study\/drill\/(\w+)$/, (m) => drillPage(view, { id: m[1] })],
   [/^#\/study\/mixed\/(\w+)\/(\d+)$/, (m) => mixedPage(view, { store, id: m[1], chapter: +m[2] })],
   [/^#\/mock$/, () => mockPage(view, { store })],
+  [/^#\/mk$/, () => mkPage(view, { store })],
   [/^#\/data$/, () => dataPage(view, { store })],
 ];
 
@@ -90,6 +92,7 @@ function renderNav(hash) {
     link('#/study', 'Study guide', due ? h('span', { class: 'nav-count' }, String(due), h('span', { class: 'visually-hidden' }, ' lessons due')) : null, 'study', (hash === '#/study' || hash.startsWith('#/study/')) && !studyOwn),
     link('#/progress', 'Progress', open ? h('span', { class: 'nav-count' }, String(open), h('span', { class: 'visually-hidden' }, ' open mistakes')) : null, 'progress', hash.startsWith('#/progress') || studyOwn),
     link('#/mock', 'Full mock', null, 'timer'),
+    link('#/mk', 'Market making', null, 'bolt'),
     link('#/settings', 'Settings', null, 'settings', hash === '#/settings' || hash === '#/data'));
   mount(tabbar,
     link('#/', 'Today', null, 'path', hash === '#/' || hash === '' || hash.startsWith('#/s/') || hash.startsWith('#/zapn') || hash.startsWith('#/run/')),
