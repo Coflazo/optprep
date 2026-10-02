@@ -12,7 +12,6 @@ import { learnPage } from './src/ui/pages/learn.js';
 import { zapnHub, zapnGame } from './src/ui/pages/zapn.js';
 import { mockPage } from './src/ui/pages/mock.js';
 import { mkPage } from './src/ui/pages/mk.js';
-import { dataPage } from './src/ui/pages/data.js';
 import { setsPage, setRunPage } from './src/ui/pages/sets.js';
 import { runFeedbackSession, runExam } from './src/ui/runner.js';
 import { brandLockup, wordmark } from './src/ui/logo.js';
@@ -64,7 +63,8 @@ const ROUTES = [
   [/^#\/study\/mixed\/(\w+)\/(\d+)$/, (m) => mixedPage(view, { store, id: m[1], chapter: +m[2] })],
   [/^#\/mock$/, () => mockPage(view, { store })],
   [/^#\/mk$/, () => mkPage(view, { store })],
-  [/^#\/data$/, () => dataPage(view, { store })],
+  // Backup moved into Settings; old #/data bookmarks land there.
+  [/^#\/data$/, () => location.replace('#/settings')],
 ];
 
 const decode = (x) => { try { return x ? decodeURIComponent(x) : null; } catch { return null; } };
@@ -95,13 +95,13 @@ function renderNav(hash) {
     link('#/progress', 'Progress', open ? h('span', { class: 'nav-count' }, String(open), h('span', { class: 'visually-hidden' }, ' open mistakes')) : null, 'progress', hash.startsWith('#/progress') || studyOwn),
     link('#/mock', 'Full mock', null, 'timer'),
     link('#/mk', 'Market making', null, 'bolt'),
-    link('#/settings', 'Settings', null, 'settings', hash === '#/settings' || hash === '#/data'));
+    link('#/settings', 'Settings', null, 'settings', hash === '#/settings'));
   mount(tabbar,
     link('#/', 'Today', null, 'path', hash === '#/' || hash === '' || hash.startsWith('#/s/') || hash.startsWith('#/zapn') || hash.startsWith('#/run/')),
     link('#/study', 'Study', null, 'study', hash.startsWith('#/study') && !studyOwn),
     link('#/progress', 'Progress', null, 'progress', hash.startsWith('#/progress') || studyOwn),
     link('#/mock', 'Mock', null, 'timer'),
-    link('#/settings', 'Settings', null, 'settings', hash === '#/settings' || hash === '#/data'));
+    link('#/settings', 'Settings', null, 'settings', hash === '#/settings'));
   mount(document.getElementById('topbar'),
     h('a', { href: '#/', class: 'brand-link', 'aria-label': 'OptPrep, today' }, wordmark({ height: 22, label: '' })),
     h('div', { class: 'nav-today' }, todayBits()));

@@ -31,7 +31,7 @@ const unb64 = (s) => Uint8Array.from(atob(s), (c) => c.charCodeAt(0));
 
 async function keyFrom(passphrase, salt) {
   const base = await crypto.subtle.importKey('raw', enc.encode(passphrase), 'PBKDF2', false, ['deriveKey']);
-  return crypto.subtle.deriveKey({ name: 'PBKDF2', salt, iterations: 310000, hash: 'SHA-256' }, base, { name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt']);
+  return crypto.subtle.deriveKey({ name: 'PBKDF2', salt, iterations: 600000, hash: 'SHA-256' }, base, { name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt']);
 }
 
 // The file written to the gist. With a passphrase the save is AES-GCM encrypted.

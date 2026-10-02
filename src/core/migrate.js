@@ -43,9 +43,25 @@ function fromV1(raw, now) {
   return st;
 }
 
+// A save from a file or a gist is untrusted. Every known field must have the container type
+// the app reads, and lists must hold records, or the whole save is refused: a half-valid
+// save would be stored and then break every page at boot.
+const kind = (v) => (Array.isArray(v) ? 'array' : v === null ? 'null' : typeof v);
+const records = (list) => list.every((x) => kind(x) === 'object');
+function shapeOk(raw) {
+  const blank = blankV2();
+  for (const k of Object.keys(blank)) {
+    if (!(k in raw)) continue;
+    if (kind(raw[k]) !== kind(blank[k])) return false;
+    if (Array.isArray(raw[k]) && !records(raw[k])) return false;
+  }
+  const days = raw.activity?.days;
+  return days === undefined || kind(days) === 'object';
+}
+
 // → { state, from } or null when the input is not a known save.
 export function migrate(raw, now = Date.now()) {
-  if (!raw || typeof raw !== 'object' || !Array.isArray(raw.runs)) return null;
+  if (kind(raw) !== 'object' || !Array.isArray(raw.runs) || !shapeOk(raw)) return null;
   if (raw.version === VERSION) return { state: { ...blankV2(), ...raw }, from: VERSION };
   if (raw.version === 1) return { state: fromV1(raw, now), from: 1 };
   return null;

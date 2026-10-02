@@ -34,6 +34,14 @@ test('migrate is idempotent and rejects unknown saves', () => {
   assert.deepEqual(migrate(structuredClone(once), NOW + 5).state, once);
   assert.equal(migrate({ version: 3, runs: [] }), null);
   assert.equal(migrate('garbage'), null);
+  // Untrusted files: wrong container types or non-record list entries are refused whole.
+  assert.equal(migrate({ version: 2, runs: [null] }), null);
+  assert.equal(migrate({ version: 2, runs: [], stats: 'x' }), null);
+  assert.equal(migrate({ version: 2, runs: [], mistakes: {} }), null);
+  assert.equal(migrate({ version: 2, runs: [], activity: { days: [] } }), null);
+  assert.equal(migrate({ version: 1, runs: [], settings: null }), null);
+  assert.ok(migrate(JSON.parse('{"version":2,"runs":[],"__proto__":{"polluted":1}}')));
+  assert.equal({}.polluted, undefined);
   assert.equal(migrate(null), null);
 });
 

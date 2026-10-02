@@ -287,6 +287,9 @@ html { accent-color: var(--brand-text); scrollbar-color: var(--surface-3) transp
 .format-line { margin: 4px 0 8px; padding-bottom: 16px; border-bottom: 1px solid var(--border); }
 .format-line p { margin: 0 0 10px; }
 .quiet-links { display: flex; flex-wrap: wrap; gap: 4px 16px; margin-top: 12px !important; }
+/* Same look, bigger hit area: 24 px (WCAG 2.2 target size), 44 px under a finger. */
+.quiet-links a, .tasks-head a { display: inline-flex; align-items: center; min-height: 24px; }
+@media (pointer: coarse) { .quiet-links a, .tasks-head a { min-height: 44px; } .quiet-links { row-gap: 0; } }
 .grid-title { color: var(--text); text-decoration: none; font-weight: 500; }
 @media (hover: hover) and (pointer: fine) { a.grid-title:hover { text-decoration: underline; text-underline-offset: 3px; } }
 
