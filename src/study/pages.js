@@ -43,19 +43,15 @@ export function studyHome(root, { store }) {
     weak.length ? h('div', { class: 'panel' }, h('h2', { style: { marginTop: 0 } }, `Units to revisit (${weak.length})`),
       h('p', { class: 'small-note muted' }, 'Units whose last first attempt was wrong. Each stays here until you get it right.'),
       capped(h('ul', { class: 'plain' }, weak.map((u) => h('li', {}, h('a', { href: `#/study/lesson/${u.id}` }, LESSON_BY_ID[u.id].title), h('span', { class: 'muted' }, `: ${u.unit}`)))))) : null,
-    h('h2', {}, 'Books'),
-    h('p', { class: 'muted' }, 'Every question type, taught from first principles: a picture first, the derivation one move at a time with a check after each move, live worked examples, the traps, speed tricks, and a rule to keep. A lesson is mastered after three fresh questions in a row without hints, and it comes back for review.'),
-    h('div', { class: 'panel' }, h('table', {},
-      h('thead', {}, h('tr', {}, h('th', {}, 'Book'), h('th', { style: { textAlign: 'right' } }, 'Lessons'), h('th', { style: { textAlign: 'right' } }, 'Mastered'), h('th', {}))),
-      h('tbody', {}, BOOKS.map((b) => {
-        const ls = b.pending ? [] : lessonsOf(b);
-        const m = ls.filter((l) => ['mastered', 'review'].includes(statusOf(store, l.id))).length;
-        return h('tr', {},
-          h('td', {}, h('a', { href: `#/study/book/${b.id}` }, b.title), h('div', { class: 'muted small-note' }, b.blurb)),
-          h('td', { class: 'num', style: { textAlign: 'right' } }, b.pending ? '—' : String(ls.length)),
-          h('td', { class: 'num', style: { textAlign: 'right' } }, b.pending ? '—' : `${m}/${ls.length}`),
-          h('td', { style: { textAlign: 'right' } }, b.pending ? h('span', { class: 'badge warn' }, 'Being written') : h('a', { class: 'btn small', href: `#/study/book/${b.id}` }, 'Open')));
-      })))));
+    h('div', { class: 'tasks-head' }, h('h2', {}, 'Books')),
+    h('p', { class: 'muted small-note' }, 'Short steps with a question after each one. A lesson counts as mastered after three fresh questions right without hints.'),
+    h('ul', { class: 'task-list' }, BOOKS.map((b) => {
+      const ls = b.pending ? [] : lessonsOf(b);
+      const m = ls.filter((l) => ['mastered', 'review'].includes(statusOf(store, l.id))).length;
+      return h('li', {}, h('a', { class: 'task-row', href: `#/study/book/${b.id}` },
+        h('span', { class: 'task-name' }, b.title, h('span', { class: 'task-blurb' }, b.blurb)),
+        b.pending ? h('span', { class: 'stamp stamp-new' }, 'Being written') : h('span', { class: 'task-progress num' }, `${m} of ${ls.length}`)));
+    })));
 }
 
 // Next up: exactly one primary button. Due review > open mistake > unfinished lesson > next unread.
