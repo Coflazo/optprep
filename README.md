@@ -1,4 +1,6 @@
-<!-- DEMO-GIF: replaced by the chosen launch clip -->
+<p align="center">
+  <img src="docs/media/demo.gif" alt="OptPrep in 22 seconds: the 80-in-8 clock, an orderbook arbitrage, the skill roadmap filling up, a solution with its state diagram, two Zap-N games, the price comparison and the phone app." width="880">
+</p>
 
 <p align="center">
   <picture>
