@@ -19,7 +19,7 @@ import { SECTIONS } from '../../config/sections.js';
 import { SECTION_MODULES } from '../sections/index.js';
 import { readiness, runMeetsTarget } from '../core/readiness.js';
 import { lessonForFamily } from '../study/catalog.js';
-import { divNotation } from '../core/format.js';
+import { divNotation, prose } from '../core/format.js';
 import { setRail, scanSheet, bubbles, tickTo } from './sheet.js';
 import { mistakeRow } from '../core/mistakes.js';
 import { timingOf } from '../../config/presets.js';
@@ -37,7 +37,7 @@ export function itemBody(item, { onChange, preview = true, notation, keys = true
   if (item.prompt.visual) {
     try { visual = renderVisual(item.prompt.visual); } catch (e) { visual = h('p', { class: 'muted' }, `Visual unavailable: ${e.message}`); }
   }
-  const el = h('div', {}, h('p', { class: 'prompt', id: pid, tabindex: '-1' }, label ? h('span', { class: 'visually-hidden' }, `${label}. `) : null, divNotation(item.prompt.text, notation)), visual, view.el);
+  const el = h('div', {}, h('p', { class: 'prompt', id: pid, tabindex: '-1' }, label ? h('span', { class: 'visually-hidden' }, `${label}. `) : null, divNotation(prose(item.prompt.text), notation)), visual, view.el);
   return { el, view };
 }
 const notationOf = (store) => store?.settings?.().divNotation;

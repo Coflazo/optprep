@@ -1,5 +1,5 @@
 import { h } from './dom.js';
-import { fmtNum, superscripts } from '../core/format.js';
+import { fmtNum, prose } from '../core/format.js';
 import { positionOutcome } from '../core/check.js';
 import { renderDiagram } from '../study/diagrams/index.js';
 import { lessonForFamily } from '../study/catalog.js';
@@ -20,7 +20,7 @@ export function feedbackBanner(item, result, response) {
     const belief = typeof m === 'object' && m ? m.text : m;
     const at = picked?.step ?? (typeof m === 'object' && m ? m.step : null);
     const broken = Number.isInteger(at) ? item.solution?.steps?.[at - 1] : null;
-    if (belief) parts.push(h('div', {}, 'Your answer ', h('span', { class: 'num' }, picked.label), ' is what you get if you: ', h('em', {}, belief)));
+    if (belief) parts.push(h('div', {}, 'Your answer ', h('span', { class: 'num' }, picked.label), ' is what you get if you: ', h('em', {}, prose(belief))));
     if (broken) parts.push(h('div', { class: 'small-note' }, `That belief breaks step ${at}: ${broken.say}`));
     parts.push(h('div', { class: 'muted' }, 'Correct answer: ', h('span', { class: 'num' }, item.options[item.answerIndex].label)));
   } else if (item.kind === 'rank') {
@@ -53,7 +53,7 @@ export function solutionPanel(item, { stepwise = true } = {}) {
   const list = h('ol', { class: 'steps' });
   const more = h('button', { class: 'btn small', type: 'button', onclick: () => { shown = Math.min(steps.length, shown + 1); render(); } }, 'Next step');
   const all = h('button', { class: 'btn small', type: 'button', onclick: () => { shown = steps.length; render(); } }, 'Show all');
-  const sup = superscripts;
+  const sup = prose;
   const ask = sol.ask ? h('p', { class: 'solution-ask' }, sup(sol.ask)) : null;
   const picture = sol.picture ? pictureFigure(sol.picture) : null;
   const block = (cls, title, body) => h('div', { class: cls, hidden: true }, h('h4', {}, title), h('p', {}, sup(body)));

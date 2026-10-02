@@ -1,5 +1,5 @@
 import { h } from '../dom.js';
-import { superscripts } from '../../core/format.js';
+import { prose } from '../../core/format.js';
 
 // Order three statements, most likely first. Drag, or use the up/down buttons,
 // or keyboard: 1-3 selects a row, ArrowUp/ArrowDown moves it.
@@ -33,7 +33,7 @@ export function rankView(item, { onChange } = {}) {
         onclick: () => { selected = si; render(); },
       },
       h('span', { class: 'rank-pos num' }, String(pos + 1)),
-      h('span', { class: 'rank-text' }, item.statements[si].text),
+      h('span', { class: 'rank-text' }, prose(item.statements[si].text)),
       h('span', { class: 'rank-p num', hidden: true }),
       h('span', { class: 'rank-move' },
         h('button', { class: 'btn small', type: 'button', 'aria-label': 'Move up', disabled: locked || pos === 0, onclick: (e) => { e.stopPropagation(); move(pos, -1); } }, 'Up'),
@@ -64,7 +64,7 @@ export function rankView(item, { onChange } = {}) {
         const st = item.statements[si];
         p.textContent = `p = ${st.exact || st.p.toFixed(3)}`;
         // How this statement's probability is found: the link to check when the order was wrong.
-        if (st.how && !row.querySelector('.rank-how')) row.querySelector('.rank-text').append(h('div', { class: 'rank-how muted small-note' }, superscripts(st.how)));
+        if (st.how && !row.querySelector('.rank-how')) row.querySelector('.rank-text').append(h('div', { class: 'rank-how muted small-note' }, prose(st.how)));
         row.classList.add(item.answerOrder[pos] === si ? 'is-correct' : 'is-wrong');
       });
     },
