@@ -53,9 +53,12 @@ export default {
     ] },
     { type: 'text', text: 'Several independent tries, each with some chance of success, and the question asks whether **at least one** succeeds. The wording varies: "at least one", "one or more", "any of them", "not all of them fail", "the alarm goes off at some point".' },
     { type: 'list', items: ['"You throw a die four times. What is the probability of at least one six?"', '"Three independent trades succeed with probabilities 1/2, 1/3, 1/4. Chance that at least one succeeds?"', '"A pair of dice is thrown 24 times. Probability of at least one double six?"', '"You buy 20 tickets, each winning with probability 1/20. Chance of at least one win?"'] },
-    { type: 'text', text: 'Not this lesson: "exactly one" (a different count), "the first six on throw k" (bto/first-success) and draws without replacement (bto/card-draws), where the product shrinks differently.' },
     { type: 'check', scope: 'the recognition cues above', questions: [
       { type: 'choice', q: 'Which question is an "at least one" question?', options: ['Five coin flips: probability that not every flip is tails', 'Five coin flips: probability of exactly one head', 'Die thrown until a six: probability the first six is on throw 3', 'Two dice: probability the sum is 7'], answer: 0, traps: { 1: '"exactly one" excludes two or more heads', 2: 'a first-success question: the position is fixed', 3: 'a two-dice sum' }, explain: '"Not every flip is tails" = "at least one head".' },
+    ] },
+    { type: 'text', text: 'Not this lesson: "exactly one" (a different count), "the first six on throw k" (bto/first-success) and draws without replacement (bto/card-draws), where the product shrinks differently.' },
+    { type: 'check', scope: 'what is not at least one', questions: [
+      { type: 'choice', q: '"Four throws of a die: probability of exactly one six?" How do you treat it?', options: ['a different count: exactly one', 'at least one: 1 − P(none)', 'first six on a fixed throw', 'draws without replacement'], answer: 0, traps: { 1: '"exactly one" excludes two or more sixes, so 1 − P(none) is too big', 2: 'no throw is fixed for the six', 3: 'dice throws are independent: nothing is used up' }, explain: 'Exactly one six is one count among several. It is not the at-least-one complement.' },
     ] },
 
     S('why'),
@@ -130,6 +133,9 @@ export default {
       { t: 10, say: `Fail chances ${TA.map((p) => Q.of(1).sub(p)).join(', ')}; their product is ${TA_NONE}.` },
       { t: 14, say: `P = 1 − ${TA_NONE} = ${Q.of(1).sub(TA_NONE)}. Below the adding bound ${TA_SUM}, as it must be. Answer ${Q.of(1).sub(TA_NONE)}.` },
     ] },
+    { type: 'check', scope: 'the slip in the think-aloud', questions: [
+      { type: 'choice', q: 'In the think-aloud, the first try gave 19/20. What went wrong?', options: ['added chances that overlap', 'took the complement too early', 'multiplied the success chances', 'used a method for equal chances'], answer: 0, traps: { 1: 'the complement is the fix, not the slip', 2: 'the product came later, with the fail chances', 3: 'unequal chances do not change the method' }, explain: 'Adding counts outcomes with two successes more than once: an upper bound only. 1 − 1/2 × 3/4 × 4/5 = 7/10.' },
+    ] },
 
     S('predict'),
     { type: 'predict', question: 'The classic gamble: bet A pays if at least one six appears in 4 throws of a die; bet B pays if at least one double six appears in 24 throws of two dice. Which is above 1/2?', answer: `Only A: ${d3(oneIn(1 / 6, 4))} against ${d3(oneIn(1 / 36, 24))}.`, explain: 'Adding says both are 4/6 = 24/36, which is exactly the error that made the bets look equal.' },
@@ -153,9 +159,12 @@ export default {
 
     S('speed'),
     { type: 'callout', tone: 'speed', text: `Benchmarks: at least one six in 4 throws ≈ ${d3(oneIn(1 / 6, 4))} (just over 1/2); in 6 throws ≈ ${d3(oneIn(1 / 6, 6))}; n tries at 1/n ≈ ${d3(1 - Math.exp(-1))}. Adding is an **upper bound**: the true answer is always a bit below Σpᵢ, and close to it only when every pᵢ is small.` },
-    { type: 'callout', tone: 'speed', text: `Powers you should know: (5/6)² ≈ ${d3((5 / 6) ** 2)}, (5/6)³ ≈ ${d3((5 / 6) ** 3)}, (5/6)⁴ ≈ ${d3((5 / 6) ** 4)}, (5/6)⁶ ≈ ${d3((5 / 6) ** 6)}. Beat the Odds gives ${SECTIONS.bto.exam.perItemSeconds} seconds; these save most of them.` },
     { type: 'check', scope: 'benchmarks and the upper bound', questions: [
       { type: 'choice', q: 'Ten independent tries, each 1/20. Closest value for P(at least one success)?', options: [d3(oneIn(0.05, 10)), '0.500', d3(0.95 ** 10), '0.050'], answer: 0, traps: { 1: 'added 10 × 1/20: an upper bound, not the answer', 2: 'that is P(no success)', 3: 'used one try' }, explain: `1 − 0.95^10 ≈ ${d3(oneIn(0.05, 10))}, a little below the adding bound 0.5.` },
+    ] },
+    { type: 'callout', tone: 'speed', text: `Powers you should know: (5/6)² ≈ ${d3((5 / 6) ** 2)}, (5/6)³ ≈ ${d3((5 / 6) ** 3)}, (5/6)⁴ ≈ ${d3((5 / 6) ** 4)}, (5/6)⁶ ≈ ${d3((5 / 6) ** 6)}. Beat the Odds gives ${SECTIONS.bto.exam.perItemSeconds} seconds; these save most of them.` },
+    { type: 'check', scope: 'powers of 5/6', questions: [
+      { type: 'choice', q: '(5/6)⁴ is closest to:', options: ['0.482', '0.518', '0.579', '0.694'], answer: 0, traps: { 1: 'that is 1 − (5/6)⁴, at least one six in 4 throws', 2: 'that is (5/6)³', 3: 'that is (5/6)²' }, explain: '(5/6)⁴ = 625/1296 ≈ 0.482.' },
     ] },
 
     S('rule'),
@@ -170,12 +179,12 @@ export default {
       ['A or B, disjoint', 'P(A) + P(B)', 'adding is right only here'],
     ] },
     { type: 'callout', tone: 'edge', text: 'Edge cases: if any single try is certain (pᵢ = 1), the product has a zero factor and "at least one" is 1. If every pᵢ = 0, it is 0. With zero tries the answer is 0: the empty product is 1.' },
-    { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: "at least one ace in five cards" uses 1 − P(no ace), with a shrinking product because cards do not go back (bto/card-draws). The birthday problem is 1 − P(all different). Reliability questions ("the system works if any component works") are this lesson with components for tries.' },
     { type: 'check', scope: 'the contrast table and edge cases', questions: [
       { type: 'choice', q: 'Three independent alarms each ring with 1/2. P(exactly one rings)?', options: ['3/8', '7/8', '1/8', '3/2'], answer: 0, traps: { 1: 'that is "at least one"', 2: 'that is "all" or "none"', 3: 'added the chances' }, explain: '3 × 1/2 × (1/2)² = 3/8.' },
       { type: 'choice', q: 'Four independent tries with chances 1/3, 1/2, 1, 1/4. P(at least one success)?', options: ['1', `${Q.of(1, 3).add(Q.of(1, 2)).add(Q.of(1, 4)).add(Q.of(1))}`, '1/24'], answer: 0, traps: { 1: 'added the chances', 2: 'multiplied them: that is "all succeed"' }, explain: 'The third try always succeeds, so P(none) has a factor 0.' },
     ] },
 
+    { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: "at least one ace in five cards" uses 1 − P(no ace), with a shrinking product because cards do not go back (bto/card-draws). The birthday problem is 1 − P(all different). Reliability questions ("the system works if any component works") are this lesson with components for tries.' },
     { type: 'variation', base: `A die is thrown 4 times. P(at least one six) = 1 − (5/6)⁴ = ${some6(4)}.`, rows: [
       { change: 'Throw four dice at once instead of one die four times', effect: 'No change. Four dice at once are four independent tries with the same 1/6 each.', same: true },
       { change: 'Ask for at least one 1 instead of at least one six', effect: 'No change. Any single named face has chance 1/6 per throw; only the per-try chance matters.', same: true },

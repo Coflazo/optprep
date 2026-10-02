@@ -43,9 +43,12 @@ export default {
     ] },
     { type: 'text', text: 'Several doors (boxes, envelopes) hide one prize. You pick one. A **host** then opens some of the others, showing no prize, and you may **stay or switch**. The question asks your chance of winning, and the crucial detail is **whether the host knows** where the prize is.' },
     { type: 'list', items: ['"Three doors, you pick door 1, the host (who knows) opens door 3: a goat. Switch?"', '"100 doors; the host opens 98 empty ones. Probability the last closed door has the car?"', '"The host does not know where the car is and opens a door at random: a goat. Now what is your chance if you switch?"'] },
-    { type: 'text', text: 'Not this lesson: evidence produced by the object itself, like a coin showing heads (bto/bayes-boxes). Here the evidence is **chosen** by someone, and his rule of choice is what matters.' },
     { type: 'check', scope: 'the recognition cues above', questions: [
       { type: 'choice', q: 'Which detail matters most in a Monty Hall question?', options: ['Whether the host could have shown the prize', 'Which door number you happened to pick first', 'Whether the prize is a car or something else', 'How many goats there are behind the doors'], answer: 0, traps: { 1: 'door labels are symmetric', 2: 'the prize is irrelevant', 3: 'it matters only through the number of doors' }, explain: 'A host who avoids the prize on purpose moves probability; a host who might have shown it does not.' },
+    ] },
+    { type: 'text', text: 'Not this lesson: evidence produced by the object itself, like a coin showing heads (bto/bayes-boxes). Here the evidence is **chosen** by someone, and his rule of choice is what matters.' },
+    { type: 'check', scope: 'chosen evidence against produced evidence', questions: [
+      { type: 'choice', q: 'Which situation is a Monty Hall question rather than a boxes question?', options: ['a dealer who knows the cards picks one to show', 'a coin you picked shows heads three times', 'a ball drawn from a random box is red', 'a test comes back positive'], answer: 0, traps: { 1: 'the coin itself produced the evidence: bto/bayes-boxes', 2: 'the box produced the ball: bto/bayes-boxes', 3: 'a noisy signal with rates: bto/bayes-test' }, explain: 'The dealer chooses what to show, so his rule matters. In the others the object produced the evidence.' },
     ] },
 
     S('why'),
@@ -117,6 +120,9 @@ export default {
       { t: 10, say: `${Q.of(4, 5)} ÷ 2 = ${knowSwitch(5, 2)}.` },
       { t: 13, say: `Check: ${knowSwitch(5, 2)} beats staying at ${stay(5)}, and the closed doors add up: ${stay(5)} + ${knowSwitch(5, 2)} + ${knowSwitch(5, 2)} = ${stay(5).add(knowSwitch(5, 2)).add(knowSwitch(5, 2))}. Answer ${knowSwitch(5, 2)}.` },
     ] },
+    { type: 'check', scope: 'the slip in the think-aloud', questions: [
+      { type: 'choice', q: 'In the think-aloud, the first try gave 4/5. What went wrong?', options: ['gave the whole 4/5 to one door', 'assumed the host does not know', 'gave the first door 1/2', 'forgot two doors were opened'], answer: 0, traps: { 1: 'the host knows, and the try used that', 2: 'the first door kept 1/5 in the try', 3: '4/5 is right for the other doors together' }, explain: 'The 4/5 is shared by the 2 other closed doors: 2/5 each. Switching to one gives 2/5.' },
+    ] },
 
     S('predict'),
     { type: 'predict', question: '100 doors. The knowing host opens 98 goat doors. Before computing: roughly what is your chance if you switch to the last closed door?', answer: `${knowSwitch(100, 98)}.`, explain: 'Your door kept 1/100; the one other closed door collected the rest.' },
@@ -139,6 +145,9 @@ export default {
 
     S('speed'),
     { type: 'callout', tone: 'speed', text: 'One question first: **could the host have shown the car?** No (he knows and avoids it) → your door 1/n, the other closed doors share (n − 1)/n. Yes (random) → every unopened door equal.' },
+    { type: 'check', scope: 'could the host have shown the car?', questions: [
+      { type: 'choice', q: 'Three doors. The host does not know where the car is and opens a door at random: a goat. P(win if you switch)?', options: ['1/2', '2/3', '1/3'], answer: 0, traps: { 1: '2/3 needs a host who knows and avoids the car', 2: 'switching is not worse here: the two closed doors are equal' }, explain: 'He could have shown the car, so every unopened door is equal: 1/2 each.' },
+    ] },
     { type: 'callout', tone: 'speed', text: `Values to know: 3 doors switch ${knowSwitch(3, 1)}; 4 doors, 1 opened, switch ${knowSwitch(4, 1)} (still better than staying at ${stay(4)}); n doors, n − 2 opened, switch (n − 1)/n. These take seconds of the ${SECTIONS.bto.exam.perItemSeconds}.` },
     { type: 'check', scope: 'the one question and the values', questions: [
       { type: 'choice', q: '4 doors. The knowing host opens 1 goat door; you switch at random to one of the 2 other closed doors. Better or worse than staying?', options: [`Better: ${knowSwitch(4, 1)} against ${stay(4)}`, `Worse: ${Q.of(1, 3)} against ${Q.of(1, 2)}`, 'The same'], answer: 0, traps: { 1: 'mixed up the random-host answer with a two-door picture', 2: 'switching still collects a share of the 3/4 that left your door' }, explain: `(4 − 1)/(4 × 2) = ${knowSwitch(4, 1)} > 1/4.` },
@@ -155,11 +164,11 @@ export default {
       ['host always opens door 3 if it is a goat, else door 2', Q.of(1, 2).toString(), Q.of(1, 2).toString()],
     ] },
     { type: 'callout', tone: 'edge', text: 'Edge cases: a random host who reveals the car ends the game, which is why "he showed a goat" is information. A host who opens every other door leaves only yours and one more. With 2 doors there is nothing to open and nothing to switch to.' },
-    { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: in bto/card-symmetry, a card you are shown changes the odds while an unseen discard does not; Monty Hall adds a third case, a card shown by someone who chose it. In markets, a quote from a better-informed trader is the knowing host: what he avoids is information.' },
     { type: 'check', scope: 'the contrast table', questions: [
       { type: 'choice', q: 'Three doors, you pick door 1. The host always opens door 3 when it hides a goat (otherwise door 2). He opens door 3. P(win if you switch to door 2)?', options: ['1/2', '2/3', '1/3', '1'], answer: 0, traps: { 1: 'the classic answer assumes he picks at random when both others are goats', 2: 'kept the prior for door 2', 3: 'thought door 3 opening proves door 2 has the car' }, explain: 'Car behind door 1: he opens 3 (weight 1/3). Car behind door 2: he opens 3 (weight 1/3). Equal weights: 1/2.' },
     ] },
 
+    { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: in bto/card-symmetry, a card you are shown changes the odds while an unseen discard does not; Monty Hall adds a third case, a card shown by someone who chose it. In markets, a quote from a better-informed trader is the knowing host: what he avoids is information.' },
     { type: 'variation', base: `Three doors, the knowing host opens a goat door. Switching wins ${knowSwitch(3, 1)}.`, rows: [
       { change: 'You pick door 2 instead of door 1', effect: `No change: ${knowSwitch(3, 1)}. Door labels are symmetric; only the host's rule matters.`, same: true },
       { change: 'The host does not know and happens to show a goat', effect: `He could have shown the car, so the reveal is plain elimination: ${randomHost(3, 1)}.` },

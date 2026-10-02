@@ -55,6 +55,9 @@ export default {
     ] },
     { type: 'text', text: 'Two sides play repeated independent games, and the contest ends as soon as one side has **k wins**: "best of 5" is first to 3, "best of 7" is first to 4. The question asks who wins the series, or whether it goes the full distance.' },
     { type: 'list', items: ['"Two equally strong teams play a best-of-seven series. What is the chance it goes to a seventh game?"', '"Team A wins each game with probability 3/5. What is the chance it wins a best-of-five?"', '"First to 3 wins: a player who wins each point with 2/3. Probability she wins the match?"'] },
+    { type: 'check', scope: 'best of n is first to k', questions: [
+      { type: 'number', q: 'A "best of 9" series ends when one side has how many wins?', answer: 5, explain: 'Best of 2k − 1 is first to k: 9 = 2 × 5 − 1, so first to 5.' },
+    ] },
     { type: 'text', text: 'Not this lesson: a fixed number of games counted afterwards (bto/coin-sequences), and races to a single success like "first to throw a six" (bto/first-success).' },
     { type: 'check', scope: 'the recognition cues above', questions: [
       { type: 'choice', q: 'Which question belongs to this lesson?', options: ['Play until someone has 3 wins; each game 60/40: who wins?', 'Play exactly 5 games, 60/40: probability of exactly 3 wins', 'Alternate throwing a die; first six wins', 'Flip until HH appears'], answer: 0, traps: { 1: 'a fixed number of games: a plain binomial count', 2: 'a race to one success: bto/first-success', 3: 'a pattern wait: bto/pattern-waiting' }, explain: 'First to 3 wins: a series that stops early.' },
@@ -128,6 +131,9 @@ export default {
       { t: 12, say: `${exactlyK(P23, 2)} + ${qpow(P23, 3)} = ${winSeries(P23, 2)}. The shortcut p²(3 − 2p) gives the same.` },
       { t: 16, say: `${winSeries(P23, 2)} ≈ ${d3(winSeries(P23, 2))}, between ${P23} and 1, as a series for the stronger side must be. Answer ${winSeries(P23, 2)}.` },
     ] },
+    { type: 'check', scope: 'the slip in the think-aloud', questions: [
+      { type: 'choice', q: 'In the think-aloud, the first try gave 4/9. What went wrong?', options: ['left out the 3-0 sweep', 'pictured all 3 games played', 'used 1/3 for an A win', 'counted the orders twice'], answer: 0, traps: { 1: 'playing all 3 games out does not change the winner: that move was right', 2: 'A wins each game with 2/3, as used', 3: 'C(3, 2) = 3 orders is right for exactly two wins' }, explain: '"At least 2 of 3" includes 3 of 3: 4/9 + 8/27 = 20/27.' },
+    ] },
 
     S('predict'),
     { type: 'predict', question: 'A team wins each game with 60%. In a best-of-7, is its series chance above or below 60%, and roughly what?', answer: `Above: about ${pct(winNum(0.6, 4))}.`, explain: 'The S-curve: a longer contest lets the better side\'s edge show.' },
@@ -151,6 +157,9 @@ export default {
 
     S('speed'),
     { type: 'callout', tone: 'speed', text: `Even teams, full length: best of 3 → ${fullLength(HALF, 2)}, best of 5 → ${fullLength(HALF, 3)}, best of 7 → ${fullLength(HALF, 4)}. Uneven best of 3: p²(3 − 2p). The general win formula is a sum, so for best of 5 or 7 use the complement when p is large.` },
+    { type: 'check', scope: 'the memorised values', questions: [
+      { type: 'choice', q: 'Two even teams play a best of 7. P(the series goes to game 7)?', options: ['5/16', '3/8', '1/2'], answer: 0, traps: { 1: 'that is a best of 5 going the full length', 2: 'that is P(one given team wins), by symmetry' }, explain: 'Full length needs 3-3 after six games: C(6, 3)/64 = 20/64 = 5/16.' },
+    ] },
     { type: 'callout', tone: 'speed', text: `Sanity: an even series is 1/2 by symmetry, and the stronger side\'s series chance always lies between p and 1. Time budget: ${SECTIONS.bto.exam.perItemSeconds} seconds; best of 3 or a full-length question takes 20, a best-of-7 win sum takes about 60, so check the options first for one that is clearly above p.` },
     { type: 'check', scope: 'the memorised values and the sanity bounds', questions: [
       { type: 'choice', q: 'A 2/3 player in a best-of-5 match. Which option can be right?', options: [d3(winSeries(Q.of(2, 3), 3)), '0.600', '0.667', '0.500'], answer: 0, traps: { 1: 'below the single-game chance: a series cannot shrink the stronger side\'s edge', 2: 'exactly the single-game chance', 3: 'the even-teams value' }, explain: `It must lie between 2/3 and 1: ${winSeries(Q.of(2, 3), 3)} ≈ ${d3(winSeries(Q.of(2, 3), 3))}.` },
@@ -168,11 +177,11 @@ export default {
       ['A sweeps 2-0', 'one path', qpow(P35, 2).toString()],
     ] },
     { type: 'callout', tone: 'edge', text: 'Edge cases: best of 1 (k = 1) is a single game, so the series chance is p. With p = 1/2 the series is 1/2 whatever its length. With p = 1 the series never goes the distance: (pq)^(k−1) = 0 for k ≥ 2.' },
-    { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: "imagine the process runs on" works whenever stopping does not change the answer: "do 3 heads come before 3 tails?" is a best of 5 with p = 1/2. The S-curve is why repeated small edges add up (gambler\'s ruin, bto/gamblers-ruin), and why a market maker with a small edge per trade wants many trades.' },
     { type: 'check', scope: 'the contrast table and edge cases', questions: [
       { type: 'choice', q: 'Evenly matched, best of 9. P(A wins)?', options: ['1/2', 'more than 1/2', 'less than 1/2'], answer: 0, traps: { 1: 'length helps the stronger side; there is none here', 2: 'no side is weaker' }, explain: 'Swapping A and B maps every A-win onto a B-win.' },
     ] },
 
+    { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: "imagine the process runs on" works whenever stopping does not change the answer: "do 3 heads come before 3 tails?" is a best of 5 with p = 1/2. The S-curve is why repeated small edges add up (gambler\'s ruin, bto/gamblers-ruin). It is also why a market maker with a small edge per trade wants many trades.' },
     { type: 'variation', base: `Even teams, best of 7. P(it goes to game 7) = C(6,3)/64 = ${fullLength(HALF, 4)}.`, rows: [
       { change: 'Ask instead for "3-3 after six games"', effect: 'No change: it is the same event in other words. Game 7 is played exactly when the first six split 3-3.', same: true },
       { change: 'Best of 5 instead of 7', effect: `The decider needs a 2-2 split of 4 games: C(4,2)/16 = ${fullLength(HALF, 3)}. Shorter series reach the decider more often.` },

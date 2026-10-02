@@ -55,6 +55,9 @@ export default {
     ] },
     { type: 'text', text: 'The question asks for an **expected number of** something: people who get their own hat, runs in a coin sequence, different faces seen, empty boxes, records, adjacent pairs of the same colour. The count could be complicated; its mean almost never is.' },
     { type: 'list', items: ['"A die is rolled 6 times. Expected number of different faces seen?"', '"10 balls into 4 boxes. Expected number of empty boxes?"', '"A deck is shuffled and laid out. Expected number of adjacent pairs of the same colour?"'] },
+    { type: 'check', scope: 'an expected count', questions: [
+      { type: 'choice', q: 'What does a linearity question ask for?', options: ['an expected count', 'the chance the count is 0', 'the most likely count', 'the whole distribution'], answer: 0, traps: { 1: 'that needs a complement or the distribution', 2: 'the most likely value is not the mean', 3: 'the mean needs no distribution' }, explain: 'An expected number of something: a mean of a count.' },
+    ] },
     { type: 'text', text: 'Not this lesson: the **probability** that the count is 0 or at least 1 (bto/derangements, bto/birthday). Those need the whole distribution or a complement; the mean needs neither.' },
     { type: 'check', scope: 'the recognition cues above', questions: [
       { type: 'choice', q: 'Which question belongs to this lesson?', options: ['Roll a die 10 times: expected number of faces that never appear', 'Roll a die 10 times: probability that some face never appears', 'Roll a die until every face appears: expected rolls', 'Roll a die 10 times: probability of exactly two sixes'], answer: 0, traps: { 1: 'a probability of "at least one": inclusion-exclusion', 2: 'a waiting time: bto/coupon-collector', 3: 'a binomial probability' }, explain: 'An expected count: one indicator per face.' },
@@ -140,6 +143,9 @@ export default {
 
     S('speed'),
     { type: 'callout', tone: 'speed', text: 'Say the template out loud: "one indicator per ___, each with probability ___, times how many". If you can fill both blanks, you are done. Fixed points 1; runs (n + 1)/2; windows (n − L + 1)/2^L; records H_n.' },
+    { type: 'check', scope: 'the template', questions: [
+      { make: (rng) => { const n = rng.int(10, 40); return { type: 'number', q: `${n} fair flips. Expected number of times the pattern HT appears (as two consecutive flips)?`, answer: (n - 1) / 4, tolerance: 1e-9, hints: ['One indicator per window of two flips.', `${n - 1} windows, each HT with 1/4.`], explain: `(${n} − 1)/4 = ${(n - 1) / 4}.` }; } },
+    ] },
     { type: 'callout', tone: 'speed', text: `Harmonic numbers to keep: H₃ = ${H(3)}, H₄ = ${H(4)}, H₅ = ${H(5)}, H₆ = ${H(6)} ≈ ${f3(H(6))}. They reappear in coupon collecting. An item like this should take 30 of your ${SECTIONS.bto.exam.perItemSeconds} seconds.` },
     { type: 'thinkaloud', problem: `A fair die is rolled ${TK} times. What is the expected number of faces that never appear?`, lines: [
       { t: 0, say: '"Expected number of": linearity. One indicator per face, 6 of them.' },
@@ -149,8 +155,9 @@ export default {
       { t: 19, say: `(5/6)^${TK} ≈ ${f3(qpow(Q.of(5, 6), TK))}, times 6 ≈ ${f3(Q.of(6).mul(qpow(Q.of(5, 6), TK)))}.` },
       { t: 25, say: `Sanity: ${TK} rolls should show most faces, so about one missing face is plausible. Answer ≈ ${f3(Q.of(6).mul(qpow(Q.of(5, 6), TK)))}, ${SECTIONS.bto.exam.perItemSeconds - 25} seconds left.` },
     ] },
-    { type: 'check', scope: 'the template', questions: [
-      { make: (rng) => { const n = rng.int(10, 40); return { type: 'number', q: `${n} fair flips. Expected number of times the pattern HT appears (as two consecutive flips)?`, answer: (n - 1) / 4, tolerance: 1e-9, hints: ['One indicator per window of two flips.', `${n - 1} windows, each HT with 1/4.`], explain: `(${n} − 1)/4 = ${(n - 1) / 4}.` }; } },
+    { type: 'check', scope: 'harmonic numbers and the think-aloud', questions: [
+      { type: 'number', q: 'Four different numbers are put in a random order. Expected number of records (values larger than all before them)? Decimals are fine.', answer: 25 / 12, tolerance: 0.01, explain: 'Position i holds a record with chance 1/i: 1 + 1/2 + 1/3 + 1/4 = H₄ = 25/12 ≈ 2.083.' },
+      { type: 'choice', q: 'In the think-aloud, the expert worried that the missing faces are dependent. What settles it?', options: ['linearity needs no independence', 'the faces are independent after all', 'multiply by 6 only if independent'], answer: 0, traps: { 1: 'they are dependent: one missing face makes the others more likely to show', 2: 'linearity adds the means whatever the dependence' }, explain: 'Dependence changes the spread, not the mean: E = 6 × (5/6)^10 ≈ 0.969.' },
     ] },
 
     S('rule'),
@@ -164,10 +171,10 @@ export default {
       ['P(some face never seen)', 'complement of the above', f3(one.sub(Q.of(fact(6), 6 ** 6)))],
     ] },
     { type: 'callout', tone: 'edge', text: 'Edge cases: a count that is always the same number has that number as its mean (e.g. 52 cards, 52 positions). Linearity fails only for products and non-linear functions: E[XY] = E[X]E[Y] needs independence, and E[X²] is not E[X]².' },
-    { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: the tail-sum formula E[X] = Σ P(X ≥ k) is linearity with one indicator per threshold (bto/expected-extremes). Coupon collecting adds stage waits the same way (bto/coupon-collector). In Likelihood List items, expected counts often order statements without any heavy computation.' },
     { type: 'check', scope: 'the contrast table and edge cases', questions: [
       { type: 'choice', q: 'Two fair dice. Which needs independence to compute as a product of means?', options: ['E[product of the faces]', 'E[sum of the faces]', 'E[number of sixes]', 'E[number of even faces]'], answer: 0, traps: { 1: 'sums split by linearity with no assumption', 2: 'a count of indicators: linearity', 3: 'also a count of indicators' }, explain: 'E[XY] = E[X]E[Y] holds for independent dice; sums and counts need nothing.' },
     ] },
+    { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: the tail-sum formula E[X] = Σ P(X ≥ k) is linearity with one indicator per threshold (bto/expected-extremes). Coupon collecting adds stage waits the same way (bto/coupon-collector). In Likelihood List items, expected counts often order statements without any heavy computation.' },
     { type: 'variation', base: '10 people take back their hats at random, one each. Expected number who get their own hat = 10 × 1/10 = 1.', rows: [
       { change: 'Use 100 people instead of 10', effect: 'No change: 100 × 1/100 = 1. More indicators, each less likely, and the two cancel.', same: true },
       { change: 'Each person grabs any hat, repeats allowed', effect: 'Still 1. The model changes and the events become independent, but each person still has chance 1/10.', same: true },

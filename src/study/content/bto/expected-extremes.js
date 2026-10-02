@@ -56,6 +56,9 @@ export default {
     ] },
     { type: 'text', text: 'Several dice are rolled, or several numbers are drawn uniformly from [0, 1], and the question asks for the **expected** highest, lowest, range, or distance between two of them. Payoffs on "the best of three outcomes" are priced this way.' },
     { type: 'list', items: ['"You roll three dice. What is the expected value of the highest face?"', '"Four numbers are drawn uniformly from [0, 1]. Expected value of the smallest?"', '"Two points are chosen on [0, 1]. Expected distance between them?"'] },
+    { type: 'check', scope: 'the extreme that is asked for', questions: [
+      { type: 'choice', q: '"You roll four dice and keep the best one. What is it worth on average?" Which quantity is asked?', options: ['the expected maximum', 'the expected sum', 'P(the maximum is 6)', 'the expected minimum'], answer: 0, traps: { 1: 'you keep one die, the best, not the total', 2: 'it asks an average, not a probability', 3: '"best" is the highest face' }, explain: 'Keeping the best of four dice gives the maximum; on average that is its expected value.' },
+    ] },
     { type: 'text', text: 'Not this lesson: the **probability** that the maximum is at most k or equal to k (bto/dice-order-stats), and a game where you choose which roll to keep (bto/dice-games-ev).' },
     { type: 'check', scope: 'the recognition cues above', questions: [
       { type: 'choice', q: 'Which question belongs to this lesson?', options: ['Three dice: expected value of the lowest face', 'Three dice: probability that the lowest face is 2', 'One die with one reroll allowed: expected payout', 'Three dice: expected value of the sum'], answer: 0, traps: { 1: 'a probability of one value: bto/dice-order-stats', 2: 'a choice about stopping: bto/dice-games-ev', 3: 'the sum is linear: 3 × 3.5' }, explain: 'An expected extreme of several dice.' },
@@ -141,6 +144,9 @@ export default {
 
     S('speed'),
     { type: 'callout', tone: 'speed', text: `Landmarks: two dice max ${eMax(6, 2)} ≈ ${f3(eMax(6, 2))}, min ${eMin(6, 2)} ≈ ${f3(eMin(6, 2))}; three dice max ${f3(eMax(6, 3))}, min ${f3(eMin(6, 3))}. Uniforms: max of n is n/(n + 1); E|X − Y| = 1/3.` },
+    { type: 'check', scope: 'the landmarks', questions: [
+      { type: 'choice', q: 'Two independent uniform numbers on [0, 1]. E[max]?', options: ['2/3', '1/2', '1/3', '3/4'], answer: 0, traps: { 1: 'that is one uniform on its own', 2: 'that is E[min] of two, or E|X − Y|', 3: 'that is the max of three' }, explain: 'Max of n uniforms: n/(n + 1) = 2/3.' },
+    ] },
     { type: 'callout', tone: 'speed', text: `Sanity checks: E[max] is above the one-die mean and below the top face; E[min] + E[max] = s + 1. For uniforms, the expected positions are evenly spaced. Budget about 40 of the ${SECTIONS.bto.exam.perItemSeconds} seconds for a six-term tail sum.` },
     { type: 'thinkaloud', problem: 'You roll three fair dice. What is the expected value of the lowest face?', lines: [
       { t: 0, say: 'Expected lowest of three dice: a tail sum. E[min] = Σ P(min ≥ k) for k = 1 to 6.' },
@@ -152,6 +158,7 @@ export default {
     ] },
     { type: 'check', scope: 'the symmetry check', questions: [
       { make: (rng) => { const n = rng.int(2, 4); return mc(rng, `${words[n]} fair dice. Which pair (E[min], E[max]) is possible?`, `${f3(eMin(6, n))} and ${f3(eMax(6, n))}`, [[`${f3(eMin(6, n))} and ${f3(Q.of(6).sub(eMin(6, n)))}`, 'the two must add to 7, not 6'], [`3.500 and ${f3(eMax(6, n))}`, 'the minimum is below the one-die mean'], [`${f3(eMin(6, n))} and 6.000`, 'the maximum is not always 6']], `They add to 7: ${f3(eMin(6, n))} + ${f3(eMax(6, n))}.`); } },
+      { type: 'choice', q: 'In the think-aloud, the first try wrote P(min ≥ k) = 1 − ((k − 1)/6)³. What was wrong?', options: ['that is a tail of the maximum', 'the cube should be a square', 'k should start at 0'], answer: 0, traps: { 1: 'three dice give a cube', 2: 'the tail sum runs from k = 1 to 6' }, explain: 'The minimum is at least k when every die is: ((7 − k)/6)³.' },
     ] },
 
     S('rule'),
@@ -165,10 +172,10 @@ export default {
       ['one die with one reroll (you choose)', REROLL.toString(), 'n/a', 'stopping rule (bto/dice-games-ev)'],
     ] },
     { type: 'callout', tone: 'edge', text: 'Edge cases: one die gives E[max] = E[min] = 3.5. As the number of dice grows, E[max] → 6 and E[min] → 1. For uniforms, the range of two points is exactly their distance: (2 − 1)/(2 + 1) = 1/3.' },
-    { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: the tail sum is linearity with one indicator per threshold (bto/linearity). The maximum of two rolls is the "keep the better" value that the reroll game falls short of (bto/dice-games-ev). The gaps picture also answers broken-stick questions (bto/uniform-geometry).' },
     { type: 'check', scope: 'the contrast table and edge cases', questions: [
       { type: 'choice', q: 'Which is larger: E[max of two dice] or the value of one die with one optional reroll?', options: ['E[max of two dice]', 'The one-reroll game', 'They are exactly equal'], answer: 0, traps: { 1: 'with a reroll you must accept the second roll, so you cannot always keep the better one', 2: 'the reroll decision is made without seeing the second roll' }, explain: `${f3(eMax(6, 2))} against ${REROLL} = ${f3(REROLL)}: keeping the better of two seen rolls beats deciding blind.` },
     ] },
+    { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: the tail sum is linearity with one indicator per threshold (bto/linearity). The maximum of two rolls is the "keep the better" value that the reroll game falls short of (bto/dice-games-ev). The gaps picture also answers broken-stick questions (bto/uniform-geometry).' },
     { type: 'variation', base: `Two fair dice: E[max] = ${eMax(6, 2)} ≈ ${f3(eMax(6, 2))}.`, rows: [
       { change: 'Ask for 7 minus the expected lowest face', effect: `No change: ${f3(eMax(6, 2))}. Turning both dice upside down swaps min and max, so E[min] = 7 − E[max].`, same: true },
       { change: 'Roll three dice', effect: `Each tail rises to 1 − ((k − 1)/6)³: E[max] = ${eMax(6, 3)} ≈ ${f3(eMax(6, 3))}.` },

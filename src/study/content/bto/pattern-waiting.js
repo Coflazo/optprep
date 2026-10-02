@@ -51,6 +51,9 @@ export default {
     ] },
     { type: 'text', text: 'A fair coin is flipped **until** a given pattern of consecutive flips appears (HH, HTH, HHT, …). The question asks for the **expected number of flips**, or, with two patterns, **which appears first**.' },
     { type: 'list', items: ['"A coin is flipped until two heads in a row appear. Expected number of flips?"', '"Expected flips until HTH?"', '"Flip until either HH or TH appears. Probability TH comes first?"'] },
+    { type: 'check', scope: 'the two questions about patterns', questions: [
+      { type: 'choice', q: '"Flip a fair coin until HHT or THT appears. Probability that HHT comes first?" What is asked?', options: ['which pattern comes first', 'the expected number of flips', 'heads in a fixed number of flips', 'when the first head comes'], answer: 0, traps: { 1: 'it asks a probability, not an average', 2: 'the number of flips is not fixed', 3: 'the target is a pattern of several flips, not one head' }, explain: 'Two patterns race: the question is which appears first.' },
+    ] },
     { type: 'text', text: 'Not this lesson: a fixed number of flips (bto/coin-sequences) and a single success (bto/first-success, which is the one-letter case of this lesson).' },
     { type: 'check', scope: 'the recognition cues above', questions: [
       { type: 'choice', q: 'Which question belongs to this lesson?', options: ['Flip until HTH appears: expected flips', 'Ten flips: probability that HTH appears somewhere', 'Flip until the first head: expected flips', 'Ten flips: probability of no HH'], answer: 0, traps: { 1: 'a fixed number of flips: a counting question', 2: 'a single success: bto/first-success', 3: 'a fixed-length count: bto/coin-sequences' }, explain: 'Flipping until a multi-flip pattern appears.' },
@@ -121,6 +124,9 @@ export default {
       { t: 12, say: `So ${overlaps('HTH').map((k) => `2^${k}`).join(' + ')} = ${wait('HTH')}.` },
       { t: 15, say: `Sanity: a self-overlapping pattern waits longer than 2^3, never shorter. ${wait('HTH')} fits. Answer ${wait('HTH')}.` },
     ] },
+    { type: 'check', scope: 'the slip in the think-aloud', questions: [
+      { type: 'choice', q: 'In the think-aloud, the first try gave 8. What went wrong?', options: ['left out the H that ends and starts HTH', 'counted 2^3 for the full pattern', 'saw an overlap in TH and HT', 'counted flips, not windows'], answer: 0, traps: { 1: '2^3 always counts (k = 3); the slip was leaving out k = 1', 2: 'TH against HT is no overlap, as checked', 3: 'counting flips is right; the slip was the overlap' }, explain: 'HTH ends with H and starts with H: k = 1 overlaps. 2^1 + 2^3 = 10.' },
+    ] },
 
     S('predict'),
     { type: 'predict', question: 'Flip until HH or TH appears. Which pattern usually wins, and with what probability?', answer: `TH, with ${pFirst('TH', 'HH')}.`, explain: 'HH can only win if the first two flips are HH. Once any T appears, the next H completes TH before HH can form.' },
@@ -143,6 +149,9 @@ export default {
 
     S('speed'),
     { type: 'callout', tone: 'speed', text: `Memorise: HH ${wait('HH')}, HT ${wait('HT')}, HHH ${wait('HHH')}, HTH ${wait('HTH')}, HHT ${wait('HHT')}, HTT ${wait('HTT')}. A run of L heads waits 2^(L+1) − 2. A pattern with no self-overlap waits exactly 2^L.` },
+    { type: 'check', scope: 'the memorised waits', questions: [
+      { type: 'choice', q: 'Expected flips until HTT?', options: ['8', '14', '10', '6'], answer: 0, traps: { 1: 'that is HHH, a run', 2: 'that is HTH, which overlaps itself', 3: 'that is HH' }, explain: 'HTT has no self-overlap, so it waits exactly 2^3 = 8.' },
+    ] },
     { type: 'callout', tone: 'speed', text: `Races: before computing, ask whether one pattern can only win at the very start (like HH against TH). If so, the answer is 1/2^L for it. Time budget: ${SECTIONS.bto.exam.perItemSeconds} seconds a question; overlap reading takes 15, Conway odds about 45.` },
     { type: 'check', scope: 'the memorised waits and the "only at the start" race', questions: [
       { type: 'choice', q: 'Flip until HHH or THH appears. P(HHH first)?', options: [Q.of(1, 8).toString(), '1/2', Q.of(7, 8).toString(), Q.of(1, 4).toString()], answer: 0, traps: { 1: 'equal lengths do not race evenly', 2: 'answered THH', 3: 'used a two-flip start' }, explain: 'Once any T appears, the first HH after it completes THH. HHH wins only if the first three flips are HHH: 1/8.' },
@@ -159,6 +168,10 @@ export default {
       ['HH somewhere in n fixed flips', 'counting strings (no-HH recursion)', 'see bto/coin-sequences'],
     ] },
     { type: 'callout', tone: 'edge', text: `Edge cases: a one-letter pattern is the first-success wait, 2 flips. A pattern cannot race itself. If one pattern contains the other (HH inside HHT), the shorter always comes first or at the same time.` },
+    { type: 'check', scope: 'the table and the edge cases', questions: [
+      { type: 'choice', q: 'Which question about HH depends on cross-overlaps?', options: ['HH before TH?', 'expected flips until HH', 'P(the next two flips are HH)', 'HH somewhere in 10 fixed flips'], answer: 0, traps: { 1: 'that depends on self-overlaps', 2: 'that depends on the pattern only: 1/4', 3: 'that is counting strings' }, explain: 'A race between two patterns depends on how one overlaps the other.' },
+      { type: 'number', q: 'Expected flips of a fair coin until the one-letter pattern H?', answer: 2, explain: 'A one-letter pattern is the first-success wait: 1/p = 2.' },
+    ] },
     { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: with a die, replace 2 by 6. Two sixes in a row overlap at k = 1 and k = 2, so the expected wait is 6 + 36 = 42 throws. The state equations are the general tool for any "expected steps until" question: random walks, gambler\'s ruin, polygon walks.' },
     { type: 'check', scope: 'the transfer to dice', questions: [
       { type: 'choice', q: 'A die is thrown until a 1 is immediately followed by a 2. Expected throws?', options: ['36', '42', '12', '6'], answer: 0, traps: { 1: '"1 then 2" does not overlap itself, unlike "6 then 6"', 2: 'added 6 per letter', 3: 'waited for one letter only' }, explain: 'Only the full-length overlap: 6² = 36.' },
