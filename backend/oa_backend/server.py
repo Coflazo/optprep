@@ -17,6 +17,7 @@ import json
 import re
 from pathlib import Path
 from typing import Any
+from urllib.parse import unquote
 
 from . import analytics
 from .db import Database
@@ -28,14 +29,33 @@ MAX_BODY = 2_000_000
 BANK_NAME = re.compile(r"^[a-z0-9-]{1,40}$")
 SECTIONS = ["bto", "nl", "ll", "iv", "ob"]
 # Only the app itself is served: never dot-directories (.git) or backend/engine/tools/tests files.
-PRIVATE_TOP = {"backend", "engine", "tools", "tests", "node_modules", "screenshots"}
+PRIVATE_DIRS = {"backend", "engine", "tools", "tests", "node_modules", "screenshots"}
+# Every app file has a plain ASCII name; anything else (escapes left after decoding, backslashes,
+# colons, '~' short names, non-ASCII look-alikes) is refused.
+SAFE_SEGMENT = re.compile(r"^[a-z0-9_-][a-z0-9._-]*$")
+
+
+def is_private(raw_path: str) -> bool:
+    """True unless the request path names an ordinary app file.
+
+    Decodes, then normalises, then case-folds before checking, so /%62ackend/... and
+    /Backend/... (on a case-insensitive file system) cannot reach backend files.
+    """
+    path = unquote(raw_path.split("?", 1)[0].split("#", 1)[0])
+    for part in (p.casefold() for p in path.replace("\\", "/").split("/") if p):
+        # Leading dot: '.', '..', .git. Trailing dot: Windows reads 'backend.' as 'backend'.
+        if not SAFE_SEGMENT.match(part) or part.endswith("."):
+            return True
+        if part in PRIVATE_DIRS or part.startswith("brag-output"):
+            return True
+    return False
 
 
 def section_families(section: str, db: Database) -> list[str]:
     lib = DATA / "library" / f"{section}.json"
     if lib.exists():
         try:
-            return json.loads(lib.read_text())["families"]
+            return json.loads(lib.read_text(encoding="utf-8"))["families"]
         except (OSError, KeyError, json.JSONDecodeError):
             pass
     return sorted({a["family"] for a in db.answers(section)})
@@ -61,6 +81,14 @@ def build_analytics(db: Database) -> dict[str, Any]:
 
 def make_handler(db: Database, root: Path):
     class Handler(http.server.SimpleHTTPRequestHandler):
+        # Explicit types: the Windows registry can map .js to text/plain, which breaks ES modules.
+        extensions_map = {
+            **http.server.SimpleHTTPRequestHandler.extensions_map,
+            ".js": "text/javascript",
+            ".mjs": "text/javascript",
+            ".webmanifest": "application/manifest+json",
+        }
+
         def __init__(self, *a: Any, **kw: Any) -> None:
             super().__init__(*a, directory=str(root), **kw)
 
@@ -84,12 +112,9 @@ def make_handler(db: Database, root: Path):
                 return False
             return True
 
-        def _private(self, path: str) -> bool:
-            parts = [p for p in path.split("?", 1)[0].split("/") if p]
-            return any(p.startswith(".") or "%2e" in p.lower() for p in parts) or (bool(parts) and parts[0] in PRIVATE_TOP)
-
         def end_headers(self) -> None:
             self.send_header("Cache-Control", "no-store")
+            self.send_header("X-Content-Type-Options", "nosniff")
             super().end_headers()
 
         def _json(self, code: int, payload: Any) -> None:
@@ -107,7 +132,7 @@ def make_handler(db: Database, root: Path):
             return json.loads(self.rfile.read(length))
 
         def do_HEAD(self) -> None:  # noqa: N802
-            if not self._guard() or self._private(self.path):
+            if not self._guard() or is_private(self.path):
                 return None if not self._host_ok() else self.send_error(404)
             return super().do_HEAD()
 
@@ -116,7 +141,7 @@ def make_handler(db: Database, root: Path):
                 return None
             path = self.path.split("?", 1)[0]
             if not path.startswith("/api/"):
-                if self._private(path):
+                if is_private(path):
                     return self._json(404, {"ok": False, "error": "not found"})
                 return super().do_GET()
             try:
@@ -128,13 +153,13 @@ def make_handler(db: Database, root: Path):
                     return self._json(200, {"ok": True, **build_analytics(db)})
                 if path == "/api/verification":
                     f = DATA / "verification" / "report.json"
-                    return self._json(200, {"ok": True, "report": json.loads(f.read_text()) if f.exists() else None})
+                    return self._json(200, {"ok": True, "report": json.loads(f.read_text(encoding="utf-8")) if f.exists() else None})
                 if path.startswith("/api/banks/"):
                     name = path.rsplit("/", 1)[1]
                     f = DATA / "banks" / f"{name}.json"
                     if not BANK_NAME.match(name) or not f.exists():
                         return self._json(404, {"ok": False, "error": "no such bank"})
-                    return self._json(200, {"ok": True, "bank": json.loads(f.read_text())})
+                    return self._json(200, {"ok": True, "bank": json.loads(f.read_text(encoding="utf-8"))})
                 return self._json(404, {"ok": False, "error": "unknown endpoint"})
             except Exception as e:  # report, never crash the server thread
                 return self._json(500, {"ok": False, "error": str(e)})
@@ -177,14 +202,17 @@ def make_server(port: int, db_path: Path, root: Path = REPO) -> http.server.Thre
 
 
 def main() -> None:
-    ap = argparse.ArgumentParser(description="OA trainer backend")
+    ap = argparse.ArgumentParser(description="OptPrep backend")
     ap.add_argument("--port", type=int, default=8765)
     ap.add_argument("--db", type=Path, default=DATA / "progress.db")
     args = ap.parse_args()
     args.db.parent.mkdir(parents=True, exist_ok=True)
     srv = make_server(args.port, args.db)
-    print(f"OA Trainer: http://127.0.0.1:{args.port}  (engine: {'on' if engine_available() else 'not built'})")
-    srv.serve_forever()
+    print(f"OptPrep is running at http://127.0.0.1:{args.port} (engine: {'on' if engine_available() else 'not built'}; Ctrl+C to stop)", flush=True)
+    try:
+        srv.serve_forever()
+    except KeyboardInterrupt:
+        pass
 
 
 if __name__ == "__main__":

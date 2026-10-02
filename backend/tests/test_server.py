@@ -5,7 +5,7 @@ import urllib.request
 
 import pytest
 
-from oa_backend.server import make_server
+from oa_backend.server import is_private, make_server
 
 
 @pytest.fixture()
@@ -47,8 +47,12 @@ def test_rejects_bad_input_and_unknown_banks(server):
 
 def test_serves_the_static_app(server):
     with urllib.request.urlopen(server + "/index.html") as r:
-        assert b"OA Trainer" in r.read()
+        assert b'src="app.js"' in r.read()
         assert r.headers["Cache-Control"] == "no-store"
+    # ES modules need a JavaScript MIME type on every OS (Windows can map .js to text/plain).
+    with urllib.request.urlopen(server + "/app.js") as r:
+        assert r.headers["Content-Type"] == "text/javascript"
+        assert r.headers["X-Content-Type-Options"] == "nosniff"
 
 
 def test_other_origins_cannot_write_or_rebind(server):
@@ -60,10 +64,21 @@ def test_other_origins_cannot_write_or_rebind(server):
 
 
 def test_private_files_are_not_served(server):
-    for path in ("/.git/config", "/backend/data/progress.db", "/engine/CMakeLists.txt", "/%2egit/config"):
+    # %62 is "b"; /Backend only differs in case, which a case-insensitive file system ignores.
+    for path in ("/.git/config", "/backend/data/progress.db", "/engine/CMakeLists.txt", "/%2egit/config",
+                 "/%62ackend/pyproject.toml", "/Backend/pyproject.toml", "/%42ACKEND/pyproject.toml"):
         try:
             with urllib.request.urlopen(server + path) as r:
                 status = r.status
         except urllib.error.HTTPError as e:
             status = e.code
         assert status == 404, path
+
+
+def test_private_path_policy_decodes_then_casefolds():
+    for path in ("/%62ackend/data/progress.db", "/Backend/data/progress.db", "/ENGINE/CMakeLists.txt",
+                 "/src/%2e%2e/backend/pyproject.toml", "/..%2f.git/config", "/%252e%252e/x", "/backend./x",
+                 "/BACKEN~1/x", "/a%5c..%5cbackend/x", "/bac%E2%84%AAend/x", "/brag-output-2/a.md", "/.env"):
+        assert is_private(path), path
+    for path in ("/", "/index.html", "/app.js?v=1", "/src/study/diagrams/_util.js", "/manifest.webmanifest"):
+        assert not is_private(path), path

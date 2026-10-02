@@ -28,7 +28,7 @@ def main() -> int:
     report["ok"] = report["ok"] and report["zapn"]["ok"]
     out = DATA / "verification" / "report.json"
     out.parent.mkdir(parents=True, exist_ok=True)
-    out.write_text(json.dumps(report, indent=1))
+    out.write_text(json.dumps(report, indent=1), encoding="utf-8")
     for sec, s in report["sections"].items():
         st = s["stats"]
         print(f"{sec}: {st.get('items', 0)} checked, {st.get('failed', 0)} failed, {st.get('warnings', 0)} warnings")
