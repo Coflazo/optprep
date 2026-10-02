@@ -9,11 +9,14 @@ export const SECTION_TITLES = {
   traps: 'Traps', speed: 'Speed', rule: 'Rule', contrast: 'Contrast and edge cases', tryit: 'Try it',
 };
 export const BLOCK_TYPES = ['section', 'text', 'callout', 'diagram', 'steps', 'predict', 'worked', 'traps', 'compare', 'list', 'formula', 'tryit', 'recognize', 'check', 'challenge', 'explain', 'erroneous', 'thinkaloud', 'variation', 'transfer'];
-// Sections that teach something get micro-checks; these do not (motivation, examples, summaries, the final test).
-export const CHECK_EXEMPT = ['why', 'worked', 'predict', 'rule', 'tryit'];
+// Sections whose last unit needs no check: the orientation ("why") and the summary ("rule").
+export const CHECK_EXEMPT = ['why', 'rule'];
 export const CALLOUT_TONES = ['idea', 'trap', 'speed', 'rule', 'contrast', 'edge', 'transfer'];
 export const KINDS = ['family', 'game', 'foundation', 'strategy'];
-const TEACHING = ['text', 'diagram', 'callout', 'formula', 'list', 'compare', 'thinkaloud'];
+// Blocks that teach (they open or extend a unit) and blocks that check what was just taught.
+export const TEACHING = ['text', 'diagram', 'callout', 'formula', 'list', 'compare', 'thinkaloud', 'traps'];
+export const CLOSERS = ['check', 'steps', 'erroneous', 'recognize', 'transfer'];
+const UNIT_MAX = 3;
 
 const str = (x) => typeof x === 'string' && x.trim().length > 0;
 const strOrFn = (x) => str(x) || typeof x === 'function';
@@ -80,12 +83,6 @@ function checkList(qs, where) {
   return qs.flatMap((q) => (typeof q?.make === 'function' ? [] : validateQuestion(q).map((m) => `${where}${m}`)));
 }
 
-// Unit rule constants (see cadence below).
-export const UNIT_EXEMPT = ['why', 'rule'];
-export const UNIT_TEACHING = ['text', 'diagram', 'callout', 'formula', 'list', 'compare', 'thinkaloud', 'traps'];
-export const CLOSERS = ['check', 'steps', 'erroneous', 'recognize', 'transfer'];
-const UNIT_MAX = 3;
-
 // The unit rule: a question after every small piece of teaching.
 // A unit is one idea: consecutive teaching blocks with at most one block of each type (a
 // text plus the diagram, formula, callout, list or table that explains it) and at most 3
@@ -98,11 +95,11 @@ export function cadence(L) {
   const out = [];
   let section = null, unit = [];
   const fail = (reason, next) => out.push({ section: section?.key ?? null, at: next, unit: unit.map((u) => u.i), reason });
-  const end = () => { if (unit.length && !UNIT_EXEMPT.includes(section?.key)) fail('unit ends its section without a check', null); unit = []; };
+  const end = () => { if (unit.length && !CHECK_EXEMPT.includes(section?.key)) fail('unit ends its section without a check', null); unit = []; };
   (L.blocks || []).forEach((b, i) => {
     if (b.type === 'section') { end(); section = b; return; }
     if (CLOSERS.includes(b.type)) { unit = []; return; }
-    if (!UNIT_TEACHING.includes(b.type)) return;
+    if (!TEACHING.includes(b.type)) return;
     if (unit.length && (unit.length >= UNIT_MAX || unit.some((u) => u.type === b.type))) {
       fail(`new ${b.type} starts before the unit above is checked`, i);
       unit = [];
@@ -113,26 +110,13 @@ export function cadence(L) {
   return out;
 }
 
-// Every teaching section must end its unit with checks: a check block, or steps whose
-// every step carries checks.
 function sectionChecks(L) {
-  const e = [];
-  let cur = null, units = [];
-  const flush = () => {
-    if (!cur || CHECK_EXEMPT.includes(cur.key)) return;
-    const hasCheck = units.some((b) => b.type === 'check') || units.some((b) => b.type === 'steps' && b.steps.every((s) => s.checks?.length));
-    if (!hasCheck) e.push(`${L.id}: section "${cur.key}" needs micro-check questions`);
-    // Smallest-unit rule: at most 3 teaching blocks in a row before the learner answers something.
-    let run = 0;
-    for (const b of units) {
-      if (b.type === 'check' || b.type === 'steps') run = 0;
-      else if (TEACHING.includes(b.type) && ++run > 3) { e.push(`${L.id}: section "${cur.key}" teaches 4+ blocks in a row without a check (check after every smallest unit)`); break; }
-    }
-    const stepsBlocks = units.filter((b) => b.type === 'steps');
-    stepsBlocks.forEach((b) => b.steps.forEach((s, i) => { if (!s.checks?.length) e.push(`${L.id}: step ${i + 1} in "${cur.key}" needs 1-3 checks`); }));
-  };
-  for (const b of L.blocks) { if (b.type === 'section') { flush(); cur = b; units = []; } else units.push(b); }
-  flush();
+  const e = cadence(L).map((v) => `${L.id}: unit rule in "${v.section}" (blocks ${v.unit.join(', ')}): ${v.reason}${v.at != null ? ` at block ${v.at}` : ''}`);
+  let key = null;
+  for (const b of L.blocks) {
+    if (b.type === 'section') key = b.key;
+    else if (b.type === 'steps') b.steps.forEach((s, i) => { if (!s.checks?.length) e.push(`${L.id}: step ${i + 1} in "${key}" needs 1-3 checks`); });
+  }
   return e;
 }
 
