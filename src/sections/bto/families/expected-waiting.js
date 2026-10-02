@@ -95,20 +95,22 @@ function variant(kind, rng) {
   if (kind === 'doubleSix') {
     const s = rng.pick([6, 6, 4, 8, 10]);
     const face = s === 6 ? 'sixes' : `${s}s`;
+    const one = s === 6 ? 'six' : String(s); // one face: 'a six', 'an 8'
+    const aOne = `${s === 8 ? 'an' : 'a'} ${one}`;
     return {
       value: q(s * s + s), data: { kind, s },
       text: `You throw a fair ${s === 6 ? 'die' : `${s}-sided die`} until you get two ${face} in a row. What is the expected number of throws?`,
       distractors: [
         { value: s * s, misconception: `Treated each pair of throws as an independent attempt with chance 1/${s * s}. Overlapping pairs and resets make it slower.` },
         { value: 2 * s * s, misconception: `Used non-overlapping blocks of two throws: 2 × ${s * s}.` },
-        { value: 2 * s, misconception: `Added two waits of ${s}. After a ${face.slice(0, -1)}, a miss sends you back to the start.` },
+        { value: 2 * s, misconception: `Added two waits of ${s}. After ${aOne}, a miss sends you back to the start.` },
         { value: s + 1, misconception: 'Waited for any repeated face, not specifically this one.' },
       ],
       steps: [
-        { say: `States: 0 (no progress), 1 (last throw a ${face.slice(0, -1)}). E0 = 1 + (${s - 1}/${s})E0 + (1/${s})E1, E1 = 1 + (${s - 1}/${s})E0.`, why: `From state 1, a ${face.slice(0, -1)} finishes and anything else resets to state 0.` },
+        { say: `States: 0 (no progress), 1 (last throw ${aOne}). E0 = 1 + (${s - 1}/${s})E0 + (1/${s})E1, E1 = 1 + (${s - 1}/${s})E0.`, why: `From state 1, ${aOne} finishes and anything else resets to state 0.` },
         { say: `Substitute and solve: E0 = ${s}² + ${s} = ${s * s + s}.`, why: 'Two linear equations in two unknowns.' },
       ],
-      picture: pic('graph', { markov: true, nodes: [{ id: '0', label: 'no progress', x: 0.1, y: 0.5 }, { id: '1', label: `one ${face.slice(0, -1)}`, x: 0.55, y: 0.5 }, { id: 'D', label: 'done', x: 0.95, y: 0.5 }], edges: [{ from: '0', to: '0', p: (s - 1) / s, label: `${s - 1}/${s}` }, { from: '0', to: '1', p: 1 / s, label: `1/${s}` }, { from: '1', to: 'D', p: 1 / s, label: `1/${s}` }, { from: '1', to: '0', p: (s - 1) / s, label: `${s - 1}/${s}` }] }, `Two states of progress. A miss from either state sends you back to the start, which is why the wait is ${s}² + ${s} and not 2 × ${s}.`),
+      picture: pic('graph', { markov: true, nodes: [{ id: '0', label: 'no progress', x: 0.1, y: 0.5 }, { id: '1', label: `one ${one}`, x: 0.55, y: 0.5 }, { id: 'D', label: 'done', x: 0.95, y: 0.5 }], edges: [{ from: '0', to: '0', p: (s - 1) / s, label: `${s - 1}/${s}` }, { from: '0', to: '1', p: 1 / s, label: `1/${s}` }, { from: '1', to: 'D', p: 1 / s, label: `1/${s}` }, { from: '1', to: '0', p: (s - 1) / s, label: `${s - 1}/${s}` }] }, `Two states of progress. A miss from either state sends you back to the start, which is why the wait is ${s}² + ${s} and not 2 × ${s}.`),
       fast: `s² + s = ${s * s} + ${s} = ${s * s + s}.`,
       check: `Two ${face} in a row have chance 1/${s * s} in any fixed pair of throws, so the wait is at least ${s * s}; losing progress after a miss adds the extra ${s}.`,
     };
