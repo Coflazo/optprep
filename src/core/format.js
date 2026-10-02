@@ -11,3 +11,5 @@ export function fmtNum(x) {
   return x.toFixed(dp).replace(/0+$/, '').replace(/\.$/, '');
 }
 export const fmtFrac = (q) => q.toString();
+// European division sign: items always store ÷; the view shows : when the learner asks for it.
+export const divNotation = (text, mode) => (mode === 'colon' ? String(text).replace(/÷/g, ':') : text);
