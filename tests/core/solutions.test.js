@@ -10,7 +10,7 @@ import { validateDiagram, DIAGRAM_TYPES } from '../../src/study/diagrams/index.j
 import { makeRng } from '../../src/core/rng.js';
 import { parseLabel } from '../../src/sections/mm/lib.js';
 
-const SECTIONS = ['mm', 'ob', 'nl'];
+const SECTIONS = ['mm', 'ob', 'nl', 'll'];
 const SEEDS = 40;
 
 // Families whose solutions carry no picture, with the reason. Keep this list short.
@@ -38,6 +38,16 @@ function agrees(it) {
     const full = it.prompt.sequence.map((s) => num(s === '?' ? it.options[it.answerIndex].label : s));
     const first = (p.diagram === 'ladder' ? sp.rows[0] : [...sp.terms, ...(sp.next != null ? [sp.next] : [])]).map(num);
     if (first.length !== full.length || first.some((v, i) => Math.abs(v - full[i]) > 1e-9)) return `picture terms ${first} differ from the sequence ${full}`;
+  }
+  if (it.kind === 'rank' && p.diagram === 'bar') {
+    const want = it.answerOrder.map((i) => Math.round(it.statements[i].p * 1000) / 1000);
+    if (JSON.stringify(sp.series[0].values) !== JSON.stringify(want)) return `bars ${sp.series[0].values}, statements ${want}`;
+  }
+  if (it.kind === 'rank' && p.diagram === 'venn') {
+    const tot = Object.values(sp.regions).reduce((a, b) => a + b, 0);
+    const ps = it.statements.map((s) => s.p);
+    const regionPs = [sp.regions.AB, sp.regions.A + sp.regions.AB, sp.regions.B + sp.regions.AB, tot - sp.regions.none].map((x) => x / tot);
+    if (!ps.some((v) => regionPs.some((r) => Math.abs(r - v) < 1e-9))) return 'venn regions explain none of the statements';
   }
   if ((p.diagram === 'bundle' || p.diagram === 'ledger') && it.best) {
     const stated = p.diagram === 'bundle' ? sp.stated.profit : sp.stated.cash;

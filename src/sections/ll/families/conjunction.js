@@ -37,6 +37,13 @@ export default {
         statements: keys.map((k) => pool[k]),
         intro: [{ say: 'Before counting, use containment: "A and B" sits inside A, which sits inside "A or B".', why: 'Subset logic orders these statements for free; only the conditional needs a count.' }],
         compare: 'Subset logic plus one or two quick fractions settle the order.',
+        picture: {
+          diagram: 'venn',
+          spec: { sets: [c.A, c.B], regions: { A: aNb, B: Nab, AB: ab, none: NaNb }, total: tot },
+          caption: `The table's four cells as regions: ${ab} in both, ${aNb} only "${c.A.toLowerCase()}", ${Nab} only "${c.B.toLowerCase()}", ${NaNb} in neither. "And" is the overlap, inside each circle; "or" is everything inside either circle; a conditional keeps only one circle as its whole.`,
+        },
+        fast: `Order by containment first: "and" ≤ each single trait ≤ "or", no arithmetic needed. Count only what containment cannot place: ${keys.includes('BgA') ? `the conditional, ${ab} of the ${A} in its row` : keys.includes('neither') ? `"neither", ${NaNb} of ${tot}` : 'nothing here'}.`,
+        check: `An "and" statement can never rank above either of its parts, and an "or" statement can never rank below them. ${keys.includes('BgA') ? `The conditional is the only one with a smaller whole (${A}, not ${tot}), so it can beat the single traits.` : 'An order that breaks containment is wrong before any counting.'}`,
         rule: 'AND ≤ single ≤ OR. P(B | A) = cell / row total, which can exceed P(B).',
         anchor: 'Counting outcomes, with the table\'s four cells as the building blocks of every event.',
         hints: ['Which statements are contained in which?', 'Only a conditional or a cross-comparison needs arithmetic.', 'Conditional = cell / row total.'],
