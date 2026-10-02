@@ -1,22 +1,31 @@
-// OptPrep mark: a timer ring with a tick (a timed test, answered right). Original
-// artwork; the same geometry lives in assets/mark.svg and the PWA icons. Colours come
-// from the brand tokens so the mark follows light and dark mode.
+// OptPrep wordmark: Roboto Bold outlines with the o printed in answer-sheet orange and its
+// counter filled like a pencil mark. Letters and mark follow the text colour, so the logo
+// works in light, dark and high-contrast modes. Paths live in wordmark-paths.js.
 import { h, s } from './dom.js';
+import { VIEWBOX, LETTERS, GLYPHS, COUNTER, O_BOX } from './wordmark-paths.js';
 
-export function brandMark({ size = 28, label = 'OptPrep' } = {}) {
+const counter = () => s('path', { class: 'logo-mark', d: COUNTER.d, transform: `translate(${COUNTER.cx} ${COUNTER.cy}) scale(${COUNTER.scale}) translate(${-COUNTER.cx} ${-COUNTER.cy})` });
+
+export function wordmark({ height = 26, label = 'OptPrep' } = {}) {
   const a11y = label ? { role: 'img', 'aria-label': label } : { 'aria-hidden': 'true' };
-  return s('svg', { viewBox: '0 0 64 64', width: size, height: size, ...a11y, class: 'mark' },
-    s('rect', { width: 64, height: 64, rx: 14, class: 'mark-bg' }),
-    s('circle', { cx: 32, cy: 32, r: 19, fill: 'none', 'stroke-width': 5, class: 'mark-track' }),
-    s('path', { d: 'M32 13A19 19 0 1 1 13 32', fill: 'none', 'stroke-width': 5, 'stroke-linecap': 'round', class: 'mark-arc' }),
-    s('path', { d: 'M23.5 32.5l6 6L41 26', fill: 'none', 'stroke-width': 5.5, 'stroke-linecap': 'round', 'stroke-linejoin': 'round', class: 'mark-tick' }));
+  return s('svg', { viewBox: VIEWBOX, height, class: 'wordmark', ...a11y },
+    s('g', { transform: 'scale(1 -1)' },
+      LETTERS.map(([ch, x], i) => s('path', { class: i === 0 ? 'logo-o' : 'logo-letter', d: GLYPHS[ch], transform: `translate(${x} 0)` })),
+      counter()));
 }
 
-// Mark + wordmark, with the descriptor that names the target in plain text.
-export function brandLockup({ size = 28, descriptor = true } = {}) {
+// The o alone, for tight spaces (tab bar, splash).
+export function brandMark({ size = 28, label = 'OptPrep' } = {}) {
+  const a11y = label ? { role: 'img', 'aria-label': label } : { 'aria-hidden': 'true' };
+  const [x0, y0, x1, y1] = O_BOX;
+  const pad = 40;
+  return s('svg', { viewBox: `${x0 - pad} ${-(y1 + pad)} ${x1 - x0 + 2 * pad} ${y1 - y0 + 2 * pad}`, width: size, height: size, class: 'mark', ...a11y },
+    s('g', { transform: 'scale(1 -1)' }, s('path', { class: 'logo-o', d: GLYPHS.o }), counter()));
+}
+
+// Wordmark plus the descriptor that names the target in plain text.
+export function brandLockup({ height = 26, descriptor = true } = {}) {
   return h('span', { class: 'lockup' },
-    brandMark({ size, label: '' }),
-    h('span', { class: 'lockup-text' },
-      h('span', { class: 'wordmark' }, 'OptPrep'),
-      descriptor ? h('span', { class: 'descriptor' }, 'for the Optiver OA') : null));
+    wordmark({ height }),
+    descriptor ? h('span', { class: 'descriptor' }, 'for the Optiver online assessment') : null);
 }

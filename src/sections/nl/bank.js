@@ -8,7 +8,7 @@ import { families } from './registry.js';
 
 const SRC = {
   qv: 'QuantVault, Optiver online assessment guide (reported two-term recurrence example); original rewrite',
-  qb: 'QuantBrainteasers, Optiver OA guide: differences, ratios, second differences, alternating strands, squares; original item',
+  qb: 'QuantBrainteasers, Optiver online assessment guide: differences, ratios, second differences, alternating strands, squares; original item',
   atp: 'Aptitude Test Prep, Optiver NumberLogic format (5 to 7 terms, 5 options, difficulty ramps); original item',
   eq: 'EverythingQuant NumberLogic tool: alternating, multi-step, prime and Fibonacci-style categories; original item',
   qp: 'QuantPrep Optiver sequences intro: two-term recurrences, product of previous, difference ladders; original item',

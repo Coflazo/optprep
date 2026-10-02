@@ -164,7 +164,7 @@ export default {
     ] },
     { type: 'transfer',
       near: { make: (rng) => { const n = rng.int(8, 14), k = rng.int(2, 4); return ivq(`A pizza place offers ${n} toppings. How many different pizzas have exactly ${k} toppings? Type your interval.`, C(n, k), `C(${n}, ${k}) = ${P(n, k)} ÷ ${fact(k)} = ${C(n, k)}. Exact: a point.`); } },
-      far: { type: 'number', q: 'Outside the OA: how many 10-bit binary strings contain exactly 4 ones?', answer: C(10, 4), explain: `Choose the positions of the 4 ones among 10: C(10, 4) = ${C(10, 4)}, the same count as grid paths with 4 rights and 6 ups.` },
+      far: { type: 'number', q: 'Outside the assessment: how many 10-bit binary strings contain exactly 4 ones?', answer: C(10, 4), explain: `Choose the positions of the 4 ones among 10: C(10, 4) = ${C(10, 4)}, the same count as grid paths with 4 rights and 6 ups.` },
       principle: mc({ q: 'Which idea carried over from grid paths to binary strings?', right: 'Choose positions for one kind; the rest are forced', wrong: [['Divide by the repeat factorial of every letter', 'that also works, but the shared idea is choosing positions'], ['Multiply independent choices', 'there was only one choice to make'], ['Ordered picks with no division', 'order within the chosen positions does not matter']], explain: 'A path is fixed by where its rights go; a string by where its ones go: C(n, k) both times.' }) },
 
     sec('tryit'),

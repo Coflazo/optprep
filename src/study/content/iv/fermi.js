@@ -151,7 +151,7 @@ export default {
     ] },
     { type: 'transfer',
       near: { make: (rng) => { const t = rng.int(12, 60), ph = rng.int(40, 400), h = rng.pick([7, 8, 8.5, 9]); const v = t * ph * h; return { type: 'number', q: `A desk of ${t} traders each sends ${ph} orders per hour over a ${h}-hour day. How many orders per day? (within 2%)`, answer: v, tolerance: 0.02 * v, explain: `${t} × ${ph} × ${h} = ${num(v)}.` }; } },
-      far: { type: 'number', q: 'Outside the OA: streaming uses 5 MB per minute, 3 hours a day, for 30 days, at €0.02 per MB. Monthly cost in euros?', answer: 0.02 * 5 * 60 * 3 * 30, tolerance: 1e-9, explain: `5 MB/min × 60 min/h × 3 h/day × 30 days = ${num(5 * 60 * 3 * 30)} MB; × €0.02 = €${0.02 * 5 * 60 * 3 * 30}.` },
+      far: { type: 'number', q: 'Outside the assessment: streaming uses 5 MB per minute, 3 hours a day, for 30 days, at €0.02 per MB. Monthly cost in euros?', answer: 0.02 * 5 * 60 * 3 * 30, tolerance: 1e-9, explain: `5 MB/min × 60 min/h × 3 h/day × 30 days = ${num(5 * 60 * 3 * 30)} MB; × €0.02 = €${0.02 * 5 * 60 * 3 * 30}.` },
       principle: mc({ q: 'Which idea carried over from messages to streaming costs?', right: 'Chain the units until they cancel', wrong: [['Use the geometric mean of bounds', 'all inputs were given'], ['Band by a factor of ten', 'the inputs were exact'], ['Split a factor into easy parts', 'helpful arithmetic, but not the shared structure']], explain: 'Both were a product of rates and times whose units cancel to the asked unit.' }) },
 
     sec('tryit'),

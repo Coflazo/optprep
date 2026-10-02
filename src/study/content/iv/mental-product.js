@@ -159,7 +159,7 @@ export default {
     ] },
     { type: 'transfer',
       near: { make: (rng) => { const a = rng.int(21, 89), b = rng.int(21, 89); return ivq(`A trader buys ${a} lots at €${b} each. Total cost in euros? Type your interval.`, a * b, `${a} × ${Math.floor(b / 10) * 10} + ${a} × ${b % 10} = ${a * b}. Exact: a point.`); } },
-      far: { type: 'number', q: 'Outside the OA: a recipe for 4 people uses 350 g of flour. How many grams for 7 people?', answer: (350 * 7) / 4, explain: `350 × 7/4 = 350 × (1 + 3/4) = 350 + 262.5 = ${(350 * 7) / 4} g: split the awkward factor into easy parts.` },
+      far: { type: 'number', q: 'Outside the assessment: a recipe for 4 people uses 350 g of flour. How many grams for 7 people?', answer: (350 * 7) / 4, explain: `350 × 7/4 = 350 × (1 + 3/4) = 350 + 262.5 = ${(350 * 7) / 4} g: split the awkward factor into easy parts.` },
       principle: mc({ q: 'Which idea carried over from the lot price to the recipe?', right: 'Split a factor into easy parts', wrong: [['Round both and add a band', 'both answers were exact'], ['Correct a divisor like a factor', 'a divisor moves the result the opposite way'], ['Use m² − d² for near squares', 'neither product was symmetric around a round number']], explain: 'In both, one awkward factor was broken into parts (tens and units, or 1 + 3/4) and the partial products added.' }) },
 
     sec('tryit'),

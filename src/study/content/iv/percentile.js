@@ -179,7 +179,7 @@ export default {
     ] },
     { type: 'transfer',
       near: { make: (rng) => { const k = rng.int(12, 38), t = rng.int(20, 40); return { type: 'number', q: `A grid of 200 delivery times. In 5 rows (50 times), ${k} are at most ${t} minutes. About how many of the 200 are at most ${t} minutes?`, answer: 4 * k, explain: `${k}/50 × 200 = ${4 * k}.` }; } },
-      far: { type: 'number', q: 'Outside the OA: a risk team wants the 5th percentile of 400 daily returns (the smallest return with at least 5% at or below it). It is the k-th smallest. What is k?', answer: Math.ceil(0.05 * 400), explain: `5% of 400 = ${Math.ceil(0.05 * 400)}: the ${Math.ceil(0.05 * 400)}th smallest return.` },
+      far: { type: 'number', q: 'Outside the assessment: a risk team wants the 5th percentile of 400 daily returns (the smallest return with at least 5% at or below it). It is the k-th smallest. What is k?', answer: Math.ceil(0.05 * 400), explain: `5% of 400 = ${Math.ceil(0.05 * 400)}: the ${Math.ceil(0.05 * 400)}th smallest return.` },
       principle: mc({ q: 'Which idea carried over from test scores to returns?', right: 'A percentile is a count at or below a value', wrong: [['A percentile is a fraction of the maximum', 'it is a rank, not a share of the top value'], ['Sort first, then read off the middle', 'counting against a value needs no sorting'], ['The mean and the median coincide', 'only for symmetric data']], explain: 'Both reduce to "which value has the target number of observations at or below it".' }) },
 
     sec('tryit'),

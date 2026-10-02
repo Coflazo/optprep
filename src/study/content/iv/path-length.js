@@ -156,7 +156,7 @@ export default {
     ] },
     { type: 'transfer',
       near: { make: (rng) => { const segs = [rng.pick([2, 2.5, 3.5]), rng.pick([1, 1.5, 2]), rng.pick([1.5, 3, 4])], u = rng.pick([4, 5, 20]); const t = segs.reduce((a, b) => a + b, 0); return { type: 'number', q: `A floor plan: a corridor runs ${segs[0]} bars east, ${segs[1]} bars north, then ${segs[2]} bars east. The bar is ${u} m. How long is the corridor, in m?`, answer: t * u, tolerance: 1e-9, explain: `${segs.join(' + ')} = ${t} bars × ${u} = ${t * u} m.` }; } },
-      far: { type: 'number', q: 'Outside the OA: a drone flies 6 km east and then 8 km north. How far is it from its base, in a straight line, in km?', answer: Math.hypot(6, 8), explain: '√(6² + 8²) = √100 = 10 km: the same Pythagoras as a diagonal segment.' },
+      far: { type: 'number', q: 'Outside the assessment: a drone flies 6 km east and then 8 km north. How far is it from its base, in a straight line, in km?', answer: Math.hypot(6, 8), explain: '√(6² + 8²) = √100 = 10 km: the same Pythagoras as a diagonal segment.' },
       principle: mc({ q: 'Which idea carried over from the path to the drone?', right: 'Diagonal = √(across² + up²)', wrong: [['Diagonal = across + up', 'that is the route round the corner'], ['Convert each segment separately', 'there was nothing to convert'], ['Use a fixed ± band', 'no band was asked']], explain: 'Both needed the length of a slanted line from its across and up parts.' }) },
 
     sec('tryit'),

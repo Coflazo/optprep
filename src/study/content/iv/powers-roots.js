@@ -148,7 +148,7 @@ export default {
     ] },
     { type: 'transfer',
       near: { make: (rng) => { const x = rng.int(1500, 9500), a = Math.floor(Math.sqrt(x)), nw = a + (x - a * a) / (2 * a); return { type: 'number', q: `A square plot has an area of ${num(x)} m². About how long is each side, in m? (1 decimal place)`, answer: round(Math.sqrt(x), 1), tolerance: 0.15, explain: `${a}² = ${a * a}; ${a} + ${x - a * a}/${2 * a} = ${dec(nw, 2)} m (exact ${dec(Math.sqrt(x), 3)}).` }; } },
-      far: { type: 'number', q: 'Outside the OA: an option is worth 4.00 at 20% volatility and 5.00 at 25%. Estimate its value at 22% by interpolating between the two. (2 decimal places)', answer: 4 + ((22 - 20) / (25 - 20)) * 1, tolerance: 0.006, explain: '22% is 2/5 of the way from 20% to 25%, so 4.00 + 0.4 × 1.00 = 4.40.' },
+      far: { type: 'number', q: 'Outside the assessment: an option is worth 4.00 at 20% volatility and 5.00 at 25%. Estimate its value at 22% by interpolating between the two. (2 decimal places)', answer: 4 + ((22 - 20) / (25 - 20)) * 1, tolerance: 0.006, explain: '22% is 2/5 of the way from 20% to 25%, so 4.00 + 0.4 × 1.00 = 4.40.' },
       principle: mc({ q: 'Which idea carried over from roots to the option price?', right: 'Bracket with known values, then interpolate', wrong: [['Multiply the log by the exponent first', 'no power was involved in the option question'], ['Grow it with the rule of 72 doublings', 'nothing was compounding'], ['Take the exact midpoint of the bracket', '22% is not halfway: move by the fraction of the gap']], explain: 'Both placed an unknown between two known points and moved from the nearer one by the right fraction.' }) },
 
     sec('tryit'),

@@ -173,7 +173,7 @@ export default {
     ] },
     { type: 'transfer',
       near: { make: (rng) => { const s = rng.pick([6, 8]), n6 = rng.int(3, 14), n1 = rng.int(3, 14); const base = s * s * 3.5; return { type: 'number', q: `A ${s} × ${s} grid of dice shows ${n6} sixes and ${n1} ones; the other faces look balanced. Estimate the total pips.`, answer: base + 2.5 * (n6 - n1), explain: `Baseline ${s * s} × 3.5 = ${base}; correction 2.5 × (${n6} − ${n1}) = ${2.5 * (n6 - n1)}; about ${base + 2.5 * (n6 - n1)}.` }; } },
-      far: { type: 'number', q: 'Outside the OA: 30 exams are expected to average 70. You spot 4 scores of 95 and 2 of 45; the rest look average. Estimate the class total.', answer: 30 * 70 + 4 * (95 - 70) + 2 * (45 - 70), explain: `Baseline 30 × 70 = ${30 * 70}; deviations 4 × 25 − 2 × 25 = ${4 * 25 - 2 * 25}; total about ${30 * 70 + 4 * 25 - 2 * 25}.` },
+      far: { type: 'number', q: 'Outside the assessment: 30 exams are expected to average 70. You spot 4 scores of 95 and 2 of 45; the rest look average. Estimate the class total.', answer: 30 * 70 + 4 * (95 - 70) + 2 * (45 - 70), explain: `Baseline 30 × 70 = ${30 * 70}; deviations 4 × 25 − 2 × 25 = ${4 * 25 - 2 * 25}; total about ${30 * 70 + 4 * 25 - 2 * 25}.` },
       principle: mc({ q: 'Which idea carried over from dice to exams?', right: 'Mean baseline plus measured deviations', wrong: [['Add every single item exactly', 'too slow in both, and not needed'], ['Count only the most common value', 'the rare, far-from-average items move the total most'], ['Band with the chance spread of the total', 'the band follows what is left uncertain after the scan']], explain: 'Total = n × mean + Σ (item − mean) over the items you checked: the same identity for dice and for exams.' }) },
 
     sec('tryit'),

@@ -8,7 +8,7 @@ import { families } from './registry.js';
 const SRC = {
   tm: 'Tradermath Orderbooks practice test: cards of products and bundles with sell and buy prices, flat profitable position, wrong submits cost time; original board',
   qv: 'QuantVault / Glassdoor reports of the 2026 Orderbooks module (20 boards in 8 minutes, bundle arbitrage); original board',
-  lj: 'Candidate write-up of the Orderbooks OA (cheap card against a related bundle, check the margin, submit); original board',
+  lj: 'Candidate write-up of the Orderbooks task (cheap card against a related bundle, check the margin, submit); original board',
 };
 const F = Object.fromEntries(families.map((f) => [f.id, f]));
 

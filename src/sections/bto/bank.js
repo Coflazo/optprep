@@ -12,7 +12,7 @@ const SRC = {
   opa: '1Point3Acres topic list for the Optiver probability test (polygon walks, gambler\'s ruin, CLT estimates, optimal stopping), https://www.1point3acres.com/interview/problems/company/optiver/beat-the-odds-probability',
   programhelp: 'ProgramHelp, "Optiver OA experience" (two aces in a row), https://programhelp.net/en/oa/optiver-oa-experience-common-questions-and-how-to-prepare/',
   atp: 'Aptitude Test Prep, Optiver assessment overview (dice, cards and coins; closest-value options), https://aptitude-test-prep.com/employers/trading-assessments/optiver-assessment/',
-  qbt: 'QuantBrainteasers, Optiver OA guide (die game expected value), https://quantbrainteasers.com/blog/optiver-online-assessment-mental-math-sequences-probability/',
+  qbt: 'QuantBrainteasers, Optiver online assessment guide (die game expected value), https://quantbrainteasers.com/blog/optiver-online-assessment-mental-math-sequences-probability/',
   green: 'X. Zhou, A Practical Guide to Quantitative Finance Interviews ("Green Book"), 2008, probability and stochastic-process chapters',
   crack: 'T. F. Crack, Heard on the Street: Quantitative Questions from Wall Street Job Interviews',
   mosteller: 'F. Mosteller, Fifty Challenging Problems in Probability, 1965',
