@@ -139,10 +139,10 @@ export default {
 
     sec('speed'),
     { type: 'callout', tone: 'speed', text: `Coin counts: SD = √n/2 (100 tosses → 5, 400 → 10, 10,000 → 50). Dice totals: SD ≈ ${dec(dieSD, 1)}√n. About 95% of the time a sum lands within 2 SD of its mean: use that as your sanity bracket.` },
+    { type: 'check', scope: 'SD of a sum', questions: [{ make: sdSumQ }] },
     { type: 'callout', tone: 'speed', text: 'Whole-number counts: P(X ≥ 60) ≈ P(normal ≥ 59.5). Each count k is a bar from k − ½ to k + ½, so "at least 60" starts at the left edge of the bar for 60.' },
     { type: 'diagram', diagram: 'histogram', spec: { title: 'Heads in 16 tosses (middle bars)', xLabel: 'heads', yLabel: 'sequences', bins: [4, 5, 6, 7, 8, 9, 10, 11, 12].map((k) => ({ from: k - 0.5, to: k + 0.5, count: nCr(16, k) })) }, caption: 'Each whole count k is a bar from k − ½ to k + ½. "At least 10 heads" is the bars from 10 upward, which start at 9.5: that is where the normal curve should be cut.' },
-    { type: 'check', scope: 'SD of a sum and the half-integer cut', questions: [
-      { make: sdSumQ },
+    { type: 'check', scope: 'the half-integer cut', questions: [
       mc({ q: 'Using the normal curve for P(at least 60 heads in 100 tosses), where should you cut?', right: '59.5', at: 1, wrong: [['60', 'cuts the bar for 60 in half, losing half of it'], ['60.5', 'drops the whole bar for 60'], ['50', 'that is the mean, not the cut']], explain: 'The bar for 60 spans 59.5 to 60.5; "at least 60" includes all of it.' }),
     ] },
 
@@ -157,9 +157,15 @@ export default {
       ['As n grows', 'spreads out', 'concentrates on μ'],
     ] },
     { type: 'callout', tone: 'edge', text: 'Edge cases: n = 1 is just the piece (a single die is flat, not a bell). Skewed pieces, such as rare events, need a larger n before the bell appears. With small n, count exactly or at least use the half-integer cut.' },
-    { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: CLT estimates in Beat the Odds, Fermi and probability estimates in Intervals, large-number rows in Likelihood List (bigger samples stay closer to the mean), and the P&L of many independent trades.' },
-    { type: 'check', scope: 'sum versus average as n grows', questions: [
+    { type: 'check', scope: 'sum versus average, and n = 1', questions: [
       { type: 'order', q: 'Rank from most likely to least likely: at least 60% heads in 10, in 100 and in 1,000 tosses.', items: sixty.map((x) => `${x.n} tosses`), answer: sixty.map((x, i) => [i, x.p]).sort((a, b) => b[1] - a[1]).map(([i]) => i), explain: `${sixty.map((x) => `${x.n}: ${x.p < 1e-4 ? 'below 0.0001' : dec(x.p, 4)}`).join('; ')}. The average concentrates, so a fixed 60% gets harder to reach.` },
+      { type: 'choice', q: 'One fair die (n = 1). What shape is the distribution of its face?', options: ['flat: each face has 1/6', 'a bell centred on 3.5', 'skewed towards 6'], answer: 0, traps: { 1: 'the bell needs a sum of many pieces; with n = 1 you just have the piece', 2: 'every face of a fair die is equally likely' }, explain: 'n = 1 is the piece itself: a flat distribution. The bell only appears for sums of many pieces.' },
+    ] },
+    { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: CLT estimates in Beat the Odds, and Fermi and probability estimates in Intervals. Large-number rows in Likelihood List use it too (bigger samples stay closer to the mean), and so does the P&L of many independent trades.' },
+    { type: 'check', scope: 'the SD of a P&L', questions: [
+      mc({ q: '400 independent trades each have a P&L with SD €10. What is the SD of the total P&L, in euros?', right: '200', at: 1,
+        wrong: [['4000', 'added the SDs: for independent pieces the SD grows with √n'], ['0.5', 'that is the SD of the average P&L'], ['40000', 'that is the variance of the total, not its SD']],
+        explain: 'σ√n = 10 × √400 = 10 × 20 = 200.' }),
     ] },
 
     sec('mastery', 'Mastery check'),

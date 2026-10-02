@@ -127,13 +127,18 @@ export default {
     sec('picture'),
     { type: 'text', text: 'Two-stage experiments fit in a grid: one row per result of the first stage, one column per result of the second. A coin and a die give 2 rows × 6 columns = 12 cells, one per outcome. The cells are equally likely because the coin is fair, the die is fair, and neither affects the other.' },
     { type: 'diagram', diagram: 'grid', spec: { rows: 2, cols: 6, rowLabels: ['H', 'T'], rowTitle: 'coin', colTitle: 'die', highlight: [[0, 1], [0, 3], [0, 5]], count: 3 }, caption: `The 12 outcomes of a coin and a die. Highlighted: heads with an even face, 3 of 12 cells, so P = 3/12 = ${frac(3, 12)}.` },
+    { type: 'check', scope: 'reading the grid', questions: [
+      { make: (rng) => { const k = rng.int(3, 6); return { type: 'number', q: `In the coin-and-die grid, how many cells show tails and a face of at least ${k}?`, answer: 7 - k, explain: `The tails row, faces ${k} to 6: ${7 - k} cells.` }; } },
+      { make: coinDieQ },
+    ] },
     { type: 'diagram', diagram: 'tree', spec: { root: { label: 'toss', children: [
       { p: '1/2', label: 'H', children: [{ p: '1/2', label: 'H → HH' }, { p: '1/2', label: 'T → HT', mark: true }] },
       { p: '1/2', label: 'T', children: [{ p: '1/2', label: 'H → TH', mark: true }, { p: '1/2', label: 'T → TT' }] },
     ] }, total: '1/2' }, caption: 'The same list as a tree: each path from left to right is one outcome. Two coins give 4 equally likely paths; the two marked paths (one head, one tail) make 2 of 4.' },
-    { type: 'check', scope: 'reading the grid', questions: [
-      { make: (rng) => { const k = rng.int(3, 6); return { type: 'number', q: `In the coin-and-die grid, how many cells show tails and a face of at least ${k}?`, answer: 7 - k, explain: `The tails row, faces ${k} to 6: ${7 - k} cells.` }; } },
-      { make: coinDieQ },
+    { type: 'check', scope: 'the two-coin tree', questions: [
+      mc({ q: 'In the two-coin tree, what is P(one head and one tail)?', right: frac(2, 4), at: 1,
+        wrong: [[frac(1, 4), 'counted one marked path, but HT and TH are both marked'], [frac(1, 3), 'counted results (0, 1 or 2 heads) instead of paths'], [frac(3, 4), 'counted every path with at least one head']],
+        explain: `Each path is one outcome, and the 4 paths are equally likely. Two are marked: ${show(2, 4)}.` }),
     ] },
 
     sec('equal', 'Equally likely, or just possible?'),
@@ -170,6 +175,9 @@ export default {
         checks: [{ make: maxQ }] },
     ] },
     { type: 'diagram', diagram: 'grid', spec: diceGrid((a, b) => Math.max(a, b) === 4, (a, b) => Math.max(a, b)), caption: `Each cell shows the larger face. The event "larger face is 4" is an L: 4 cells in row 4 plus 3 in column 4, ${max4} of 36.` },
+    { type: 'check', scope: 'the larger-face grid', questions: [
+      { type: 'number', q: 'In the larger-face grid, how many cells show a number below 4?', answer: nWays((a, b) => Math.max(a, b) <= 3), hints: ['Larger face below 4 means both dice are at most 3.'], explain: `Both dice at most 3: a 3 × 3 square in the corner, ${nWays((a, b) => Math.max(a, b) <= 3)} cells.` },
+    ] },
     { type: 'explain', prompt: 'In your own words: when is P = favourable / total allowed, and what do you do when the natural list of results is not equally likely?', model: 'Only when every outcome in the list has the same chance. If the natural results (sums, numbers of heads, larger faces) are not equally likely, go down to finer outcomes that are (ordered pairs, sequences), count those, and group them into the event.', points: ['The formula needs equally likely outcomes', 'Break results into finer, equally likely outcomes (sequences, ordered pairs)', 'Count favourable and total with the same convention'] },
 
     sec('predict'),
@@ -199,9 +207,12 @@ export default {
 
     sec('speed'),
     { type: 'callout', tone: 'speed', text: `Count a grid row by row, not cell by cell. "First die bigger than second" is 0 + 1 + 2 + 3 + 4 + 5 = ${bigger} cells.` },
-    { type: 'callout', tone: 'speed', text: 'Sanity check every answer: a probability lies between 0 and 1, and favourable can never exceed total. If it does, you mixed conventions.' },
     { type: 'check', scope: 'row-by-row counting', questions: [
       { make: (rng) => { const d = rng.int(1, 4); const n = nWays((a, b) => a - b >= d); return { type: 'number', q: `Two dice. How many of the 36 ordered pairs have the first die at least ${d} more than the second?`, answer: n, hints: ['Go row by row: for first die = r, how many second faces are at most r − d?', `Rows 1 to ${d} give nothing; each later row gives one more than the row before.`], explain: `Row by row: ${[1, 2, 3, 4, 5, 6].map((r) => Math.max(0, r - d)).join(' + ')} = ${n}.` }; } },
+    ] },
+    { type: 'callout', tone: 'speed', text: 'Sanity check every answer: a probability lies between 0 and 1, and favourable can never exceed total. If it does, you mixed conventions.' },
+    { type: 'check', scope: 'the sanity check', questions: [
+      { type: 'choice', q: 'Four candidates answer the same two-dice question. Which answer must come from a counting mistake?', options: ['0', '35/36', '1', '40/36'], answer: 3, traps: { 0: 'a probability can be 0: the bottom end of the range', 1: 'below 1 is allowed', 2: 'a probability can be 1: the top end of the range' }, explain: 'Favourable can never exceed total. 40/36 is above 1, so the two counts used different conventions.' },
     ] },
 
     sec('rule'),
@@ -217,10 +228,13 @@ export default {
       ['2 of the cards A, B, C, D as hands', '6', 'yes, if favourable is also counted as hands'],
     ] },
     { type: 'callout', tone: 'edge', text: 'Edge cases: an event with no favourable outcomes has P = 0; the whole sample space has P = 1. A **biased** coin has no equally likely list at all: there you weight each outcome by its own probability instead of counting.' },
-    { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: Beat the Odds dice and card questions (count ordered pairs or ordered cards), Likelihood List tables where each row is one equally likely case, and the Intervals dice grids. Each starts by asking what the equally likely outcomes are.' },
     { type: 'check', scope: 'the contrast table and edge cases', questions: [
       { type: 'choice', q: 'A biased coin lands heads with probability 0.7. A candidate says P(heads) = 1/2 because there are two outcomes. Right or wrong?', options: ['Wrong: the two outcomes are not equally likely', 'Right: two outcomes, one of them favourable'], answer: 0, traps: { 1: 'favourable / total used on outcomes that are not equally likely' }, explain: 'Counting only works over equally likely outcomes; here P(heads) = 0.7 is given directly.' },
       { type: 'number', q: 'A die is thrown and two coins are tossed. Using a grid (die faces against the coin sequences), how many outcomes are there?', answer: 6 * 4, explain: '6 faces against the 4 sequences HH, HT, TH, TT: 24 cells.' },
+    ] },
+    { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: Beat the Odds dice and card questions, where you count ordered pairs or ordered cards. Also Likelihood List tables where each row is one equally likely case, and the Intervals dice grids. Each starts by asking what the equally likely outcomes are.' },
+    { type: 'check', scope: 'the same first question elsewhere', questions: [
+      { type: 'choice', q: 'Two cards are dealt from a shuffled deck. Which list of outcomes is equally likely?', options: ['ordered pairs of two different cards', 'the number of aces: 0, 1 or 2', 'pairs of suits, such as spade then heart', 'all 52 × 52 pairs, same card twice allowed'], answer: 0, traps: { 1: 'groups the hands unevenly: no ace is far more common than two aces', 2: 'suit pairs are made by different numbers of card pairs', 3: 'one card cannot be dealt twice' }, explain: `Ordered pairs of different cards: ${52 * 51} of them, each with the same chance. The other lists group those pairs unevenly or include impossible ones.` },
     ] },
 
     sec('mastery', 'Mastery check'),

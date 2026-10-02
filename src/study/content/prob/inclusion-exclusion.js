@@ -123,6 +123,11 @@ export default {
         checks: [{ make: (rng) => { const n = rng.int(28, 40), both = rng.int(3, 7), f = both + rng.int(6, 12), t = both + rng.int(4, 10); return { type: 'number', q: `A class of ${n}: ${f} play football, ${t} play tennis, ${both} play both. How many play neither?`, answer: n - (f + t - both), hints: ['First the union: add and remove the overlap once.', 'Then everyone else plays neither.'], explain: `Union ${f} + ${t} − ${both} = ${f + t - both}; neither = ${n} − ${f + t - both} = ${n - (f + t - both)}.` }; } }] },
     ] },
     { type: 'diagram', diagram: 'venn', spec: { sets: ['football', 'tennis'], regions: { A: CL.f - CL.both, B: CL.t - CL.both, AB: CL.both, none: CL.n - CL.u }, total: CL.n }, caption: `The class as a Venn diagram: ${CL.f - CL.both} + ${CL.both} = ${CL.f} in the football circle, ${CL.t - CL.both} + ${CL.both} = ${CL.t} in the tennis circle, ${CL.u} in the union, ${CL.n - CL.u} outside.` },
+    { type: 'check', scope: 'the class Venn diagram', questions: [
+      mc({ q: 'In the class Venn diagram, how many students play exactly one of the two sports?', right: String(CL.f + CL.t - 2 * CL.both), at: 1,
+        wrong: [[String(CL.u), 'that is the union: it includes the lens'], [String(CL.f + CL.t), 'added the circles, so the lens is in twice'], [String(CL.f + CL.t - CL.both - 1), 'an off-by-one in the subtraction']],
+        explain: `Football only plus tennis only: ${CL.f - CL.both} + ${CL.t - CL.both} = ${CL.f + CL.t - 2 * CL.both}. The lens is left out.` }),
+    ] },
     { type: 'explain', prompt: 'Explain why P(A) + P(B) is too big for overlapping events, and why subtracting P(A and B) once, not twice, fixes it.', model: 'Outcomes in both A and B sit inside both circles, so adding P(A) and P(B) counts them twice while every other outcome of the union is counted once. Subtracting the overlap once leaves every outcome counted exactly once.', points: ['The overlap is inside both events', 'P(A) + P(B) counts the overlap twice and everything else once', 'Subtracting it once counts every outcome once'] },
 
     sec('three', 'Three events: add, subtract, add back'),
@@ -158,8 +163,13 @@ export default {
 
     sec('speed'),
     { type: 'callout', tone: 'speed', text: 'Divisibility counts: from 1 to N, ⌊N/a⌋ numbers are divisible by a (round down). The overlap of "divisible by a" and "divisible by b" is "divisible by lcm(a, b)", not a × b: 4 and 6 overlap at 12.' },
-    { type: 'callout', tone: 'speed', text: 'Or go round the other side: P(A or B) = 1 − P(neither). Pick whichever has fewer pieces.' },
     { type: 'check', scope: 'divisibility with the lcm', questions: [{ hinge: true, make: orDivHinge }] },
+    { type: 'callout', tone: 'speed', text: 'Or go round the other side: P(A or B) = 1 − P(neither). Pick whichever has fewer pieces.' },
+    { type: 'check', scope: 'the other side: 1 − P(neither)', questions: [
+      mc({ q: 'Two fair dice. What is P(the first die is even or the second die is even)?', right: frac(27, 36), at: 2,
+        wrong: [['1', 'added 1/2 + 1/2 and kept the overlap twice'], [frac(9, 36), 'that is P(neither): subtract it from 1'], [frac(1, 2), 'counted one die only']],
+        explain: `Neither even means both odd: 3 × 3 = 9 of 36 cells. 1 − 9/36 = ${frac(27, 36)}.` }),
+    ] },
 
     sec('rule'),
     { type: 'callout', tone: 'rule', text: 'Or → add, then remove what you counted twice: P(A) + P(B) − P(A and B). Three sets: + singles − pairs + triple. Disjoint → just add.' },
@@ -173,11 +183,17 @@ export default {
       ['neither', 'outside both circles', '1 − P(A or B)'],
     ] },
     { type: 'callout', tone: 'edge', text: 'Bounds: P(A or B) is at least the larger of P(A) and P(B), and at most P(A) + P(B) (and 1). If B sits inside A, P(A or B) = P(A). The overlap can never exceed the smaller event.' },
-    { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: card events in Likelihood List ("a heart or a king" is 13 + 4 − 1 of 52), survey tables with overlapping groups, and at-least-one-of-two questions in Beat the Odds. The complement lesson and this one are two routes to the same number.' },
-    { type: 'check', scope: 'bounds on the overlap', questions: [
+    { type: 'check', scope: 'the table and the bounds', questions: [
       mc({ q: 'P(A) = 0.6 and P(B) = 0.7. Which value is impossible for P(A and B)?', right: '0.2', at: 0,
         wrong: [['0.3', `allowed: then P(A or B) = ${dec(1.3 - 0.3, 1)}`], ['0.5', `allowed: P(A or B) = ${dec(1.3 - 0.5, 1)}`], ['0.6', 'allowed: A sits inside B']],
         explain: 'P(A or B) = 1.3 − P(A and B) cannot exceed 1, so the overlap is at least 0.3.' }),
+      { type: 'number', q: 'P(A) = 0.5, P(B) = 0.4 and P(A and B) = 0.1. What is P(exactly one of A, B)?', answer: 0.7, tolerance: 1e-9, explain: 'From the table: P(A) + P(B) − 2 P(A and B) = 0.5 + 0.4 − 0.2 = 0.7. The lens is removed from both circles.' },
+    ] },
+    { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: card events in Likelihood List ("a heart or a king" is 13 + 4 − 1 of 52) and survey tables with overlapping groups. Also the at-least-one-of-two questions in Beat the Odds. The complement lesson and this one are two routes to the same number.' },
+    { type: 'check', scope: 'overlapping groups in a survey', questions: [
+      mc({ q: 'A survey of 50 people: 20 read the FT, 15 read The Economist, 6 read both. What is P(a random respondent reads neither)?', right: frac(21, 50), at: 1,
+        wrong: [[frac(15, 50), 'forgot to remove the 6 counted twice'], [frac(27, 50), 'removed the overlap twice'], [frac(29, 50), 'that is P(reads at least one)']],
+        explain: `Union 20 + 15 − 6 = 29, so neither = 50 − 29 = 21: ${frac(21, 50)}.` }),
     ] },
 
     sec('mastery', 'Mastery check'),

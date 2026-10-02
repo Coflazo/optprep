@@ -136,6 +136,11 @@ export default {
 
     sec('speed'),
     { type: 'callout', tone: 'speed', text: 'Swap test before any calculation: name the relabelling (players, cards, positions) that turns the event into its mirror. If one exists, the answer is (1 − P(tie))/2 for two players, or 1/m for m interchangeable items.' },
+    { type: 'check', scope: 'the swap test with ties', questions: [
+      mc({ q: 'Ann and Bob each toss 3 fair coins. P(they get the same number of heads) = 5/16. What is P(Ann gets strictly more heads)?', right: frac(11, 32), at: 1,
+        wrong: [['1/2', 'ignored ties'], [frac(5, 16), 'that is P(tie)'], [frac(21, 32), 'counted ties as wins for Ann']],
+        explain: 'Swapping Ann and Bob turns "Ann more" into "Bob more", so they share what ties leave: (1 − 5/16)/2 = 11/32.' }),
+    ] },
     { type: 'callout', tone: 'speed', text: `Symmetry plus linearity: each of the 48 non-aces lies before all 4 aces with chance 1/5 (first among 5 cards). So the expected number of cards before the first ace is 48/5 = ${48 / 5}.` },
     { type: 'check', scope: 'first-among-m with linearity', questions: [{ make: beforeFirstQ }] },
 
@@ -151,11 +156,15 @@ export default {
       ['the first ace is at position 2', 'no', frac(48 * 4, 52 * 51)],
     ] },
     { type: 'callout', tone: 'edge', text: 'Edge cases: with continuous values (two uniform random points, two returns) ties have probability 0, so P(X > Y) = 1/2 exactly. With m = 1 item, "first among them" is certain.' },
-    { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: the card-symmetry, race-to-k and dice-duel families in Beat the Odds, the expected position of the first ace, and Likelihood List rows where two teams or two funds are described identically.' },
-    { type: 'check', scope: 'swapping whole groups', questions: [
+    { type: 'check', scope: 'swapping whole groups, and ties of probability 0', questions: [
       mc({ q: 'A deck is shuffled. What is P(the first ace appears before the first king)?', right: '1/2', at: 0,
         wrong: [[frac(4, 52), 'that is P(the top card is an ace)'], ['1/5', 'treated it as one ace racing four kings'], [frac(1, nCr(8, 4)), 'that is P(all four aces come before all four kings), a stronger event']],
         explain: 'Swap the labels ace and king: "first ace before first king" becomes "first king before first ace". Same chance, no ties possible: 1/2.' }),
+      { type: 'choice', q: 'X and Y are two independent uniform random points on [0, 1]. P(X > Y) is:', options: ['exactly 1/2', 'a little below 1/2', 'a little above 1/2'], answer: 0, stable: true, traps: { 1: 'continuous values tie with probability 0, so nothing is lost to ties', 2: 'swapping X and Y shows the two sides are equal' }, explain: 'Swap X and Y: P(X > Y) = P(Y > X), and P(X = Y) = 0. So each is exactly 1/2.' },
+    ] },
+    { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: the card-symmetry, race-to-k and dice-duel families in Beat the Odds, and the expected position of the first ace. Also Likelihood List rows where two teams or two funds are described identically.' },
+    { type: 'check', scope: 'symmetry in a series', questions: [
+      { type: 'choice', q: 'Two equally strong players play a best-of-7 series. What is P(the player who starts wins the series)?', options: ['1/2', '4/7', 'cannot tell without the series formula'], answer: 0, traps: { 1: 'counted games needed instead of swapping the players', 2: 'swap the two players: if starting gives no edge, the series is its own mirror' }, explain: 'Equal players and no starter edge: swapping them maps every winning path for one onto a winning path for the other. 1/2.' },
     ] },
 
     sec('mastery', 'Mastery check'),

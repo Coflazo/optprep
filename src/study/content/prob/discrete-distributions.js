@@ -83,9 +83,14 @@ export default {
     sec('picture'),
     { type: 'text', text: 'Three tosses of a fair coin: 8 equally likely paths. Exactly 2 heads is 3 of them (HHT, HTH, THH), each with the same chance. That is the binomial in miniature: number of orders × chance of one order.' },
     { type: 'diagram', diagram: 'tree', spec: { root: { label: 'start', children: coinTree(3) }, total: frac(nCr(3, 2), 8) }, caption: `The marked leaves are the ${nCr(3, 2)} orders with two heads, each 1/8: together ${frac(nCr(3, 2), 8)}.` },
+    { type: 'check', scope: 'the three-toss tree', questions: [
+      { type: 'number', q: 'In the three-toss tree, how many leaves have exactly one head?', answer: nCr(3, 1), explain: 'HTT, THT, TTH: C(3, 1) = 3.' },
+    ] },
     { type: 'diagram', diagram: 'bar', spec: { title: 'Six tosses: sequences per number of heads', xLabel: 'heads', yLabel: 'sequences (of 64)', categories: [0, 1, 2, 3, 4, 5, 6].map(String), series: [{ name: 'sequences', values: [0, 1, 2, 3, 4, 5, 6].map((k) => nCr(6, k)) }], valueLabels: true }, caption: `Six tosses: ${[0, 1, 2, 3, 4, 5, 6].map((k) => nCr(6, k)).join(', ')} sequences of ${2 ** 6}. Each count is C(6, k); the middle is most likely.` },
     { type: 'check', scope: 'orders times one order', questions: [
-      { type: 'number', q: 'In the three-toss tree, how many leaves have exactly one head?', answer: nCr(3, 1), explain: 'HTT, THT, TTH: C(3, 1) = 3.' },
+      mc({ q: 'From the six-toss bar chart: what is P(exactly 3 heads)?', right: frac(nCr(6, 3), 64), at: 1,
+        wrong: [[frac(1, 7), 'treated the 7 head counts as equally likely'], [frac(1, 64), 'counted one order only'], [frac(3, 6), 'used the fraction of tosses instead of a probability']],
+        explain: `The bar for 3 heads holds C(6, 3) = ${nCr(6, 3)} of the 64 sequences: ${frac(nCr(6, 3), 64)}.` }),
       { make: coinsQ },
     ] },
 
@@ -148,6 +153,9 @@ export default {
 
     sec('speed'),
     { type: 'callout', tone: 'speed', text: 'Coins (p = 1/2): P(X = k) = C(n, k)/2^{n}, just count. Dice: keep C(n, k) × 5^{n − k} over 6^{n} in whole numbers until the last step.' },
+    { type: 'check', scope: 'whole numbers until the last step', questions: [
+      { type: 'number', q: 'A die is rolled 4 times. How many of the 6^{4} = 1296 sequences have exactly one six?', answer: nCr(4, 1) * 5 ** 3, hints: ['Where is the six? C(4, 1) places.', 'The other three dice: 5 faces each.'], explain: `C(4, 1) × 5^{3} = 4 × 125 = ${nCr(4, 1) * 5 ** 3}. Keep that whole number; P = ${nCr(4, 1) * 5 ** 3}/1296 only at the end.` },
+    ] },
     { type: 'callout', tone: 'speed', text: `Tail anchors: (5/6)^{4} ≈ ${dec((5 / 6) ** 4, 2)}, (5/6)^{6} ≈ ${dec((5 / 6) ** 6, 2)}, (1/2)^{10} ≈ 1/1000. Big pile, few draws: the hypergeometric is close to the binomial with p = K/N.` },
     { type: 'check', scope: 'tail anchors', questions: [
       { make: (rng) => { const k = rng.pick([4, 6, 12]), v = (5 / 6) ** k; return mc({ q: `A die is rolled until the first six. Which is closest to P(more than ${k} rolls are needed)?`, right: dec(v, 2),
@@ -166,9 +174,13 @@ export default {
       ['Mean', 'np', '1/p', 'nK/N'],
     ] },
     { type: 'callout', tone: 'edge', text: 'Edge cases: p = 1 makes the binomial always n and the geometric always 1. One draw (n = 1) makes the hypergeometric a plain K/N. Drawing everything (n = N) makes X = K for sure.' },
-    { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: the first-success, urn-draws and coin-sequences families in Beat the Odds, waiting-time questions in Intervals, and coin-pattern rows in Likelihood List. The next lesson grows the binomial into the Poisson and the normal curve.' },
-    { type: 'check', scope: 'hypergeometric mean', questions: [
+    { type: 'check', scope: 'hypergeometric mean and the edge cases', questions: [
       { make: (rng) => { const N = rng.pick([20, 30, 40, 52]), K = rng.int(4, 10), n = rng.int(3, 8), ans = round((n * K) / N, 2); return { type: 'number', q: `A pile of ${N} cards holds ${K} winners. ${n} are drawn without replacement. Expected number of winners? (2 decimal places)`, answer: ans, tolerance: 0.006, hints: ['Each draw is a winner with chance K/N.', 'Add over the draws.'], explain: `${n} × ${K}/${N} = ${dec((n * K) / N, 3)}.` }; } },
+      { type: 'number', q: 'A bag holds 12 balls, 5 of them red. You draw all 12. What is P(exactly 5 red)?', answer: 1, explain: 'Drawing everything (n = N) gives X = K for sure.' },
+    ] },
+    { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: the first-success, urn-draws and coin-sequences families in Beat the Odds, waiting-time questions in Intervals, and coin-pattern rows in Likelihood List. The next lesson grows the binomial into the Poisson and the normal curve.' },
+    { type: 'check', scope: 'the geometric wait elsewhere', questions: [
+      { type: 'number', q: 'An order is re-sent until it fills. Each attempt fills with probability 0.2, independently. What is the expected number of attempts?', answer: 5, explain: 'A geometric wait from the table: mean 1/p = 1/0.2 = 5.' },
     ] },
 
     sec('mastery', 'Mastery check'),
