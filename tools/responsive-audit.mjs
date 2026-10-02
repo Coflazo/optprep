@@ -76,7 +76,7 @@ function audit() {
   }
   // On phone layouts the rail is a thin bar above the page; content starts right under it.
   const rail = document.getElementById('rail'), first = document.querySelector('#view > *');
-  if (rail && first && getComputedStyle(document.getElementById('tabbar')).display !== 'none') {
+  if (rail && first && getComputedStyle(rail).display !== 'none' && getComputedStyle(document.getElementById('tabbar')).display !== 'none') {
     const gap = first.getBoundingClientRect().top - rail.getBoundingClientRect().bottom;
     if (gap > 64) problems.push(`page content starts ${Math.round(gap)}px below the rail`);
   }
