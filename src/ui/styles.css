@@ -533,7 +533,7 @@ details > summary { cursor: pointer; }
     background: color-mix(in srgb, var(--bg) 88%, transparent); backdrop-filter: saturate(160%) blur(12px); -webkit-backdrop-filter: saturate(160%) blur(12px); border-bottom: 1px solid var(--border); }
   .topbar .wordmark { height: 22px; width: auto; }
   .topbar .nav-today { padding: 0; }
-  .sheet { grid-template-columns: minmax(0, 1fr); }
+  .sheet { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto 1fr; } /* rail row stays thin; the page takes the rest */
   .rail { position: sticky; top: calc(56px + env(safe-area-inset-top, 0px)); z-index: 10; height: 8px; flex-direction: row; justify-content: center; align-items: center; gap: 4px; padding: 0 16px; border-right: 0; border-bottom: 1px solid var(--border); }
   .rail-mark { width: 4px; height: 6px; }
   .main { padding: 24px max(16px, env(safe-area-inset-left, 0px)) 40px max(16px, env(safe-area-inset-right, 0px)); }
