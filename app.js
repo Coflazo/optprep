@@ -20,6 +20,7 @@ import { creditTick } from './src/core/activity.js';
 import { initTheme } from './src/ui/theme.js';
 import { createSync } from './src/ui/sync.js';
 import { initPwa } from './src/ui/pwa.js';
+import { gistConfig, syncNow } from './src/ui/gist.js';
 import { studyHome, bookPage, lessonPage, cheatPage, drillPage, mixedPage, reviewPage, mistakesPage, weekPage } from './src/study/pages.js';
 import { dueLessons, openBeliefs } from './src/study/progress.js';
 
@@ -105,7 +106,7 @@ function route() {
   const go = () => render();
   const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
   // A short crossfade between pages; runs and games swap instantly (keyboard-heavy).
-  if (document.startViewTransition && !reduce && !/^#\/(run|zapn\/\w+)/.test(location.hash) && view.childElementCount) document.startViewTransition(go); else go();
+  if (document.startViewTransition && !reduce && !/^#\/(run|zapn\/\w+)/.test(location.hash) && view.childElementCount) { const t = document.startViewTransition(go); t.ready.catch(() => {}); t.finished.catch(() => {}); } else go();
 }
 
 function render() {
@@ -149,6 +150,15 @@ setInterval(() => {
 }, 5000);
 document.addEventListener('visibilitychange', () => { if (document.hidden) store.save(); else lastTick = Date.now(); });
 window.addEventListener('pagehide', () => store.save());
+
+// Ask the browser to keep this site's data (no prompt in most browsers once the user engages).
+window.addEventListener('pointerdown', () => navigator.storage?.persist?.().catch(() => {}), { once: true });
+
+// Optional Gist sync: on open and when the tab is hidden. A conflict waits for Settings.
+if (gistConfig()?.token) {
+  syncNow(store).then((r) => { if (r.action === 'pull') route(); }).catch(() => {});
+  document.addEventListener('visibilitychange', () => { if (document.hidden) syncNow(store).catch(() => {}); });
+}
 
 // A new version is ready: offer one reload, never force it.
 window.addEventListener('optprep:update', (e) => {

@@ -364,6 +364,10 @@ input:focus-visible, select:focus-visible { outline: 2px solid var(--ring); outl
 input.big { font-family: var(--mono); font-size: 18px; width: 160px; }
 kbd { font-family: var(--mono); font-size: 12px; border: 1px solid var(--border-strong); border-bottom-width: 2px; border-radius: 4px; padding: 0 5px; background: var(--surface-2); }
 details > summary { cursor: pointer; }
+.steps-plain { margin: 0 0 12px; padding-left: 20px; color: var(--text-2); }
+.steps-plain li + li { margin-top: 4px; }
+.field .field-inline { margin-bottom: 12px; }
+.conflict { margin-top: 8px; }
 .check-line { display: flex; gap: 10px; align-items: center; min-height: 32px; margin-top: 12px; color: var(--text-2); cursor: pointer; }
 .check-line input { width: 18px; height: 18px; }
 

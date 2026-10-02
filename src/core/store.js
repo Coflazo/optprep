@@ -57,6 +57,7 @@ export function makeStore(backend = defaultBackend(), hooks = {}, { clock = () =
 
   const save = () => {
     if (readOnly) return;
+    state.updatedAt = clock();
     let text = JSON.stringify(state);
     if (text.length > STATE_BUDGET) { compact(state, clock()); text = JSON.stringify(state); }
     try { backend.setItem(KEY, text); storageFull = false; } catch {
@@ -78,6 +79,8 @@ export function makeStore(backend = defaultBackend(), hooks = {}, { clock = () =
     get storageFull() { return storageFull; },
     get bytes() { return bytes; },
     get migratedFrom() { return migratedFrom; },
+    // Nothing worth keeping yet: no answers, exams, lessons or games.
+    isEmpty() { return !Object.keys(state.stats).length && !state.runs.length && !Object.keys(state.study || {}).length && !Object.keys(state.zapn).length; },
     save,
     // One answer from any mode. Updates stats, the recency trend, the skill level, XP and
     // the mistake log, then saves once.

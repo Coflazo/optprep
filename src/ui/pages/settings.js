@@ -6,6 +6,8 @@ import { canInstall, promptInstall } from '../pwa.js';
 import { choice, field } from '../sheet.js';
 import { presetPicker } from './path.js';
 import { icon } from '../icons.js';
+import { gistConfig, connectGist, disconnectGist, syncNow } from '../gist.js';
+import { describe as describeSave } from '../../core/cloud.js';
 
 function backup(store) {
   const status = h('p', { role: 'status', class: 'muted small-note' });
@@ -51,6 +53,53 @@ function storageLine(store) {
   return line;
 }
 
+const when = (t) => (t ? new Date(t).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' }) : 'never');
+
+// Optional sync through the user's own GitHub Gist.
+function syncField(store, rerender) {
+  const cfg = gistConfig();
+  const status = h('p', { role: 'status', class: 'muted small-note' });
+  const run = async (choose) => {
+    status.textContent = 'Syncing...';
+    try {
+      const res = await syncNow(store, { choose });
+      if (res.action === 'conflict') {
+        const here = describeSave(store.state), there = describeSave(res.remote);
+        status.replaceChildren('Both devices changed since the last sync. Which progress do you want to keep?');
+        status.after(h('div', { class: 'row conflict' },
+          h('button', { class: 'btn', type: 'button', onclick: () => rerender(() => run('keep-local')) }, `This device: ${here.answers} answers, ${when(here.updatedAt)}`),
+          h('button', { class: 'btn', type: 'button', onclick: () => rerender(() => run('pull')) }, `The other device: ${there.answers} answers, ${when(there.updatedAt)}`)));
+        return;
+      }
+      status.textContent = { push: 'Uploaded this device\'s progress.', pull: 'Downloaded progress from your other device.', none: 'Already up to date.' }[res.action] || '';
+    } catch (e) { status.textContent = e.message; }
+  };
+  if (!cfg?.token) {
+    const token = h('input', { type: 'password', id: 'gist-token', autocomplete: 'off', spellcheck: 'false', placeholder: 'github_pat_...' });
+    const pass = h('input', { type: 'password', id: 'gist-pass', autocomplete: 'new-password', placeholder: 'Optional' });
+    return field('Sync across devices',
+      h('p', {}, 'Optional. Progress goes to one private gist in your own GitHub account, and nowhere else.'),
+      h('ol', { class: 'small-note steps-plain' },
+        h('li', {}, 'Create a ', h('a', { href: 'https://github.com/settings/personal-access-tokens/new', target: '_blank', rel: 'noopener' }, 'fine-grained token'), ' with one permission: Gists, read and write.'),
+        h('li', {}, 'Paste it here on each device. It stays in this browser.'),
+        h('li', {}, 'Add a passphrase to encrypt the upload. Use the same one on every device.')),
+      h('label', { class: 'field-inline', for: 'gist-token' }, 'Token', token),
+      h('label', { class: 'field-inline', for: 'gist-pass' }, 'Passphrase', pass),
+      h('div', { class: 'row' }, h('button', { class: 'btn primary', type: 'button', onclick: () => {
+        if (!token.value.trim()) { status.textContent = 'Paste a token first.'; return; }
+        connectGist({ token: token.value, passphrase: pass.value });
+        rerender(() => run());
+      } }, 'Connect and sync')),
+      status);
+  }
+  return field('Sync across devices',
+    h('p', {}, `Connected. ${cfg.passphrase ? 'Uploads are encrypted with your passphrase.' : 'Uploads are not encrypted; a secret gist is unlisted, not private.'} Last sync: ${when(cfg.last?.at)}.`),
+    h('div', { class: 'row' },
+      h('button', { class: 'btn', type: 'button', onclick: () => run() }, 'Sync now'),
+      h('button', { class: 'btn ghost', type: 'button', onclick: () => { disconnectGist(); rerender(); } }, 'Disconnect')),
+    status);
+}
+
 export function settingsPage(root, { store }) {
   const goal = store.goalMin();
   const install = canInstall() ? h('button', { class: 'btn', type: 'button', onclick: async () => { if (await promptInstall()) install.replaceWith(h('p', { class: 'muted' }, 'Installed.')); } }, 'Install the app') : null;
@@ -71,5 +120,6 @@ export function settingsPage(root, { store }) {
       { value: 'colon', label: ':', hint: '84 : 7, as some European tests print it' }] })),
     install ? field('App', h('p', {}, 'Install OptPrep to open it from your dock or home screen and practise offline.'), install) : null,
     field('Backup', ...backup(store), storageLine(store)),
+    syncField(store, (then) => { settingsPage(root, { store }); then?.(); }),
     h('p', { class: 'muted small-note' }, 'OptPrep is free and open source. Not affiliated with or endorsed by Optiver.'));
 }

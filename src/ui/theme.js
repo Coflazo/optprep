@@ -26,7 +26,7 @@ export function setTheme(choice) {
   try { if (choice === 'system') localStorage.removeItem(KEY); else localStorage.setItem(KEY, choice); } catch { /* memory only */ }
   const swap = () => paint(choice);
   // Cross-fade the switch where the View Transitions API exists.
-  if (document.startViewTransition && !matchMedia('(prefers-reduced-motion: reduce)').matches) document.startViewTransition(swap); else swap();
+  if (document.startViewTransition && !matchMedia('(prefers-reduced-motion: reduce)').matches) { const t = document.startViewTransition(swap); t.ready.catch(() => {}); t.finished.catch(() => {}); } else swap();
   window.dispatchEvent(new CustomEvent('optprep:theme', { detail: choice }));
 }
 
