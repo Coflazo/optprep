@@ -1,58 +1,74 @@
+// A section's roadmap, drawn as its answer sheet: units from Foundations to Exam pace,
+// one numbered row per lesson, skill or checkpoint, five level bubbles per skill, and a
+// single current row. The exam format and question library sit in the header field.
 import { h, mount } from '../dom.js';
 import { SECTIONS } from '../../../config/sections.js';
+import { REPORTED, SOURCES } from '../../../config/presets.js';
 import { SECTION_MODULES } from '../../sections/index.js';
 import { srsDue } from '../../core/srs.js';
-import { formatLine, sectionStatus } from './home.js';
 import { buildLibrary, librarySets, setCount } from '../../core/library.js';
-import { lessonForFamily, BOOK_BY_ID } from '../../study/content/index.js';
+import { bookLessons } from '../../study/catalog.js';
+import { sectionMap } from './section-map.js';
+import { bubbles, stamp, setRail } from '../sheet.js';
+import { icon } from '../icons.js';
+import { formatLine } from './format.js';
+
+// Some 80-in-8 reports write division as 735 : 15. The learner picks; items keep ÷ underneath.
+function notationToggle(store) {
+  const box = h('input', { type: 'checkbox', checked: store.settings().divNotation === 'colon', onchange: () => store.setSetting('divNotation', box.checked ? 'colon' : 'obelus') });
+  return h('label', { class: 'check-line small-note' }, box, 'Write division as 735 : 15, as some European tests print it');
+}
+
+
+function row(r, n, id) {
+  // One action per row; the title opens the lesson, so the row never needs two buttons.
+  const titleHref = r.kind === 'skill' ? (r.lesson ? `#/study/lesson/${r.lesson}` : `#/s/${id}/learn/${r.id}`) : r.href;
+  const verb = r.kind === 'skill' ? (r.state === 'needs-review' ? 'Review' : 'Practise') : r.kind === 'lesson' ? 'Read' : 'Start';
+  const actions = [h('a', { class: `btn small${r.current ? ' primary' : ' ghost'}`, href: r.href, 'aria-label': `${verb}: ${r.title}` }, verb)];
+  return h('li', { class: `grid-row${r.current ? ' is-current' : ''}${r.later ? ' is-later' : ''}${r.done ? ' is-done' : ''}`, id: r.current ? 'current-row' : null, 'aria-current': r.current ? 'step' : null },
+    h('span', { class: 'grid-num num' }, String(n)),
+    h('span', { class: 'grid-body' },
+      h('a', { class: 'grid-title', href: titleHref }, r.title),
+      r.current && r.kind === 'skill' && r.skill ? h('span', { class: 'grid-skill' }, r.skill) : null,
+      r.current ? h('span', { class: 'you-are-here' }, icon('pencil', { size: 14 }), 'You are here') : null),
+    h('span', { class: 'grid-level' },
+      r.kind === 'skill' ? bubbles(5, r.lv, { label: `Level ${r.lv} of 5`, current: r.current }) : bubbles(1, r.done ? 1 : 0, { label: r.done ? 'Done' : 'Not done', current: r.current })),
+    h('span', { class: 'grid-state' }, r.state === 'needs-review' || r.state === 'mastered' ? stamp(r.state) : null),
+    h('span', { class: 'grid-actions' }, actions));
+}
 
 export function sectionPage(root, { store, id }) {
   const cfg = SECTIONS[id];
   const mod = SECTION_MODULES[id];
-  if (!cfg || !mod) return mount(root, h('h1', {}, 'Unknown section'));
-  if (!mod.families.length) {
-    return mount(root, h('h1', {}, cfg.title), h('p', { class: 'muted' }, cfg.blurb), h('div', { class: 'panel' }, 'This section is still being built.'));
-  }
-  const st = sectionStatus(store, id);
+  if (!cfg || !mod) return mount(root, h('h1', {}, 'Unknown task'), h('p', {}, h('a', { href: '#/' }, 'Back to your sheet')));
+  const map = sectionMap(store, id);
   const lib = buildLibrary(mod, { size: setCount(cfg.exam.count) * cfg.exam.count });
   const nSets = librarySets(lib, cfg.exam.count).length;
-  const setsDone = Object.keys(store.sets(id)).length;
   const due = srsDue(store.srs).filter((k) => k.startsWith(`${id}:`)).length;
-  const stats = store.stats();
-  const famRows = mod.families.map((f) => {
-    const s = stats[`${id}:${f.id}`];
-    return h('tr', {},
-      h('td', {}, h('strong', {}, f.title), h('div', { class: 'muted small-note' }, f.skill)),
-      h('td', { class: 'num', style: { textAlign: 'right' } }, s ? `${s.correct}/${s.n}` : '—'),
-      h('td', { style: { textAlign: 'right', whiteSpace: 'nowrap' } },
-        lessonForFamily(id, f.id) ? [h('a', { class: 'btn small', href: `#/study/lesson/${lessonForFamily(id, f.id)}` }, 'Study'), ' '] : null,
-        h('a', { class: 'btn small', href: `#/s/${id}/learn/${f.id}` }, 'Learn'), ' ',
-        h('a', { class: 'btn small', href: `#/run/${id}/practice/${f.id}` }, 'Practise')));
-  });
+  const rep = REPORTED[id];
+  setRail(map.skillsTotal ? map.skillsDone / map.skillsTotal : 0, `${map.skillsDone} of ${map.skillsTotal} skills at level 3`);
+  let n = 0;
   mount(root,
     h('h1', {}, cfg.title),
-    h('p', { class: 'muted' }, cfg.blurb),
-    h('div', { class: 'panel' },
-      h('div', { class: 'spread' },
-        h('div', {},
-          h('div', {}, `Exam replica: ${formatLine(cfg)}`),
-          h('div', { class: 'muted' }, `Target: ${cfg.target.label}. `, st.ready ? 'Ready.' : `Readiness streak ${st.streak} of ${st.needed}.`)),
-        st.ready ? h('span', { class: 'badge ok' }, 'Ready') : h('span', { class: 'badge' }, 'Not yet')),
-      h('div', { class: 'row', style: { marginTop: '16px' } },
-        h('a', { class: 'btn primary', href: `#/run/${id}/practice` }, 'Practice'),
-        h('a', { class: 'btn', href: `#/run/${id}/drill` }, 'Drill (10, timed)'),
-        h('a', { class: 'btn', href: `#/run/${id}/exam` }, 'Exam (full replica)'),
-        ...cfg.variants.map((v, i) => h('a', { class: 'btn', href: `#/run/${id}/exam/v${i}` }, v.label)),
-        h('a', { class: 'btn', href: `#/run/${id}/mistakes` }, `Mistakes (${due} due)`),
-        BOOK_BY_ID[id] && !BOOK_BY_ID[id].pending ? h('a', { class: 'btn', href: `#/study/book/${id}` }, 'Study this section') : null)),
-    h('h2', {}, 'Question library'),
-    h('div', { class: 'panel spread' },
-      h('div', {}, h('div', {}, `${lib.length} fixed questions in ${nSets} exam-sized sets, plus unlimited fresh questions in Practice, Drill and Exam.`),
-        h('div', { class: 'muted' }, `${setsDone} of ${nSets} sets done.`)),
-      h('a', { class: 'btn primary', href: `#/s/${id}/sets` }, 'Open sets')),
-    h('h2', {}, 'Question families'),
-    h('p', { class: 'muted' }, `${mod.families.length} families, ${mod.bank.length} curated questions from reported past tests. Practice picks weaker families more often.`),
-    h('div', { class: 'panel' }, h('table', {},
-      h('thead', {}, h('tr', {}, h('th', {}, 'Family'), h('th', { style: { textAlign: 'right' } }, 'Correct'), h('th', {}))),
-      h('tbody', {}, famRows))));
+    h('p', { class: 'lede' }, cfg.blurb),
+    h('section', { class: 'format-line' },
+      h('p', { class: 'num-ish' }, formatLine(cfg)),
+      h('div', { class: 'row' },
+        h('a', { class: 'btn primary', href: `#/run/${id}/practice` }, 'Practise'),
+        h('a', { class: 'btn', href: `#/run/${id}/exam` }, 'Exam replica')),
+      h('p', { class: 'quiet-links small-note' },
+        due ? [h('a', { href: `#/run/${id}/mistakes` }, `Review ${due} due`), ' '] : null,
+        cfg.variants.map((v, i) => [h('a', { href: `#/run/${id}/exam/v${i}` }, `Exam: ${v.label}`), ' ']),
+        h('a', { href: `#/s/${id}/sets` }, `Library, ${nSets} sets`), ' ',
+        bookLessons(id).length ? h('a', { href: `#/study/book/${id}` }, 'Study book') : null),
+      h('p', { class: 'muted small-note' }, `Trainer bar: ${cfg.target.label}. `, rep ? ['Reported pass: ', rep.text, ' (', h('a', { href: SOURCES[rep.source].url, target: '_blank', rel: 'noopener' }, 'source'), ').'] : null),
+      id === 'mm' ? notationToggle(store) : null),
+    map.units.map((u) => h('section', { class: 'unit' },
+      h('header', { class: 'unit-head' },
+        h('h2', {}, u.title),
+        h('span', { class: 'num muted' }, `${u.done} of ${u.total}`)),
+      h('ol', { class: 'grid', start: n + 1 }, u.rows.map((r) => row(r, ++n, id))))));
+  // Bring the current row into view on arrival, without animating a keyboard-driven jump.
+  const cur = root.querySelector('#current-row');
+  if (cur && cur.getBoundingClientRect().top > window.innerHeight * 0.7) cur.scrollIntoView({ block: 'center' });
 }

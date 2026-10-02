@@ -30,3 +30,21 @@ def test_rejects_bad_answer_rows(tmp_path):
         assert "family" in str(e)
     else:
         raise AssertionError("expected ValueError")
+
+
+def test_v1_database_gains_v2_answer_columns(tmp_path):
+    import sqlite3
+    path = tmp_path / "old.db"
+    old = sqlite3.connect(path)
+    old.executescript("CREATE TABLE answers (id INTEGER PRIMARY KEY, at REAL NOT NULL, section TEXT NOT NULL, family TEXT NOT NULL,"
+                      " correct INTEGER NOT NULL, ms REAL NOT NULL DEFAULT 0, difficulty INTEGER, confidence REAL, score REAL);"
+                      "INSERT INTO answers (at, section, family, correct) VALUES (1, 'bto', 'f', 1);")
+    old.commit()
+    old.close()
+    db = Database(path)
+    db.add_answers([{"section": "mm", "family": "mm-missing", "correct": False, "item_id": "mm:mm-missing:7", "mode": "practice", "hints": 0, "belief": "Answered the operand"}])
+    rows = db.answers()
+    assert len(rows) == 2
+    assert rows[1]["item_id"] == "mm:mm-missing:7" and rows[1]["belief"] == "Answered the operand"
+    assert rows[0]["item_id"] is None
+    Database(path)  # reopening is a no-op

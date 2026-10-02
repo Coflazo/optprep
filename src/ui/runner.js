@@ -18,20 +18,32 @@ import { makeCountdown } from '../core/timer.js';
 import { SECTIONS } from '../../config/sections.js';
 import { SECTION_MODULES } from '../sections/index.js';
 import { readiness, runMeetsTarget } from '../core/readiness.js';
-import { lessonForFamily } from '../study/content/index.js';
+import { lessonForFamily } from '../study/catalog.js';
+import { divNotation } from '../core/format.js';
+import { setRail, scanSheet, bubbles, tickTo } from './sheet.js';
+import { mistakeRow } from '../core/mistakes.js';
+import { timingOf } from '../../config/presets.js';
 
 const VIEWS = { mcq: mcqView, rank: rankView, interval: intervalView, orderbook: orderbookView };
+// Sure/unsure buttons. Not the 80-in-8: one tap answers there, so there is no second button to press.
 const CALIBRATED = new Set(['bto', 'nl']);
 
-export function itemBody(item, { onChange, preview = true } = {}) {
-  const view = VIEWS[item.kind](item, { onChange, showPreview: preview });
+// notation: 'colon' shows ÷ as : (European), the learner's setting.
+let promptSeq = 0;
+export function itemBody(item, { onChange, preview = true, notation, keys = true, label } = {}) {
+  const pid = `prompt-${++promptSeq}`;
+  const view = VIEWS[item.kind](item, { onChange, showPreview: preview, keys, labelledby: pid });
   let visual = null;
   if (item.prompt.visual) {
     try { visual = renderVisual(item.prompt.visual); } catch (e) { visual = h('p', { class: 'muted' }, `Visual unavailable: ${e.message}`); }
   }
-  const el = h('div', {}, h('p', { class: 'prompt' }, item.prompt.text), visual, view.el);
+  const el = h('div', {}, h('p', { class: 'prompt', id: pid, tabindex: '-1' }, label ? h('span', { class: 'visually-hidden' }, `${label}. `) : null, divNotation(item.prompt.text, notation)), visual, view.el);
   return { el, view };
 }
+const notationOf = (store) => store?.settings?.().divNotation;
+const keysOf = (store) => store?.settings?.().answerKeys !== false;
+// Focus the new question (or result) after each swap so keyboard and screen reader users stay in place.
+const focusIn = (root, sel) => { const t = root.querySelector(sel); if (t) { if (!t.hasAttribute('tabindex')) t.tabIndex = -1; t.focus({ preventScroll: false }); } };
 
 function familyTitle(section, id) { return section.families.find((f) => f.id === id)?.title || id; }
 
@@ -48,7 +60,14 @@ export function runFeedbackSession(root, { sectionId, mode, family, count, store
   const cfg = SECTIONS[sectionId];
   const rng = makeRng(`${sectionId}:${mode}:${Date.now()}`);
   const perItemMs = drillMs(cfg);
+  // One-tap sections (the 80-in-8): a pace line against the exam's seconds per question, and in
+  // drill a tap on an option submits it, as in the exam. Practice keeps Submit, so you can rethink.
+  const paceMs = cfg.exam.autoAdvance ? perItemMs() : 0;
+  const tapSubmits = cfg.exam.autoAdvance && mode === 'drill';
+  const notation = notationOf(store);
   const log = [];
+  const xp0 = store.xpTotal();
+  const lv0 = { ...store.mastery() };
   let idx = 0;
   let current = null;
   let cleanup = () => {};
@@ -70,28 +89,30 @@ export function runFeedbackSession(root, { sectionId, mode, family, count, store
     const item = nextItem();
     if (!item) return summary();
     current = { item, start: performance.now(), hints: 0 };
+    if (Number.isFinite(limit)) setRail(idx / limit, `Question ${idx + 1} of ${limit}`);
     const submitBtn = h('button', { class: 'btn primary', type: 'button', onclick: () => submit() }, 'Submit');
-    const unsureBtn = CALIBRATED.has(sectionId) ? h('button', { class: 'btn', type: 'button', onclick: () => submit({ confidence: 0.6 }) }, 'Submit (unsure)') : null;
-    if (unsureBtn) submitBtn.textContent = 'Submit (sure)';
-    const skipBtn = item.kind === 'mcq' ? h('button', { class: 'btn', type: 'button', onclick: () => submit({ skip: true }) }, 'Skip') : null;
+    const unsureBtn = CALIBRATED.has(sectionId) ? h('button', { class: 'btn ghost', type: 'button', onclick: () => submit({ confidence: 0.6 }) }, 'Submit, not sure') : null;
+    const skipBtn = item.kind === 'mcq' ? h('button', { class: 'btn ghost', type: 'button', onclick: () => submit({ skip: true }) }, 'Skip') : null;
     const hints = mode === 'drill' || noHints ? null : hintLadder(item, (n) => { current.hints = n; });
-    const body = itemBody(item, { preview: mode !== 'drill' });
+    const body = itemBody(item, { preview: mode !== 'drill', notation, keys: keysOf(store), label: Number.isFinite(limit) ? `Question ${idx + 1} of ${limit}` : `Question ${idx + 1}`, onChange: tapSubmits && item.kind === 'mcq' ? () => submit() : undefined });
     const t = timerEl();
+    const paceEl = paceMs && mode !== 'drill' ? h('span', { class: 'num pace', title: 'Seconds on this question against the exam pace' }) : null;
     // The family name can give the method away (e.g. "cheap bundle: buy it, sell the parts"),
     // so it is shown only after the answer is in, except when the learner chose the family.
     const famLabel = h('span', {}, family || mode === 'learn' ? ` · ${familyTitle(section, item.family)}` : '');
     const head = h('div', { class: 'qhead' },
       h('span', {}, `${title || cfg.title} · ${modeLabel(mode)}`, famLabel),
-      h('span', {}, Number.isFinite(limit) ? `${idx + 1} / ${limit}` : `#${idx + 1}`, mode === 'drill' ? ' · ' : '', mode === 'drill' ? t : ''));
+      h('span', {}, Number.isFinite(limit) ? `${idx + 1} / ${limit}` : `#${idx + 1}`, mode === 'drill' ? ' · ' : '', mode === 'drill' ? t : '', paceEl ? ' · ' : '', paceEl));
     const controls = h('div', { class: 'row' }, submitBtn, unsureBtn, skipBtn, hints?.btn,
-      h('span', { style: { flex: 1 } }), h('button', { class: 'btn', type: 'button', onclick: () => { idx = limit; summary(); } }, 'End session'));
-    const after = h('div', {});
-    mount(root, h('div', { class: 'panel' }, head, body.el, hints?.box, controls, after));
+      h('span', { style: { flex: 1 } }), h('button', { class: 'btn ghost', type: 'button', onclick: () => { idx = limit; summary(); } }, 'End session'));
+    const after = h('div', { 'aria-live': 'polite' });
+    mount(root, h('h1', { class: 'visually-hidden' }, `${title || cfg.title}: ${modeLabel(mode)}`), h('div', { class: 'panel' }, head, tapSubmits && item.kind === 'mcq' ? h('p', { class: 'small-note muted' }, 'Tapping an option submits it.') : null, body.el, hints?.box, controls, after));
+    focusIn(root, '.prompt');
     current.body = body; current.after = after; current.controls = controls; current.famLabel = famLabel;
     if (item.kind === 'interval') body.view.focus?.();
 
     const onKey = (e) => {
-      if (current.done) { if (e.key === 'Enter') { e.preventDefault(); idx++; show(); } return; }
+      if (current.done) { if (e.key === 'Enter' && !e.target.closest?.('a, button, summary, input, select, textarea')) { e.preventDefault(); idx++; show(); } return; }
       body.view.keyHandler?.(e);
       if (e.key === 'Enter' && !e.target.closest?.('button')) { e.preventDefault(); submit(); }
     };
@@ -100,6 +121,14 @@ export function runFeedbackSession(root, { sectionId, mode, family, count, store
     if (mode === 'drill') {
       const cd = makeCountdown(perItemMs(item));
       const tick = () => { paintTimer(t, cd.remaining()); if (cd.expired()) submit({ timeout: true }); else raf = requestAnimationFrame(tick); };
+      tick();
+    } else if (paceEl) {
+      const tick = () => {
+        const ms = performance.now() - current.start;
+        paceEl.textContent = `${(ms / 1000).toFixed(1)} s / ${paceMs / 1000} s`;
+        paceEl.classList.toggle('over', ms > paceMs);
+        if (!current.done) raf = requestAnimationFrame(tick);
+      };
       tick();
     }
     cleanup = () => { document.removeEventListener('keydown', onKey); cancelAnimationFrame(raf); };
@@ -110,7 +139,7 @@ export function runFeedbackSession(root, { sectionId, mode, family, count, store
     const { item, body } = current;
     let response = opts.skip ? { skip: true } : body.view.response();
     if (!response) {
-      if (!opts.timeout) return flash(current.after, 'Choose an answer first, or skip.');
+      if (!opts.timeout) return flash(current.after, { orderbook: 'Tap prices to build a position first.', interval: 'Enter a lower and an upper bound first.', rank: 'Put the statements in order first.' }[item.kind] || 'Choose an answer first, or skip.');
       response = { skip: true };
     }
     current.done = true;
@@ -119,7 +148,11 @@ export function runFeedbackSession(root, { sectionId, mode, family, count, store
     const ms = performance.now() - current.start;
     const confidence = opts.confidence ?? (CALIBRATED.has(sectionId) && !response.skip ? 0.9 : undefined);
     const correctNoHelp = result.correct && current.hints === 0;
-    store.recordAnswer(sectionId, item.family, { correct: correctNoHelp, ms, confidence: response.skip ? undefined : confidence, difficulty: item.difficulty, score: item.kind === 'interval' ? result.score : undefined });
+    store.recordAnswer(sectionId, item.family, {
+      correct: correctNoHelp, ms, confidence: response.skip ? undefined : confidence, difficulty: item.difficulty, score: item.kind === 'interval' ? result.score : undefined,
+      hints: current.hints, mode, fresh: setNumber == null, budgetMs: perItemMs(item),
+      miss: !result.correct && !response.skip ? mistakeRow(item, response, { mode, ms: Math.round(ms) }) : undefined,
+    });
     store.srs = srsRecord(store.srs, `${sectionId}:${item.family}`, correctNoHelp);
     log.push({ family: item.family, correct: result.correct, score: result.score, hints: current.hints, ms });
     body.view.reveal(result, response);
@@ -130,10 +163,12 @@ export function runFeedbackSession(root, { sectionId, mode, family, count, store
     const sol = diagnose && !result.correct && item.solution?.steps?.length
       ? diagnosePanel(item, (d) => onMiss?.({ item, response, ...d }), () => solutionPanel(item, { stepwise: true }))
       : solutionPanel(item, { stepwise: !result.correct });
-    mount(current.after, banner, sol,
+    const pace = paceMs && !response.skip ? h('p', { class: 'small-note num' }, `Answered in ${(ms / 1000).toFixed(1)} s · exam pace ${paceMs / 1000} s${ms > paceMs ? ' · slower than the exam allows' : ''}`) : null;
+    mount(current.after, banner, pace, sol,
       h('div', { class: 'row', style: { marginTop: '12px' } }, h('button', { class: 'btn primary', type: 'button', onclick: () => { idx++; show(); } }, idx + 1 >= limit ? 'Finish' : 'Next (Enter)'),
         !result.correct && lessonForFamily(sectionId, item.family) ? h('a', { class: 'btn', href: `#/study/lesson/${lessonForFamily(sectionId, item.family)}` }, `Study: ${familyTitle(section, item.family)}`) : null));
     if (item.kind === 'interval') intervalCoach(item, banner.querySelector('.coach-slot'));
+    current.after.querySelector('.btn.primary')?.focus({ preventScroll: true });
     current.controls.querySelectorAll('button').forEach((b) => { if (b.textContent !== 'End session') b.disabled = true; });
   }
 
@@ -146,15 +181,37 @@ export function runFeedbackSession(root, { sectionId, mode, family, count, store
     const weakest = [...byFam.entries()].sort((a, b) => a[1].c / a[1].n - b[1].c / b[1].n)[0];
     if (mode === 'drill' && n) store.recordRun({ section: sectionId, mode: 'drill', score: log.reduce((s, x) => s + x.score, 0), max: n, items: log });
     if (setNumber != null && n === limit) store.recordSet(sectionId, setNumber, { score: Math.round(log.reduce((s, x) => s + x.score, 0) * 100) / 100, max: n, mode: 'practice' });
-    mount(root, h('div', { class: 'panel' },
-      h('h2', { style: { marginTop: 0 } }, `${modeLabel(mode)} summary`),
-      n ? h('p', {}, `${correct} of ${n} correct (${Math.round((100 * correct) / n)}%).`) : h('p', { class: 'muted' }, mode === 'mistakes' ? 'Nothing is due for review in this section right now.' : 'No questions answered.'),
-      n ? h('table', {}, h('thead', {}, h('tr', {}, h('th', {}, 'Family'), h('th', { style: { textAlign: 'right' } }, 'Correct'))),
-        h('tbody', {}, [...byFam.entries()].map(([f, v]) => h('tr', {}, h('td', {}, familyTitle(section, f)), h('td', { class: 'num', style: { textAlign: 'right' } }, `${v.c}/${v.n}`))))) : null,
-      h('div', { class: 'row', style: { marginTop: '16px' } },
-        weakest && weakest[1].c < weakest[1].n ? h('a', { class: 'btn primary', href: `#/s/${sectionId}/learn/${weakest[0]}` }, `Learn: ${familyTitle(section, weakest[0])}`) : null,
-        weakest && weakest[1].c < weakest[1].n && lessonForFamily(sectionId, weakest[0]) ? h('a', { class: 'btn', href: `#/study/lesson/${lessonForFamily(sectionId, weakest[0])}` }, `Study: ${familyTitle(section, weakest[0])}`) : null,
-        h('a', { class: 'btn', href: `#/s/${sectionId}` }, 'Back to section'))));
+    const xpGain = store.xpTotal() - xp0;
+    const now = store.mastery();
+    const spentS = Math.round(log.reduce((t, x) => t + x.ms, 0) / 1000);
+    const famRows = [...byFam.entries()].map(([f, v]) => {
+      const k = `${sectionId}:${f}`;
+      const before = lv0[k]?.lv || 0, after = now[k]?.lv || 0;
+      const marks = bubbles(5, after, { label: `Level ${after} of 5` });
+      // Level-up: the newly filled bubbles pop in once (rare, so it earns a moment).
+      [...marks.children].slice(before, after).forEach((b) => b.classList.add('is-new'));
+      return h('li', { class: 'summary-row' },
+        h('span', { class: 'summary-fam' }, familyTitle(section, f)),
+        h('span', { class: 'num muted' }, `${v.c}/${v.n}`),
+        marks,
+        after > before ? h('span', { class: 'stamp stamp-mastered' }, `Level ${after}`) : null);
+    });
+    setRail(1, 'Session complete');
+    mount(root, h('section', { class: 'field session-summary' },
+      h('h2', { class: 'field-label' }, `${modeLabel(mode)} summary`),
+      n ? h('div', { class: 'summary-stats' },
+        h('span', {}, h('span', { class: 'num big' }, `${correct}/${n}`), ' right'),
+        h('span', {}, h('span', { class: 'num big xp-tick' }, '+0'), ' XP'),
+        h('span', {}, h('span', { class: 'num big' }, `${Math.floor(spentS / 60)}:${String(spentS % 60).padStart(2, '0')}`), ' on questions'))
+        : h('p', { class: 'muted' }, mode === 'mistakes' ? 'Nothing is due for review in this task right now.' : 'No questions answered.'),
+      n ? h('ol', { class: 'summary-list' }, famRows) : null,
+      h('div', { class: 'row' },
+        weakest && weakest[1].c < weakest[1].n && lessonForFamily(sectionId, weakest[0]) ? h('a', { class: 'btn primary', href: `#/study/lesson/${lessonForFamily(sectionId, weakest[0])}` }, `Study: ${familyTitle(section, weakest[0])}`) : null,
+        weakest && weakest[1].c < weakest[1].n ? h('a', { class: 'btn', href: `#/s/${sectionId}/learn/${weakest[0]}` }, `Worked examples: ${familyTitle(section, weakest[0])}`) : null,
+        h('a', { class: 'btn ghost', href: `#/s/${sectionId}` }, 'Back to the roadmap'))));
+    focusIn(root, '.session-summary .field-label');
+    const xpEl = root.querySelector('.xp-tick');
+    if (xpEl) tickTo(xpEl, xpGain);
     onDone?.({ n, correct, clean: log.filter((x) => x.correct && !x.hints).length, family: fixedItems?.[0]?.family, ms: log.map((x) => Math.round(x.ms)), budgetMs: perItemMs(fixedItems?.[0] || {}) });
   }
 
@@ -194,14 +251,17 @@ function modeLabel(m) { return { practice: 'Practice', drill: 'Drill', mistakes:
 function flash(el, msg) {
   const note = h('p', { class: 'muted', role: 'status' }, msg);
   el.replaceChildren(note);
-  setTimeout(() => { if (note.isConnected) note.remove(); }, 2500);
+  // Stays until the next action replaces it (WCAG 2.2.1: no timed messages).
 }
 
 // ---------------------------------------------------------------- exam replica
 export function runExam(root, { sectionId, variant, store, seed = Date.now(), onDone, mock = false, items: fixedItems, setNumber }) {
   const section = SECTION_MODULES[sectionId];
   const base = SECTIONS[sectionId];
-  const exam = { ...base.exam, ...(variant || {}) };
+  const extra = Number(store?.settings?.().extraTime) || 1;
+  const exam0 = { ...base.exam, ...(variant || {}) };
+  // Extra time (an accessibility setting) stretches the clock; such runs never count toward readiness.
+  const exam = extra > 1 ? { ...exam0, totalSeconds: exam0.totalSeconds && exam0.totalSeconds * extra, perItemSeconds: exam0.perItemSeconds && exam0.perItemSeconds * extra } : exam0;
   const items = fixedItems || examItems(section, { count: exam.count, ramp: sectionId === 'nl', bankRatio: 0.2 }, seed);
   const responses = items.map(() => null);
   const obSolved = items.map(() => false);
@@ -212,14 +272,26 @@ export function runExam(root, { sectionId, variant, store, seed = Date.now(), on
   let perItem = null;
   let current = null;
   const t = timerEl();
+  // autoAdvance (80-in-8): tapping an option is the answer and the next question appears; no Next
+  // button and no Enter. allowSkip false removes the Skip button. Both default to the old behaviour.
+  const canSkip = exam.allowSkip !== false;
+  const notation = notationOf(store);
+  const spent = items.map(() => 0); // ms on screen per question, summed over revisits
+  const budgetMs = exam.perItemSeconds ? exam.perItemSeconds * 1000 : (exam.totalSeconds * 1000) / items.length;
+  const leave = () => { if (current?.i != null) { spent[current.i] += performance.now() - current.t; current.i = null; } };
 
   function show() {
     if (finished) return;
+    leave();
     if (idx >= items.length) return exam.navigation === 'free' ? endScreen() : finish();
+    setRail(idx / items.length, `Question ${idx + 1} of ${items.length}`);
     const item = items[idx];
-    const body = itemBody(item, { preview: false });
+    const tap = exam.autoAdvance && item.kind === 'mcq';
+    let live = false; // restoring a saved answer must not advance
+    const body = itemBody(item, { preview: false, notation, keys: keysOf(store), label: `Question ${idx + 1} of ${items.length}`, onChange: tap ? () => { if (live) { save(); idx++; show(); } } : undefined });
     if (responses[idx] && !responses[idx].skip) body.view.setResponse?.(responses[idx]);
-    current = { item, body };
+    live = true;
+    current = { item, body, i: idx, t: performance.now() };
     if (exam.perItemSeconds) perItem = makeCountdown(exam.perItemSeconds * 1000);
     const free = exam.navigation === 'free';
     const palette = free ? h('div', { class: 'palette', role: 'navigation', 'aria-label': 'Questions' }, items.map((_, i) => h('button', {
@@ -231,13 +303,14 @@ export function runExam(root, { sectionId, variant, store, seed = Date.now(), on
       free && idx > 0 ? h('button', { class: 'btn', type: 'button', onclick: () => { save(); idx--; show(); } }, 'Previous') : null,
       item.kind === 'orderbook'
         ? h('button', { class: 'btn primary', type: 'button', onclick: () => submitBoard(note) }, 'Submit position')
-        : h('button', { class: 'btn primary', type: 'button', onclick: () => { save(); idx++; show(); } }, 'Next'),
-      item.kind === 'mcq' || item.kind === 'orderbook' ? h('button', { class: 'btn', type: 'button', onclick: () => { if (!free || !responses[idx]) responses[idx] = { skip: true }; idx++; show(); } }, free ? 'Skip for now' : 'Skip') : null,
+        : tap ? null : h('button', { class: 'btn primary', type: 'button', onclick: () => { save(); idx++; show(); } }, 'Next'),
+      (item.kind === 'mcq' || item.kind === 'orderbook') && canSkip ? h('button', { class: 'btn', type: 'button', onclick: () => { if (!free || !responses[idx]) responses[idx] = { skip: true }; idx++; show(); } }, free ? 'Skip for now' : 'Skip') : null,
       h('span', { style: { flex: 1 } }),
       h('button', { class: 'btn', type: 'button', onclick: () => { if (confirm('Finish the exam now? Unanswered questions score 0.')) { save(); finish(); } } }, 'Finish exam'));
-    mount(root, h('div', { class: 'panel exam' },
+    mount(root, h('h1', { class: 'visually-hidden' }, `${base.title}: exam`), h('div', { class: 'panel exam' },
       h('div', { class: 'qhead' }, h('span', {}, `${base.title} · Exam${mock ? ' (mock)' : ''} · Question ${idx + 1} of ${items.length}`), t),
       palette, body.el, note, controls));
+    focusIn(root, '.prompt');
   }
 
   // Free navigation (NumberLogic): before finishing, show which questions are still open.
@@ -274,7 +347,7 @@ export function runExam(root, { sectionId, variant, store, seed = Date.now(), on
     if (finished) return;
     const rem = total ? total.remaining() : perItem ? perItem.remaining() : 0;
     paintTimer(t, rem);
-    if (total && total.expired()) { save(); return finish(); }
+    if (total && total.expired()) { save(); const live = document.getElementById('live'); if (live) live.textContent = 'Time is up. Your exam is finished.'; return finish(); }
     if (!total && perItem && perItem.expired()) {
       // per-item clock ran out: keep whatever is on screen (rank order, a full interval), else skip
       const r = current.body.view.response();
@@ -286,14 +359,18 @@ export function runExam(root, { sectionId, variant, store, seed = Date.now(), on
 
   const onKey = (e) => {
     if (!current || finished) return;
+    const tap = exam.autoAdvance && current.item.kind === 'mcq';
+    if (tap && e.repeat) return; // a held key must not answer a run of questions
     current.body.view.keyHandler?.(e);
-    if (e.key === 'Enter' && !e.target.closest?.('button') && current.item.kind !== 'orderbook') { e.preventDefault(); save(); idx++; show(); }
+    // With one-tap answering, Enter would only skip (no answer chosen yet), so it does nothing.
+    if (e.key === 'Enter' && !tap && !e.target.closest?.('button') && current.item.kind !== 'orderbook') { e.preventDefault(); save(); idx++; show(); }
   };
   document.addEventListener('keydown', onKey);
 
   function finish() {
     if (finished) return;
     finished = true;
+    leave();
     cancelAnimationFrame(raf);
     document.removeEventListener('keydown', onKey);
     const results = items.map((it, i) => {
@@ -303,14 +380,18 @@ export function runExam(root, { sectionId, variant, store, seed = Date.now(), on
     const { score, max } = examScore(sectionId, results.map((r) => r.score));
     items.forEach((it, i) => {
       if (responses[i] && !responses[i].skip) {
-        store.recordAnswer(sectionId, it.family, { correct: results[i].correct, ms: 0, difficulty: it.difficulty, score: it.kind === 'interval' ? results[i].score : undefined });
+        store.recordAnswer(sectionId, it.family, {
+          correct: results[i].correct, ms: Math.round(spent[i]), difficulty: it.difficulty, score: it.kind === 'interval' ? results[i].score : undefined,
+          mode: 'exam', fresh: setNumber == null, budgetMs,
+          miss: !results[i].correct && it.kind !== 'orderbook' ? mistakeRow(it, responses[i], { mode: 'exam', ms: Math.round(spent[i]) }) : undefined,
+        });
         store.srs = srsRecord(store.srs, `${sectionId}:${it.family}`, results[i].correct);
       }
     });
-    const run = { section: sectionId, mode: 'exam', mock, variant: variant?.label || null, score, max, items: items.map((it, i) => ({ family: it.family, score: results[i].score })) };
+    const run = { section: sectionId, mode: 'exam', mock, variant: variant?.label || null, score, max, timing: timingOf(exam), perfect: results.every((r) => r.correct), targetMet: runMeetsTarget({ score, max }, base.target), items: items.map((it, i) => ({ family: it.family, score: results[i].score, ms: Math.round(spent[i]) })) };
     // Only fresh full-length replicas count toward readiness; numbered sets and
     // short variants are practice (a set can be memorised on a second attempt).
-    const official = !variant && setNumber == null;
+    const official = !variant && setNumber == null && extra === 1;
     if (setNumber != null) store.recordSet(sectionId, setNumber, { score, max, mode: 'timed' });
     else if (official) store.recordRun(run);
     else store.recordRun({ ...run, mode: 'exam-variant' });
@@ -323,27 +404,46 @@ export function runExam(root, { sectionId, variant, store, seed = Date.now(), on
     const meets = runMeetsTarget({ score, max }, target);
     const ready = readiness(store.runs(sectionId, 'exam'), target);
     const rows = items.map((it, i) => {
-      const detail = h('tr', { hidden: true }, h('td', { colspan: 5 }, h('div', { class: 'review-item' }, itemBody(it, { preview: false }).el, feedbackBanner(it, results[i], responses[i] || { skip: true }), solutionPanel(it, { stepwise: false }))));
-      const toggle = h('button', { class: 'btn small', type: 'button', onclick: () => { detail.hidden = !detail.hidden; toggle.textContent = detail.hidden ? 'Solution' : 'Hide'; } }, 'Solution');
+      const detail = h('tr', { hidden: true }, h('td', { colspan: 5 }, h('div', { class: 'review-item' }, itemBody(it, { preview: false, notation }).el, feedbackBanner(it, results[i], responses[i] || { skip: true }), solutionPanel(it, { stepwise: false }))));
+      const toggle = h('button', { class: 'btn small', type: 'button', 'aria-label': `Solution, question ${i + 1}`, 'aria-expanded': 'false', onclick: () => { detail.hidden = !detail.hidden; toggle.textContent = detail.hidden ? 'Solution' : 'Hide'; toggle.setAttribute('aria-expanded', String(!detail.hidden)); } }, 'Solution');
       const r = results[i];
-      return [h('tr', {},
+      return [h('tr', { 'data-grade': r.skipped ? 'skip' : r.correct || r.score > 0 ? 'right' : 'wrong' },
         h('td', { class: 'num' }, String(i + 1)),
         h('td', {}, familyTitle(section, it.family)),
-        h('td', {}, r.skipped ? h('span', { class: 'badge' }, 'Skipped') : r.correct || r.score > 0 ? h('span', { class: 'badge ok' }, it.kind === 'interval' ? r.score.toFixed(2) : 'Right') : h('span', { class: 'badge no' }, 'Wrong')),
+        h('td', {}, r.skipped ? h('span', { class: 'badge' }, canSkip ? 'Skipped' : 'Not answered') : r.correct || r.score > 0 ? h('span', { class: 'badge ok' }, it.kind === 'interval' ? r.score.toFixed(2) : 'Right') : h('span', { class: 'badge no' }, 'Wrong')),
         h('td', { class: 'num', style: { textAlign: 'right' } }, it.kind === 'interval' ? r.score.toFixed(2) : String(r.score)),
         h('td', { style: { textAlign: 'right' } }, toggle)), detail];
     });
-    mount(root, h('div', { class: 'panel' },
-      h('h2', { style: { marginTop: 0 } }, `${base.title}: ${sectionId === 'iv' ? `${score.toFixed(2)} of ${max} (mean ${(score / max).toFixed(2)})` : `${score} of ${max}`}`),
+    const sheet = h('div', { class: 'panel exam-review' },
+      h('h2', { class: 'score-print is-pending', style: { marginTop: 0 } }, `${base.title}: ${sectionId === 'iv' ? `${score.toFixed(2)} of ${max} (mean ${(score / max).toFixed(2)})` : `${score} of ${max}`}`),
       h('p', {}, h('span', { class: `badge ${meets ? 'ok' : 'no'}` }, meets ? 'Target met' : 'Below target'), ` Target: ${target.label}.`),
       setNumber != null ? h('p', { class: 'muted' }, `Set ${setNumber} is fixed practice: it does not count toward readiness. Fresh full exams do.`) : official ? h('p', { class: 'muted' }, ready.ready ? 'Ready: the last 3 exams all met the target. This section is safe to open.' : `Readiness streak ${ready.streak} of ${ready.needed}. The section turns ready after 3 exams in a row at target.`) : h('p', { class: 'muted' }, 'Short variant: good practice, but only the full-length exam counts toward readiness.'),
-      h('table', {}, h('thead', {}, h('tr', {}, h('th', {}, '#'), h('th', {}, 'Family'), h('th', {}, 'Result'), h('th', { style: { textAlign: 'right' } }, 'Points'), h('th', {}))), h('tbody', {}, rows.flat())),
+      h('table', {}, h('thead', {}, h('tr', {}, h('th', {}, '#'), h('th', {}, 'Family'), h('th', {}, 'Result'), h('th', { style: { textAlign: 'right' } }, 'Points'), h('th', {}, h('span', { class: 'visually-hidden' }, 'Solution')))), h('tbody', {}, rows.flat())),
       h('div', { class: 'row', style: { marginTop: '16px' } },
         h('a', { class: 'btn primary', href: setNumber != null ? `#/s/${sectionId}/sets` : `#/s/${sectionId}` }, setNumber != null ? 'Back to sets' : 'Back to section'),
-        h('a', { class: 'btn', href: `#/run/${sectionId}/mistakes` }, 'Review mistakes'))));
+        h('a', { class: 'btn', href: `#/run/${sectionId}/mistakes` }, 'Review mistakes')));
+    mount(root, sheet);
+    setRail(1, 'Exam finished');
+    // Submit is a scan: the line sweeps the sheet, grading each row as it passes, then the score prints.
+    scanSheet(sheet, [...sheet.querySelectorAll('tr[data-grade]')]).then(() => { sheet.querySelector('.score-print')?.classList.remove('is-pending'); focusIn(sheet, '.score-print'); });
   }
 
-  show();
-  raf = requestAnimationFrame(tick);
+  // Start screen: the rules before the clock runs (WCAG 3.2.2, 2.2.1). The mock has its own.
+  function begin() { total?.restart?.(); show(); raf = requestAnimationFrame(tick); }
+  if (mock) begin();
+  else {
+    const tapAll = exam.autoAdvance && items.every((it) => it.kind === 'mcq');
+    const time = exam.totalSeconds ? `${Math.round(exam.totalSeconds / 60 * 10) / 10} minutes for ${items.length} questions` : `${exam.perItemSeconds} seconds per question`;
+    mount(root, h('section', { class: 'field exam-start' },
+      h('h1', { tabindex: '-1' }, `${base.title}: exam replica`),
+      h('ul', { class: 'steps-plain' },
+        h('li', {}, time, extra > 1 ? ` (with your extra time ×${extra}; this run will not count toward Ready)` : '', '.'),
+        tapAll ? h('li', {}, 'Tapping an option is your answer, and the next question appears. There is no going back.') : null,
+        !canSkip ? h('li', {}, 'You cannot skip. A wrong answer costs a point.') : null,
+        keysOf(store) && items.some((it) => it.kind === 'mcq') ? h('li', {}, 'Keys 1 to 4 (or A to D) pick an option.') : null),
+      h('p', { class: 'muted small-note' }, 'This replica is timed because the real test is. For untimed questions, use ', h('a', { href: `#/run/${sectionId}/practice` }, 'Practice'), '.'),
+      h('div', { class: 'row' }, h('button', { class: 'btn primary', type: 'button', onclick: begin }, 'Start the clock'))));
+    focusIn(root, 'h1');
+  }
   return () => { finished = true; cancelAnimationFrame(raf); document.removeEventListener('keydown', onKey); };
 }

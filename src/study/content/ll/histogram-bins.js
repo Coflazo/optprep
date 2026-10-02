@@ -54,9 +54,12 @@ export default {
         { id: 'lower', label: 'A second condition lowers it', approach: 'You put (c) below (a) because it stacks a condition on top of one.', breaksAt: '"Above 2%" sits inside "above 1%": the conditional keeps its top and shrinks its bottom, so it cannot lose to plain "above 2%".' },
       ] },
     { type: 'text', text: 'The prompt is a **histogram**: bars over touching intervals (bins), each bar\'s height the number of observations in its bin. One observation is picked at random, or from a subgroup ("among days above 1%"). Statements ask for a value above a, below a, between a and b, or a range inside a range. The item promises that no value sits exactly on a bin edge, so ranges always line up with whole bars.' },
-    { type: 'text', text: 'Not this lesson: a fund chart (each bar is one year, a single outcome) or a density curve (area, not counts). Here each bar holds many outcomes.' },
     { type: 'check', scope: 'the recognition cues above', questions: [
       mc(null, 'In a histogram, what does a bar\'s height tell you?', 'how many observations fall in that bin', [['the value of one observation', 'that is a bar chart of individual outcomes, like yearly fund returns'], ['the probability density at that value', 'that is a density curve: area, not height, is probability there'], ['the average of the bin', 'a histogram records counts, not averages']], 'Height = count. Probability = count / total.', { at: 0 }),
+    ] },
+    { type: 'text', text: 'Not this lesson: a fund chart (each bar is one year, a single outcome) or a density curve (area, not counts). Here each bar holds many outcomes.' },
+    { type: 'check', scope: 'bars of counts', questions: [
+      { type: 'choice', q: 'In a fund-return chart each bar is one year. In a histogram each bar is:', options: ['many observations in one bin', 'one single outcome', 'an area under a smooth curve'], answer: 0, traps: { 1: 'that is a fund chart', 2: 'that is a density curve' }, explain: 'A histogram bar counts every observation in its bin.' },
     ] },
 
     S('why'),
@@ -126,10 +129,16 @@ export default {
 
     S('speed'),
     { type: 'callout', tone: 'speed', text: 'Count the short side: "above −2%" is N minus the two left bars. Build running totals from whichever end is closer to the edge in the statement.' },
-    { type: 'callout', tone: 'speed', text: `A conditional range with a small subgroup is usually the most or least likely of the three: check it first. Budget: ${LL.exam.perItemSeconds} seconds; three bar sums take well under a minute.` },
-    { type: 'callout', tone: 'speed', text: 'Sanity check: the three unconditional statements share the denominator, so their order is the order of their bar sums. Only a conditional needs a division, and a cross-multiplication settles it against the others.' },
     { type: 'check', scope: 'counting from the nearer end', questions: [
       { make: (rng) => again(() => { const i = rng.int(1, 3), j = rng.int(5, 7), a = rng.int(0, 2), b = a + rng.int(2, 3); return rank(rng, 'From the challenge histogram, rank from most to least likely.', [[`Above ${neg(edge(i))}%.`, mass(edge(i), edge(K)) / N], [`Above ${neg(edge(j))}%.`, mass(edge(j), edge(K)) / N], [`Between ${neg(edge(a))}% and ${neg(edge(b))}%.`, mass(edge(a), edge(b)) / N]], 'Count each on its short side over the same total.'); }) },
+    ] },
+    { type: 'callout', tone: 'speed', text: `A conditional range with a small subgroup is usually the most or least likely of the three: check it first. Budget: ${LL.exam.perItemSeconds} seconds; three bar sums take well under a minute.` },
+    { type: 'check', scope: 'the conditional first', questions: [
+      { type: 'choice', q: 'Among three histogram statements, which do you check first?', options: ['the conditional range on a small subgroup', 'the widest range of bars in the chart', 'the range nearest the middle bars'], answer: 0, traps: { 1: 'width alone does not make a statement extreme', 2: 'the middle bars do not decide the order' }, explain: 'A conditional on a small subgroup is usually the most or the least likely of the three.' },
+    ] },
+    { type: 'callout', tone: 'speed', text: 'Sanity check: the three unconditional statements share the denominator, so their order is the order of their bar sums. Only a conditional needs a division, and a cross-multiplication settles it against the others.' },
+    { type: 'check', scope: 'a shared denominator', questions: [
+      { type: 'choice', q: 'Three unconditional range statements on one histogram. How do you order them?', options: ['by their bar sums: same denominator', 'by the width of each range', 'by the tallest bar in each range'], answer: 0, traps: { 1: 'a wide range over thin bars can hold few days', 2: 'one tall bar does not make the sum largest' }, explain: 'They all divide by the same total, so the bar sums give the order.' },
     ] },
 
     { type: 'thinkaloud', problem: 'The challenge histogram. Rank: (a) a random day is below −2%, (b) among days below 0%, a random one is below −2%, (c) a random day is between 0% and 2%.', lines: [
@@ -154,11 +163,11 @@ export default {
       ['Density curve', 'height is density, not probability', 'area under the curve'],
     ] },
     { type: 'callout', tone: 'edge', text: 'Edge cases: a range covering every bin has probability 1, an empty range 0. A subgroup of one bin makes "among values in that bin, above its left edge" certain.' },
-    { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: density curves are histograms with infinitely thin bars (sums become areas), and scatter-plot strips are subgroups exactly like "among days above 1%".' },
     { type: 'check', scope: 'the contrast table and edge cases', questions: [
       mc(null, 'A histogram shows 80 values in 8 touching bins that cover every value. What is P(a random value lies in one of the 8 bins)?', '1', [['the tallest bar / 80', 'answered for the most common bin only'], ['1/8', 'assumed one bin, each equally likely'], ['0', 'confused "on an edge" (never happens) with "in a bin" (always happens)']], 'Every value is in exactly one bin: the range covers everything.', { at: 0 }),
     ] },
 
+    { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: density curves are histograms with infinitely thin bars (sums become areas), and scatter-plot strips are subgroups exactly like "among days above 1%".' },
     { type: 'variation', base: `The challenge: (a) above 1% (${ABOVE1}/${N}), (b) between −1% and 1% (${MID}/${N}), (c) among days above 1%, above 2% (${ABOVE2}/${ABOVE1}). Order (b) > (c) > (a).`, rows: [
       { same: true, change: 'Move 5 days from the −4% to −3% bin into the −3% to −2% bin', effect: 'No change. None of the three statements uses a bar left of −1%, and the total stays the same, so every fraction keeps its value.' },
       { change: 'Change (c) to "among days above 1%, below 2%"', effect: `Now the ${COUNTS[5]} days of the first bar right of 1% count: ${BELOW2G1}/${ABOVE1} = ${dp(BELOW2G1 / ABOVE1, 2)}. The conditional jumps to first.` },

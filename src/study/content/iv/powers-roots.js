@@ -96,6 +96,9 @@ export default {
       { t: 23, say: `Check: 3^{10} = ${num(3 ** 10)} ≈ 6 × 10^{4}; squared ≈ 3.6 × 10^{9}. Consistent.` },
       { t: 30, say: `Log reading is good to a few percent: ×/÷ ${dec(TA.band.f, 2)}: [${sig((TA.mant * 10 ** TA.int) / TA.band.f, 3)}, ${sig(TA.mant * 10 ** TA.int * TA.band.f, 3)}]. (Exact ${num(TA.exact)}.)` },
     ] },
+    { type: 'check', scope: 'the slip in the think-aloud', questions: [
+      { type: 'choice', q: 'In the think-aloud, the first try read 10^0.542 as 5.42. What was wrong?', options: ['0.542 is a log, not a digit', 'log10 3 is 0.477, not 0.542', '20 × 0.4771 is not 9.542'], answer: 0, traps: { 1: '0.542 is the fractional part of 9.542', 2: '20 × 0.4771 = 9.542 is right' }, explain: 'log10 3.5 ≈ 0.544, so 10^0.542 is just under 3.5: about 3.49.' },
+    ] },
 
     sec('predict'),
     { type: 'predict', question: `${G.p} grows ${G.r}% a year for ${G.n} years. Is the result closer to ${num(G.linear)}, 5,000 or 7,500?`, answer: `Closer to 7,500: ${dec(G.doublings, 2)} doublings give about ${num(round(G.est, 0))} (exact ${num(round(G.exact, 0))}).`, explain: `${num(G.linear)} is simple interest; compounding nearly triples it.` },
@@ -118,9 +121,12 @@ export default {
 
     sec('speed'),
     { type: 'callout', tone: 'speed', text: 'Pair the digits from the decimal point to find a root\'s size: 59430 → 5|94|30 → three digits, starting with 2 (since 2² ≤ 5 < 3²). For cube roots group in threes: 410|711 → two digits, starting with 7.' },
-    { type: 'callout', tone: 'speed', text: 'Budget: 10 seconds to bracket, 15 to refine, 10 to type. The Newton step is one division; the linear interpolation between squares is almost as good if the division is awkward. For logs, write the number as mantissa × 10^{k} first: the k is free, and only the mantissa needs the table.' },
     { type: 'check', scope: 'sizing a root', questions: [
       { make: (rng) => { const x = rng.int(10000, 999999); const d = Math.floor(Math.log10(Math.sqrt(x))) + 1; return { type: 'number', q: `How many digits does the whole part of √${x} have?`, answer: d, hints: ['Pair the digits from the right.', 'One digit of root per pair.'], explain: `√${x} ≈ ${dec(Math.sqrt(x), 1)}: ${d} digits.` }; } },
+    ] },
+    { type: 'callout', tone: 'speed', text: 'Budget: 10 seconds to bracket, 15 to refine, 10 to type. The Newton step is one division; the linear interpolation between squares is almost as good if the division is awkward. For logs, write the number as mantissa × 10^{k} first: the k is free, and only the mantissa needs the table.' },
+    { type: 'check', scope: 'mantissa first', questions: [
+      { type: 'choice', q: 'For log10 of 47,000, what do you write first?', options: ['4.7 × 10^4', '47 × 10^3', '0.47 × 10^5'], answer: 0, traps: { 1: 'the mantissa should be between 1 and 10', 2: 'the mantissa should be between 1 and 10' }, explain: 'Mantissa × 10^k: k = 4 is free, and only log10 4.7 needs the table.' },
     ] },
 
     sec('rule'),
@@ -142,13 +148,13 @@ export default {
       { fusion: true, change: `${SQ.x} becomes ${num(SQ.x * 100)} AND the square root becomes a cube root`, effect: `Group the digits in threes: ${num(SQ.x * 100)} → 700|000, so two digits starting with 8 (8³ = 512): ∛ ≈ ${dec(Math.cbrt(SQ.x * 100), 1)}. The zeros no longer shift the digits by a clean factor, because 100 is not a perfect cube.` },
     ] },
     { type: 'callout', tone: 'edge', text: 'Edge cases: a perfect square or cube is exact (type a point). The rule of 72 drifts for rates above about 15%: use ln(1 + r) ≈ r − r²/2. For e^{x} with small x, 1 + x + x²/2 beats logs.' },
-    { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: bracket-and-refine is how you invert anything monotone (percentiles in a grid, doubling times in a series). log10 anchors turn every big number in Fermi chains and combinatorics into additions.' },
     { type: 'check', scope: 'contrast and edge cases', questions: [
       mc({ q: 'Estimate √(4900).', right: '[70, 70]', wrong: [[`[${dec(70 / B[1].f, 1)}, ${dec(70 * B[1].f, 1)}]`, 'a band on a perfect square'], ['[69, 71]', 'a band on a perfect square'], ['[49, 49]', 'took √ of the leading digits only']], explain: '70² = 4900 exactly: type the point.' }),
     ] },
+    { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: bracket-and-refine is how you invert anything monotone (percentiles in a grid, doubling times in a series). log10 anchors turn every big number in Fermi chains and combinatorics into additions.' },
     { type: 'transfer',
       near: { make: (rng) => { const x = rng.int(1500, 9500), a = Math.floor(Math.sqrt(x)), nw = a + (x - a * a) / (2 * a); return { type: 'number', q: `A square plot has an area of ${num(x)} m². About how long is each side, in m? (1 decimal place)`, answer: round(Math.sqrt(x), 1), tolerance: 0.15, explain: `${a}² = ${a * a}; ${a} + ${x - a * a}/${2 * a} = ${dec(nw, 2)} m (exact ${dec(Math.sqrt(x), 3)}).` }; } },
-      far: { type: 'number', q: 'Outside the OA: an option is worth 4.00 at 20% volatility and 5.00 at 25%. Estimate its value at 22% by interpolating between the two. (2 decimal places)', answer: 4 + ((22 - 20) / (25 - 20)) * 1, tolerance: 0.006, explain: '22% is 2/5 of the way from 20% to 25%, so 4.00 + 0.4 × 1.00 = 4.40.' },
+      far: { type: 'number', q: 'Outside the assessment: an option is worth 4.00 at 20% volatility and 5.00 at 25%. Estimate its value at 22% by interpolating between the two. (2 decimal places)', answer: 4 + ((22 - 20) / (25 - 20)) * 1, tolerance: 0.006, explain: '22% is 2/5 of the way from 20% to 25%, so 4.00 + 0.4 × 1.00 = 4.40.' },
       principle: mc({ q: 'Which idea carried over from roots to the option price?', right: 'Bracket with known values, then interpolate', wrong: [['Multiply the log by the exponent first', 'no power was involved in the option question'], ['Grow it with the rule of 72 doublings', 'nothing was compounding'], ['Take the exact midpoint of the bracket', '22% is not halfway: move by the fraction of the gap']], explain: 'Both placed an unknown between two known points and moved from the nearer one by the right fraction.' }) },
 
     sec('tryit'),

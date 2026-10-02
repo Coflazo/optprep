@@ -1,6 +1,6 @@
 // Expected maximum and minimum: dice (tail-sum formula) and uniforms (order statistics).
 import { Q } from '../../../core/rational.js';
-import { mcqItem, agree, q } from '../lib.js';
+import { mcqItem, agree, q, pic, table } from '../lib.js';
 
 const ID = 'expected-extremes';
 const words = ['', 'one', 'two', 'three', 'four', 'five'];
@@ -46,6 +46,9 @@ export default {
         rule: 'E[max] = Σ (1 − ((k−1)/s)^n); E[min] = Σ ((s−k+1)/s)^n. Two d6: max 161/36 ≈ 4.47, min 91/36 ≈ 2.53.',
         anchor: 'P(max ≤ k) = (k/s)^n from the order-statistics questions, with one change: sum the tail probabilities to get an expectation.',
         hints: ['Write E[X] as Σ P(X ≥ k).', minOf ? 'Every die must be at least k.' : 'Use the complement: every die below k.', `Add ${s} terms.`],
+        picture: table(['k', `P(${minOf ? 'lowest' : 'highest'} ≥ k)`], Array.from({ length: s }, (_, i) => i + 1).map((k) => [k, (minOf ? new Q(BigInt(s - k + 1) ** BigInt(n), BigInt(s) ** BigInt(n)) : q(1).sub(new Q(BigInt(k - 1) ** BigInt(n), BigInt(s) ** BigInt(n)))).toString()]).concat([['sum = expected value', E.toString()]]), `Tail sums: the ${minOf ? 'lowest' : 'highest'} face counts 1 for every k it reaches, so its mean is the sum of the column, ${E.toNumber().toFixed(3)}.`),
+        fast: `Σ P(${minOf ? 'min' : 'max'} ≥ k) over k = 1..${s} = ${E.toNumber().toFixed(3)}.`,
+        check: `The ${minOf ? 'lowest' : 'highest'} of ${n} must sit ${minOf ? 'below' : 'above'} one die's mean ${avg}, and E[min] + E[max] = ${s + 1} for ${n === 2 ? 'two dice' : 'any number of dice'}; the continuous guess ${cont.toNumber().toFixed(2)} is close but not exact.`,
         data: { mode: 'dice', n, s, minOf },
       });
     }
@@ -74,6 +77,9 @@ export default {
       rule: 'n uniforms on [0,1]: E[k-th smallest] = k/(n+1); E[max] = n/(n+1); E|X − Y| = 1/3.',
       anchor: 'The mean of one uniform, 1/2 = the middle of 2 gaps, with one change: n points make n + 1 equal gaps on average.',
       hints: ['How many gaps do n points create in [0, 1]?', 'Each gap has the same expected length.', 'Count the gaps that make up the answer.'],
+      picture: pic('numberline', { min: 0, max: 1, step: 1 / (nn + 1), marks: [{ x: 1 / (nn + 1), label: 'mean min' }, { x: nn / (nn + 1), label: 'mean max' }] }, `${nn} random points cut [0, 1] into ${nn + 1} gaps, each 1/${nn + 1} long on average; the ticks sit at the expected positions. ${which === 'max' ? `The largest point is ${nn} gaps in: ${v}.` : which === 'min' ? `The smallest point is one gap in: ${v}.` : which === 'range' ? `Max minus min spans the ${nn - 1} middle gaps: ${v}.` : 'The distance between the two points is the middle gap: 1/3.'}`),
+      fast: which === 'max' ? `n/(n + 1) = ${v}.` : which === 'min' ? `1/(n + 1) = ${v}.` : which === 'range' ? `(n − 1)/(n + 1) = ${v}.` : 'The middle of three equal gaps: 1/3.',
+      check: which === 'gap' ? 'Two points are often close together, so the mean distance is well below 1/2; 1/3 is the middle of three equal gaps.' : `E[min] + E[max] = 1 by symmetry, and with ${nn} points the max is pushed towards 1: ${q(nn, nn + 1)} against the min's ${q(1, nn + 1)}.`,
       data: { mode: 'uniform', which, n: nn },
     });
   },

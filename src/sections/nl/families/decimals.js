@@ -8,6 +8,7 @@ export default family({
   title: 'Decimal sequences',
   skill: 'Apply the same difference and ratio tests; the decimal point changes nothing but the bookkeeping',
   levels: [2, 3],
+  view: 'table',
   show: 5,
   display: 'dec',
   params: (rng, d) => (d === 2

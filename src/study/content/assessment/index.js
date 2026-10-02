@@ -9,25 +9,25 @@ const secs = (c) => (c.exam.perItemSeconds ? c.exam.perItemSeconds : c.exam.tota
 const SCORING = { plusMinus: '+1 right, −1 wrong, 0 skipped', exactOrder: '1 point only for the exact order', ratio: 'lower ÷ upper if the truth is inside, else 0', solved: 'boards solved; a wrong submit costs time' };
 
 const sixTasks = {
-  id: 'assessment/six-tasks', book: 'assessment', kind: 'strategy', title: 'The six tasks at a glance',
+  id: 'assessment/six-tasks', book: 'assessment', kind: 'strategy', title: 'The tasks at a glance',
   summary: 'What each portal task asks, how long you get, and how it is scored.',
   blocks: [
     sec('formats', 'The formats'),
-    { type: 'text', text: 'The portal lists six tasks. Each is a separate sitting with its own clock, and a task you open cannot be reset, so you take each one only when its row in Readiness says Ready.' },
+    { type: 'text', text: 'The Kickstarter portal lists six tasks. Candidates for Quant Trader, graduate and intern trader roles also report a separate mental arithmetic test, the 80-in-8 (80 questions in 8 minutes); this app lists it first. Each is a separate sitting with its own clock, and a task you open cannot be reset, so you take each one only when its row in Readiness says Ready.' },
     { type: 'compare', columns: ['Task', 'Questions', 'Time', 'Scoring', 'Going back'], rows: PORTAL_ORDER.filter((id) => id !== 'zapn').map((id) => {
       const c = SECTIONS[id];
-      return [c.title, String(c.exam.count), c.exam.perItemSeconds ? `${c.exam.perItemSeconds} s each` : `${c.exam.totalSeconds / 60} min total`, SCORING[c.exam.scoring], c.exam.navigation === 'free' ? 'yes, skip and return' : 'no'];
+      return [c.title, String(c.exam.count), c.exam.perItemSeconds ? `${c.exam.perItemSeconds} s each` : `${c.exam.totalSeconds / 60} min total`, c.exam.allowSkip === false ? '+1 right, −1 wrong, no skipping' : SCORING[c.exam.scoring], c.exam.navigation === 'free' ? 'yes, skip and return' : 'no'];
     }).concat([['Zap-N', '9 games', 'per game', 'speed, accuracy and planning per game', 'no']]) },
     { type: 'diagram', diagram: 'flow', spec: { root: 'start', nodes: [
       { id: 'start', text: 'Portal order', kind: 'note' },
       ...PORTAL_ORDER.map((id, i) => ({ id, text: `${i + 1}. ${id === 'zapn' ? 'Zap-N: 9 mini-games' : `${SECTIONS[id].title}: ${SECTIONS[id].kind === 'mcq' ? 'multiple choice' : SECTIONS[id].kind === 'rank' ? 'order three statements' : SECTIONS[id].kind === 'interval' ? 'give a range' : 'build a trade'}`}`, kind: 'a' })),
-    ], edges: PORTAL_ORDER.map((id, i) => ({ from: i ? PORTAL_ORDER[i - 1] : 'start', to: id })) }, caption: 'The tasks in the order the portal lists them.' },
+    ], edges: PORTAL_ORDER.map((id, i) => ({ from: i ? PORTAL_ORDER[i - 1] : 'start', to: id })) }, caption: 'The tasks in this app\'s order: the 80-in-8 (a separate test), then the six portal tasks in the order the portal lists them.' },
     { type: 'check', scope: 'the format table', questions: [
       { type: 'choice', q: 'In which task can you skip a question and come back to it later?', options: ['NumberLogic', 'Beat the Odds', 'Likelihood List', 'Intervals'], answer: 0, explain: 'NumberLogic has one 25-minute clock and free navigation; the others move forward only.' },
       { type: 'choice', q: 'Which task gives partial credit for a close answer?', options: ['Intervals', 'Likelihood List', 'Beat the Odds', 'Orderbooks'], answer: 0, traps: { 1: 'Likelihood List scores only the exact order' }, explain: 'Intervals scores lower ÷ upper whenever the truth is inside the range, so a tight range scores near 1.' },
     ] },
     sec('rule', 'Rule'),
-    { type: 'callout', tone: 'rule', text: 'Six separate sittings, one clock each, no resets: open a task only when its row says Ready.' },
+    { type: 'callout', tone: 'rule', text: 'Separate sittings, one clock each, no resets: open a task only when its row says Ready.' },
     sec('predict', 'Predict'),
     { type: 'predict', question: 'Before reading the next lesson: in a task scored +1/−1, is it ever right to leave a question blank?', answer: 'Yes: whenever your chance of being right is below one half.', explain: 'The next lesson derives this from the expected score.' },
   ],
@@ -39,7 +39,7 @@ const minusOne = {
   prerequisites: ['assessment/six-tasks'],
   blocks: [
     sec('ev', 'Expected score of answering'),
-    { type: 'text', text: 'Beat the Odds and NumberLogic score +1 for right, −1 for wrong and 0 for a skip. If you answer with probability p of being right, your expected score is p × (+1) + (1 − p) × (−1).' },
+    { type: 'text', text: 'Beat the Odds and NumberLogic score +1 for right, −1 for wrong and 0 for a skip (the 80-in-8 scores the same, but usually without a skip button). If you answer with probability p of being right, your expected score is p × (+1) + (1 − p) × (−1).' },
     { type: 'formula', text: 'E[score] = p − (1 − p) = 2p − 1' },
     { type: 'diagram', diagram: 'plot', spec: { x: { min: 0, max: 1, label: 'p = chance your answer is right' }, y: { min: -1, max: 1, label: 'expected points' }, curves: [{ label: 'answer: 2p − 1', points: [[0, -1], [0.5, 0], [1, 1]] }, { label: 'skip: 0', points: [[0, 0], [1, 0]] }], vlines: [{ x: 0.5, label: 'break-even' }] }, caption: 'Answering beats skipping exactly when the line is above zero: p > 1/2.' },
     { type: 'check', scope: 'E[score] = 2p − 1', questions: [
@@ -67,7 +67,7 @@ const pacing = {
   blocks: [
     sec('budgets', 'Time per question'),
     { type: 'compare', columns: ['Task', 'Seconds per question', 'Clock'], rows: PORTAL_ORDER.filter((id) => id !== 'zapn').map((id) => [SECTIONS[id].title, fmt(secs(SECTIONS[id])), SECTIONS[id].exam.perItemSeconds ? 'resets every question' : 'one clock for the whole task']) },
-    { type: 'text', text: 'Per-question clocks (Beat the Odds, Likelihood List, Intervals) cannot be banked: unused seconds vanish. The single clocks (NumberLogic, Orderbooks) can: finishing the easy questions fast pays for the hard ones.' },
+    { type: 'text', text: 'Per-question clocks (Beat the Odds, Likelihood List, Intervals) cannot be banked: unused seconds vanish. The single clocks (the 80-in-8, NumberLogic, Orderbooks) can: finishing the easy questions fast pays for the hard ones.' },
     { type: 'check', scope: 'per-question vs single clocks', questions: [
       { type: 'choice', q: 'You finish a Beat the Odds question in 40 seconds. What happens to the other 50?', options: ['They are lost', 'They carry over to the next question', 'They add to the Zap-N clock'], answer: 0, explain: 'Beat the Odds has a fresh 90-second clock per question.' },
       { type: 'number', q: `NumberLogic: ${SECTIONS.nl.exam.count} questions in ${SECTIONS.nl.exam.totalSeconds / 60} minutes. Average seconds per question (1 decimal)?`, answer: Math.round(secs(SECTIONS.nl) * 10) / 10, tolerance: 0.051, explain: `${SECTIONS.nl.exam.totalSeconds} ÷ ${SECTIONS.nl.exam.count} = ${fmt(secs(SECTIONS.nl))} s.` },
@@ -182,6 +182,42 @@ const howToStudy = {
   ],
 };
 
+// Not part of the online assessment: practice for the market-making games in later interview
+// rounds. Numbers match src/mk/engine.js (cap 4 on three dice; the other trader sees one die).
+const marketMaking = {
+  id: 'assessment/market-making', book: 'assessment', kind: 'strategy', title: 'How market-making rounds work',
+  summary: 'After the online assessment: quote around fair value, as wide as allowed, and treat every trade as news.',
+  blocks: [
+    sec('market', 'A market is two prices'),
+    { type: 'text', text: 'After the online assessment, Optiver\'s later interview rounds can include market-making games, and the Market making page in this app practises them. You quote two prices on a number nobody has seen yet: a **bid**, where you buy, and an **ask**, where you sell. The other trader can buy from you at your ask, sell to you at your bid, or pass.' },
+    { type: 'check', scope: 'bid and ask', questions: [
+      { type: 'choice', q: 'You quote 9.5 / 11.5 on the sum of three dice and the other trader buys 5 from you. The dice add to 13. What is your P&L?', options: ['−7.5', '+7.5', '−17.5', '−1.5'], answer: 0, traps: { 1: 'sign flipped: you sold, and the number came in above your price', 2: 'used your bid: it bought, so you sold at your ask of 11.5', 3: 'forgot the size: 5 lots, not 1' }, explain: 'It bought at your ask, so you sold 5 at 11.5: −5 × (13 − 11.5) = −7.5.' },
+    ] },
+    { type: 'text', text: 'Put the middle of your market on the **fair value**: the exact expected value of the number. For a sum, add the averages: one die averages 3.5, so three dice average 10.5.' },
+    { type: 'check', scope: 'fair value', questions: [
+      { type: 'number', q: 'Fair value of the sum of two cards dealt from ten cards numbered 1 to 10?', answer: 11, tolerance: 1e-9, explain: 'Each card averages 5.5, and dealing without replacement does not change the average of the sum: 2 × 5.5 = 11.' },
+    ] },
+    sec('picked', 'Who trades with you'),
+    { type: 'text', text: 'The other trader sees part of the answer, say one of the three dice, and works out its own expected value. It buys when that value is above your ask and sells when it is below your bid. So many of your trades come from someone who knows more than you. This is **adverse selection**.' },
+    { type: 'check', scope: 'the other trader\'s view', questions: [
+      { type: 'number', q: 'The other trader sees a 6 on one of the three dice. What does it expect the sum to be?', answer: 13, tolerance: 1e-9, explain: '6 plus two unseen dice at 3.5 each: 6 + 7 = 13.' },
+    ] },
+    { type: 'diagram', diagram: 'numberline', spec: { min: 7, max: 14, step: 1, barriers: [8.5, 12.5], marks: [{ x: 8, label: 'sees a 1' }, { x: 10.5, label: 'fair' }, { x: 13, label: 'sees a 6' }] }, caption: 'A 4-wide market, 8.5 / 12.5, on three dice. After seeing one die, the other trader expects anywhere from 8 to 13. Only a 1 or a 6 puts its estimate outside your prices.' },
+    { type: 'check', scope: 'adverse selection', questions: [
+      { type: 'choice', q: 'You quote 8.5 / 12.5 on three dice. The other trader sees a 6. What does it do, and is that good for you?', options: ['Buys at 12.5; bad for you', 'Sells at 8.5; good for you', 'Passes; 13 is inside', 'Buys at 12.5; good for you'], answer: 0, traps: { 1: 'a 6 pushes its estimate up, so it wants to buy, not sell', 2: '13 is above your ask of 12.5, so it is outside your market', 3: 'you sold above 10.5, but it knows the sum is likely near 13: you lose 0.5 a lot on average' }, explain: 'It expects 13, above your ask, so it buys. On average you lose 13 − 12.5 = 0.5 a lot. A trade against you is news: move your estimate toward it.' },
+    ] },
+    sec('width', 'Width and size'),
+    { type: 'text', text: 'A wider market gets picked off less, so games cap the width: in this app, at most 4 on three dice. Centre on fair value and use the full width. The other trader also trades for reasons of its own, and those trades pay you the spread. Once the market is centred and full width, trade the big size.' },
+    { type: 'check', scope: 'width and size', questions: [
+      { type: 'choice', q: 'Three dice, maximum width 4. Which market do you quote?', options: ['8.5 / 12.5', '9.5 / 11.5', '10 / 14', '6.5 / 14.5'], answer: 0, traps: { 1: 'only 2 wide: picked off whenever the other trader sees a high or low die', 2: 'centred on 12, not on the fair value of 10.5', 3: '8 wide, twice the cap' }, explain: 'Centred on 10.5 and exactly 4 wide.' },
+    ] },
+    sec('rule', 'Rule'),
+    { type: 'callout', tone: 'rule', text: 'Fair value first, mid on it, the full allowed width, then size up. A trade against you is news: move your fair value toward it.' },
+    sec('predict', 'Predict'),
+    { type: 'predict', question: 'Higher of two dice, maximum width 2. Fair value is 161/36, about 4.47. What market do you quote?', answer: 'About 3.5 / 5.5: centred near 4.47 and 2 wide.', explain: 'Then play a session on the Market making page and compare your markets with the coach\'s notes.' },
+  ],
+};
+
 export default {
   id: 'assessment',
   title: 'How the assessment works',
@@ -190,6 +226,7 @@ export default {
     { title: 'The tasks', lessons: [sixTasks, pacing] },
     { title: 'Scoring strategy', lessons: [minusOne, closest, calibration] },
     { title: 'Training', lessons: [howToStudy, training] },
+    { title: 'After the online assessment', lessons: [marketMaking] },
   ],
   tree: { diagram: 'flow', spec: { root: 'q', nodes: [
     { id: 'q', text: 'What do you need?', kind: 'q' },

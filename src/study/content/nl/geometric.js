@@ -50,9 +50,12 @@ export default {
       ] },
     { type: 'text', text: 'The terms change by the same **factor** each step: doubling, tripling, halving, or doubling while the sign flips. The gaps are not constant; they grow (or shrink) in proportion to the terms themselves.' },
     { type: 'list', items: [`What number comes next?  ${seq(G.slice(0, 5))}, ?`, `What number comes next?  ${seq(HALF.slice(0, 5))}, ?`, `What number comes next?  ${seq(TRI.slice(0, 5))}, ?`] },
-    { type: 'text', text: `Not this lesson: ratios that are close to a whole number but never exact (${seq(AFF)} is "double, then add 1"), or ratios that count up (${seq(FACT)}). Those have their own lessons, and dividing neighbours is how you tell them apart.` },
     { type: 'check', scope: 'the cue: a constant factor', questions: [
       { make: (rng) => { const g = geo(rng.int(2, 6), rng.pick([2, 3]), 5), a = arith(rng.int(2, 9), rng.int(3, 9), 5), f = affine(rng.int(2, 6), 2, rng.int(1, 3), 5); return pick(rng, 'Which sequence belongs to this lesson?', seq(g), [[seq(a), `constant gap ${a[1] - a[0]}: that is addition`], [seq(f), 'its ratios are near 2 but not equal: double plus a constant']], `Every ratio of ${seq(g)} is ${g[1] / g[0]}.`); } },
+    ] },
+    { type: 'text', text: `Not this lesson: ratios that are close to a whole number but never exact (${seq(AFF)} is "double, then add 1"), or ratios that count up (${seq(FACT)}). Those have their own lessons, and dividing neighbours is how you tell them apart.` },
+    { type: 'check', scope: 'near-ratios and counting ratios', questions: [
+      { type: 'choice', q: '2, 5, 11, 23, 47: divide neighbours. What do you see?', options: ['ratios near 2, never exact', 'an exact ratio of 2', 'ratios that count up'], answer: 0, traps: { 1: '5/2 = 2.5 and 11/5 = 2.2: not exactly 2', 2: 'the ratios settle toward 2; they do not count up' }, explain: 'Double, then add 1: the ratios drift toward 2. That is a different lesson.' },
     ] },
     { type: 'text', text: 'The wrong options come from real slips: adding r instead of multiplying by it, dropping the sign of a negative ratio, repeating the last gap, and multiplying one step too far. One test kills all of them: divide your answer by the last term. You must get r.' },
     { type: 'check', scope: 'the one test that kills wrong options', questions: [
@@ -71,6 +74,9 @@ export default {
     S('picture'),
     { type: 'text', text: `Under multiplication the step is proportional to the current term, so the gap row is a scaled copy of the sequence. Subtract again and you get another copy: no subtraction layer ever settles. Divide instead and the row is flat.` },
     { type: 'diagram', diagram: 'ladder', spec: { mode: 'diff', rows: ladderRows(G.slice(0, 5), 2) }, caption: `Gaps of ${seq(G.slice(0, 5))}: ${seq(diffs(G.slice(0, 5)))}, the sequence again. Their gaps: a copy again. This is the signal to stop subtracting.` },
+    { type: 'check', scope: 'a gap row that copies the terms', questions: [
+      { type: 'choice', q: 'The gaps of 5, 10, 20, 40, 80 are 5, 10, 20, 40. What does that tell you?', options: ['stop subtracting: the gaps copy the terms', 'subtract once more: it will settle', 'the gaps are constant after all'], answer: 0, traps: { 1: 'every further row is another copy', 2: 'they double' }, explain: 'A gap row that copies the sequence is the sign of multiplication: divide instead.' },
+    ] },
     { type: 'diagram', diagram: 'ladder', spec: { mode: 'ratio', rows: [G, ratios(G)], predicted: true }, caption: `Ratios of the same sequence: ${ratios(G)[0]} every time. The outlined cells are the continuation: ${G[4]} × ${ratios(G)[0]} = ${G[5]}.` },
     { type: 'check', scope: 'the flat ratio row', questions: [
       { make: (rng) => { const { r, xs } = ratioSeq(rng, 5); return num(`Every ratio next ÷ previous of ${seq(xs)} is the same. What is it? (Give 1/2 as 0.5.)`, r, `${neg(xs[1])} ÷ ${neg(xs[0])} = ${rText(r)}, and the same for every pair.`, ['Divide each term by the one before it.', 'Keep the sign: negative ÷ positive is negative.']); } },
@@ -100,6 +106,9 @@ export default {
         ] },
     ] },
     { type: 'text', text: `A consequence worth knowing: around a blank, blank × blank = left × right, because left × right = left × (left × r × r). So the blank is the **geometric mean** of its neighbours, the multiplication version of the average you used for constant gaps. For ${seq(G.slice(1, 4))} that is ${G[1]} × ${G[3]} = ${G[1] * G[3]} = ${G[2]} × ${G[2]}. The sign still comes from the alternation.` },
+    { type: 'check', scope: 'the geometric mean', questions: [
+      { type: 'number', q: 'Which number replaces the question mark?  4, ?, 36  (the same positive ratio both steps)', answer: 12, explain: '4 × 36 = 144 = 12 × 12, so the blank is 12.' },
+    ] },
     { type: 'explain', prompt: 'Why does subtracting never settle for a doubling sequence, and what does a negative ratio do to the terms?', model: 'Doubling adds a step equal to the current term, so the gaps are the sequence again and so are their gaps; only division removes the size. A negative ratio multiplies the size by |r| and flips the sign every step, so the terms alternate.', points: ['Under ×r each gap is (r − 1) × the term, so gaps grow with the terms', 'Division isolates the factor r', 'Negative r: size × |r|, sign flips each step'] },
 
     S('worked'),
@@ -153,7 +162,6 @@ export default {
       [seq(FACT), seq(diffs(FACT)), ratios(FACT).join(', '), 'multiply by 2, 3, 4, …'],
     ] },
     { type: 'callout', tone: 'edge', text: 'Edge cases: r = 1 is a constant sequence; r between 0 and 1 shrinks the terms towards zero; a negative r alternates the signs; a zero anywhere makes division impossible, so a sequence with a 0 in it is not geometric.' },
-    { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: anything that shrinks or grows by a fixed factor per round is geometric. In Beat the Odds, "no six in n throws" is (5/6)^{n}: each extra throw multiplies the probability by the same 5/6.' },
     { type: 'variation', base: `${seq(G5)}, ?  Ratio ${G[1] / G[0]}, next ${G[5]}.`, rows: [
       { same: true, change: `Drop the first term: ${seq(G5.slice(1))}, ?`, effect: `Still ${G[5]}. Three ratios still read ${G[1] / G[0]} and the last term has not moved.` },
       { change: `Multiply every term by 5: ${seq(G5.map((v) => 5 * v))}, ?`, effect: `${5 * G[5]}. The ratio stays ${G[1] / G[0]}: scaling every term cancels in each division (unlike a gap, which would scale too).` },
@@ -166,6 +174,7 @@ export default {
       { make: (rng) => { const a = rng.pick([3, 5, 7, 9, 11]) * 32, xs = Array.from({ length: 6 }, (_, i) => a / 2 ** i); return num(nextQ(xs.slice(0, 5)), xs[5], `Ratio 1/2: ${xs[4]} ÷ 2 = ${xs[5]}.`, ['The terms shrink by the same factor.', 'Halve the last term.']); } },
     ] },
 
+    { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: anything that shrinks or grows by a fixed factor per round is geometric. In Beat the Odds, "no six in n throws" is (5/6)^{n}: each extra throw multiplies the probability by the same 5/6.' },
     { type: 'transfer',
       near: { make: (rng) => { const up = rng.chance(0.5), m = rng.int(1, 3), xs = up ? geo(32 * m, 1.5, 6) : geo(243 * m, 2 / 3, 6).map(Math.round); return num(nextQ(xs.slice(0, 5)), xs[5], `The ratio is ${up ? '3/2' : '2/3'} every time (${xs[1]} ÷ ${xs[0]} = ${up ? '1.5' : '2/3'}), so ${xs[4]} × ${up ? '3/2' : '2/3'} = ${xs[5]}.`, ['The gaps grow (or shrink) with the terms: divide neighbours.', `The ratio is not a whole number: ${xs[1]} ÷ ${xs[0]} as a fraction.`]); } },
       far: { make: (rng) => { const n = rng.int(2, 4); return { type: 'number', q: `A fair die is thrown ${n} times. What is the probability that no six appears? (A fraction or a decimal to three places.)`, answer: pow(5, n) / pow(6, n), tolerance: 0.001, hints: ['Each throw keeps "no six so far" alive with the same chance.', `Multiply by 5/6 once per throw: (5/6)^{${n}}.`], explain: `Each throw multiplies the chance by 5/6: (5/6)^{${n}} = ${pow(5, n)}/${pow(6, n)}.` }; } },

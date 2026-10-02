@@ -166,11 +166,14 @@ export default {
 
     sec('speed'),
     { type: 'callout', tone: 'speed', text: 'On every bundle card, add the leg bids and the leg asks in one pass (two running totals), then glance at the bundle quote once: is its bid above the first total or its ask below the second? That covers the rich and the cheap lesson in one look.' },
-    { type: 'callout', tone: 'speed', text: 'The two totals differ by the legs\' spreads added. If the bundle quote sits inside that range, move on to the next card immediately.' },
     { type: 'check', scope: 'both totals in one pass', questions: [
       { make: (rng) => { const rich = rng.chance(0.5); const { cs, parts, bundle, e } = legsBoard(rng, 2, 0, rich); return mc({ q: `Board: ${boardText([...cs, bundle])}. Which package, and what does it earn?`, right: rich ? `Sell the bundle, buy the legs: +${px(e)}` : `Buy the bundle, sell the legs: +${px(e)}`,
         wrong: [[rich ? `Buy the bundle, sell the legs: +${px(e)}` : `Sell the bundle, buy the legs: +${px(e)}`, 'ran only one check and assumed the direction'], ['No trade', `the legs' totals are ${px(sellValue(parts))} / ${px(buyCost(parts))} and the bundle quote crosses one of them`]],
         explain: rich ? `Bundle bid ${px(bundle.bid)} > legs' ask ${px(buyCost(parts))}.` : `Bundle ask ${px(bundle.ask)} < legs' bid ${px(sellValue(parts))}.` }, rng); } },
+    ] },
+    { type: 'callout', tone: 'speed', text: 'The two totals differ by the legs\' spreads added. If the bundle quote sits inside that range, move on to the next card immediately.' },
+    { type: 'check', scope: 'inside the range', questions: [
+      { type: 'choice', q: 'Leg bids add to 47.5 and leg asks to 50.0. The bundle is quoted 48.0 / 49.5. What do you do?', options: ['move on: it sits inside the range', 'sell the bundle at its bid, 48.0', 'buy the bundle at its ask, 49.5'], answer: 0, traps: { 1: '48.0 is below the leg asks 50.0, so selling the bundle and buying legs loses', 2: '49.5 is above the leg bids 47.5, so buying it and selling the legs loses' }, explain: 'Bid below 50.0 and ask above 47.5: no edge either way.' },
     ] },
 
     sec('rule'),
@@ -184,11 +187,11 @@ export default {
       ['Package', 'sell bundle, buy each leg', 'buy bundle, sell each leg'],
     ] },
     { type: 'callout', tone: 'edge', text: 'Edge cases. An ask exactly equal to the leg bids added earns 0. A bundle can be neither rich nor cheap (then look elsewhere on the board), but never both. A wide bundle spread does not matter to the cheap package.' },
-    { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: every later card type is checked in both directions like this. A spread A − B, a weighted 2A + B, a chain replica, a bundle hedged with another bundle: each has a "sell the card" edge and a "buy the card" edge, and at most one of them pays.' },
     { type: 'check', scope: 'the rich and cheap sides', questions: [
       mc({ q: 'Which prices does the cheap-bundle package trade at?', right: 'The bundle ask and the leg bids', wrong: [['The bundle bid and the leg asks', 'that is the rich package'], ['The bundle ask and the leg asks', 'the legs are sold, so they fetch their bids'], ['The bundle bid and the leg bids', 'you buy the bundle, so you pay its ask']], explain: 'Buy = ask (the bundle), sell = bid (the legs).' }),
     ] },
 
+    { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: every later card type is checked in both directions like this. A spread A − B, a weighted 2A + B, a chain replica, a bundle hedged with another bundle: each has a "sell the card" edge and a "buy the card" edge, and at most one of them pays.' },
     { type: 'variation', base: `Base: ${boardText([A, B, AB])}. Buy A + B, sell A and B: +${px(edgeBuy(AB, legs))}.`, rows: [
       { same: true, change: `The bundle bid falls by ${px(2)}`, effect: `Nothing: you buy the bundle, so its bid never enters. Profit stays ${px(edgeBuy(card('A + B', [1, 1], AB.bid - 2, AB.ask), legs))}.` },
       { same: true, change: `A's ask rises by ${px(1)}`, effect: `Nothing: you sell A, at its bid. Profit stays ${px(edgeBuy(AB, [part(card('A', [1, 0], A.bid, A.ask + 1)), part(B)]))}.` },

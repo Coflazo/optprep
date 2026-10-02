@@ -69,6 +69,9 @@ export default {
       { points: [[0.4, 0], [1, 0], [1, 0.5], [0.4, 0.5]], area: 0.3, label: 'B only', tone: 2 },
       { points: [[0, 0], [0.4, 0], [0.4, 0.5], [0, 0.5]], area: 0.2, label: 'A and B', tone: 4 },
     ], xLabel: 'A: the left 0.4', yLabel: 'B: the bottom 0.5' }, caption: 'A is the left strip (width 0.4), B the bottom band (height 0.5). Their overlap has area 0.4 × 0.5 = 0.2 = P(A) × P(B): the picture of independence.' },
+    { type: 'check', scope: 'the strip and the band', questions: [
+      { make: (rng) => { const w = rng.pick([0.2, 0.3, 0.6, 0.7]), hgt = rng.pick([0.4, 0.5, 0.8]), ans = round(w * hgt, 4); return { type: 'number', q: `In the unit square, A is a vertical strip of width ${w} and B a horizontal band of height ${hgt}. What is the area of the overlap, P(A and B)?`, answer: ans, tolerance: 1e-9, explain: `The overlap is a rectangle, ${w} wide and ${hgt} high: ${ans}. That is P(A) × P(B).` }; } },
+    ] },
     { type: 'diagram', diagram: 'grid', spec: diceGrid((a, b) => a % 2 === 0 && b >= 5), caption: `First die even (18 cells) and second die at least 5 (12 cells): ${evenHigh} cells have both, and ${evenHigh}/36 = 18/36 × 12/36. Two separate dice give crossing strips.` },
     { type: 'check', scope: 'testing independence on the grid', questions: [{ make: diceIndepQ }] },
 
@@ -129,8 +132,11 @@ export default {
 
     sec('speed'),
     { type: 'callout', tone: 'speed', text: 'For several independent events with different chances, "at least one" is still one line: 1 − (1 − p_{1})(1 − p_{2})(1 − p_{3}).' },
-    { type: 'callout', tone: 'speed', text: `Big deck, few draws: without replacement is close to with replacement. 13/52 × 12/51 ≈ ${dec(1 / 17, 4)} against (1/4)^{2} = ${dec(1 / 16, 4)}. Use the easy version to bracket, never as the answer when options are close.` },
     { type: 'check', scope: 'at least one of several', questions: [{ make: atLeastOneOf3Q }] },
+    { type: 'callout', tone: 'speed', text: `Big deck, few draws: without replacement is close to with replacement. 13/52 × 12/51 ≈ ${dec(1 / 17, 4)} against (1/4)^{2} = ${dec(1 / 16, 4)}. Use the easy version to bracket, never as the answer when options are close.` },
+    { type: 'check', scope: 'with replacement as a bracket', questions: [
+      { type: 'choice', q: 'Two cards are dealt from a full deck without replacement. P(both hearts) is:', options: ['a little below 1/16', 'exactly 1/16', 'a little above 1/16'], answer: 0, stable: true, traps: { 1: 'treated the draws as with replacement: the answer when options are close must use 12/51', 2: 'one heart is gone, so the second chance is lower, not higher' }, explain: `13/52 × 12/51 = 1/17 ≈ ${dec(1 / 17, 4)}, just below 1/16 = ${dec(1 / 16, 4)}.` },
+    ] },
 
     sec('rule'),
     { type: 'callout', tone: 'rule', text: 'Independent → multiply: P(A and B) = P(A) × P(B); test it with P(A | B) = P(A). Disjoint is the opposite of independent. Without replacement → multiply the updated fractions.' },
@@ -144,9 +150,15 @@ export default {
       ['Example', '"1" and "6" on one die', '"6" on the first die and "6" on the second'],
     ] },
     { type: 'callout', tone: 'edge', text: 'Edge cases: an event with chance 0 or 1 is independent of everything. If A and B are independent, so are A and not-B. Independence is about chances, not mechanics: on two dice, "first die shows 3" and "sum is 7" are independent.' },
-    { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: coin sequences and first-success waiting times in Beat the Odds, repeated dice games, and Likelihood List conjunctions where P(A and B) can never beat P(A). The next lessons multiply independent trials everywhere.' },
-    { type: 'check', scope: 'or for independent events', questions: [
+    { type: 'check', scope: 'the table and the edge cases', questions: [
       { make: (rng) => { const a = rng.pick([0.2, 0.3, 0.5]), b = rng.pick([0.4, 0.5, 0.6]), ans = round(a + b - a * b, 4); return { type: 'number', q: `A and B are independent, P(A) = ${a}, P(B) = ${b}. What is P(A or B)?`, answer: ans, tolerance: 1e-9, hints: ['Addition rule, with the overlap from the product rule.'], explain: `${a} + ${b} − ${a} × ${b} = ${dec(ans, 4)}.` }; } },
+      { type: 'choice', q: 'P(A) = 0. Is A independent of every other event B?', options: ['Yes', 'No'], answer: 0, stable: true, traps: { 1: 'P(A and B) = 0 = 0 × P(B), so the product rule holds' }, explain: 'An event with chance 0 (or 1) passes the test P(A and B) = P(A) × P(B) for every B.' },
+    ] },
+    { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: coin sequences and first-success waiting times in Beat the Odds, repeated dice games, and Likelihood List conjunctions where P(A and B) can never beat P(A). The next lessons multiply independent trials everywhere.' },
+    { type: 'check', scope: 'multiplying independent trials', questions: [
+      mc({ q: 'A fair coin is tossed four times. What is P(H, H, T, H in that order)?', right: frac(1, 16), at: 0,
+        wrong: [[frac(4, 16), 'that is P(exactly three heads) in any order'], [frac(1, 8), 'multiplied three tosses, not four'], [frac(1, 2), 'used one toss only']],
+        explain: 'The tosses are independent, so one fixed sequence is (1/2)^{4} = 1/16.' }),
     ] },
 
     sec('mastery', 'Mastery check'),

@@ -69,9 +69,12 @@ export default {
       ] },
     { type: 'text', text: 'Two operations take turns on the **previous term**: add 3, multiply by 2, add 3, multiply by 2. The gap list alternates between a fixed number (the addition or subtraction) and a gap that grows with the term (the multiplication). That mixture of flat and growing gaps is the signature.' },
     { type: 'list', items: [`What number comes next?  ${seq(E1.slice(0, 6))}, ?`, `What number comes next?  ${seq(E2.slice(0, 7))}, ?`, `What number comes next?  ${seq(E3.slice(0, 7))}, ?`] },
-    { type: 'text', text: `Not this lesson: two separate sequences written alternately (${seq(IL)} is ${seq(IL.filter((_, i) => i % 2 === 0))} beside ${seq(IL.filter((_, i) => i % 2 === 1))}). There the odd-position terms never touch the even ones. Here every term is built from the one right before it.` },
     { type: 'check', scope: 'the cue: flat and growing gaps taking turns', questions: [
       { make: (rng) => { const d = draw(rng, 6, 2), il = weave(arith(rng.int(1, 9), rng.int(2, 5), 3), arith(rng.int(30, 60), -rng.int(2, 6), 3), 6), ge = geo(rng.int(2, 5), 2, 6); return pick(rng, 'In which list do two operations take turns on the previous term?', seq(d.xs.slice(0, 6)), [[seq(il), 'there every second term forms its own list: two strands, not two operations'], [seq(ge), 'every step is the same ×2']], `${seq(d.xs.slice(0, 6))}: steps ${steps(d.xs.slice(0, 6), d.ops).join(', ')}.`); } },
+    ] },
+    { type: 'text', text: `Not this lesson: two separate sequences written alternately (${seq(IL)} is ${seq(IL.filter((_, i) => i % 2 === 0))} beside ${seq(IL.filter((_, i) => i % 2 === 1))}). There the odd-position terms never touch the even ones. Here every term is built from the one right before it.` },
+    { type: 'check', scope: 'two strands', questions: [
+      { type: 'choice', q: '3, 30, 7, 27, 11, 24: what is it?', options: ['two strands: 3, 7, 11 and 30, 27, 24', 'two operations taking turns', 'a single arithmetic sequence'], answer: 0, traps: { 1: 'no pair of operations turns 3 into 30 and 30 into 7 the same way twice', 2: 'the gaps swing between big rises and big falls' }, explain: 'Odd positions 3, 7, 11 and even positions 30, 27, 24 never touch: two strands.' },
     ] },
 
     S('why'),
@@ -86,9 +89,12 @@ export default {
     S('picture'),
     { type: 'text', text: 'Label every step between neighbours with its operation. The labels alternate. In the gap row, the additions show up as the same number on every other step, while the multiplications show up as gaps that grow with the terms.' },
     { type: 'diagram', diagram: 'table', spec: { columns: ['step', 'from', 'to', 'operation'], rows: E1.slice(0, 6).map((v, i) => [String(i + 1), String(v), String(E1[i + 1]), mk(E1o[i % 2]).t]) }, caption: `${seq(E1.slice(0, 7))} step by step: ${mk(E1o[0]).t} and ${mk(E1o[1]).t} take turns. Six steps are listed; the seventh would be ${due(E1o, 7).t}.` },
-    { type: 'diagram', diagram: 'bar', spec: { title: `Gaps of ${seq(CH.slice(0, 6))}`, xLabel: 'step', yLabel: 'gap', categories: g(CH.slice(0, 6)).map((_, i) => String(i + 1)), series: [{ name: 'gap', values: g(CH.slice(0, 6)) }], valueLabels: true }, caption: `Flat, growing, flat, growing: the flat bars are the ${mk(CHo[0]).t} steps and the growing ones are the ${mk(CHo[1]).t} steps, each as big as the term it doubles.` },
     { type: 'check', scope: 'labelling each step', questions: [
       { make: (rng) => { const { ops, xs } = draw(rng, 6), k = rng.int(1, 4); const right = mk(ops[k % 2]), wrong = mk(ops[(k + 1) % 2]); return pick(rng, `${seq(xs.slice(0, 6))}: which of the list's two operations takes ${neg(xs[k])} to ${neg(xs[k + 1])}?`, right.t, [[wrong.t, `that is the other operation: ${neg(xs[k])} ${wrong.t.replace('×', '× ')} is ${wrong.f(xs[k])}, not ${neg(xs[k + 1])}`], ...falseOps(xs[k], xs[k + 1], [right.t, wrong.t]).slice(0, 2).map((o) => [o.t, `${neg(xs[k])} ${o.t.replace('×', '× ')} is ${o.f(xs[k])}, not ${neg(xs[k + 1])}`])], `${neg(xs[k])} ${right.t.replace('×', '× ')} = ${neg(xs[k + 1])}.`); } },
+    ] },
+    { type: 'diagram', diagram: 'bar', spec: { title: `Gaps of ${seq(CH.slice(0, 6))}`, xLabel: 'step', yLabel: 'gap', categories: g(CH.slice(0, 6)).map((_, i) => String(i + 1)), series: [{ name: 'gap', values: g(CH.slice(0, 6)) }], valueLabels: true }, caption: `Flat, growing, flat, growing: the flat bars are the ${mk(CHo[0]).t} steps and the growing ones are the ${mk(CHo[1]).t} steps, each as big as the term it doubles.` },
+    { type: 'check', scope: 'flat and growing bars', questions: [
+      { type: 'choice', q: 'In the gap bars of an alternating-operations list, which steps give the growing bars?', options: ['the multiplications', 'the additions', 'every second addition'], answer: 0, traps: { 1: 'additions give flat bars of one height', 2: 'all additions are flat' }, explain: 'A multiplication gap grows with the term it acts on.' },
     ] },
 
     S('derivation'),
@@ -111,6 +117,9 @@ export default {
         ] },
     ] },
     { type: 'text', text: `Test writers mix in subtraction to hide the pattern. A subtraction step shows up as a flat negative gap; the multiplication gap still grows. In ${seq(E2.slice(0, 6))} the gaps are ${seq(g(E2.slice(0, 6)))}: every other gap is ${g(E2)[1]}, the subtraction, and the rest grow. The same labelling works whatever the sign.` },
+    { type: 'check', scope: 'a subtraction step', questions: [
+      { type: 'number', q: 'What comes next?  4, 12, 7, 21, 16, ?', answer: 48, explain: '× 3 and − 5 take turns: 16 came from a subtraction, so multiply next: 16 × 3 = 48.' },
+    ] },
     { type: 'explain', prompt: 'Why do the gaps alternate between flat and growing, and how is this different from two interleaved strands?', model: 'An addition adds the same amount whatever the term, so its gaps are flat; a multiplication adds (m − 1) × the term, so its gaps grow as the terms grow. With interleaving, each term comes from the term two places back in its own strand; here each term comes from the term right before it.', points: ['Addition: same gap every time', 'Multiplication: gap = (m − 1) × the term, so it grows', 'Here each term comes from its neighbour, not from two places back'] },
 
     S('worked'),
@@ -179,6 +188,9 @@ export default {
       { make: (rng) => { const t = rng.int(0, 2); let xs; if (t === 0) xs = draw(rng, 6).xs.slice(0, 6); else if (t === 1) xs = affine(rng.int(1, 6), 2, rng.int(1, 5), 6); else xs = geo(rng.int(1, 5), -2, 6); const names = ['two operations taking turns', 'both operations every step', 'one operation every step']; const trp = [[null, 'the same combined step does not produce every term', 'no single operation fits every step'], ['the steps do not alternate: every step is × 2 then + the same constant', null, 'no single operation fits: the ratios drift'], ['every step is the same × (−2)', 'there is no constant added: the leftover after × (−2) is 0', null]]; return pick(rng, `${seq(xs)}: how is each term made from the one before?`, names[t], names.map((nm, i) => [nm, trp[t][i]]).filter((_, i) => i !== t), `Gaps: ${seq(g(xs))}.`); } },
     ] },
     { type: 'callout', tone: 'edge', text: 'Edge cases: with ×3 and −4 the terms still rise, so the direction proves nothing. The pattern can start with either operation, so read the first step rather than assuming "add first". And a subtraction can take a small term below zero, where the multiplication then pushes it further down.' },
+    { type: 'check', scope: 'the edge cases', questions: [
+      { make: (rng) => { let s, m, ops, xs; do { s = rng.int(1, 6); m = rng.pick([2, 3]); ops = [['mul', m], ['sub', s]]; xs = run(rng.int(3, 9), ops, 8); } while (xs.some((v) => Math.abs(v) < 2) || new Set(xs).size < xs.length); return num(nextQ(xs.slice(0, 7)), xs[7], `Steps ${steps(xs.slice(0, 7), ops).join(', ')}: the next is ${due(ops, 7).t}, so ${xs[6]} ${due(ops, 7).t.replace('×', '× ')} = ${xs[7]}.`, ['The terms rise, but one step subtracts.', 'Which operation made the last term?']); } },
+    ] },
     { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: any process of two alternating actions (a move and a reply, a deposit and a fee) is simulated step by step, and the one thing to track is whose turn it is.' },
     { type: 'variation', base: `${seq(E16)}, ?  The last step was ${other(E1o, 6).t}, so ${due(E1o, 6).t}: ${E1[6]}.`, rows: [
       { same: true, change: `Drop the first term: ${seq(E16.slice(1))}, ?`, effect: `Still ${E1[6]}. The last step is still ${E1[4]} → ${E1[5]}, a ${other(E1o, 6).t}, so ${due(E1o, 6).t} is due. Read the last step, not the count from the start.` },
@@ -186,9 +198,6 @@ export default {
       { change: `Add 7 instead of 5: ${seq(ADD7.slice(0, 6))}, ?`, effect: `${ADD7[6]}. Same turn order; the flat gap is 7 now.` },
       { change: `Start with the addition: ${seq(SWAP.slice(0, 6))}, ?`, effect: `${SWAP[6]}. The order flips, so after six terms the ×2 is due.` },
       { fusion: true, change: `Start with the addition and show one more term: ${seq(SWAP.slice(0, 7))}, ?`, effect: `${SWAP[7]}. Each change flips which operation is due, so together they cancel: +5 is due again, as in the base.` },
-    ] },
-    { type: 'check', scope: 'the edge cases', questions: [
-      { make: (rng) => { let s, m, ops, xs; do { s = rng.int(1, 6); m = rng.pick([2, 3]); ops = [['mul', m], ['sub', s]]; xs = run(rng.int(3, 9), ops, 8); } while (xs.some((v) => Math.abs(v) < 2) || new Set(xs).size < xs.length); return num(nextQ(xs.slice(0, 7)), xs[7], `Steps ${steps(xs.slice(0, 7), ops).join(', ')}: the next is ${due(ops, 7).t}, so ${xs[6]} ${due(ops, 7).t.replace('×', '× ')} = ${xs[7]}.`, ['The terms rise, but one step subtracts.', 'Which operation made the last term?']); } },
     ] },
 
     { type: 'transfer',

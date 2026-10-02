@@ -58,6 +58,9 @@ export default {
     ] },
     { type: 'text', text: 'Three numbers and one observation. A **base rate** (how common the condition is), a **hit rate** (how often the signal fires when the condition is there), a **false-alarm rate** (how often it fires when it is not). Then a signal is observed and you are asked how likely the condition now is. The context changes: medical tests, fraud filters, spam models, backtests.' },
     { type: 'list', items: ['"1% of people have a condition; the test is 99% accurate both ways. You test positive..."', '"A fraud filter flags 95% of fraud and 2% of legitimate transactions; 1 in 50 transactions is fraud..."', '"A backtest passes 90% of good strategies and 10% of bad ones; 1 in 10 ideas is good..."'] },
+    { type: 'check', scope: 'base rate, hit rate, false-alarm rate', questions: [
+      { type: 'choice', q: 'A fraud filter flags 95% of fraud and 2% of legitimate transactions; 1 in 50 transactions is fraud. Which number is the false-alarm rate?', options: ['2%', '95%', '1 in 50', '98%'], answer: 0, traps: { 1: 'that is the hit rate: how often it fires when fraud is there', 2: 'that is the base rate: how common fraud is', 3: 'that is how often a legitimate transaction passes' }, explain: 'A false alarm is the filter firing when there is no fraud: 2% of legitimate transactions.' },
+    ] },
     { type: 'text', text: 'Not this lesson: evidence about which physical object you hold (a coin, a box, a card: bto/bayes-boxes), and plain facts about dice (bto/conditional-dice). The signal here is noisy and described by rates.' },
     { type: 'check', scope: 'the recognition cues above', questions: [
       { type: 'choice', q: 'Which question belongs to this lesson?', options: ['A sensor fires on 80% of faults and 5% of normal runs; 2% of runs are faulty; it fires: P(fault)?', 'A bag has 1 double-headed and 9 fair coins; you see 3 heads: P(double-headed)?', 'Two dice; at least one 6: P(both 6)?', 'A die is thrown until a six: P(it takes 3 throws)?'], answer: 0, traps: { 1: 'evidence about a physical object: bto/bayes-boxes', 2: 'a plain fact about the outcome: bto/conditional-dice', 3: 'a waiting question' }, explain: 'Base rate, hit rate, false-alarm rate, observed signal.' },
@@ -134,6 +137,9 @@ export default {
       { t: 10, say: `${cnt(FR.p)} are fraud and ${cnt(FR.p.mul(FR.s))} of them are flagged. ${cnt(one.sub(FR.p)).toLocaleString('en')} are legitimate and ${cnt(one.sub(FR.p).mul(FR.f))} of them are flagged.` },
       { t: 16, say: `${cnt(FR.p.mul(FR.s))}/(${cnt(FR.p.mul(FR.s))} + ${cnt(one.sub(FR.p).mul(FR.f))}) = ${post(FR.p, FR.s, FR.f)} ≈ ${d3(post(FR.p, FR.s, FR.f))}. About half, because legitimate transactions vastly outnumber fraud. Answer ${post(FR.p, FR.s, FR.f)}.` },
     ] },
+    { type: 'check', scope: 'the slip in the think-aloud', questions: [
+      { type: 'choice', q: 'In the think-aloud, the first try said a flag means about 95% fraud. What went wrong?', options: ['read P(flag | fraud) as P(fraud | flag)', 'used natural frequencies too early', 'took 2% as the hit rate', 'added the two rates'], answer: 0, traps: { 1: 'natural frequencies were the fix, not the slip', 2: 'the try used 95%, just in the wrong direction', 3: 'nothing was added in the first try' }, explain: '95% is the chance of a flag given fraud. Among all flags: 190/(190 + 196) = 95/193 ≈ 0.49.' },
+    ] },
 
     S('predict'),
     { type: 'predict', question: 'Base rate 1 in 1,000. The test catches everyone who has it and has a 5% false-alarm rate. Before computing: is a positive more or less likely than 10% to be real?', answer: `Less: about ${d3(postNum(0.001, 1, 0.05))}, roughly 1 real case per 50 false alarms.`, explain: '1,000 people: 1 true positive, about 50 false ones.' },
@@ -156,6 +162,9 @@ export default {
 
     S('speed'),
     { type: 'callout', tone: 'speed', text: 'Natural frequencies are the fastest route: pick a population that makes every count whole (1,000 or 10,000), count true and false positives, divide. No formula to remember.' },
+    { type: 'check', scope: 'natural frequencies', questions: [
+      { type: 'number', q: 'Take 10,000 people. 1% have a condition. The test flags 90% of them and 5% of everyone else. How many false positives?', answer: 495, explain: '9,900 without the condition × 5% = 495. With 90 true positives, P(condition | flag) = 90/585.' },
+    ] },
     { type: 'callout', tone: 'speed', text: `Odds form for quick estimates: posterior odds = prior odds × (hit rate / false-alarm rate). 1 : 99 prior with a 99/1 ratio gives 99 : 99 = 1 : 1. Each extra independent positive multiplies the odds by the ratio again. Time budget: ${SECTIONS.bto.exam.perItemSeconds} seconds; natural frequencies take about 40.` },
     { type: 'check', scope: 'odds form', questions: [
       { make: (rng) => { const odds = rng.pick([[1, 9], [1, 4], [1, 19], [1, 99]]); const lr = rng.pick([9, 10, 19, 20]); const v = Q.of(odds[0] * lr, odds[0] * lr + odds[1]); return mc(rng, `Prior odds ${odds[0]} : ${odds[1]}. The signal is ${lr} times as likely if H is true. P(H | signal)?`, v.toString(), [[Q.of(odds[0] * lr, odds[1]).toString(), 'reported the odds as a probability'], [Q.of(odds[0], odds[0] + odds[1]).toString(), 'ignored the signal'], [Q.of(lr - 1, lr).toString(), 'used only the likelihood ratio']], `Posterior odds ${odds[0] * lr} : ${odds[1]}, so P = ${v}.`); } },
@@ -173,11 +182,11 @@ export default {
       ['P(H | −)', 'missed cases among negatives', postNeg(T.p, T.s, T.f).toString()],
     ] },
     { type: 'callout', tone: 'edge', text: 'Edge cases: a false-alarm rate of 0 makes every positive real (answer 1). A base rate of 0 makes every positive false (answer 0). A test with hit rate equal to false-alarm rate carries no information: the answer is the base rate.' },
-    { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: coins, boxes and cards (bto/bayes-boxes) are Bayes with hit rates that come from counting. Monty Hall is Bayes where the host\'s rule sets the rates (bto/monty-hall). In research, a backtest that passes many bad ideas has a low "P(good | passed)" when good ideas are rare.' },
     { type: 'check', scope: 'the contrast table and edge cases', questions: [
       { type: 'choice', q: 'A test fires for 30% of those with the condition and 30% of those without. Base rate 1/8. P(has it | positive)?', options: ['1/8', '3/10', '1/2', '0'], answer: 0, traps: { 1: 'the hit rate', 2: 'a coin flip', 3: 'the signal is uninformative, not disproving' }, explain: 'Equal rates cancel: the posterior equals the prior.' },
     ] },
 
+    { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: coins, boxes and cards (bto/bayes-boxes) are Bayes with hit rates that come from counting. Monty Hall is Bayes where the host\'s rule sets the rates (bto/monty-hall). In research, a backtest that passes many bad ideas has a low "P(good | passed)" when good ideas are rare.' },
     { type: 'variation', base: `Base rate ${T.p}, hit rate ${T.s}, false alarms ${T.f}. P(has it | positive) = ${post(T.p, T.s, T.f)}.`, rows: [
       { change: 'Imagine 10,000 people instead of 1,000', effect: `No change: ${post(T.p, T.s, T.f)}. The population size cancels; it only makes the counts whole.`, same: true },
       { change: 'Base rate 1/100 instead of 1/10', effect: `False alarms now swamp the real cases: ${post(Q.of(1, 100), T.s, T.f)}.` },

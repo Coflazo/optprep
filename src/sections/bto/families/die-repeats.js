@@ -1,7 +1,7 @@
 // One die, several throws: all different, all the same, no equal neighbours, some repeat.
 import { Q } from '../../../core/rational.js';
 import { nPr, nCr } from '../../../core/combinatorics.js';
-import { mcqItem, agree, qpow, q, sequences } from '../lib.js';
+import { mcqItem, agree, qpow, q, sequences, table } from '../lib.js';
 
 const ID = 'die-repeats';
 const words = ['', 'one', 'two', 'three', 'four', 'five'];
@@ -16,6 +16,10 @@ function build(kind, n, k) {
   const repeat = q(1).sub(allDiff);
   const f = (x) => x.toString();
   const chain = Array.from({ length: n }, (_, i) => `${k - i}/${k}`).join(' × ');
+  // Allowed faces throw by throw: the picture behind every chained product here.
+  const allowed = (perThrow, caption) => table(['Throw', 'Faces allowed', 'Factor'], perThrow.map((a, i) => [i + 1, a, `${a}/${k}`]), caption);
+  const freeThen = (x) => Array.from({ length: n }, (_, i) => (i === 0 ? k : x));
+  const shrinking = Array.from({ length: n }, (_, i) => k - i);
   if (kind === 'allDiff') return {
     value: allDiff,
     text: n === 2
@@ -35,6 +39,11 @@ function build(kind, n, k) {
       { say: `P = ${nPr(k, n)}/${total} = ${f(allDiff)} ≈ ${allDiff.toNumber().toFixed(3)}.`, why: 'Favourable over total for equally likely outcomes.' },
     ],
     hints: ['Fix the first throw. How many faces are still allowed for the second?', `Multiply the allowed-face fractions: ${chain}.`, `Product: ${f(allDiff)}.`],
+    fast: `One factor per throw, each one face fewer: ${chain} = ${f(allDiff)}.`,
+    check: n > 2
+      ? `All different is stricter than "no equal neighbours", (${k - 1}/${k})^${n - 1} = ${f(noAdj)}, so the answer must sit below that.`
+      : `With two throws, "different" fails only when the second copies the first: 1 − 1/${k} = ${f(allDiff)}.`,
+    picture: allowed(shrinking, `Each throw must avoid every face already used, so the allowed faces drop by one per throw. Multiply the factors: ${f(allDiff)}.`),
   };
   if (kind === 'allSame') return {
     value: allSame,
@@ -53,6 +62,9 @@ function build(kind, n, k) {
       { say: `P = (1/${k})^${n - 1} = ${f(allSame)}.`, why: `Same as ${k} favourable sequences out of ${total}.` },
     ],
     hints: ['Does the first throw have to be anything in particular?', 'Only the later throws must match the first.', `(1/${k})^${n - 1}.`],
+    fast: `The first throw is free; the other ${n - 1} must copy it: (1/${k})^${n - 1} = ${f(allSame)}.`,
+    check: `${k} sequences out of ${total} work (one per face), so the answer is ${k}/${total}, ${k} times the chance of one named face.`,
+    picture: allowed(freeThen(1), `Throw 1 may be any of the ${k} faces; every later throw has exactly 1 allowed face, the one already shown. Product ${f(allSame)}.`),
   };
   if (kind === 'noAdjacent') return {
     value: noAdj,
@@ -70,6 +82,9 @@ function build(kind, n, k) {
       { say: `P = (${k - 1}/${k})^${n - 1} = ${f(noAdj)} ≈ ${noAdj.toNumber().toFixed(3)}.`, why: 'The conditional factors multiply along the chain.' },
     ],
     hints: ['Each throw only needs to avoid one face. Which one?', 'The first throw is unconstrained.', `(${k - 1}/${k})^${n - 1}.`],
+    fast: `First throw free, then ${k - 1}/${k} for each of the ${n - 1} neighbours: ${f(noAdj)}.`,
+    check: `Repeats that are not neighbours are allowed, so the answer is above P(all different) = ${f(allDiff)}.`,
+    picture: allowed(freeThen(k - 1), `Each throw only has to avoid the previous face, so every throw after the first keeps ${k - 1} of ${k} faces. Product ${f(noAdj)}.`),
   };
   return {
     value: repeat,
@@ -87,6 +102,9 @@ function build(kind, n, k) {
       { say: `P = 1 − ${f(allDiff)} = ${f(repeat)} ≈ ${repeat.toNumber().toFixed(3)}.`, why: 'Complement rule.' },
     ],
     hints: ['Counting "at least two match" directly is messy. What is its complement?', 'Complement: all throws different.', `1 − ${f(allDiff)}.`],
+    fast: `Complement of all different: 1 − ${chain} = ${f(repeat)}.`,
+    check: `This and P(all different) = ${f(allDiff)} must add to exactly 1; an option that does not is the wrong event.`,
+    picture: allowed(shrinking, `The complement first: all different, with one face fewer allowed each throw (product ${f(allDiff)}). The answer is everything else, 1 − ${f(allDiff)}.`),
   };
 }
 

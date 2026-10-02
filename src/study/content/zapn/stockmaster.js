@@ -82,6 +82,9 @@ export default {
         { id: 'watch', label: 'Follow each needle in', approach: 'Watched dial A all the way into its zone, then turned to dial B.', breaksAt: 'One look already gives the arrival time; watching starves the other dials.' },
       ] },
     { type: 'text', text: `Stock Master is the attention game of Zap-N. Up to ${O.slots} dials sit in fixed slots. Each needle sweeps from left to right at its own constant speed and the dial vanishes when the needle reaches the end. Click the dial (or press its key 1 to ${O.slots}) while the needle is inside the coloured zone to **buy**.` },
+    { type: 'check', scope: 'when a click buys', questions: [
+      { type: 'choice', q: 'When does a click buy?', options: ['while the needle is in the zone', 'any time before the dial vanishes', 'only at the far right of the dial'], answer: 0, traps: { 1: 'outside the zone a click is a false click', 2: 'the dial vanishes when the needle reaches the end' }, explain: 'A click buys only while the needle is inside the coloured zone.' },
+    ] },
     { type: 'text', text: `A click outside the zone, or on an empty slot, is a **false click**. A needle that runs out unbought is a **miss**. Accuracy = hits / (hits + misses + false clicks). The game runs ${O.durationMs / 60000} minutes without a break, and needles speed up as it goes. Target: ${pct(TARGET)}.` },
     { type: 'check', scope: 'hits, misses and false clicks', questions: [
       mc({ q: 'You click a dial just after its needle has left the zone. What is it?', right: 'a false click', at: 2, wrong: [['a hit', 'only a click with the needle inside the zone is a hit'], ['a miss', 'a miss is a dial you never clicked; this one was clicked, outside the zone'], ['nothing: it is ignored', 'every click on a dial counts']], explain: 'Clicked outside the zone: false click.' }),
@@ -152,6 +155,7 @@ export default {
 
     sec('speed'),
     { type: 'callout', tone: 'speed', text: 'When a dial appears: one glance for its speed and zone, estimate the entry time, look away. Keep a mental queue ordered by entry time and move your eyes to whichever dial is next.' },
+    { type: 'check', scope: 'queueing by entry time', questions: [{ make: orderQ }] },
     { type: 'callout', tone: 'speed', text: 'Use the keys 1 to 4 rather than the mouse: no travel time, and your eyes never have to follow the cursor. If two zones open together, take the narrower or faster window first; the wide, slow one can wait.' },
     { type: 'thinkaloud', problem: `Two dials. Slot 1 appeared at 0 s: speed ${THINK[0].speed}, zone ${THINK[0].zone[0]}-${THINK[0].zone[1]}. Slot 3 appeared at ${s2(THINK[1].spawn)} s: speed ${THINK[1].speed}, zone ${THINK[1].zone[0]}-${THINK[1].zone[1]}.`, lines: [
       { t: 0, say: `Slot 1 is slow: its zone opens at ${s2(entry(THINK[0]))} s. Look away.` },
@@ -161,7 +165,10 @@ export default {
       { t: +s2(mid(THINK[1])), say: 'Key 3, mid-zone. Hit. Eyes to slot 1.' },
       { t: +s2(mid(THINK[0])), say: 'Key 1, mid-zone. Check the other slots for new dials.' },
     ] },
-    { type: 'check', scope: 'queueing by entry time', questions: [{ make: orderQ }] },
+    { type: 'check', scope: 'the think-aloud and the second tip', questions: [
+      { type: 'choice', q: 'Two zones open together. Which do you take first?', options: ['the narrower or faster window', 'the wider, slower window first', 'the one in slot 1'], answer: 0, traps: { 1: 'the wide, slow window can wait', 2: 'slot order does not decide' }, explain: 'The narrow or fast window closes first.' },
+      { type: 'choice', q: 'In the think-aloud, slot 1 stayed first because it appeared first. What was wrong?', options: ['the queue is by zone entry time', 'slot 3 had already closed', 'slot 1 was the faster one'], answer: 0, traps: { 1: 'slot 3 was about to open', 2: 'slot 1 was slow at 0.3' }, explain: 'Slot 3 entered its zone at about 1.6 s, before slot 1 at about 2 s.' },
+    ] },
 
     sec('rule'),
     { type: 'callout', tone: 'rule', text: 'Stock Master: glance, compute zone entry (start ÷ speed), queue by entry time, click mid-zone. Never click an empty slot; let a hopeless dial go.' },
@@ -180,6 +187,10 @@ export default {
       { change: `Late in the game (speed ×${O.rampTo})`, effect: `Window ${dec(0.15 / 0.4 / O.rampTo, 3)} s instead of ${dec(0.15 / 0.4, 3)} s.` },
     ] },
     { type: 'callout', tone: 'edge', text: `Edge cases: zones always start at 0.4 or later and end by 0.9, so nothing can be bought in the first 40% of a sweep; relax until then. Zones cover ${Math.round(O.zoneMin * 100)}-${Math.round(O.zoneMax * 100)}% of the dial. A new dial can appear in a slot only after the previous one there has gone.` },
+    { type: 'check', scope: 'the table and the edge cases', questions: [
+      { type: 'choice', q: 'What do you watch in Stock Master?', options: ['when each zone opens', 'the best pump count', 'nothing: react to what appears'], answer: 0, traps: { 1: 'that is Balloon', 2: 'that is Shapeshift' }, explain: 'Queue the dials by the time each zone opens.' },
+      { type: 'choice', q: 'A needle is at 30% of its sweep. Can it be in a zone?', options: ['no: zones start at 40% or later', 'yes: zones can start anywhere', 'yes, if the dial is fast'], answer: 0, traps: { 1: 'zones start at 0.4 or later', 2: 'speed does not move the zone' }, explain: 'Nothing can be bought in the first 40% of a sweep.' },
+    ] },
     { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: serving jobs in order of their deadlines is how schedulers avoid missed windows, and "one look, then predict" is how you watch several quotes at once instead of one.' },
     { type: 'transfer',
       near: { make: orderQ },

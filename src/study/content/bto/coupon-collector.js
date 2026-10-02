@@ -49,6 +49,9 @@ export default {
     ] },
     { type: 'text', text: 'Each try brings one of n equally likely **types** (toys, faces, suits, traders), with repeats possible, and you keep going until you have **all** of them, or k different ones. The question asks for the expected number of tries.' },
     { type: 'list', items: ['"Throw a die until every face has appeared. Expected throws?"', '"Each cereal box holds one of 8 toys. Expected boxes to get all 8?"', '"Throw a 10-sided die until 4 different faces have appeared. Expected throws?"'] },
+    { type: 'check', scope: 'the types you collect', questions: [
+      { type: 'choice', q: '"Draw cards with replacement until you have seen all four suits." What are the types?', options: ['the 4 suits', 'the 52 cards', 'the 13 ranks', 'red and black'], answer: 0, traps: { 1: 'only the suit matters, not which card', 2: 'ranks are not what you collect here', 3: 'the question names suits, not colours' }, explain: 'Each draw brings one of 4 equally likely suits; you stop when you have all 4.' },
+    ] },
     { type: 'text', text: 'Not this lesson: waiting for one **specific** type (a geometric wait, 1/p) or a fixed set of two or three special faces (bto/expected-waiting), and the expected number of different types after a **fixed** number of tries (bto/linearity).' },
     { type: 'check', scope: 'the recognition cues above', questions: [
       { type: 'choice', q: 'Which question belongs to this lesson?', options: ['Draw with replacement until all 13 ranks have appeared: expected draws', 'Draw with replacement until an ace appears: expected draws', 'Draw 13 cards with replacement: expected number of different ranks', 'Draw until an ace and a king have both appeared: expected draws'], answer: 0, traps: { 1: 'one specific type: 1/p = 13', 2: 'a fixed number of draws: linearity', 3: 'two special types: a two-stage wait (bto/expected-waiting)' }, explain: 'Every one of the 13 types must appear.' },
@@ -130,6 +133,9 @@ export default {
 
     S('speed'),
     { type: 'callout', tone: 'speed', text: `Landmarks: coin (2 types) 3; four suits ${all(4)} ≈ ${f2(all(4))}; die ${f2(all(6))}; 10 types ${f2(all(10))}; 13 ranks ${f2(all(13))}. Harmonic numbers: H₄ = ${H(4)}, H₆ = ${H(6)}.` },
+    { type: 'check', scope: 'landmark values', questions: [
+      { make: (rng) => { const n = rng.pick([2, 4, 6]); return { type: 'number', q: `Expected tries to collect all ${n} equally likely types? (Decimals are fine.)`, answer: all(n).toNumber(), tolerance: 0.01, explain: `${n}·H_${n} = ${all(n)} ≈ ${f2(all(n))}.` }; } },
+    ] },
     { type: 'callout', tone: 'speed', text: `For n of 10 or more, go straight to n(ln n + 0.577): ${[10, 20, 50, 100].map((n) => `ln ${n} ≈ ${Math.log(n).toFixed(2)}`).join(', ')}. It is within 2% and takes 15 of your ${SECTIONS.bto.exam.perItemSeconds} seconds.` },
     { type: 'thinkaloud', problem: `Each cereal box holds one of ${TK} toys, all equally likely. What is the expected number of boxes needed to collect all ${TK}?`, lines: [
       { t: 0, say: `All of ${TK} types, repeats possible: coupon collector. Stages by how many toys I already hold.` },
@@ -139,8 +145,9 @@ export default {
       { t: 22, say: `Check: ${TK}(ln ${TK} + 0.577) ≈ ${f2(approx(TK))}, close and slightly under, as expected for small n. ${TK * TK} was never plausible.` },
       { t: 27, say: `Answer ≈ ${f2(all(TK))}, with ${SECTIONS.bto.exam.perItemSeconds - 27} seconds left.` },
     ] },
-    { type: 'check', scope: 'landmark values', questions: [
-      { make: (rng) => { const n = rng.pick([2, 4, 6]); return { type: 'number', q: `Expected tries to collect all ${n} equally likely types? (Decimals are fine.)`, answer: all(n).toNumber(), tolerance: 0.01, explain: `${n}·H_${n} = ${all(n)} ≈ ${f2(all(n))}.` }; } },
+    { type: 'check', scope: 'n(ln n + 0.577) and the think-aloud', questions: [
+      { type: 'choice', q: 'Estimate the expected tries to collect all 20 equally likely types.', options: ['72', '20', '400', '60'], answer: 0, traps: { 1: 'that is one try per type', 2: 'that is n squared', 3: 'used ln 20 ≈ 3.00 and dropped the 0.577' }, explain: '20 × (ln 20 + 0.577) ≈ 20 × 3.58 ≈ 72.' },
+      { type: 'choice', q: 'In the think-aloud, the first try gave 8 × 8 = 64 boxes. What was wrong?', options: ['treated every toy as a full 1/8 wait', 'used 8 toys where there are only 7', 'forgot the last toy'], answer: 0, traps: { 1: 'there are 8 toys', 2: 'the last toy is the one that costs 8' }, explain: 'Early boxes are almost always new. Stage waits 8/8, 8/7, …, 8/1 sum to 8 × H₈ ≈ 21.74.' },
     ] },
 
     S('rule'),
@@ -154,10 +161,10 @@ export default {
       ['all 6 faces', '6/6 + … + 6/1', `${all(6)} ≈ ${f2(all(6))}`],
     ] },
     { type: 'callout', tone: 'edge', text: 'Edge cases: n = 1 takes one try. n = 2 (a coin) takes 1 + 2 = 3. k = 1 of any n takes exactly one try, since the first try is always new.' },
-    { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: any wait that climbs through stages without falling back adds its stage means (bto/expected-waiting). After a fixed number of tries, the expected number of types seen is linearity, n(1 − (1 − 1/n)^t) (bto/linearity). In systems it is "how many requests until every server has been hit".' },
     { type: 'check', scope: 'the contrast table and edge cases', questions: [
       { type: 'choice', q: 'Fair die. Which is largest?', options: ['all 6 faces', 'any 5 different faces', 'a 1 and a 2', 'a six'], answer: 0, traps: { 1: `5 faces: ${f2(partial(6, 5))}, the slow last stage is missing`, 2: `${Q.of(6, 2).add(Q.of(6))} throws`, 3: '6 throws' }, explain: `All six: ${f2(all(6))}.` },
     ] },
+    { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: any wait that climbs through stages without falling back adds its stage means (bto/expected-waiting). After a fixed number of tries, the expected number of types seen is linearity, n(1 − (1 − 1/n)^t) (bto/linearity). In systems it is "how many requests until every server has been hit".' },
     { type: 'variation', base: `A fair die is thrown until all 6 faces have appeared: E = 6·H_6 = ${all(6)} ≈ ${f2(all(6))}.`, rows: [
       { change: 'Use a spinner with 6 equal sectors instead of a die', effect: `No change: ${f2(all(6))}. Only the number of equally likely types matters, not what carries them.`, same: true },
       { change: 'Stop at 3 different faces', effect: `Only the three fast stages: ${terms(6, 3)} = ${partial(6, 3)} = ${f2(partial(6, 3))}.` },

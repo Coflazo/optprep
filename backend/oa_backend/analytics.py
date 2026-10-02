@@ -24,6 +24,8 @@ from dataclasses import dataclass, field
 from typing import Any
 
 EXAMS: dict[str, dict[str, Any]] = {
+    # 80-in-8: no skipping, so the simulated candidate answers every question it reaches.
+    "mm": {"count": 80, "scoring": "plusMinus", "target": ("net", 62), "ramp": False, "skip": False},
     "bto": {"count": 20, "scoring": "plusMinus", "target": ("netPct", 0.6), "ramp": False},
     "nl": {"count": 26, "scoring": "plusMinus", "target": ("net", 18), "ramp": True},
     "ll": {"count": 15, "scoring": "binary", "target": ("net", 12), "ramp": False},
@@ -143,7 +145,7 @@ def forecast_section(section: str, rows: list[dict[str, Any]], families: list[st
             for fam, d in plan:
                 p = prob(fam, d)
                 if cfg["scoring"] == "plusMinus":
-                    if p < 0.5:
+                    if p < 0.5 and cfg.get("skip", True):
                         continue  # skip: answering has negative expected value
                     total += 1 if rng.random() < p else -1
                 elif cfg["scoring"] == "binary":

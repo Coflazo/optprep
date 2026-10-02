@@ -184,8 +184,11 @@ export default {
 
     sec('speed'),
     { type: 'callout', tone: 'speed', text: 'The tell is visible before any arithmetic: single products with spreads of several points and bundles quoted a tick wide. When you see it, skip straight to the bundle hedge after one glance at the leg sum.' },
-    { type: 'callout', tone: 'speed', text: 'Any replica that pays solves the board. Do not spend seconds proving you found the best one; take the first positive edge, check the net row, submit.' },
     { type: 'check', scope: 'the bundle hedge at speed', questions: [{ make: packageQ }] },
+    { type: 'callout', tone: 'speed', text: 'Any replica that pays solves the board. Do not spend seconds proving you found the best one; take the first positive edge, check the net row, submit.' },
+    { type: 'check', scope: 'take the first edge', questions: [
+      { type: 'choice', q: 'You find a replica with edge +0.5. A better one might exist. What do you do?', options: ['take it, check the net row, submit', 'keep searching for the best one', 'wait for a wider edge to appear'], answer: 0, traps: { 1: 'any replica that pays solves the board', 2: 'the quotes do not move in your favour' }, explain: 'A positive edge solves the board; the time is better spent on the next one.' },
+    ] },
 
     sec('rule'),
     { type: 'callout', tone: 'rule', text: 'Leg hedge fails on wide legs → rebuild the card from tight bundles, 2A + B = (A + B) + A, A − C = (A − B) + (B − C); trade against the cheapest replica with a positive edge.' },
@@ -198,10 +201,10 @@ export default {
       ['Hidden A − C', 'legs exist but are wide', '(A − B) + (B − C)'],
     ] },
     { type: 'callout', tone: 'edge', text: 'Edge cases. When both hedges pay, either is a correct submission; the bundle hedge usually earns more. A bundle replica whose edge is exactly 0 does not count. On a spread board, check each spread card against the other two before building anything.' },
-    { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: real desks hedge a position with whatever instrument is cheapest to trade, often a liquid index future instead of its many thinly traded parts. The replica is chosen by cost, not by how obvious it is.' },
     { type: 'check', scope: 'choosing between hedges', questions: [
       mc({ q: `Board: ${boardText([A3, B3, AB3, W3])}. You will buy 2A + B. Which hedge solves the board?`, right: 'Either hedge: the legs or (A + B) + A', wrong: [['Only (A + B) + A: the leg hedge is wrong', `the leg hedge is flat with cash +${px(edgeBuy(W3, legs3))}, which also counts`], ['Only the legs: bundles cannot be a hedge', 'any cards whose contents match can form a replica'], ['Neither: both edges are too small to count', 'any positive cash counts']], explain: `Leg hedge +${px(edgeBuy(W3, legs3))}, bundle hedge +${px(edgeBuy(W3, rep3))}: both flat and positive.` }),
     ] },
+    { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: real desks hedge a position with whatever instrument is cheapest to trade, often a liquid index future instead of its many thinly traded parts. The replica is chosen by cost, not by how obvious it is.' },
     { type: 'variation', base: `Base: ${boardText([A, B, AB, W])}. Sell 2A + B against (A + B) + A: +${px(edgeSell(W, viaAB))}; the leg hedge gives ${px(edgeSell(W, viaLegs))}.`, rows: [
       { change: `A narrows to ${quote(An)}`, effect: `Both hedges now pay: legs ${px(edgeSell(W, [part(An, 2), part(B, 1)]))}, bundle hedge ${px(edgeSell(W, [part(AB, 1), part(An, 1)]))}. Either solves; the bundle hedge still pays more.` },
       { same: true, change: `B widens to ${quote(Bw)}`, effect: `Nothing for the bundle hedge: it never touches B. Profit stays ${px(edgeSell(W, viaAB))}.` },

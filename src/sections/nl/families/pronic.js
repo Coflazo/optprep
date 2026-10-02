@@ -5,6 +5,7 @@ export default family({
   title: 'n(n + c): products of near neighbours',
   skill: 'Factor each term as two close numbers: 2, 6, 12, 20 = 1·2, 2·3, 3·4, 4·5',
   levels: [2],
+  view: 'table',
   show: 5,
   params: (rng) => ({ s: rng.int(1, 14), c: rng.pick([1, 2, 3, 4, -1, -2]) }),
   accept: (p, xs) => xs.every((v) => !v.isZero()),

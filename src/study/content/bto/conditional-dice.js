@@ -53,6 +53,9 @@ export default {
     ] },
     { type: 'text', text: 'Two dice are thrown (or a family has two children) and you are **told something** before the question: "given that the sum is 8", "at least one die shows a 6", "the first die is even", "at least one child is a boy". The question asks about another event in that light.' },
     { type: 'list', items: ['"Two dice. Given that at least one shows a 6, probability both do?"', '"Given that the sum is at least 10, probability that at least one die is a 6?"', '"Given that the dice differ, probability the sum is 7?"', '"A family has two children, at least one a girl. Probability both are girls?"'] },
+    { type: 'check', scope: 'what you are told', questions: [
+      { type: 'choice', q: '"Two dice: if the first die is even, what is the chance the sum is 8?" What are you told?', options: ['the first die is even', 'the sum is 8', 'two dice are thrown', 'both of the first two'], answer: 0, traps: { 1: 'the sum is the event asked about, not the information', 2: 'that is the experiment itself', 3: 'only the fact given before the question is the condition' }, explain: 'The condition is the fact you are told: the first die is even.' },
+    ] },
     { type: 'text', text: 'Not this lesson: conditioning on a noisy signal about a hidden cause, such as a test result (bto/bayes-test) or a ball drawn from an unknown box (bto/bayes-boxes). Here the information is a plain fact about the outcome itself.' },
     { type: 'check', scope: 'the recognition cues above', questions: [
       { type: 'choice', q: 'Which question belongs to this lesson?', options: ['Two dice; the sum is odd. Probability a die shows 1?', 'A test is 90% accurate; you test positive. Probability you are ill?', 'Two dice; probability the sum is odd', 'A coin is picked from a bag and shows heads twice. Probability it is double-headed?'], answer: 0, traps: { 1: 'a noisy signal about a hidden cause: bto/bayes-test', 2: 'no information given: bto/two-dice-sum', 3: 'evidence about which object you hold: bto/bayes-boxes' }, explain: 'A fact about the dice themselves, then a question about the same dice.' },
@@ -120,6 +123,9 @@ export default {
       { t: 11, say: `Inside them, the cells with a 6: (4,6), (6,4), (5,6), (6,5), (6,6). That is ${V.AB} of ${n(sumGe(10))}.` },
       { t: 15, say: `Check: only (5,5) has no 6, so ${cond(has(6), sumGe(10))} fits. Answer ${cond(has(6), sumGe(10))}, with time to spare.` },
     ] },
+    { type: 'check', scope: 'the slip in the think-aloud', questions: [
+      { type: 'choice', q: 'In the think-aloud, the first try gave 11/36. What went wrong?', options: ['kept all 36 cells instead of the 6', 'miscounted the cells with a 6', 'counted (6, 6) twice', 'counted sums, not cells'], answer: 0, traps: { 1: '11 cells with a 6 is right on the full grid', 2: '(6, 6) was counted once', 3: 'the try counted cells' }, explain: 'Given the sum is at least 10, only 6 cells remain, and 5 of them hold a 6: 5/6.' },
+    ] },
 
     S('predict'),
     { type: 'predict', question: 'Two dice. Is P(sum is 7 | the dice differ) bigger or smaller than P(sum is 7)?', answer: `Bigger: ${cond(sumIs(7), (a, b) => a !== b)} against 1/6.`, explain: 'No sum-7 pair is a double, so deleting the 6 doubles removes only failures.' },
@@ -142,9 +148,12 @@ export default {
 
     S('speed'),
     { type: 'callout', tone: 'speed', text: `Know the common denominators: at least one x → ${A11}; sum s → 6 − |s − 7|; the dice differ → ${n((a, b) => a !== b)}; sum even → ${n((a, b) => (a + b) % 2 === 0)}; first die named → 6. Then count the event inside and you are done.` },
-    { type: 'callout', tone: 'speed', text: `Time budget: ${SECTIONS.bto.exam.perItemSeconds} seconds a question. Write the denominator first (5 seconds), then list the favourable cells (15 seconds). If the event is bigger than a handful of cells, count its complement inside A.` },
     { type: 'check', scope: 'the memorised denominators', questions: [
       { make: (rng) => { const x = rng.int(1, 6); const s = rng.pick(F.map((v) => v + x).filter((t) => t >= 2)); const v = cond(sumIs(s), has(x)); return mc(rng, `Two dice. Given at least one die shows ${x}, P(the sum is ${s})?`, v.toString(), [[Q.of(n((a, b) => has(x)(a, b) && sumIs(s)(a, b)), 12).toString(), 'used 12 as the denominator, double counting the double'], [Q.of(6 - Math.abs(s - 7), 36).toString(), 'ignored the condition'], [Q.of(1, 6).toString(), `treated "the other die" as uniform`]], `Denominator ${A11}; favourable ${n((a, b) => has(x)(a, b) && sumIs(s)(a, b))}.`); } },
+    ] },
+    { type: 'callout', tone: 'speed', text: `Time budget: ${SECTIONS.bto.exam.perItemSeconds} seconds a question. Write the denominator first (5 seconds), then list the favourable cells (15 seconds). If the event is bigger than a handful of cells, count its complement inside A.` },
+    { type: 'check', scope: 'the complement inside A', questions: [
+      { type: 'choice', q: 'Two dice. Given the dice differ, P(the sum is not 7)?', options: ['4/5', '5/6', '1/5', '2/3'], answer: 0, traps: { 1: 'that is P(sum not 7) with no information: 30 of 36', 2: 'that is P(sum is 7 | the dice differ)', 3: 'counted 24 cells but kept 36 as the total' }, explain: 'Denominator first: 30 cells with different faces. All 6 cells with sum 7 differ, so 30 − 6 = 24 of 30 = 4/5.' },
     ] },
 
     S('rule'),
@@ -159,11 +168,11 @@ export default {
       ['the sum is at least 11', String(n(sumGe(11))), cond(both6, sumGe(11)).toString()],
     ] },
     { type: 'callout', tone: 'edge', text: 'Edge cases: if the information implies the event (the sum is 12, so both are 6), the answer is 1. If it contradicts it (the sum is 7, so not both 6), the answer is 0. If the information rules out nothing, you are back to the unconditional answer.' },
-    { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: Bayes questions are conditioning where the outcomes are "hidden cause × observed signal" pairs (bto/bayes-test, bto/bayes-boxes). Monty Hall is conditioning where what you are shown depends on the host\'s rule (bto/monty-hall). In every case: write the atoms, delete, count.' },
     { type: 'check', scope: 'the contrast table and edge cases', questions: [
       { type: 'choice', q: 'Two dice. Given the sum is 7, P(both dice show the same face)?', options: ['0', '1/6', '1/11', '1/36'], answer: 0, traps: { 1: 'ignored the condition', 2: 'reused the "at least one" denominator', 3: 'the unconditional chance of one double' }, explain: 'A sum of 7 is odd, so the faces cannot be equal.' },
     ] },
 
+    { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: Bayes questions are conditioning where the outcomes are "hidden cause × observed signal" pairs (bto/bayes-test, bto/bayes-boxes). Monty Hall is conditioning where what you are shown depends on the host\'s rule (bto/monty-hall). In every case: write the atoms, delete, count.' },
     { type: 'variation', base: `Two dice; at least one shows a 6. P(both show 6) = ${cond(both6, has(6))}.`, rows: [
       { change: 'At least one shows a 1; ask whether both show 1', effect: `No change: ${cond((a, b) => a === 1 && b === 1, has(1))}. Any face plays the role of 6.`, same: true },
       { change: 'You are told the first die shows a 6', effect: `A named die keeps only its row: ${cond(both6, (a) => a === 6)}.` },

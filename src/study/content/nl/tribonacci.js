@@ -54,9 +54,12 @@ export default {
     ], q: `Before any teaching: ${seq(CH.slice(0, 6))}, ? What comes next? Try two ways: once by adding the last two terms, once by adding the last three.`, answer: String(CH[6]), explain: `Last two: ${CH[4]} + ${CH[5]} = ${CH[4] + CH[5]}, but check that rule on a shown step: ${CH[3]} + ${CH[4]} = ${CH[3] + CH[4]}, not ${CH[5]}. Last three: ${CH[2]} + ${CH[3]} + ${CH[4]} = ${CH[5]} fits, and so does ${CH[1]} + ${CH[2]} + ${CH[3]} = ${CH[4]}. Next: ${CH[3]} + ${CH[4]} + ${CH[5]} = ${CH[6]}.` },
     { type: 'text', text: 'Each term is the **sum of the three terms before it**. The first three terms are the free start; the rule shows from the fourth term on. Growth is a little faster than in the two-term version: about 1.84 times per step.' },
     { type: 'list', items: [`What number comes next?  ${seq(E1.slice(0, 6))}, ?`, `What number comes next?  ${seq(E2.slice(0, 6))}, ?`, `What number comes next?  ${seq(E3.slice(0, 7))}, ?`] },
-    { type: 'text', text: `Not this lesson: the sum of the previous two (${seq(FB.slice(0, 6))}), or the sum of **all** previous terms, which soon just doubles (${seq(ALL)}). Also not a sum that misses by the same constant every step: that is the next lesson.` },
     { type: 'check', scope: 'the cue: a three-term window', questions: [
       { make: (rng) => { const t = draw(rng, 6, 3), f = fibl(rng.int(1, 5), rng.int(6, 9), 6), d = geo(rng.int(2, 5), 2, 6); return pick(rng, 'In which sequence is every term (from the fourth) the sum of the three before it?', seq(t), [[seq(f), `${f[2]} + ${f[3]} = ${f[4]} already: two terms, not three`], [seq(d), `${d[1]} + ${d[2]} + ${d[3]} is not ${d[4]}: it doubles`]], `${t[2]} + ${t[3]} + ${t[4]} = ${t[5]}.`); } },
+    ] },
+    { type: 'text', text: `Not this lesson: the sum of the previous two (${seq(FB.slice(0, 6))}), or the sum of **all** previous terms, which soon just doubles (${seq(ALL)}). Also not a sum that misses by the same constant every step: that is the next lesson.` },
+    { type: 'check', scope: 'the neighbouring rules', questions: [
+      { type: 'choice', q: '1, 2, 3, 6, 12, 24, 48: which rule fits?', options: ['the sum of all previous terms', 'the sum of the previous three', 'the sum of the previous two'], answer: 0, traps: { 1: '3 + 6 + 12 = 21, not 24', 2: '6 + 12 = 18, not 24' }, explain: '1 + 2 + 3 + 6 + 12 = 24: every term so far, which soon just doubles.' },
     ] },
 
     S('why'),
@@ -79,6 +82,9 @@ export default {
       { make: (rng) => { const xs = draw(rng, 6); const sh = xs[5] - xs[4] - xs[3]; return num(`${seq(xs)}: by how much does ${neg(xs[3])} + ${neg(xs[4])} fall short of ${neg(xs[5])}?`, sh, `${neg(xs[5])} − (${neg(xs[3])} + ${par(xs[4])}) = ${neg(sh)}, which is the term ${neg(xs[2])} three places back.`, ['Add the two terms, then subtract from the third.']); } },
     ] },
     { type: 'diagram', diagram: 'ladder', spec: { mode: 'ratio', rows: [LONG.slice(6, 11), LONG.slice(7, 11).map((v, i) => ratio(LONG[i + 6], v))] }, caption: `Ratios along a longer run: ${LONG.slice(7, 11).map((v, i) => round2(v / LONG[i + 6])).join(', ')}. They settle near 1.84, against 1.62 for the two-term sum. Growth of about 1.8 per step is a hint of a three-term window.` },
+    { type: 'check', scope: 'growth near 1.84', questions: [
+      { type: 'choice', q: 'Terms grow by about 1.84 per step. Which window does that point to?', options: ['three terms', 'two terms', 'one term times a constant'], answer: 0, traps: { 1: 'two-term sums grow by about 1.62', 2: 'a constant ratio would be exact' }, explain: 'About 1.84 per step is the three-term window.' },
+    ] },
 
     S('derivation'),
     { type: 'steps', steps: [
@@ -104,6 +110,9 @@ export default {
         ] },
     ] },
     { type: 'text', text: `The five moves on ${seq(E3.slice(0, 7))}: the two-term test fails at the end (${E3[4]} + ${E3[5]} = ${E3[4] + E3[5]}, not ${E3[6]}); the shortfall ${E3[6] - E3[4] - E3[5]} is the term ${E3[3]} three places back; a second window agrees (${E3[2]} + ${E3[3]} + ${E3[4]} = ${E3[5]}). Next: ${E3[4]} + ${E3[5]} + ${E3[6]} = ${E3[7]}. The negative start does not matter: from the fourth term on, every window is a plain sum.` },
+    { type: 'check', scope: 'the five moves', questions: [
+      { type: 'number', q: 'What comes next?  1, 1, 2, 4, 7, 13, ?', answer: 24, explain: '4 + 7 + 13 = 24.' },
+    ] },
     { type: 'explain', prompt: 'Why is the shortfall of the two-term sum exactly the term three places back?', model: 'If a(n) = a(n − 1) + a(n − 2) + a(n − 3), then a(n) − (a(n − 1) + a(n − 2)) = a(n − 3). So the two-term test misses on every step by an earlier term of the sequence, and seeing the sequence reappear in the misses tells you to widen the window by one.', points: ['Subtract the two-term sum from both sides of the rule', 'The leftover is a(n − 3), a term you can see', 'Misses that copy the sequence mean the window is too narrow'] },
 
     S('worked'),
@@ -131,6 +140,9 @@ export default {
 
     S('speed'),
     { type: 'callout', tone: 'speed', text: 'Test from the end, where coincidences are rare: is the last term the sum of the three before it? If yes, check one earlier window and add. Three additions, about 15 seconds.' },
+    { type: 'check', scope: 'test from the end', questions: [
+      { type: 'choice', q: 'Where do you test a three-term window first?', options: ['on the last term', 'on the fourth term', 'on the first term'], answer: 0, traps: { 1: 'small early terms can match by coincidence', 2: 'the first three terms are the free start' }, explain: 'The last terms are the largest, so a match there is no coincidence.' },
+    ] },
     { type: 'callout', tone: 'speed', text: 'Two steps ahead: after x, y, z the next terms are x + y + z and then y + z + (x + y + z) = x + 2y + 2z. Useful when the blank is one past the next term.' },
     { type: 'thinkaloud', problem: nextQ(E2.slice(0, 6)), lines: [
       { t: 0, say: `Gaps ${seq(E2.slice(1, 6).map((v, i) => v - E2[i]))}: nothing clean. Try sums.` },
@@ -161,11 +173,11 @@ export default {
       { change: `Change the first term to ${E1[0] + 1} and add 1 after every sum`, fusion: true, effect: `The new start shifts every later term and the +1 adds up on every step: ${seq(T2.slice(0, 6))}, next ${T2[6]}.` },
     ] },
     { type: 'callout', tone: 'edge', text: `Edge cases: a zero or negative start (${seq(E2.slice(0, 5))}, ${seq(E3.slice(0, 4))}) makes the first terms look random; the rule only shows from the fourth term. Six shown terms give three windows to check; five give only two.` },
-    { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: counting ways to climb stairs taking 1, 2 or 3 steps at a time gives a three-term sum, because the last move was one of three sizes. Whenever the next state depends on the last k states, the window is k wide.' },
     { type: 'check', scope: 'the contrast table and edge cases', questions: [
       { make: (rng) => { const t = rng.int(0, 1); const xs = t === 0 ? fibl(rng.int(1, 6), rng.int(7, 12), 6) : draw(rng, 6, 3); const names = ['sum of the previous two', 'sum of the previous three']; const two = `${xs[3]} + ${xs[4]} = ${xs[3] + xs[4]}, not ${xs[5]}`, three = `${xs[2]} + ${xs[3]} + ${xs[4]} = ${xs[2] + xs[3] + xs[4]}, not ${xs[5]}`; return pick(rng, `${seq(xs)}: which rule?`, names[t], [[names[1 - t], t === 0 ? three : two], ['sum of all previous terms', `${xs.slice(0, 5).reduce((a, b) => a + b, 0)} is not ${xs[5]}`]], 'Test each window on the last shown term.'); } },
     ] },
 
+    { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: counting ways to climb stairs taking 1, 2 or 3 steps at a time gives a three-term sum. The last move was one of three sizes. Whenever the next state depends on the last k states, the window is k wide.' },
     { type: 'transfer',
       near: { make: (rng) => { const xs = draw(rng, 7, 3); return num(`A shop's orders each day equal the total of the previous three days: ${seq(xs.slice(0, 6))}. How many orders tomorrow?`, xs[6], `${xs[3]} + ${xs[4]} + ${xs[5]} = ${xs[6]}.`, ['Check a window of three on a shown day.', 'Add the last three days.']); } },
       far: { type: 'number', q: `Ways to climb n stairs taking 1, 2 or 3 steps at a time: n = 1, 2, 3, 4, 5 give ${seq(STAIRS.slice(0, 5))}. How many ways for n = 6?`, answer: STAIRS[5], explain: `The last move is 1, 2 or 3 steps, so the count is the sum of the previous three: ${STAIRS[2]} + ${STAIRS[3]} + ${STAIRS[4]} = ${STAIRS[5]}.`, hints: ['What was the last move?', 'Add the counts for n − 1, n − 2 and n − 3.'] },

@@ -1,7 +1,15 @@
 // Normal approximation to sums: heads in n flips and sums of many dice (exact answer, CLT reasoning).
 import { nCr } from '../../../core/combinatorics.js';
 import { Q } from '../../../core/rational.js';
-import { mcqItem, agree, q, Phi } from '../lib.js';
+import { mcqItem, agree, q, Phi, pic } from '../lib.js';
+
+// The normal curve for the sum, with the counted region shaded (continuity-corrected edges).
+export function bell(mu, sd, from, to, xLabel, caption) {
+  const r = (x) => Math.round(x * 1000) / 1000;
+  const points = Array.from({ length: 81 }, (_, i) => { const x = mu - 4 * sd + (i * sd) / 10; return [r(x), r((1 / (sd * Math.sqrt(2 * Math.PI))) * Math.exp(-(((x - mu) / sd) ** 2) / 2) * 1000) / 1000]; });
+  const ticks = [-3, -2, -1, 0, 1, 2, 3].map((k) => Math.round((mu + k * sd) * 10) / 10); // one decimal reads at a glance
+  return pic('density', { xLabel, curves: [{ name: 'normal approximation', points }], shade: [{ from: r(Math.max(from, mu - 4 * sd)), to: r(Math.min(to, mu + 4 * sd)) }], xTicks: ticks }, caption);
+}
 
 const ID = 'clt-estimates';
 const DICE_CACHE = new Map();
@@ -64,6 +72,9 @@ export default {
         rule: 'Sum of n flips: mean n/2, sd √n/2. Tails beyond 1σ, 2σ, 3σ: 16%, 2.3%, 0.13%. Within ±1σ: 68%, ±2σ: 95%.',
         anchor: 'The 68-95-99.7 rule for a normal curve, with one change: first build the mean and sd of a sum from one flip\'s mean 1/2 and variance 1/4.',
         hints: ['What are the mean and standard deviation of the number of heads?', `sd = √n/2 = ${sd}. How many sds away is the threshold?`, `About ${(w / sd).toFixed(1)} sd.`],
+        picture: bell(mu, sd, kind === 'coinTail' ? lo - 0.5 : lo - 0.5, kind === 'coinTail' ? n : hi + 0.5, 'number of heads', `Heads centre on ${mu} with sd ${sd}; the ticks are 1, 2 and 3 sd apart. The shaded area is the ${kind === 'coinTail' ? `tail from ${lo - 0.5}` : `band from ${lo - 0.5} to ${hi + 0.5}`}, about ${(kind === 'coinTail' ? 1 - Phi(zc) : 2 * Phi(zc) - 1).toFixed(3)}.`),
+        fast: `sd = √${n}/2 = ${sd}; the edge is ${(w / sd).toFixed(1)} sd out, so about ${kind === 'coinTail' ? ({ 1: '16%', 1.5: '7%', 2: '2.3%', 2.5: '0.6%', 3: '0.13%' }[z] || `${((1 - Phi(w / sd)) * 100).toFixed(1)}%`) : ({ 1: '68%', 2: '95%' }[z] || `${((2 * Phi(w / sd) - 1) * 100).toFixed(0)}%`)}, a little more with the half-unit correction.`,
+        check: kind === 'coinTail' ? `A tail ${(w / sd).toFixed(1)} sd out must be below 16% (the 1 sd tail) when it is further than 1 sd; using the variance ${n / 4} as the sd would make it look far too likely.` : `A band of ±${(w / sd).toFixed(0)} sd holds about ${z === 1 ? '68%' : '95%'}; an option far from that used the variance ${n / 4} or √${n} as the sd.`,
         data: { kind, n, lo, hi },
       });
     }
@@ -94,6 +105,9 @@ export default {
       rule: 'n dice: mean 3.5n, sd ≈ 1.71√n. Then use the 16% / 2.3% / 0.13% tail landmarks.',
       anchor: 'The 68-95-99.7 rule, with one change: the sd of one die (≈ 1.71) replaces the sd of one flip (1/2).',
       hints: ['What are the mean and variance of one die?', `Sum: mean ${mu}, sd ≈ ${sd.toFixed(2)}.`, `The threshold is about ${z} sd above the mean.`],
+      picture: bell(mu, sd, t - 0.5, 6 * n, 'total of the dice', `The total centres on ${mu} with sd ≈ ${sd.toFixed(2)}. The shaded tail from ${t - 0.5} is about ${(1 - Phi((t - 0.5 - mu) / sd)).toFixed(3)}.`),
+      fast: `sd ≈ 1.71 × √${n} ≈ ${sd.toFixed(2)}; ${t} is about ${z} sd above ${mu}, so roughly ${({ 1: '16%', 1.5: '7%', 2: '2.3%' }[z])}.`,
+      check: `The answer must shrink fast with the distance in sds: about 16% at 1 sd, 7% at 1.5 sd and 2.3% at 2 sd. Here the threshold is ${((t - mu) / sd).toFixed(2)} sd out.`,
       data: { kind: 'diceTail', n, t },
     });
   },

@@ -6,6 +6,19 @@ const pct = (q) => q.toNumber() * 100;
 const ways2 = (s) => (s < 2 || s > 12 ? 0 : 6 - Math.abs(s - 7));
 const PRIMES = new Set([2, 3, 5, 7, 11]);
 
+// Pictures of the count: a grid of equally likely pairs, or a tree for sequential draws.
+function grid(rows, cols, hit, caption, rowTitle = 'first die', colTitle = 'second die') {
+  const highlight = [];
+  for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) if (hit(r + 1, c + 1)) highlight.push([r, c]);
+  return { diagram: 'grid', spec: { rows, cols, highlight, count: highlight.length, rowTitle, colTitle }, caption: caption(highlight.length) };
+}
+// "At least one success in n tries" as a chain: stop at the first success, carry on after a miss.
+function chain(n, p, miss, hitLabel, missLabel) {
+  let node = { p: miss, label: `${missLabel} ${n} times` };
+  for (let i = n; i >= 2; i--) node = { p: miss, label: missLabel, children: [{ p, label: hitLabel, mark: true }, node] };
+  return { label: '', children: [{ p, label: hitLabel, mark: true }, node] };
+}
+
 // Each scenario: params(rng) -> p; text; steps; enumerate(p) -> probability by brute force.
 const S = {
   sumEq: {
@@ -15,6 +28,7 @@ const S = {
     p: ({ s }) => Q.of(ways2(s), 36),
     steps: ({ s }) => [{ say: `Ordered pairs with sum ${s}: 6 − |${s} − 7| = ${ways2(s)} of 36.`, why: 'Two dice have 36 equally likely ordered outcomes; the count peaks at 7.' }],
     brute: ({ s }) => count2((a, b) => a + b === s),
+    pic: ({ s }) => grid(6, 6, (a, b) => a + b === s, (n) => `The ${n} highlighted cells of 36 have sum ${s}: ${n}/36.`),
   },
   sumAtLeast: {
     level: 1,
@@ -23,6 +37,7 @@ const S = {
     p: ({ k }) => Q.of(range(k, 12).reduce((n, s) => n + ways2(s), 0), 36),
     steps: ({ k }) => [{ say: `Count ordered pairs for sums ${k} to 12: ${range(k, 12).map(ways2).join(' + ')} = ${range(k, 12).reduce((n, s) => n + ways2(s), 0)} of 36.`, why: '"At least" includes the sum itself.' }],
     brute: ({ k }) => count2((a, b) => a + b >= k),
+    pic: ({ k }) => grid(6, 6, (a, b) => a + b >= k, (n) => `The ${n} highlighted cells have sum ${k} or more, the corner past one anti-diagonal: ${n}/36.`),
   },
   anyHead: {
     level: 1,
@@ -31,6 +46,7 @@ const S = {
     p: ({ n }) => Q.of(1).sub(Q.of(1, 2 ** n)),
     steps: ({ n }) => [{ say: `P(no head) = (1/2)^${n} = 1/${2 ** n}, so P(at least one) = 1 − 1/${2 ** n}.`, why: '"At least one" is easiest through its complement, "none".' }],
     brute: ({ n }) => { let c = 0; for (let m = 0; m < 2 ** n; m++) if (m) c++; return c / 2 ** n; },
+    pic: ({ n }) => ({ diagram: 'tree', spec: { root: chain(n, '1/2', '1/2', 'head', 'tail'), total: `${2 ** n - 1}/${2 ** n}` }, caption: `Stop at the first head; only the path of ${n} tails misses. The marked leaves add to 1 − 1/${2 ** n} = ${2 ** n - 1}/${2 ** n}.` }),
   },
   exactHeads: {
     level: 1,
@@ -50,6 +66,7 @@ const S = {
       { say: `By symmetry P(higher) = (1 − 1/${m}) / 2 = ${m - 1}/${2 * m}.`, why: 'Higher and lower are equally likely, and together they are everything except a tie.' },
     ],
     brute: ({ m }) => { let c = 0; for (let a = 1; a <= m; a++) for (let b = 1; b <= m; b++) if (a > b) c++; return c / (m * m); },
+    pic: ({ m }) => grid(m, m, (a, b) => a > b, (n) => `Rows are your roll, columns your friend's. The ${n} highlighted cells below the diagonal are your wins; the ${m} diagonal cells are ties, and the rest mirror your wins.`, 'your die', 'friend\'s die'),
   },
   duelUneven: {
     level: 3,
@@ -61,6 +78,7 @@ const S = {
       { say: `Divide by ${m} × ${n} = ${m * n} equally likely pairs.`, why: 'Every (your roll, their roll) pair is equally likely.' },
     ],
     brute: ({ m, n }) => { let c = 0; for (let a = 1; a <= n; a++) for (let b = 1; b <= m; b++) if (a > b) c++; return c / (m * n); },
+    pic: ({ m, n }) => grid(n, m, (a, b) => a > b, (c) => `Rows are your ${n}-sided roll, columns the friend's ${m}-sided roll. You win in the ${c} highlighted cells of ${m * n}.`, 'your die', 'friend\'s die'),
   },
   maxAtMost: {
     level: 2,
@@ -69,6 +87,7 @@ const S = {
     p: ({ k, d }) => Q.of(k ** d, 6 ** d),
     steps: ({ k, d }) => [{ say: `Max ≤ ${k} means every die is ≤ ${k}: (${k}/6)^${d} = ${k ** d}/${6 ** d}.`, why: 'A maximum below a threshold is an "all of them" event, so the probabilities multiply.' }],
     brute: ({ k, d }) => enumDice(d, (xs) => Math.max(...xs) <= k),
+    pic: ({ k, d }) => (d === 2 ? grid(6, 6, (a, b) => a <= k && b <= k, (n) => `Max at most ${k} is the ${k} × ${k} corner square: ${n} of 36 cells.`) : null),
   },
   cards: {
     level: 2,
@@ -99,6 +118,7 @@ const S = {
     p: ({ n }) => Q.of(1).sub(Q.of(5 ** n, 6 ** n)),
     steps: ({ n }) => [{ say: `P(no six) = (5/6)^${n} = ${5 ** n}/${6 ** n}; subtract from 1.`, why: 'Complement of "at least one" is "none".' }],
     brute: ({ n }) => enumDice(n, (xs) => xs.includes(6)),
+    pic: ({ n }) => ({ diagram: 'tree', spec: { root: chain(n, '1/6', '5/6', 'six', 'no six'), total: `${6 ** n - 5 ** n}/${6 ** n}` }, caption: `Stop at the first six; only the path of ${n} misses fails, with chance (5/6)^${n}. The marked leaves add to ${6 ** n - 5 ** n}/${6 ** n}.` }),
   },
   stick: {
     level: 3,
@@ -111,6 +131,7 @@ const S = {
     ],
     brute: ({ k }) => { const N = 200000; let c = 0; for (let i = 0; i < N; i++) { const u = (i + 0.5) / N; if (Math.max(u, 1 - u) >= k * Math.min(u, 1 - u)) c++; } return c / N; },
     tol: 1e-4,
+    pic: ({ k }) => ({ diagram: 'numberline', spec: { min: 0, max: 1, step: 0.1, barriers: [1 / (k + 1), k / (k + 1)], marks: [{ x: 1 / (k + 1), label: `1/${k + 1}` }, { x: k / (k + 1), label: `${k}/${k + 1}` }] }, caption: `The stick from 0 to 1. A break outside the two bars leaves a short piece of at most 1/${k + 1}: two end zones of 1/${k + 1} each, 2/${k + 1} in total.` }),
   },
   sum3: {
     level: 3,
@@ -146,6 +167,7 @@ const S = {
       'square-sum': { say: 'Square sums 4 and 9: 3 + 4 = 7 pairs.', why: 'The only perfect squares between 2 and 12 are 4 and 9.' },
     })[ev]],
     brute: ({ ev }) => count2((a, b) => ({ prime: PRIMES.has(a + b), 'even-product': (a * b) % 2 === 0, 'mult3-product': (a * b) % 3 === 0, 'square-sum': a + b === 4 || a + b === 9 })[ev]),
+    pic: ({ ev }) => grid(6, 6, (a, b) => ({ prime: PRIMES.has(a + b), 'even-product': (a * b) % 2 === 0, 'mult3-product': (a * b) % 3 === 0, 'square-sum': a + b === 4 || a + b === 9 })[ev], (n) => `The ${n} highlighted cells of 36 qualify. ${ev.endsWith('product') ? 'The plain cells are the complement, which is quicker to count.' : 'Each qualifying sum is one anti-diagonal.'}`),
   },
 };
 
@@ -178,6 +200,8 @@ const fam = {
     });
   },
   // Independent check: brute-force enumeration (or a fine grid for the stick).
+  picture: (params) => S[params?.scenario]?.pic?.(params) ?? null,
+  fast: (params) => (S[params?.scenario] ? `${S[params.scenario].steps(params)[0].say} Exact, so zero width, or a two-decimal bracket if it repeats.` : null),
   verify(item) {
     const sc = S[item.params.scenario];
     const b = sc.brute(item.params) * 100;

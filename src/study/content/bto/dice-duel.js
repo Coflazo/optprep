@@ -62,6 +62,9 @@ export default {
     ] },
     { type: 'text', text: 'Two players each roll something (one die, two dice added, the higher of two dice, a die with unusual faces) and the higher result wins. The details that matter: whether a **tie** loses, is replayed, or is split, and whether both players roll the **same way**.' },
     { type: 'list', items: ['"You and a friend each roll a die; you win only with a strictly higher number."', '"You roll two dice and keep the higher; your friend rolls one die. P(you win)?"', '"Each rolls an 8-sided die; ties are rolled again. P(you win)?"'] },
+    { type: 'check', scope: 'the details that matter', questions: [
+      { type: 'choice', q: 'In a dice duel, which detail must you read first?', options: ['what happens on a tie', 'who rolls first', 'the sum of both rolls', 'how many duels came before'], answer: 0, traps: { 1: 'both rolls are independent: the order does not change the chance', 2: 'the winner is found by comparing, not adding', 3: 'each duel is independent of earlier ones' }, explain: 'A tie can lose, be replayed or be split, and each rule gives a different answer.' },
+    ] },
     { type: 'text', text: 'Not this lesson: one die against a fixed target (bto/two-dice-sum style counting) and races where players take turns until a first success (bto/first-success, bto/race-to-k).' },
     { type: 'check', scope: 'the recognition cues above', questions: [
       { type: 'choice', q: 'Which question belongs to this lesson?', options: ['You roll a d10, your friend two dice added: P(you are strictly higher)', 'You and a friend alternate rolling; first six wins: P(you win)', 'You roll two dice: P(the sum is at least 9)', 'You roll a die until it shows more than 4: expected rolls'], answer: 0, traps: { 1: 'a turn-taking race: bto/first-success', 2: 'a fixed target: bto/two-dice-sum', 3: 'a waiting time: bto/expected-waiting' }, explain: 'Two players, two independent rolls, the higher wins.' },
@@ -147,6 +150,9 @@ export default {
 
     S('speed'),
     { type: 'callout', tone: 'speed', text: `Same dice: say "(1 − P(tie))/2" before anything else. P(tie) for one k-sided die each is 1/k; for two-dice sums it is ${duel(SUM2, SUM2).tie}. That is the whole computation.` },
+    { type: 'check', scope: 'the tie shortcut', questions: [
+      { make: (rng) => { const k = rng.pick([4, 8, 10, 12, 20]); return { type: 'number', q: `Each player rolls a fair d${k}; ties lose. P(you win), as a decimal to 3 places?`, answer: Number(((1 - 1 / k) / 2).toFixed(3)), tolerance: 0.0015, explain: `(1 − 1/${k})/2 = ${duel(die(k), die(k)).win} ≈ ${f3(duel(die(k), die(k)).win)}.` }; } },
+    ] },
     { type: 'callout', tone: 'speed', text: `Different dice: sum the rows "faces below x" (for a d8 against a d6: ${winsBelow(8, 6).join(', ')}). Sanity check: win + tie + lose must be 1. Budget 30 of the ${SECTIONS.bto.exam.perItemSeconds} seconds.` },
     { type: 'thinkaloud', problem: `You roll a fair d${TK.a}, your friend a fair d${TK.b}. The higher number wins and ties are rolled again. What is the probability that you win?`, lines: [
       { t: 0, say: 'Two players, higher wins, ties replayed: a duel. Count one round, then keep only decisive rounds.' },
@@ -156,8 +162,9 @@ export default {
       { t: 22, say: `Ties replayed: ${TK.r.w}/(${TK.r.w} + ${TK.r.n - TK.r.w - TK.r.t}) = ${replay(TK.r)} ≈ ${f3(replay(TK.r))}.` },
       { t: 27, say: `Sanity: above the one-round ${f3(TK.r.win)}, as replays should push the favourite up. Answer ${replay(TK.r)}, ${SECTIONS.bto.exam.perItemSeconds - 27} seconds left.` },
     ] },
-    { type: 'check', scope: 'the tie shortcut', questions: [
-      { make: (rng) => { const k = rng.pick([4, 8, 10, 12, 20]); return { type: 'number', q: `Each player rolls a fair d${k}; ties lose. P(you win), as a decimal to 3 places?`, answer: Number(((1 - 1 / k) / 2).toFixed(3)), tolerance: 0.0015, explain: `(1 − 1/${k})/2 = ${duel(die(k), die(k)).win} ≈ ${f3(duel(die(k), die(k)).win)}.` }; } },
+    { type: 'check', scope: 'different dice and the think-aloud', questions: [
+      { type: 'number', q: 'You roll a d8, your friend a d6; the higher number wins. In how many of the 48 pairs do you win?', answer: 27, explain: 'Faces below each of yours: 0 + 1 + 2 + 3 + 4 + 5 + 6 + 6 = 27 of 48.' },
+      { type: 'choice', q: 'In the think-aloud, the first try reached for (1 − P(tie))/2. Why does it fail?', options: ['the two dice differ, so there is no symmetry', 'ties are replayed, so P(tie) is 0 here', 'a d10 cannot tie with a d6'], answer: 0, traps: { 1: 'replayed ties still happen; they are removed afterwards', 2: 'faces 1 to 6 can tie' }, explain: 'A d10 against a d6 is not a swap of equals. Count rows: 39 wins, 6 ties, 15 losses; replayed ties give 39/54 = 13/18.' },
     ] },
 
     S('rule'),
@@ -171,10 +178,10 @@ export default {
       ['best of two against one die', duel(MAX2, die(6)).win.toString(), duel(MAX2, die(6)).tie.toString(), replay(duel(MAX2, die(6))).toString()],
     ] },
     { type: 'callout', tone: 'edge', text: 'Edge cases: dice that can never tie (like the non-transitive pair B against C) have win + lose = 1, so replays change nothing. A player who can never be strictly higher has P(win) = 0 under any tie rule.' },
-    { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: "replay until decisive" is the one-round ratio from turn-taking races (bto/first-success, bto/race-to-k). The same tie-first habit applies to cards (same rank ties) and to Likelihood List items that compare "higher" with "at least as high".' },
     { type: 'check', scope: 'the contrast table and edge cases', questions: [
       { type: 'choice', q: 'Which duel gives you exactly 1/2?', options: ['you d6, friend d6, ties rolled again', 'you d6, friend d6, ties lose', 'you d8, friend d6, ties rolled again', 'you d6, friend d8, ties rolled again'], answer: 0, traps: { 1: `ties lose, so you get ${SAME.win}`, 2: `the bigger die stays ahead even with replays: ${replay(CH)}`, 3: `the smaller die stays behind: ${replay(duel(die(6), die(8)))}` }, explain: 'Identical dice and replayed ties: the decisive rounds are mirror images.' },
     ] },
+    { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: "replay until decisive" is the one-round ratio from turn-taking races (bto/first-success, bto/race-to-k). The same tie-first habit applies to cards (same rank ties) and to Likelihood List items that compare "higher" with "at least as high".' },
     { type: 'variation', base: `You roll a d8, your friend a d6; the higher number wins and ties lose. P(you win) = ${CH.w}/${CH.n} = ${CH.win}.`, rows: [
       { change: 'Your friend rolls first, you second', effect: `No change: ${CH.win}. The rolls are independent, so the order in time does not touch the grid.`, same: true },
       { change: 'Ties are rolled again', effect: `Only decisive rounds count: ${CH.win} ÷ (${CH.win} + ${CH.lose}) = ${replay(CH)}.` },

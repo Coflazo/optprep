@@ -55,6 +55,9 @@ export default {
     ] },
     { type: 'text', text: 'A game pays money depending on dice, and the question asks for its **fair price**, its **expected profit**, or its value **with the best strategy** when you may reroll or stop. Payoffs can be the face, its square, a product of two dice, or a win/lose rule.' },
     { type: 'list', items: ['"You are paid the square of a die roll. What is the fair price?"', '"You roll a die: 4 or more wins that many dollars, otherwise you lose that many. Expected profit?"', '"You may reroll up to twice and keep the last roll. Value with optimal play?"'] },
+    { type: 'check', scope: 'price, profit, or value with a strategy', questions: [
+      { type: 'choice', q: '"You may reroll once and keep the second roll." What does that add to a dice game?', options: ['a choice: keep or reroll', 'a second payout added on', 'nothing: the value stays 3.5', 'a fee for the reroll'], answer: 0, traps: { 1: 'you keep one roll only', 2: 'rerolling low rolls changes the value', 3: 'no fee is mentioned' }, explain: 'A reroll is a decision, so the question asks for the value with the best strategy.' },
+    ] },
     { type: 'text', text: 'Not this lesson: a stopping game where the deck changes as you draw (bto/card-stopping), and the expected maximum of rolls you all keep (bto/expected-extremes).' },
     { type: 'check', scope: 'the recognition cues above', questions: [
       { type: 'choice', q: 'Which question belongs to this lesson?', options: ['Paid the product of two dice: fair price', 'Three dice: expected highest face', 'Red and black cards, stop any time: game value', 'Two dice: probability the product is even'], answer: 0, traps: { 1: 'no choice and no payoff function: bto/expected-extremes', 2: 'the deck changes as you draw: bto/card-stopping', 3: 'a probability, not a price' }, explain: 'A payoff on dice, priced by its expectation.' },
@@ -136,6 +139,9 @@ export default {
 
     S('speed'),
     { type: 'callout', tone: 'speed', text: `Values to know for a fair die: rolls allowed 1, 2, 3, 4 → ${[1, 2, 3, 4].map((r) => V(6, r).toString()).join(', ')}. E[X²] = ${sq(6)}, E[XY] = ${mean(6).mul(mean(6))}, E|X − Y| = ${absDiff()}. Each one is a free point.` },
+    { type: 'check', scope: 'values to know', questions: [
+      { make: (rng) => { const r = rng.int(1, 3); return { type: 'number', q: `Fair die, ${r} roll${r > 1 ? 's' : ''} allowed in total, keep the last. Value? (Decimals are fine.)`, answer: V(6, r).toNumber(), tolerance: 0.005, explain: `${V(6, r)} ≈ ${f3(V(6, r))}.` }; } },
+    ] },
     { type: 'callout', tone: 'speed', text: `Backward induction is short: write the value of continuing, list the faces at or above it, average. Two lines per reroll, about 30 of your ${SECTIONS.bto.exam.perItemSeconds} seconds.` },
     { type: 'thinkaloud', problem: `A fair ${TK}-sided die pays its face in dollars. You may reroll once, but must accept the reroll. What is the game worth with the best strategy?`, lines: [
       { t: 0, say: `A payoff with one reroll: go backwards. The forced last roll is worth its mean, ${mean(TK)}.` },
@@ -144,8 +150,9 @@ export default {
       { t: 14, say: `Keep ${keepSet(TK, mean(TK)).join(', ')}; reroll the rest. Value = (${TK - keepSet(TK, mean(TK)).length} × ${mean(TK)} + ${keepSet(TK, mean(TK)).join(' + ')})/${TK} = ${V(TK, 2)}.` },
       { t: 23, say: `Sanity: above ${f2(mean(TK))} (the option helps) and below E[max of two] ≈ ${f2(maxOf(TK, 2))} (less information). Answer ${f2(V(TK, 2))}, ${SECTIONS.bto.exam.perItemSeconds - 23} seconds left.` },
     ] },
-    { type: 'check', scope: 'values to know', questions: [
-      { make: (rng) => { const r = rng.int(1, 3); return { type: 'number', q: `Fair die, ${r} roll${r > 1 ? 's' : ''} allowed in total, keep the last. Value? (Decimals are fine.)`, answer: V(6, r).toNumber(), tolerance: 0.005, explain: `${V(6, r)} ≈ ${f3(V(6, r))}.` }; } },
+    { type: 'check', scope: 'backward induction and the think-aloud', questions: [
+      { type: 'choice', q: 'A fair die, one reroll allowed (you must accept it). Which first rolls do you keep?', options: ['4, 5 and 6', '5 and 6 only', '6 only', '3, 4, 5 and 6'], answer: 0, traps: { 1: '4 beats the 3.5 a reroll is worth', 2: '5 also beats 3.5', 3: '3 is below the 3.5 a reroll is worth' }, explain: 'Continuing is worth 3.5, so keep every face above it: 4, 5, 6. Value (4 + 5 + 6 + 3 × 3.5)/6 = 4.25.' },
+      { type: 'choice', q: 'In the think-aloud, the first try valued the game as E[max of two rolls]. What was wrong?', options: ['you decide before the reroll and must accept it', 'the die in this game has 6 sides, not 8', 'E[max] is below 9/2'], answer: 0, traps: { 1: 'the die in the think-aloud has 8 sides', 2: 'E[max of two] is above 9/2' }, explain: 'Without seeing the reroll you cannot keep the better one. Compare the roll in hand with 9/2: value 11/2.' },
     ] },
 
     S('rule'),
@@ -159,10 +166,10 @@ export default {
       ['two rerolls', 'one roll at a time', `${V(6, 3)} ≈ ${f3(V(6, 3))}`],
     ] },
     { type: 'callout', tone: 'edge', text: 'Edge cases: a payoff that is linear in the face (a + bx) is priced at a + b × 3.5 with no table. A reroll that costs more than the gain is never used, and the value falls back to 3.5.' },
-    { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: stopping on a deck of red and black cards is the same backward rule with a changing deck (bto/card-stopping). Zap-N\'s Balloon game is an optimal-stopping problem, and every "would you pay X to play" interview question is this lesson.' },
     { type: 'check', scope: 'the contrast table and edge cases', questions: [
       { type: 'choice', q: 'Rank the values: best of two rolls, one reroll, one roll.', options: ['best of two > one reroll > one roll', 'one reroll > best of two > one roll', 'best of two = one reroll > one roll', 'one roll > one reroll > best of two'], answer: 0, traps: { 1: 'seeing both rolls is more information than deciding blind', 2: 'they differ: the reroll must be accepted', 3: 'options never lower the value' }, explain: `${f3(maxOf(6, 2))} > ${f3(V(6, 2))} > ${f3(mean(6))}.` },
     ] },
+    { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: stopping on a deck of red and black cards is the same backward rule with a changing deck (bto/card-stopping). Zap-N\'s Balloon game is an optimal-stopping problem, and every "would you pay X to play" interview question is this lesson.' },
     { type: 'variation', base: `Fair die, paid the face, one reroll that must be accepted: keep 4, 5, 6 and the game is worth ${V(6, 2)}.`, rows: [
       { change: 'The reroll uses a second, identical die instead of the same one', effect: `No change: ${V(6, 2)}. A fresh roll of any fair die is worth 3.5; which die carries it does not matter.`, same: true },
       { change: 'Allow two rerolls', effect: `Continuing is now worth ${V(6, 2)}, so the first roll keeps only 5 and 6: ${V(6, 3)} ≈ ${f3(V(6, 3))}.` },

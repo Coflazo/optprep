@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <cmath>
 #include <map>
+#include <numbers>
 #include <numeric>
 #include <stdexcept>
 #include <thread>
@@ -45,7 +46,7 @@ bool compare(long long x, const std::string& cmp, long long k) {
 }
 double normal(Rng& r) {
     const double u = std::max(r.uniform(), 1e-300), v = r.uniform();
-    return std::sqrt(-2.0 * std::log(u)) * std::cos(2.0 * M_PI * v);
+    return std::sqrt(-2.0 * std::log(u)) * std::cos(2.0 * std::numbers::pi * v);
 }
 
 using Factory = std::function<Sampler(const Json&)>;

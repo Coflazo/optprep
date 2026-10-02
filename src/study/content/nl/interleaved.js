@@ -65,9 +65,12 @@ export default {
       ] },
     { type: 'text', text: 'Two separate sequences are written **alternately**: positions 1, 3, 5, … form one sequence and positions 2, 4, 6, … another. Neighbours then look unrelated and the gaps zigzag, but every second term follows a simple rule of its own.' },
     { type: 'list', items: [`What number comes next?  ${seq(E1.slice(0, 6))}, ?`, `What number comes next?  ${seq(E2.slice(0, 6))}, ?`, `What number comes next?  ${seq(Q4.slice(0, 7))}, ?`] },
-    { type: 'text', text: `Not this lesson: alternating **operations** such as ${seq(ALT)} (+3, ×2, +3, ×2), where each term is built from the one right before it. That zigzags too; the next lesson shows how to tell the two apart in one look.` },
     { type: 'check', scope: 'the cue: every second term is regular', questions: [
       { make: (rng) => { const d = draw(rng, 6, 0), q = quad(rng.int(1, 20), rng.int(1, 5), rng.int(1, 3), 6), a = geo(rng.int(2, 5), 2, 6); return pick(rng, 'Which list is two sequences taking turns?', seq(d.xs.slice(0, 6)), [[seq(q), `its gaps ${seq(g(q))} grow steadily: one sequence`], [seq(a), 'every step doubles: one sequence']], `Odd positions ${seq(odd(d.xs.slice(0, 6)))}, even positions ${seq(even(d.xs.slice(0, 6)))}: each regular on its own.`); } },
+    ] },
+    { type: 'text', text: `Not this lesson: alternating **operations** such as ${seq(ALT)} (+3, ×2, +3, ×2), where each term is built from the one right before it. That zigzags too; the next lesson shows how to tell the two apart in one look.` },
+    { type: 'check', scope: 'alternating operations', questions: [
+      { type: 'choice', q: '2, 5, 10, 13, 26, 29: how is each term made?', options: ['from the term right before it', 'from the term two places back', 'from its position number'], answer: 0, traps: { 1: 'the zigzag comes from +3 and ×2 in turn, not from two strands', 2: 'each step uses the term before it, not the position' }, explain: '+3, ×2, +3, ×2: alternating operations, the next lesson.' },
     ] },
 
     S('why'),
@@ -82,6 +85,9 @@ export default {
     S('picture'),
     { type: 'text', text: 'The gap row of an interleaved list zigzags: big up, big down, or two sizes taking turns. Split the list into its two strands and each one is plain. The next term goes to the strand whose turn it is, which is not always the strand you noticed first.' },
     { type: 'diagram', diagram: 'ladder', spec: { mode: 'diff', rows: ladderRows(E1.slice(0, 6), 1) }, caption: `Gaps of ${seq(E1.slice(0, 6))}: ${seq(g(E1.slice(0, 6)))}. The signs alternate: neighbours belong to different sequences.` },
+    { type: 'check', scope: 'alternating signs in the gaps', questions: [
+      { type: 'choice', q: 'The gaps of a list read 38, −33, 27, −22, 16. What do the alternating signs say?', options: ['neighbours belong to different strands', 'the list is arithmetic after all', 'the terms double at every step'], answer: 0, traps: { 1: 'the gaps are not constant', 2: 'the gaps change sign; doubling keeps them one sign' }, explain: 'Up, down, up, down: each term sits in a different strand from its neighbour.' },
+    ] },
     { type: 'diagram', diagram: 'strands', spec: { terms: E1.slice(0, 6), k: 2, labels: [`positions 1, 3, 5: add ${E1[2] - E1[0]}`, `positions 2, 4, 6: subtract ${E1[1] - E1[3]}`], next: E1[6] }, caption: `Split, each strand is a constant-gap sequence. Six terms shown, so the next is position 7 (odd): ${E1[4]} + ${E1[2] - E1[0]} = ${E1[6]}.` },
     { type: 'check', scope: 'whose turn it is', questions: [
       { make: (rng) => { const n = rng.pick([6, 7]), d = draw(rng, n), xs = d.xs.slice(0, n); return pick(rng, `${seq(xs)}, ? Which strand does the next term continue?`, n % 2 === 0 ? 'positions 1, 3, 5, …' : 'positions 2, 4, 6, …', [[n % 2 === 0 ? 'positions 2, 4, 6, …' : 'positions 1, 3, 5, …', `the next term is position ${n + 1}, which is ${n % 2 === 0 ? 'odd' : 'even'}`]], `${n} terms shown, so the next is position ${n + 1}.`); } },
@@ -119,6 +125,9 @@ export default {
         ] },
     ] },
     { type: 'text', text: 'At the hard end of the test, the strand that does **not** continue can be tougher: gaps that grow by a constant, or a strand in which each term adds the two before it in that strand. You rarely need its rule. The strand you continue stays simple, and the other only has to look regular enough to confirm the split. If the gaps zigzag and the continuing strand is clean, the split is right.' },
+    { type: 'check', scope: 'the strand you continue', questions: [
+      { type: 'choice', q: 'The gaps zigzag and the continuing strand is clean, but the other strand is hard to name. What do you do?', options: ['continue the clean strand', 'solve the hard strand first', 'drop the split entirely'], answer: 0, traps: { 1: 'you rarely need the other strand rule', 2: 'a zigzag and a clean strand confirm the split' }, explain: 'Only the strand whose turn it is needs a rule.' },
+    ] },
     { type: 'explain', prompt: 'Why do neighbours look unrelated in an interleaved list, and why does the number of shown terms decide which strand continues?', model: 'Each neighbour pair takes one term from each strand, so their gap mixes two different rules and follows neither. The strands alternate strictly, so the next position n + 1 has a fixed parity: odd goes to the first strand, even to the second.', points: ['Every neighbour pair mixes the two strands', 'Every second term belongs to one strand', 'Position n + 1: odd → strand 1, even → strand 2'] },
 
     S('worked'),
@@ -172,7 +181,6 @@ export default {
       [seq(geo(2, -2, 5)), seq(g(geo(2, -2, 5))), 'one sequence: ratio −2, signs alternate'],
     ] },
     { type: 'callout', tone: 'edge', text: 'Edge cases: a strand can be constant (5, x, 5, y, 5); one strand can be a two-term sum on its own (every second term adds the two before it in its strand); and three strands (positions 1, 4, 7, …) are possible but rare. The split is the same idea with every third term.' },
-    { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: whenever a list mixes two sources (odd and even rounds, two players taking turns, two alternating states), separate them before looking for a pattern.' },
     { type: 'variation', base: `${seq(E16)}, ?  Six shown, position 7 is odd: ${E1a[2]} + ${E1a[1] - E1a[0]} = ${E1[6]}.`, rows: [
       { same: true, change: `Change the even strand to steps of −10: ${seq(OTHER.slice(0, 6))}, ?`, effect: `Still ${OTHER[6]}. The strand that does not move next can change freely; only the odd strand decides this answer.` },
       { change: `Show one more term: ${seq(MORE.slice(0, 7))}, ?`, effect: `${MORE[7]}. Seven shown, so position 8 is even: now the falling strand moves.` },
@@ -185,6 +193,7 @@ export default {
       { make: (rng) => { const c = rng.int(2, 9), B = arith(rng.int(10, 30), rng.int(2, 6), 4), xs = weave([c, c, c, c], B, 7); return num(nextQ(xs.slice(0, 6)), xs[6], `The odd strand is constant (${c}, ${c}, ${c}); position 7 is odd: ${c}.`, ['Split the positions.', 'A strand can be constant.']); } },
     ] },
 
+    { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: whenever a list mixes two sources (odd and even rounds, two players taking turns, two alternating states), separate them before looking for a pattern.' },
     { type: 'transfer',
       near: { make: (rng) => { const A = arith(rng.int(1, 9), rng.int(2, 5), 4), B = arith(rng.int(30, 45), -rng.int(2, 5), 4), C = arith(rng.int(60, 80), rng.int(6, 9), 4), xs = [0, 1, 2, 3].flatMap((i) => [A[i], B[i], C[i]]); return num(`Three sequences take turns here (positions 1, 4, 7, …; 2, 5, 8, …; 3, 6, 9, …). ${nextQ(xs.slice(0, 9))}`, xs[9], `Nine shown, so position 10 belongs to the strand at positions 1, 4, 7, 10: ${seq(A.slice(0, 3))} steps by ${A[1] - A[0]}, giving ${A[3]}.`, ['Read every third term.', 'Position 10 is in the first strand (1, 4, 7, 10).']); } },
       far: { make: (rng) => { const a = rng.int(70, 90), da = rng.int(1, 3), b = rng.int(55, 68), db = -rng.int(1, 2), m = rng.int(9, 12), log = weave(arith(a, da, 3), arith(b, db, 3), 6), ans = m % 2 ? a + ((m - 1) / 2) * da : b + (m / 2 - 1) * db; return num(`A desk logs two products alternately, product A first: ${seq(log)}. Product A moves ${sgn(da)} per entry of its own, product B ${sgn(db)}. What is entry ${m} of the log?`, ans, `Entry ${m} is ${m % 2 ? 'odd, so product A' : 'even, so product B'}: it is that product's entry ${m % 2 ? (m + 1) / 2 : m / 2}, so ${m % 2 ? `${a} + ${(m - 1) / 2} × ${da}` : `${b} − ${m / 2 - 1} × ${-db}`} = ${ans}.`, ['Odd entries are product A, even entries product B.', `Entry ${m} is the ${m % 2 ? (m + 1) / 2 : m / 2}th entry of its own product.`]); } },

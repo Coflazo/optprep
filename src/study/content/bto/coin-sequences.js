@@ -54,6 +54,9 @@ export default {
     ] },
     { type: 'text', text: 'A fair coin is flipped a **fixed** number of times, n, and the question is about the resulting string of H and T: how many heads, whether all flips agree, whether heads outnumber tails, whether two heads ever sit next to each other, whether a run of heads appears.' },
     { type: 'list', items: ['"A coin is flipped 6 times. What is the probability of exactly 3 heads?"', '"Three flips: what is the chance all three land the same way?"', '"Nine flips: probability of strictly more heads than tails?"', '"Ten flips: probability that no two consecutive flips are both heads?"'] },
+    { type: 'check', scope: 'what is asked about the string', questions: [
+      { type: 'choice', q: '"Seven fair flips: probability the string never contains HH?" What does it ask about?', options: ['two heads side by side', 'how many heads', 'heads outnumber tails', 'all flips agree'], answer: 0, traps: { 1: 'no count of heads is asked', 2: 'the totals of H and T are not compared', 3: 'agreement means all heads or all tails' }, explain: 'Never HH means no two heads sit next to each other.' },
+    ] },
     { type: 'text', text: 'Not this lesson: flipping **until** something happens (bto/first-success, bto/pattern-waiting) and biased coins in a series (bto/race-to-k). Here n is fixed and the coin is fair, so every string is equally likely.' },
     { type: 'check', scope: 'the recognition cues above', questions: [
       { type: 'choice', q: 'Which question belongs to this lesson?', options: ['Eight fair flips: probability of at least 3 heads in a row', 'Flip until HH appears: expected number of flips', 'Flip until the first head: probability it takes 4 flips', 'Best-of-5 series with a 60% team: probability it wins'], answer: 0, traps: { 1: 'flipping until a pattern: bto/pattern-waiting', 2: 'waiting for the first head: bto/first-success', 3: 'a series: bto/race-to-k' }, explain: 'Fixed n = 8, fair coin, a property of the string.' },
@@ -124,6 +127,9 @@ export default {
       { t: 10, say: `Ties: C(6,3) = ${C(6, 3)} of ${2 ** 6}. The other ${2 ** 6 - C(6, 3)} split evenly: ${(2 ** 6 - C(6, 3)) / 2}.` },
       { t: 14, say: `P = ${(2 ** 6 - C(6, 3)) / 2}/${2 ** 6} = ${moreH(6)} ≈ ${d3(moreH(6))}. Below 1/2 because the ties take the middle. Answer ${moreH(6)}.` },
     ] },
+    { type: 'check', scope: 'the slip in the think-aloud', questions: [
+      { type: 'choice', q: 'In the think-aloud, the first try gave 1/2. What went wrong?', options: ['ignored the 3-3 ties', 'swapped H and T at all', 'skipped the Pascal entries', 'counted the 64 strings wrong'], answer: 0, traps: { 1: 'the swap is fine once the ties are set aside', 2: 'symmetry works without them', 3: '2^6 = 64 is right' }, explain: 'Ties, C(6, 3) = 20 of 64, belong to neither side. The other 44 split evenly: 22/64 = 11/32.' },
+    ] },
 
     S('predict'),
     { type: 'predict', question: 'Without computing: four fair flips. Is P(exactly 2 heads) above or below 1/2?', answer: `Below: ${C(4, 2)}/16 = ${fr(C(4, 2), 16)}.`, explain: 'The most likely head count is still less likely than all the other counts together.' },
@@ -147,9 +153,12 @@ export default {
 
     S('speed'),
     { type: 'callout', tone: 'speed', text: `Know the Pascal rows: n = 4: ${[0, 1, 2, 3, 4].map((k) => C(4, k)).join(' ')}; n = 5: ${[0, 1, 2, 3, 4, 5].map((k) => C(5, k)).join(' ')}; n = 6: ${ROW6.map((k) => C(6, k)).join(' ')}. And the powers: 2^8 = ${2 ** 8}, 2^10 = ${2 ** 10}. Most coin items are one lookup and one division.` },
-    { type: 'callout', tone: 'speed', text: `No-HH counts are Fibonacci numbers: a(n) = F(n + 2), so 10 flips give ${noHH(10)} of ${2 ** 10} ≈ ${d3(noHH(10) / 2 ** 10)}. Time budget: ${SECTIONS.bto.exam.perItemSeconds} seconds a question, enough to run the recursion to n = 10 by hand.` },
     { type: 'check', scope: 'Pascal rows and the Fibonacci count', questions: [
       { make: (rng) => { const n = rng.int(4, 6); const k = rng.int(0, n); return { type: 'number', q: `${n} flips. How many strings have exactly ${k} heads? (Recall the Pascal row.)`, answer: C(n, k), explain: `Row ${n}: ${Array.from({ length: n + 1 }, (_, i) => C(n, i)).join(' ')}. Entry ${k}: ${C(n, k)}.` }; } },
+    ] },
+    { type: 'callout', tone: 'speed', text: `No-HH counts are Fibonacci numbers: a(n) = F(n + 2), so 10 flips give ${noHH(10)} of ${2 ** 10} ≈ ${d3(noHH(10) / 2 ** 10)}. Time budget: ${SECTIONS.bto.exam.perItemSeconds} seconds a question, enough to run the recursion to n = 10 by hand.` },
+    { type: 'check', scope: 'the Fibonacci count', questions: [
+      { type: 'number', q: 'How many strings of 4 flips have no two heads in a row?', answer: 8, hints: ['a(n) = F(n + 2).'], explain: 'a(4) = F(6) = 8. Check the run: a(1) = 2, a(2) = 3, a(3) = 5, a(4) = 8.' },
     ] },
 
     S('rule'),
@@ -165,12 +174,12 @@ export default {
       ['all the same', 'two strings', '2', fr(2, 64)],
     ] },
     { type: 'callout', tone: 'edge', text: `Edge cases: n = 1 means no HH is certain (2 of 2). n = 2 gives 3/4, the only length where the independence guess (3/4)^(n−1) happens to be exact. Exactly 0 heads and exactly n heads each have one string.` },
-    { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: C(n, k) positions reappear in a random walk ("at position 2 after 8 steps" is "5 ups of 8": bto/random-walk-line), in the binomial for biased coins (bto/race-to-k), and in urn draws where the chances change (bto/urn-draws). Run-length recursions are the first step toward pattern waiting times (bto/pattern-waiting).' },
     { type: 'check', scope: 'the contrast table and edge cases', questions: [
       { type: 'choice', q: 'Six flips. Which is more likely: at least 3 heads, or 3 heads in a row somewhere?', options: ['at least 3 heads', '3 heads in a row somewhere', 'equally likely'], answer: 0, traps: { 1: 'every string with a run of 3 heads has at least 3 heads, so the run cannot be more likely', 2: 'HTHTHH has 4 heads but no run of 3: positions anywhere are a bigger set than adjacent positions' }, explain: `${C(6, 3) + C(6, 4) + C(6, 5) + C(6, 6)} strings against ${64 - noRun(6, 3)}: the run is a special case.` },
       { type: 'number', q: 'Two flips. How many of the 4 strings have no two consecutive heads?', answer: noHH(2), explain: 'HT, TH, TT: only HH is excluded.' },
     ] },
 
+    { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: C(n, k) positions reappear in a random walk ("at position 2 after 8 steps" is "5 ups of 8": bto/random-walk-line), in the binomial for biased coins (bto/race-to-k), and in urn draws where the chances change (bto/urn-draws). Run-length recursions are the first step toward pattern waiting times (bto/pattern-waiting).' },
     { type: 'variation', base: `Five fair flips. P(exactly 2 heads) = C(5,2)/32 = ${fr(C(5, 2), 32)}.`, rows: [
       { change: 'Ask for exactly 3 heads instead', effect: `No change: C(5,3) = C(5,2) = ${C(5, 3)}. Choosing the 3 heads is choosing the 2 tails.`, same: true },
       { change: 'Flip five coins at once instead of one coin five times', effect: 'No change. Label the coins 1 to 5 and they are five positions, exactly like five flips.', same: true },

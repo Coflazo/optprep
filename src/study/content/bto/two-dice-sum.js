@@ -47,6 +47,9 @@ export default {
     ] },
     { type: 'text', text: 'Two fair six-sided dice are thrown and the question is about their **sum**: a single value ("exactly 8"), a small set ("11 or 12"), a threshold ("at least 10", "at most 4") or a property ("odd", "divisible by 3").' },
     { type: 'list', items: ['"You throw two dice. What is the probability that the sum is 11 or 12?"', '"Two dice are rolled. Probability the total is at least 9?"', '"What is the chance the sum of two dice is a multiple of 4?"'] },
+    { type: 'check', scope: 'the four forms of a sum question', questions: [
+      { type: 'choice', q: '"Two dice: what is the chance the total is no more than 4?" Which form of sum question is it?', options: ['a threshold', 'a single value', 'a property', 'a small set of sums'], answer: 0, traps: { 1: '"no more than 4" covers the totals 2, 3 and 4', 2: 'a property is a rule such as odd or divisible by 3', 3: 'a small set is listed value by value, like "11 or 12"' }, explain: '"No more than" is "at most": a threshold on the sum.' },
+    ] },
     { type: 'text', text: 'Not this lesson: questions about the **maximum**, **doubles**, or one die beating another. Those use the same grid but count different cells.' },
     { type: 'check', scope: 'the recognition cues above', questions: [
       { type: 'choice', q: 'Which question belongs to this lesson?', options: ['Two dice: probability the larger face is 5', 'Two dice: probability the total is 10 or more', 'Two dice: probability both show the same face', 'One die thrown twice: probability the second is higher'], answer: 1, traps: { 0: 'a maximum question: same grid, different cells', 2: 'a doubles question', 3: 'a comparison question' }, explain: 'Only the second asks about the **sum** of the two faces.' },
@@ -120,10 +123,12 @@ export default {
 
     S('speed'),
     { type: 'callout', tone: 'speed', text: 'Use the **mirror**: ways(7 + k) = ways(7 − k). "At least 10" has the same count as "at most 4": 3 + 2 + 1 = 6. And for thresholds near the ends, count the short side: P(sum ≤ 10) = 1 − P(11 or 12) = 1 − 3/36.' },
-    { type: 'callout', tone: 'speed', text: 'Memorise the partial sums from the top: sum 12 → 1, ≥ 11 → 3, ≥ 10 → 6, ≥ 9 → 10, ≥ 8 → 15. They are the triangular numbers 1, 3, 6, 10, 15.' },
-    { type: 'check', scope: 'mirror and triangular numbers', questions: [
-      { make: (rng) => { const k = rng.int(8, 11); const n = SUMS.filter((s) => s >= k).reduce((a, s) => a + ways(s), 0); return { type: 'number', q: `How many ordered pairs give a sum of at least ${k}? (Use the triangular numbers.)`, answer: n, explain: `From the top: ${SUMS.filter((s) => s >= k).map(ways).reverse().join(' + ')} = ${n}.` }; } },
+    { type: 'check', scope: 'the mirror', questions: [
       { make: (rng) => { const k = rng.int(3, 5); const n = SUMS.filter((s) => s <= k).reduce((a, s) => a + ways(s), 0); return { type: 'choice', q: `P(sum ≤ ${k}) equals which of these?`, options: [`P(sum ≥ ${14 - k})`, `P(sum ≥ ${13 - k})`, `P(sum ≤ ${k + 1})`], answer: 0, explain: `Mirror about 7: ≤ ${k} pairs with ≥ ${14 - k}; both are ${n} pairs.` }; } },
+    ] },
+    { type: 'callout', tone: 'speed', text: 'Memorise the partial sums from the top: sum 12 → 1, ≥ 11 → 3, ≥ 10 → 6, ≥ 9 → 10, ≥ 8 → 15. They are the triangular numbers 1, 3, 6, 10, 15.' },
+    { type: 'check', scope: 'the triangular numbers', questions: [
+      { make: (rng) => { const k = rng.int(8, 11); const n = SUMS.filter((s) => s >= k).reduce((a, s) => a + ways(s), 0); return { type: 'number', q: `How many ordered pairs give a sum of at least ${k}? (Use the triangular numbers.)`, answer: n, explain: `From the top: ${SUMS.filter((s) => s >= k).map(ways).reverse().join(' + ')} = ${n}.` }; } },
     ] },
 
     { type: 'thinkaloud', problem: 'Two fair dice are thrown. What is the probability that the sum is at least 9?', lines: [
@@ -134,6 +139,9 @@ export default {
       { t: 13, say: `${atLeast(9)} of 36, which is ${frac(atLeast(9), 36)}.` },
       { t: 16, say: `Sanity check: 9 is above the middle (7), so the answer must be under 1/2. ${frac(atLeast(9), 36)} ≈ ${(atLeast(9) / 36).toFixed(2)}. Fine.` },
       { t: 19, say: `Answer ${frac(atLeast(9), 36)}. That leaves ${SEC - 19} of the ${SEC} seconds.` },
+    ] },
+    { type: 'check', scope: 'the slip in the think-aloud', questions: [
+      { type: 'choice', q: 'In the think-aloud, the first try gave 4/11. What went wrong?', options: ['treated the 11 sums as equally likely', 'used the wrong threshold for the sums', 'counted ordered pairs instead of sums', 'skipped the partial sums from the top'], answer: 0, traps: { 1: '9, 10, 11 and 12 are the right sums', 2: 'counting ordered pairs is the fix, not the slip', 3: 'partial sums are only a shortcut' }, explain: 'Sum 12 is one pair and sum 9 is four. Count pairs: 10 of 36 = 5/18.' },
     ] },
 
     S('rule'),
@@ -147,12 +155,12 @@ export default {
       ['Three dice, sum', '216 ordered triples', 'P(sum 3) = 1/216'],
     ] },
     { type: 'callout', tone: 'edge', text: 'Edge cases: P(sum = 1) = 0 and P(2 ≤ sum ≤ 12) = 1. Parity is a coin flip: exactly half the cells, 18, are odd.' },
-    { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: whenever outcomes look unequal, find the **equally likely atoms** first and count them. Likelihood List tables (each row is an atom), card questions (each ordered card is an atom) and the maximum of two dice all use the same grid; only the highlighted cells change.' },
     { type: 'check', scope: 'the contrast table and edge cases', questions: [
       { type: 'choice', q: 'Two dice. P(sum is even)?', options: ['1/2', '6/11', '11/21', '5/9'], answer: 0, traps: { 1: '6 even sums out of 11 sums: equal-sums belief' }, explain: '18 of the 36 cells are even: 1/2 exactly.' },
       { type: 'number', q: 'Three dice: how many equally likely ordered outcomes?', answer: 216, explain: '6 × 6 × 6 = 216.' },
     ] },
 
+    { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: whenever outcomes look unequal, find the **equally likely atoms** first and count them. Likelihood List tables, where each row is an atom, use the same grid. So do card questions (each ordered card is an atom) and the maximum of two dice. Only the highlighted cells change.' },
     { type: 'variation', base: `Two fair dice. P(sum = 8) = ${frac(ways(8), 36)}.`, rows: [
       { change: 'Ask for sum 6 instead of 8', effect: `No change: ${frac(ways(6), 36)}. 6 and 8 mirror each other around 7.`, same: true },
       { change: 'Colour one die red and one blue', effect: 'No change. The count already treated the dice as different (ordered pairs); colour only makes that visible.', same: true },

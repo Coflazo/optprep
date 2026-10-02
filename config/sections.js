@@ -3,6 +3,15 @@
 // Targets are this trainer's bar, set above the reported pass lines, not Optiver cutoffs.
 
 export const SECTIONS = {
+  // 80-in-8: reported by QuantVault (verified June 2026) as a separate test for Quant Trader,
+  // graduate and intern trader roles. One tap answers and moves on; there is no going back.
+  mm: {
+    id: 'mm', title: '80-in-8', kind: 'mcq', portalOrder: 0,
+    blurb: '80 mental arithmetic questions in 8 minutes, no calculator. Four options; tapping one answers and moves on. Right +1, wrong −1, no going back.',
+    exam: { count: 80, totalSeconds: 480, navigation: 'forward', scoring: 'plusMinus', autoAdvance: true, allowSkip: false, optionCount: 4 },
+    variants: [{ label: 'Skip allowed', allowSkip: true }, { label: 'Sprint: 20 in 2 minutes', count: 20, totalSeconds: 120 }],
+    target: { metric: 'net', value: 62, label: 'net score at least 62 of 80 (reported pass ≈55, competitive 70+)' },
+  },
   bto: {
     id: 'bto', title: 'Beat the Odds', kind: 'mcq', portalOrder: 1,
     blurb: 'Probability and expected value. Pick the closest value. Wrong answers cost a point, so skip when unsure.',
@@ -40,7 +49,7 @@ export const SECTIONS = {
   },
 };
 
-export const PORTAL_ORDER = ['bto', 'nl', 'll', 'iv', 'ob', 'zapn'];
+export const PORTAL_ORDER = ['mm', 'bto', 'nl', 'll', 'iv', 'ob', 'zapn'];
 export const READINESS_WINDOW = 3; // last N exam runs must all meet the target
 
 export const ZAPN_TARGETS = {

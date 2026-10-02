@@ -44,6 +44,9 @@ export default {
     ] },
     { type: 'text', text: 'A token (bug, particle, two players) sits on the corners of a polygon and each second steps to one of the **two neighbours** at random. The question asks how long until it **returns**, until it **reaches** a given corner, which corner is visited **last**, or when **two tokens meet**.' },
     { type: 'list', items: ['"A bug on a hexagon: expected time to return to its start?"', '"Expected time to reach the opposite corner of a hexagon?"', '"Two tokens on opposite corners of an octagon both move each second: expected time until they meet?"'] },
+    { type: 'check', scope: 'return, reach, last, or meet', questions: [
+      { type: 'choice', q: '"Two bugs start at opposite corners of a square and each moves every second. Expected time until they share a corner?" Which kind is it?', options: ['when two tokens meet', 'return to the start', 'the corner visited last', 'reaching a given corner'], answer: 0, traps: { 1: 'two tokens are moving, not one coming back', 2: 'nothing is asked about a last corner', 3: 'no corner is fixed: they meet wherever they meet' }, explain: 'Two moving tokens on one corner: a meeting question.' },
+    ] },
     { type: 'text', text: 'Not this lesson: a walk on an infinite line (bto/random-walk-line) and a line with two walls (bto/gamblers-ruin), which this lesson reuses.' },
     { type: 'check', scope: 'the recognition cues above', questions: [
       { type: 'choice', q: 'Which question belongs to this lesson?', options: ['A token on a pentagon: P(vertex 2 is visited last)', 'A particle on 0 to 5: P(it hits 5 before 0)', 'A ±1 walk: P(back at 0 after 6 steps)', 'A die running total: P(it ever equals 6)'], answer: 0, traps: { 1: 'two walls on a line: bto/gamblers-ruin', 2: 'an end point on a line: bto/random-walk-line', 3: 'an increasing total: bto/running-sum' }, explain: 'A walk around the corners of a polygon.' },
@@ -61,6 +64,9 @@ export default {
     S('picture'),
     { type: 'text', text: 'A hexagon with the token at vertex 0 and the target at the opposite vertex 3. The token can reach 3 going either way round.' },
     { type: 'diagram', diagram: 'cycle', spec: { n: HEX, start: 0, target: 3, note: 'start 0, target 3' }, caption: `Distance 3 clockwise, 3 anticlockwise. Hitting either way ends the walk.` },
+    { type: 'check', scope: 'either way round', questions: [
+      { type: 'choice', q: 'A hexagon walk: token at vertex 0, target vertex 2. How can the token reach the target?', options: ['2 steps one way, 4 the other', 'only the 2 short steps count', 'only clockwise paths count'], answer: 0, traps: { 1: 'the token may wander the long way round and still hit it', 2: 'each step goes either way with 1/2' }, explain: 'Hitting vertex 2 from either side ends the walk, so both distances matter.' },
+    ] },
     { type: 'diagram', diagram: 'numberline', spec: { min: 0, max: HEX, barriers: [0, HEX], start: 3, marks: [{ x: 0, label: 'vertex 3' }, { x: HEX, label: 'vertex 3' }] }, caption: `Cut the hexagon open at vertex 3 and lay it flat: the token starts in the middle of a line whose two ends are both vertex 3. Gambler's ruin gives 3 × 3 = ${hit(HEX, 3)} seconds.` },
     { type: 'check', scope: 'unrolling at the target', questions: [
       { make: (rng) => { const n = rng.pick([5, 6, 7, 8, 10, 12]), k = rng.int(1, Math.floor(n / 2)); return mc(rng, `Regular ${NAMES[n]}, token at vertex 0. Expected seconds to first reach vertex ${k}?`, String(hit(n, k)), [[String(k), 'assumed it walks straight there'], [String(k * k), 'used the line formula k² with no far side'], [String(n), 'used the return time'], [String(hit(n, k) / 2), 'halved k(n − k), as if it always takes the short side']], `Unroll at vertex ${k}: walls ${k} and ${n - k} away, so ${k} × ${n - k} = ${hit(n, k)}.`, { hinge: true }); } },
@@ -130,6 +136,9 @@ export default {
 
     S('speed'),
     { type: 'callout', tone: 'speed', text: `Three numbers per polygon. Square: return 4, opposite ${hit(4, 2)}. Hexagon: return 6, neighbour ${hit(6, 1)}, opposite ${hit(6, 3)}. Octagon: return 8, opposite ${hit(8, 4)}, two walkers from opposite corners ${meet(8, 4)}.` },
+    { type: 'check', scope: 'landmark values', questions: [
+      { make: (rng) => { const [txt, v] = rng.pick([['hexagon: return to start', 6], ['hexagon: opposite vertex', hit(6, 3)], ['octagon: opposite vertex', hit(8, 4)], ['square: opposite vertex', hit(4, 2)], ['octagon: two walkers from opposite corners', meet(8, 4)]]); return { type: 'number', q: `Expected seconds, ${txt}?`, answer: v, explain: `Landmark: ${v}.` }; } },
+    ] },
     { type: 'callout', tone: 'speed', text: `Sanity check: a hitting time is never below the distance and never above (n/2)²; the return time is exactly n. Each of these items should take 20 of your ${SECTIONS.bto.exam.perItemSeconds} seconds.` },
     { type: 'thinkaloud', problem: `A token starts at vertex 0 of a regular ${NAMES[TK.n]} (${TK.n} vertices) and moves to a random neighbour each second. What is the expected number of seconds until it first reaches vertex ${TK.k}?`, lines: [
       { t: 0, say: 'A polygon walk to a target vertex: unroll the cycle at the target.' },
@@ -138,8 +147,9 @@ export default {
       { t: 13, say: `${TK.k} × ${TK.n - TK.k} = ${hit(TK.n, TK.k)}.` },
       { t: 18, say: `Sanity: at least the distance ${TK.k}, at most (${TK.n}/2)² = ${hit(TK.n, TK.n / 2)}. ${hit(TK.n, TK.k)} fits. Answer ${hit(TK.n, TK.k)}, ${SECTIONS.bto.exam.perItemSeconds - 18} seconds left.` },
     ] },
-    { type: 'check', scope: 'landmark values', questions: [
-      { make: (rng) => { const [txt, v] = rng.pick([['hexagon: return to start', 6], ['hexagon: opposite vertex', hit(6, 3)], ['octagon: opposite vertex', hit(8, 4)], ['square: opposite vertex', hit(4, 2)], ['octagon: two walkers from opposite corners', meet(8, 4)]]); return { type: 'number', q: `Expected seconds, ${txt}?`, answer: v, explain: `Landmark: ${v}.` }; } },
+    { type: 'check', scope: 'the sanity bounds and the think-aloud', questions: [
+      { type: 'choice', q: 'A walk on a hexagon. Which expected time to reach some vertex is impossible?', options: ['12', '9', '5', '6'], answer: 0, traps: { 1: 'the opposite vertex takes exactly (6/2)² = 9', 2: 'a neighbour takes 5', 3: 'within the bounds: at least the distance, at most 9' }, explain: 'A hitting time on a hexagon lies between the distance and (6/2)² = 9. 12 breaks the upper bound.' },
+      { type: 'choice', q: 'In the think-aloud, the first try said about 2 × 2 = 4 for distance 2 on a decagon. What was wrong?', options: ['the target is 2 one way and 8 the other', 'distance 2 means exactly 2 steps', 'a decagon has 8 vertices'], answer: 0, traps: { 1: 'a random walk can wander away first', 2: 'a decagon has 10 vertices' }, explain: 'Unroll the cycle at the target: a ruin game from 2 between 0 and 10 gives 2 × 8 = 16.' },
     ] },
 
     S('rule'),
@@ -154,10 +164,10 @@ export default {
       ['two walkers from opposite corners', 'lazy gap on a 4-cycle', String(meet(8, 4))],
     ] },
     { type: 'callout', tone: 'edge', text: `Edge cases: a triangle (n = 3) has every vertex adjacent: hitting time 1 × 2 = 2. The neighbour of the start (k = 1) takes n − 1, almost as long as the return. Two walkers an odd distance apart on an even polygon never meet: the gap stays odd.` },
-    { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: the return time n is the long-run frequency trick that also gives the running-total limit 1/(mean step) (bto/running-sum). Tracking a difference instead of two objects works for any pair of symmetric walks, and the unrolled line is plain gambler\'s ruin (bto/gamblers-ruin).' },
     { type: 'check', scope: 'the contrast table and edge cases', questions: [
       { type: 'choice', q: 'Two tokens 3 vertices apart on a hexagon, both moving each second. Expected time until they meet?', options: ['They never meet', `After ${hit(6, 3)} seconds on average`, `After ${2 * hit(6, 3)} seconds on average`, 'After 3 seconds on average'], answer: 0, traps: { 1: 'the one-walker time: here the gap stays odd', 2: 'doubled for laziness, but the gap can never reach 0', 3: 'assumed they walk straight at each other' }, explain: 'Each second the gap changes by −2, 0 or +2, so an odd gap stays odd and never becomes 0.' },
     ] },
+    { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: the return time n is the long-run frequency trick that also gives the running-total limit 1/(mean step) (bto/running-sum). Tracking a difference instead of two objects works for any pair of symmetric walks, and the unrolled line is plain gambler\'s ruin (bto/gamblers-ruin).' },
     { type: 'variation', base: `Regular octagon, token at vertex 0: expected time to first reach vertex ${CH.k} = ${CH.k} × ${CH.n - CH.k} = ${hit(CH.n, CH.k)}.`, rows: [
       { change: `Target vertex ${CH.n - CH.k} instead of ${CH.k}`, effect: `No change: ${hit(CH.n, CH.n - CH.k)}. The arcs are ${CH.n - CH.k} and ${CH.k}, the same two numbers in the other order.`, same: true },
       { change: 'Target the opposite vertex, 4', effect: `Arcs 4 and 4: ${hit(8, 4)}, the slowest target.` },

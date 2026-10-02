@@ -127,6 +127,9 @@ export default {
       { t: 33, say: `25 sits between them: interpolating gives about ${dec(BIG.est, 1)}. Check: the values run from ${Math.min(...BIG)} to ${Math.max(...BIG)}, so that is plausible.` },
       { t: 42, say: `Median error about ±${dec(BIG.sd, 1)}: two SDs each way, leaning high: [${Math.floor(BIG.band.lo)}, ${Math.ceil(BIG.band.hi)}]. (True median ${BIG.med}.)` },
     ] },
+    { type: 'check', scope: 'the slip in the think-aloud', questions: [
+      { type: 'choice', q: 'In the think-aloud, 18 of 50 were at or below 51. Which way does the median lie?', options: ['above 51', 'below 51', 'exactly at 51'], answer: 0, traps: { 1: 'too few at or below means the median is higher', 2: '25 are needed at or below, not 18' }, explain: '18 is under 25, so the median is higher: 55 gives 27.' },
+    ] },
 
     sec('predict'),
     { type: 'predict', question: `In ${PR.rows} rows (${PR.rows * 10} scores) you find ${PR.k} at or below ${PR.t}. Is the 90th percentile above or below ${PR.t}?`, answer: `${PR.k}/${PR.rows * 10} = ${dec((PR.k / (PR.rows * 10)) * 100, 0)}% at or below ${PR.t}, short of 90%, so the 90th percentile is above ${PR.t}.`, explain: 'Compare the fraction at or below the trial value with the percentile you want; move the trial value in the direction of the shortfall.' },
@@ -150,9 +153,12 @@ export default {
 
     sec('speed'),
     { type: 'callout', tone: 'speed', text: 'High percentiles are fastest from the top: the 90th percentile of 200 is the 21st largest, so scan for the top values and count down. Low percentiles, count up from the bottom. Only the median needs the middle.' },
-    { type: 'callout', tone: 'speed', text: 'For "how many are ≥ t", count every row if the threshold is in the tail (few hits per row, quick). If it is near the middle, count 10 rows and double. Budget 40 seconds counting, 10 typing.' },
     { type: 'check', scope: 'counting from the top', questions: [
       { make: (rng) => { const p = rng.pick([80, 90, 95]), r = Math.ceil((p / 100) * 200); return { type: 'number', q: `200 scores. The ${p}th percentile (at least ${p}% at or below) is the k-th largest. What is k?`, answer: 200 - r + 1, hints: [`It is the ${r}th smallest.`, 'The k-th largest is the (201 − k)-th smallest.'], explain: `${r}th smallest = ${200 - r + 1}th largest.` }; } },
+    ] },
+    { type: 'callout', tone: 'speed', text: 'For "how many are ≥ t", count every row if the threshold is in the tail (few hits per row, quick). If it is near the middle, count 10 rows and double. Budget 40 seconds counting, 10 typing.' },
+    { type: 'check', scope: 'counting near the middle', questions: [
+      { type: 'choice', q: '"How many of 200 scores are ≥ t", with t near the middle. What do you do?', options: ['count 10 rows and double', 'count every row in full', 'count only the top row'], answer: 0, traps: { 1: 'near the middle there are many hits per row: too slow', 2: 'one row is too small a sample' }, explain: 'Ten of the twenty rows, doubled, is fast and close.' },
     ] },
 
     sec('rule'),
@@ -173,13 +179,13 @@ export default {
       { fusion: true, change: 'Median becomes 90th percentile AND you sample only 2 rows', effect: 'The two hurt together: the tail is sparse and a small sample catches few tail values, so the band must widen a lot. Better to scan all rows for the top values instead.' },
     ] },
     { type: 'callout', tone: 'edge', text: 'Edge cases: integer scores tie a lot, so neighbouring percentiles can share a value and a median can be a half-integer (the mean of the 100th and 101st). A threshold count uses "or higher", so a score equal to t counts. A count below t is the complement: 200 minus the count at or above.' },
-    { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: "count against a trial value and adjust" is binary search, and it finds any quantile of any data. The σ/√n error of a sampled mean is the CLT from the probability foundations.' },
     { type: 'check', scope: 'contrast and edge cases', questions: [
       mc({ q: 'The 100th smallest of 200 scores is 57 and the 101st is 58. What is the median, by the stated definition?', right: '57.5', wrong: [['57', 'took only the 100th smallest'], ['58', 'took only the 101st smallest'], ['57 or 58, either is right', 'the definition fixes it: their mean']], explain: 'With an even count, the median is the mean of the two middle values: 57.5.' }),
     ] },
+    { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: "count against a trial value and adjust" is binary search, and it finds any quantile of any data. The σ/√n error of a sampled mean is the CLT from the probability foundations.' },
     { type: 'transfer',
       near: { make: (rng) => { const k = rng.int(12, 38), t = rng.int(20, 40); return { type: 'number', q: `A grid of 200 delivery times. In 5 rows (50 times), ${k} are at most ${t} minutes. About how many of the 200 are at most ${t} minutes?`, answer: 4 * k, explain: `${k}/50 × 200 = ${4 * k}.` }; } },
-      far: { type: 'number', q: 'Outside the OA: a risk team wants the 5th percentile of 400 daily returns (the smallest return with at least 5% at or below it). It is the k-th smallest. What is k?', answer: Math.ceil(0.05 * 400), explain: `5% of 400 = ${Math.ceil(0.05 * 400)}: the ${Math.ceil(0.05 * 400)}th smallest return.` },
+      far: { type: 'number', q: 'Outside the assessment: a risk team wants the 5th percentile of 400 daily returns (the smallest return with at least 5% at or below it). It is the k-th smallest. What is k?', answer: Math.ceil(0.05 * 400), explain: `5% of 400 = ${Math.ceil(0.05 * 400)}: the ${Math.ceil(0.05 * 400)}th smallest return.` },
       principle: mc({ q: 'Which idea carried over from test scores to returns?', right: 'A percentile is a count at or below a value', wrong: [['A percentile is a fraction of the maximum', 'it is a rank, not a share of the top value'], ['Sort first, then read off the middle', 'counting against a value needs no sorting'], ['The mean and the median coincide', 'only for symmetric data']], explain: 'Both reduce to "which value has the target number of observations at or below it".' }) },
 
     sec('tryit'),

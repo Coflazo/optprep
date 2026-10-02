@@ -50,9 +50,12 @@ export default {
       ] },
     { type: 'text', text: `The gaps are **consecutive counting numbers** (1, 2, 3, 4 or 4, 5, 6, 7) or consecutive **multiples** of one number (${seq(M3)} are ${M3K.map((k) => `3 × ${k}`).join(', ')}). The terms can start anywhere.` },
     { type: 'list', items: [`What number comes next?  ${seq(E1.slice(0, 5))}, ?`, `What number comes next?  ${seq(E2.slice(0, 5))}, ?`, `What number comes next?  ${seq(E5.slice(0, 5))}, ?`] },
-    { type: 'text', text: 'This is a special case of the second-difference family (the second difference is m). What makes it its own lesson is the faster read: you recognise the count in the gap row and never build the second row.' },
     { type: 'check', scope: 'the cue: the gaps count', questions: [
       { make: (rng) => { const x = any(rng, 5), a = arith(rng.int(1, 20), rng.int(2, 9), 5), gg = geo(rng.int(2, 5), 2, 5); return pick(rng, 'Which sequence has gaps that count (m, 2m, 3m, …)?', seq(x), [[seq(a), `its gaps ${seq(g(a))} do not change`], [seq(gg), `its gaps ${seq(g(gg))} double`]], `The gaps of ${seq(x)} are ${seq(g(x))}: consecutive multiples of ${mOf(x)}.`); } },
+    ] },
+    { type: 'text', text: 'This is a special case of the second-difference family (the second difference is m). What makes it its own lesson is the faster read: you recognise the count in the gap row and never build the second row.' },
+    { type: 'check', scope: 'the second difference is m', questions: [
+      { type: 'number', q: '7, 13, 22, 34, 49 has gaps 6, 9, 12, 15. What is the second difference?', answer: 3, explain: 'The gaps count in steps of 3 (3 × 2, 3 × 3, …), so the second difference is m = 3.' },
     ] },
 
     S('why'),
@@ -67,6 +70,9 @@ export default {
     S('picture'),
     { type: 'text', text: 'Write the gaps under the terms: the gap row counts. Drawn as bars, the gaps form a **staircase**: each step one m taller than the last. The next term adds the next, taller stair. Stairs that grow evenly are this family; stairs that double in height belong to the lesson where the gaps multiply, so the picture alone separates the two.' },
     { type: 'diagram', diagram: 'ladder', spec: { mode: 'diff', rows: ladderRows(E1, 1), predicted: true }, caption: `${seq(E1.slice(0, 5))}: gaps ${seq(g(E1.slice(0, 5)))} count up by 1. The outlined cells: next gap ${g(E1)[4]}, next term ${E1[4]} + ${g(E1)[4]} = ${E1[5]}.` },
+    { type: 'check', scope: 'reading the count', questions: [
+      { type: 'number', q: 'What comes next?  5, 7, 10, 14, 19, ?', answer: 25, explain: 'Gaps 2, 3, 4, 5 count up by 1: the next gap is 6, so 19 + 6 = 25.' },
+    ] },
     { type: 'diagram', diagram: 'bar', spec: { title: `Gaps of ${seq(E2.slice(0, 6))}`, xLabel: 'step', yLabel: 'gap', categories: g(E2).map((_, i) => `${i + 1}`), series: [{ name: 'gap', values: g(E2) }], valueLabels: true }, caption: `A staircase of multiples of ${mOf(E2)}: ${seq(g(E2))}. Each stair is ${mOf(E2)} taller than the one before; the last bar is the gap into the next term.` },
     { type: 'check', scope: 'the staircase', questions: [
       { make: (rng) => { const xs = any(rng, 6); return num(`${seq(xs.slice(0, 5))}, ? What is the next gap?`, g(xs)[4], `Gaps ${seq(g(xs).slice(0, 4))} count in ${mOf(xs)}s: next ${g(xs)[4]}.`, ['Write the gaps.', 'Each gap is the same amount bigger than the last.']); } },
@@ -97,6 +103,9 @@ export default {
     ] },
     { type: 'diagram', diagram: 'ladder', spec: { mode: 'diff', rows: ladderRows(E2, 2), predicted: true }, caption: `The fallback for the same moves: ${seq(E2.slice(0, 5))} has second row ${mOf(E2)} every time, exactly m. Reading the count gives the outlined gap ${g(E2)[4]} directly; the ladder confirms it.` },
     { type: 'text', text: 'The count is harder to see when it starts high (gaps 13, 14, 15) or counts in an unusual multiple (gaps 35, 42, 49 are multiples of 7). Test the step between neighbouring gaps: if it is the same every time, you have the count, whatever it starts from. If the step between gaps is not constant, this lesson does not apply: the gaps may double, repeat earlier terms or be squares, and the method ladder sends you on.' },
+    { type: 'check', scope: 'a count that starts high', questions: [
+      { type: 'number', q: 'What comes next?  12, 47, 89, 138, ?', answer: 194, explain: 'Gaps 35, 42, 49 count in 7s: the next gap is 56, so 138 + 56 = 194.' },
+    ] },
     { type: 'explain', prompt: 'Why is "add 1, then 2, then 3, …" the same as a constant second difference, and why can you skip the second row here?', model: 'Consecutive counting numbers differ by 1, so the gaps of the gaps are all 1 (all m for multiples of m): that is a constant second difference. Because you recognise the count directly in the gap row, you can read the next gap without writing the second row.', points: ['Neighbouring gaps differ by m, so the second difference is m', 'The count itself tells you the next gap', 'The second row is still the fallback check'] },
 
     S('worked'),
@@ -150,6 +159,10 @@ export default {
       [seq(FACT), seq(g(FACT)), 'ratios 2, 3, 4, 5: multiply by the count instead', String(FACT[4] * 6)],
     ] },
     { type: 'callout', tone: 'edge', text: `Edge cases: starting at 1 with gaps 2, 3, 4, … gives the triangular numbers ${seq(TRI)}; gaps in odd numbers 3, 5, 7, … (count in 2s) give the squares. A count can also start high: gaps 11, 12, 13 are still m = 1.` },
+    { type: 'check', scope: 'the contrast table and edge cases', questions: [
+      { make: (rng) => { const t = rng.int(0, 2); const f = rng.int(1, 3), xs = t === 0 ? arith(rng.int(1, 20), rng.int(2, 9), 5) : t === 1 ? any(rng, 5) : FACT.map((v) => v * f); const names = ['add the same number each step', 'add the next counting number', 'multiply by the next counting number']; const tr = [[null, 'the gaps do not count; they are all equal', 'the ratios do not count up'], ['the gaps change; they count', null, 'the ratios are not whole numbers'], ['the gaps grow far too fast for addition', 'the gaps are not a count; the ratios are', null]]; return pick(rng, `${seq(xs)}: which rule?`, names[t], names.map((nm, i) => [nm, tr[t][i]]).filter((_, i) => i !== t), `Gaps: ${seq(g(xs))}.`); } },
+      { type: 'choice', q: 'First term 1, then gaps 2, 3, 4, 5, …: which famous list is this?', options: ['the triangular numbers', 'the square numbers', 'the powers of two', 'the prime numbers'], answer: 0, traps: { 1: 'squares have odd gaps 3, 5, 7', 2: 'powers of 2 have doubling gaps', 3: 'primes have irregular gaps' }, explain: `${seq(TRI.slice(0, 5))}, …: running totals of the counting numbers, n(n + 1)/2.` },
+    ] },
     { type: 'callout', tone: 'transfer', text: `Same idea elsewhere: running totals of 1, 2, 3, … appear whenever you count pairs or build a tent of counts, as in the two-dice sums in Beat the Odds, whose partial totals from the top are ${seq(TRI.slice(0, 5))}.` },
     { type: 'variation', base: `${seq(E15)}, ?  Gaps ${seq(g(E15))} count by 1; next ${E1[5]}.`, rows: [
       { same: true, change: `Drop the first term: ${seq(E15.slice(1))}, ?`, effect: `Still ${E1[5]}. The gaps ${seq(g(E15.slice(1)))} still count by 1 and the last term has not moved.` },
@@ -157,10 +170,6 @@ export default {
       { change: `Triple every term: ${seq(TRIPLE.slice(0, 5))}, ?`, effect: `${TRIPLE[5]}. Every gap triples to ${seq(g(TRIPLE.slice(0, 5)))}: a count in 3s (m = 3), so the next gap is ${g(TRIPLE)[4]}.` },
       { change: `Count down instead: gaps ${seq(g(DOWN.slice(0, 5)))}, list ${seq(DOWN.slice(0, 5))}, ?`, effect: `${DOWN[5]}. m = −1: the count still moves one step, down this time, so the next gap is ${g(DOWN)[4]}.` },
       { fusion: true, change: `Triple every term, then add 100: ${seq(BOTH.slice(0, 5))}, ?`, effect: `${BOTH[5]}. The tripling makes it a count in 3s (gaps ${seq(g(BOTH.slice(0, 5)))}); the 100 vanishes in every gap, so the next gap is still ${g(BOTH)[4]}.` },
-    ] },
-    { type: 'check', scope: 'the contrast table and edge cases', questions: [
-      { make: (rng) => { const t = rng.int(0, 2); const f = rng.int(1, 3), xs = t === 0 ? arith(rng.int(1, 20), rng.int(2, 9), 5) : t === 1 ? any(rng, 5) : FACT.map((v) => v * f); const names = ['add the same number each step', 'add the next counting number', 'multiply by the next counting number']; const tr = [[null, 'the gaps do not count; they are all equal', 'the ratios do not count up'], ['the gaps change; they count', null, 'the ratios are not whole numbers'], ['the gaps grow far too fast for addition', 'the gaps are not a count; the ratios are', null]]; return pick(rng, `${seq(xs)}: which rule?`, names[t], names.map((nm, i) => [nm, tr[t][i]]).filter((_, i) => i !== t), `Gaps: ${seq(g(xs))}.`); } },
-      { type: 'choice', q: 'First term 1, then gaps 2, 3, 4, 5, …: which famous list is this?', options: ['the triangular numbers', 'the square numbers', 'the powers of two', 'the prime numbers'], answer: 0, traps: { 1: 'squares have odd gaps 3, 5, 7', 2: 'powers of 2 have doubling gaps', 3: 'primes have irregular gaps' }, explain: `${seq(TRI.slice(0, 5))}, …: running totals of the counting numbers, n(n + 1)/2.` },
     ] },
 
     { type: 'transfer',

@@ -49,6 +49,17 @@ class Database:
         self._lock = threading.Lock()
         with self._lock, self._conn:
             self._conn.executescript(SCHEMA)
+            self._migrate()
+
+    def _migrate(self) -> None:
+        """v2: answers carry the item id, mode, hints and the belief behind a miss."""
+        if self._conn.execute("PRAGMA user_version").fetchone()[0] >= 2:
+            return
+        have = {r[1] for r in self._conn.execute("PRAGMA table_info(answers)")}
+        for col, kind in (("item_id", "TEXT"), ("mode", "TEXT"), ("hints", "INTEGER"), ("belief", "TEXT")):
+            if col not in have:
+                self._conn.execute(f"ALTER TABLE answers ADD COLUMN {col} {kind}")
+        self._conn.execute("PRAGMA user_version = 2")
 
     def add_answers(self, rows: Iterable[dict[str, Any]]) -> int:
         clean = []
@@ -60,10 +71,12 @@ class Database:
                 float(r.get("at") or time.time()), str(r["section"]), str(r["family"]), 1 if r["correct"] else 0,
                 float(r.get("ms") or 0), r.get("difficulty"), r.get("confidence"),
                 float(r["score"]) if r.get("score") is not None else (1.0 if r["correct"] else 0.0),
+                r.get("item_id"), r.get("mode"), r.get("hints"), r.get("belief"),
             ))
         with self._lock, self._conn:
             self._conn.executemany(
-                "INSERT INTO answers (at, section, family, correct, ms, difficulty, confidence, score) VALUES (?,?,?,?,?,?,?,?)", clean)
+                "INSERT INTO answers (at, section, family, correct, ms, difficulty, confidence, score, item_id, mode, hints, belief)"
+                " VALUES (?,?,?,?,?,?,?,?,?,?,?,?)", clean)
         return len(clean)
 
     def answers(self, section: str | None = None) -> list[dict[str, Any]]:

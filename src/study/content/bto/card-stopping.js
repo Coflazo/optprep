@@ -76,6 +76,9 @@ export default {
     ] },
     { type: 'text', text: 'Cards (or other items) are revealed one at a time from a **finite** pile, each one wins or loses money, and you may **stop whenever you like** and keep the running total. The question asks for the value of the game with the best strategy.' },
     { type: 'list', items: ['"3 red and 3 black cards: +$1 per red, −$1 per black, stop any time. What is the game worth?"', '"A deck of 4 red and 2 black: optimal value?"', '"Should you draw when 1 red and 2 black remain?"'] },
+    { type: 'check', scope: 'the stopping rule', questions: [
+      { type: 'choice', q: '"3 red and 3 black cards are turned one by one: +$1 per red, −$1 per black, and you may stop at any time." Which detail makes it a strategy question?', options: ['you may stop at any time', 'the cards are red and black', 'each card pays +1 or −1', 'the pile has 6 cards'], answer: 0, traps: { 1: 'colours alone give no decision', 2: 'payoffs without a choice give a plain expectation', 3: 'the pile size matters, but the choice to stop makes it a game' }, explain: 'Stopping whenever you like is a decision, so you need the best strategy.' },
+    ] },
     { type: 'text', text: 'Not this lesson: dice, where every roll is a fresh copy of the last (bto/dice-games-ev), and card probabilities with no decisions (bto/card-draws).' },
     { type: 'check', scope: 'the recognition cues above', questions: [
       { type: 'choice', q: 'Which question belongs to this lesson?', options: ['5 red, 5 black; stop whenever: game value', 'A die with up to two rerolls: game value', '5 red, 5 black; you must turn every card: expected total', '5 red, 5 black: P(the first card is red)'], answer: 0, traps: { 1: 'dice do not change as you roll: bto/dice-games-ev', 2: 'no choice: the total is 5 − 5 = 0', 3: 'a probability: bto/card-symmetry' }, explain: 'A finite deck, and you choose when to stop.' },
@@ -161,6 +164,9 @@ export default {
 
     S('speed'),
     { type: 'callout', tone: 'speed', text: `Know the balanced decks: V(1,1) = ${V(1, 1)}, V(2,2) = ${V(2, 2)}, V(3,3) = ${V(3, 3)}, V(4,4) = ${V(4, 4)}. For an unbalanced deck, the answer is at least max(0, r − b); if an option is below that, it is wrong.` },
+    { type: 'check', scope: 'bounds and landmark values', questions: [
+      { make: (rng) => { const [r, b] = rng.pick([[4, 2], [4, 1], [3, 1], [3, 2]]); return mc(rng, `${r} red, ${b} black. Which value could be the optimal game value?`, V(r, b).toString(), [[String(r - b - 1), 'below the must-play value r − b: impossible'], [String(r), 'more than the reds can ever pay'], [hindsight(r, b).toString(), 'the hindsight bound, not reachable']], `It must lie between r − b = ${r - b} and the hindsight bound ${f3(hindsight(r, b))}: ${V(r, b)}.`); } },
+    ] },
     { type: 'callout', tone: 'speed', text: `Fill the table diagonally, smallest decks first, and write fractions, not decimals. A 3 × 3 table is nine short averages: about 60 of your ${SECTIONS.bto.exam.perItemSeconds} seconds, so do these last.` },
     { type: 'thinkaloud', problem: `A deck of ${TK.r} red and ${TK.b} black cards is turned over one at a time: +$1 per red, −$1 per black, and you may stop any time. What is the game worth?`, lines: [
       { t: 0, say: 'Finite deck, stop any time: backward induction on (reds left, blacks left).' },
@@ -170,8 +176,9 @@ export default {
       { t: 40, say: `Draw at (${TK.r},${TK.b}): ${TK.r}/${TK.r + TK.b} × (1 + ${V(TK.r - 1, TK.b)}) + ${TK.b}/${TK.r + TK.b} × (−1 + ${V(TK.r, TK.b - 1)}) = ${draw(TK.r, TK.b)}.` },
       { t: 52, say: `Sanity: at least r − b = ${TK.r - TK.b}, below the hindsight bound ${f3(hindsight(TK.r, TK.b))}. Answer ${V(TK.r, TK.b)} ≈ ${f3(V(TK.r, TK.b))}.` },
     ] },
-    { type: 'check', scope: 'bounds and landmark values', questions: [
-      { make: (rng) => { const [r, b] = rng.pick([[4, 2], [4, 1], [3, 1], [3, 2]]); return mc(rng, `${r} red, ${b} black. Which value could be the optimal game value?`, V(r, b).toString(), [[String(r - b - 1), 'below the must-play value r − b: impossible'], [String(r), 'more than the reds can ever pay'], [hindsight(r, b).toString(), 'the hindsight bound, not reachable']], `It must lie between r − b = ${r - b} and the hindsight bound ${f3(hindsight(r, b))}: ${V(r, b)}.`); } },
+    { type: 'check', scope: 'filling the table and the think-aloud', questions: [
+      { type: 'choice', q: 'In which order do you fill the table of game values V(r, b)?', options: ['smallest decks first', 'the full deck first', 'any order works', 'the diagonal last'], answer: 0, traps: { 1: 'the full deck needs the smaller decks it can reach', 2: 'each cell uses the cells one card smaller', 3: 'diagonal cells are filled as you go, smallest first' }, explain: 'V(r, b) averages V(r − 1, b) and V(r, b − 1), so the smaller decks must be known first.' },
+      { type: 'choice', q: 'In the think-aloud, the first plan was to quit once ahead. What was wrong?', options: ['past winnings are sunk; the deck left decides', 'you can never quit early', 'being ahead means the deck left is good'], answer: 0, traps: { 1: 'you may stop at any time', 2: 'being ahead says the remaining deck is worse, if anything' }, explain: 'The decision depends on (reds left, blacks left), not on the running total.' },
     ] },
 
     S('rule'),
@@ -185,10 +192,10 @@ export default {
       ['best moment in hindsight', 'not allowed: sees the future', hindsight(3, 3).toString()],
     ] },
     { type: 'callout', tone: 'edge', text: `Edge cases: all red, take everything (V = r). All black, never play (V = 0). One red and many blacks: V(1, b) = 0 for b ≥ 2 (here V(1, 2) = ${V(1, 2)}, V(1, 3) = ${V(1, 3)}), so the option is worthless.` },
-    { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: every "stop or continue" game is max(sure amount, value of continuing), solved from the end (bto/dice-games-ev). Zap-N\'s Balloon is the same trade-off, and so is deciding whether to keep a position open: an option is worth at least its exercise value.' },
     { type: 'check', scope: 'the contrast table and edge cases', questions: [
       { type: 'choice', q: 'Which statement is always true?', options: ['V(r, b) ≥ max(0, r − b)', 'V(r, b) = r − b', 'V(r, b) ≤ 0 when b > r', 'V(r, b) = V(b, r)'], answer: 0, traps: { 1: 'ignores the option to stop', 2: 'false: V(3, 4) is positive, the option can still pay', 3: 'reds and blacks are not symmetric: reds pay' }, explain: 'You can always stop at once (0) or play everything (r − b), so the optimum is at least the better of the two.' },
     ] },
+    { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: every "stop or continue" game is max(sure amount, value of continuing), solved from the end (bto/dice-games-ev). Zap-N\'s Balloon is the same trade-off, and so is deciding whether to keep a position open: an option is worth at least its exercise value.' },
     { type: 'variation', base: `2 red and 2 black, +$1 per red, −$1 per black, stop any time: V(2, 2) = ${V(2, 2)}.`, rows: [
       { change: 'You start the game $5 down from an earlier round', effect: `No change: the game still adds ${V(2, 2)} on average. Money already lost is sunk; only the deck left decides.`, same: true },
       { change: 'You must turn every card', effect: 'No option any more: the total is always 2 − 2 = 0.' },

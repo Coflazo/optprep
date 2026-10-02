@@ -1,101 +1,142 @@
-# optiver-oa-trainer
+<p align="center">
+  <img src="docs/media/demo.gif" alt="OptPrep in 22 seconds: the 80-in-8 clock, an orderbook arbitrage, the skill roadmap filling up, a solution with its state diagram, two Zap-N games, the price comparison and the phone app." width="880">
+</p>
 
-A local practice trainer for the six tasks in the Optiver Career Kickstarter: Trading online assessment: **Beat the Odds, NumberLogic, Likelihood List, Intervals, Orderbooks and Zap-N**.
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="assets/wordmark-dark.svg">
+    <img src="assets/wordmark.svg" alt="optprep" height="56">
+  </picture>
+</p>
 
-It is an unofficial study tool. It is not made, endorsed or checked by Optiver, and it contains no Optiver test content. The formats come from public candidate reports (sources below); every question is generated or written fresh.
+<p align="center"><strong>Free practice for the Optiver online assessment.</strong><br>
+80-in-8, Beat the Odds, NumberLogic, Likelihood List, Intervals, Orderbooks and Zap-N, on the real clocks, with a lesson for every question type.</p>
 
-## What it does
+<p align="center">
+  <a href="https://coflazo.github.io/optprep/"><img alt="Open OptPrep" src="https://img.shields.io/badge/open-OptPrep-011735?style=flat-square"></a>
+  <a href="https://github.com/Coflazo/optprep/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/Coflazo/optprep/ci.yml?branch=main&style=flat-square&label=tests"></a>
+  <a href="https://github.com/Coflazo/optprep/releases"><img alt="Release" src="https://img.shields.io/github/v/release/Coflazo/optprep?style=flat-square"></a>
+  <a href="LICENSE"><img alt="MIT license" src="https://img.shields.io/badge/license-MIT-011735?style=flat-square"></a>
+</p>
 
-- **Exam replicas** with the reported timing, navigation and scoring:
-  - Beat the Odds: 90 s per question, +1 / −1 / skip, no going back.
-  - NumberLogic: 26 in 25 minutes, skip and return.
-  - Likelihood List: exact order only.
-  - Intervals: lower ÷ upper when the truth is inside.
-  - Orderbooks: 20 boards in 8 minutes, and a wrong submit costs time.
-- **Hundreds of fixed questions per section, plus unlimited fresh ones.** Each section has a numbered library of at least 500 distinct questions, split into exam-sized sets (Set 1, Set 2, …). You work through them in order, practising with feedback or timed under the real rules, and your progress per set is tracked. Practice, Drill and Exam draw fresh questions without limit.
-- **Checked answers.** Every question family has a generator and an independent verifier (enumeration, exact rational arithmetic, Markov-chain solves or simulation). The test suite checks that each section produces at least 500 distinct verified questions, and that every curated item from the research banks is valid and sourced.
-- **Teaching built in:**
-  - Learn mode runs purpose → anchor → derivation one move at a time → prediction before the reveal → compact rule → fresh test.
-  - Every wrong multiple-choice option carries the false belief that produces it. A miss is answered with "your answer is what you get if you …", and then the solution unfolds step by step.
-- **Study guide.** A written course, separate from practice: 132 lessons in 8 books (assessment strategy, probability foundations, and one lesson per question type: 99 families and 9 Zap-N games). Each lesson:
-  - opens with a challenge to attempt before any teaching; afterwards you pick the attempt closest to yours and the derivation marks the step where it breaks;
-  - shows the picture (grid, tree, Venn, difference ladder, order book, game state) before the algebra;
-  - derives the method one move at a time, and each move opens only after 1 to 3 questions that use nothing but that move (at most three teaching blocks ever pass without a question);
-  - has an expert think-aloud that plays at exam pace (including a wrong turn and its recovery), worked examples revealed step by step with "why?" prompts, a faded example, named traps, a find-the-error solution, a variation table (change one thing, predict the effect), and near and far transfer questions;
-  - counts as mastered after three fresh questions right at the first attempt without hints, with a second badge for doing it inside the exam's time per question.
+You get one attempt at the Optiver online assessment every eight months. OptPrep lets you sit it as many times as you like first: the same clocks, the same scoring, fresh questions every time, and a lesson that shows you why each wrong answer looked right.
 
-  A wrong answer names the false belief and gives one more try before showing the answer; a miss in try-it asks you to find the first step you would not have written and name the error type. Multiple-choice options are shuffled (numbers sorted) so position never gives the answer away. Reviews start with writing the rule from memory; a failed review switches the scaffolds back on. A mistake log groups misses by the belief behind them, a weekly review asks you to read your own numbers before the app does, and the study home always shows one next step. Each book has a method recognition tree, a cheat sheet with a recall mode, a recognition drill and interleaved mixed practice. Every diagram's numbers are checked by a validator in the test suite.
-- **Adaptive practice.** It picks weak families more often, missed families come back through spaced repetition, and a calibration panel says when skipping beats guessing under the −1 rule.
-- **Zap-N:** all nine reported games (Balloon, Skyscraper, Shapeshift, CodeCompare, Pincode, NumberBox, Figure It Out, The Switch, Stock Master). Each has a coach, and the optimisers score you against the best possible play.
-- **Readiness gate.** A section turns Ready after three full exams in a row at a target set above the reported pass lines. A started portal task cannot be reset, so open it only when its row says Ready.
+## Start
 
-## Run
+Open [coflazo.github.io/optprep](https://coflazo.github.io/optprep/) in any browser. You install nothing, and it keeps working offline after the first visit. Your browser's Install button puts it on your dock or home screen.
+
+To run it yourself on macOS, Linux or Windows, you need Node 20 or newer:
 
 ```bash
-cmake -S engine -B engine/build -G Ninja -DCMAKE_PREFIX_PATH=/usr/local && cmake --build engine/build
-./run.sh                                   # http://127.0.0.1:8765 (Python backend if uv is present)
-npm test                                   # JS tests (node --test)
-ctest --test-dir engine/build              # 34 C++ tests (GoogleTest)
-(cd backend && uv run pytest -q)           # 12 Python tests
-(cd backend && uv run python -m oa_backend.pipeline)   # verify every library question
+npx optprep
 ```
 
-Without the backend the app still runs from static files and keeps progress in the browser. With it, answers and exam runs go to SQLite, the home page shows an exam forecast, and the verification report is served at `/api/verification`.
+Or from the source:
 
-## How the pieces fit
+```bash
+git clone https://github.com/Coflazo/optprep.git
+cd optprep
+npm start            # or: python serve.py
+```
 
-| Layer | Language | Job |
+Your progress stays on your device. Settings has backup and restore, and optional sync to a private gist in your own GitHub account, encrypted with a passphrase if you add one.
+
+## What you practise
+
+Pick the battery you will sit, and OptPrep matches the tasks and clocks to it.
+
+| Battery | Tasks |
+|---|---|
+| Career Kickstarter: Trading | Beat the Odds, NumberLogic, Likelihood List, Intervals (45 s each), Orderbooks, Zap-N |
+| Trader and Quant Trader | 80-in-8, NumberLogic (15 in 25 min), Beat the Odds (30 questions), Likelihood List, Zap-N |
+| Everything | Every task at its most commonly reported format |
+
+| Task | Exam replica | Scoring |
 |---|---|---|
-| App | JavaScript (no dependencies) | Question generators with their own verifiers, exam replicas, teaching, Zap-N games, instant feedback in the browser |
-| Engine (`engine/`) | C++20 | Heavy computation behind a JSON-lines CLI: parallel Monte Carlo (238M samples/s), orderbook branch and bound, NumberBox exhaustive search, Skyscraper BFS, Figure It Out and Balloon optimal play, NumberLogic rule search that flags ambiguous sequences |
-| Backend (`backend/`) | Python 3.13 | HTTP API on 127.0.0.1, SQLite progress, a logistic ability model with bootstrap exam forecasts, and the verification pipeline that re-checks every library question in a second language |
+| 80-in-8 | 80 questions in 8 minutes, tap to answer, no going back | +1 right, −1 wrong |
+| Beat the Odds | 20 questions, 90 s each | +1, −1, or skip for 0 |
+| NumberLogic | 26 sequences in 25 minutes, skip and return | +1, −1, or skip for 0 |
+| Likelihood List | 15 sets of three statements, 90 s each | 1 point for the exact order |
+| Intervals | 18 estimates, 60 s each | lower ÷ upper when the truth is inside |
+| Orderbooks | 20 boards in 8 minutes | boards solved; a wrong submit costs 5 s |
+| Zap-N | 9 games | each scored against the best possible play |
 
-## Verification results
+After the online assessment, Optiver's interviews include market-making games. OptPrep's bonus round has you quote two-sided markets against a trader who knows more than you.
 
-The pipeline exports the fixed library (2,500+ questions) and checks each one outside JavaScript:
-- **Orderbooks:** all 500 boards re-solved by an independent C++ branch and bound, with the same "single indecomposable package" objective; 0 disagreements.
-- **NumberLogic:** all 520 sequences searched by the C++ rule library; 0 are ambiguous (no wrong option is explained by an equally simple rule).
-- **Beat the Odds:** 184 questions re-simulated by C++ Monte Carlo within 4 standard errors.
-- **Intervals:** 152 truths recomputed exactly in Python from the drawn visuals (dot counts, path lengths, medians) or closed forms; 13 simulated in C++.
-- **Zap-N:** 300 Skyscraper optima, 300 NumberBox solutions, and every Figure It Out and Balloon optimum re-solved in C++. JS and C++ agree on every one.
+## How it compares
 
-The first runs of these checks found real bugs, all now fixed:
-- a data race in a Monte Carlo sampler;
-- two wrong pruning bounds in the orderbook search (spread instruments can trade at negative prices);
-- a solver-objective mismatch between the JS and C++ orderbook solvers.
+Paid prep exists for parts of the Optiver online assessment. Here is what each product's own pages say it covers, next to OptPrep.
 
-## Layout
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/media/compare-dark.svg">
+    <img src="docs/media/compare-light.svg" alt="Lowest listed price and Optiver task coverage for OptPrep and five paid products. The table below holds the same data." width="896">
+  </picture>
+</p>
 
+| | Lowest listed price | 80-in-8 | Beat the Odds | NumberLogic | Likelihood List | Intervals | Orderbooks | Zap-N |
+|---|---|:-:|:-:|:-:|:-:|:-:|:-:|:-:|
+| **OptPrep** | **Free** | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ 9 games |
+| [Tradermath](https://www.tradermath.org/practice/firms/optiver) | €24.95 / 2 weeks, renews | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ 9 games |
+| [Aptitude Test Prep](https://aptitude-test-prep.com/employers/trading-assessments/optiver-assessment/) | $30 / 30 days | | ✓ | | | | | |
+| [QuantPrep](https://quantprep.io/premium) | $35 + VAT / 2 weeks | ✓ | ✓ | ✓ | | | | |
+| [JobTestPrep](https://www.jobtestprep.com/optiver-test) | $39 / 1 week | ✓ | | partly | | | | partly |
+| [EverythingQuant](https://everythingquant.com/online-assessments/) | $39.99 / month | ✓ | ✓ | ✓ | | | | Number Box |
+
+Prices and coverage come from each product's own pages on 2 October 2026. A blank cell means the page doesn't list that task. Prices change; if a row is out of date, [open an issue](https://github.com/Coflazo/optprep/issues) and the next release fixes it. Every source link is in [`docs/compare/competitors.json`](docs/compare/competitors.json). Free practice sites exist too, and this table lists only paid ones.
+
+OptPrep also runs offline, needs no account, and is open source, so you can read how every question is generated and checked.
+
+## How you learn
+
+Each task has a roadmap that runs from Foundations to Exam pace. A skill has five levels. Three clean answers in a row earn a level; the fifth also needs exam speed.
+
+Lessons move in short steps. You meet one idea, answer a question on it, then move to the next.
+
+Every wrong option in the question bank carries the belief that produces it. When you miss, OptPrep names the belief you used and walks you through the solution with a picture and the shortcut an expert takes inside the time limit.
+
+OptPrep also keeps a list of the skills and beliefs that keep costing you points, with recent answers weighted more. One tap gives you ten questions on any of them.
+
+Set a daily goal of five, ten or twenty minutes. Only time spent answering or reading counts toward it.
+
+## Limits
+
+- Optiver publishes no pass lines. The Ready mark means your last three full exams met OptPrep's bar, which sits above the lines candidates report. It lowers your risk. It cannot promise a pass.
+- The battery changes between roles and years. Every format number lives in [`config/sections.js`](config/sections.js) and [`config/presets.js`](config/presets.js) with its source. If your online assessment looked different, [open a format report](https://github.com/Coflazo/optprep/issues/new?template=format-report.yml) and the next release will match it.
+- Zap-Q, the personality questionnaire, has no right answers to practise. Answer it honestly and consistently.
+- Software engineering, quant developer and quant researcher assessments are different tests. OptPrep does not cover them.
+
+## How the questions are checked
+
+Every question family has a generator and an independent verifier. A second pipeline re-checks the whole library outside JavaScript:
+
+- Orderbooks: every board re-solved by a C++ branch and bound.
+- NumberLogic: every sequence searched by a C++ rule library, so no wrong option fits an equally simple rule.
+- Beat the Odds and Likelihood List: probabilities re-simulated by C++ Monte Carlo.
+- Intervals: truths recomputed in Python from the drawn figures.
+- Zap-N: optimal play re-solved in C++ for Skyscraper, NumberBox, Figure It Out and Balloon.
+
+```bash
+npm test                                                  # JavaScript tests
+(cd backend && uv run pytest -q)                          # Python tests
+cmake -S engine -B engine/build && cmake --build engine/build && ctest --test-dir engine/build
+(cd backend && uv run python -m oa_backend.pipeline)      # re-check the full library
 ```
-config/sections.js     exam formats and readiness targets (edit here if the real format differs)
-engine/                C++20 engine, GoogleTest suite, benchmarks
-backend/               Python server, SQLite, analytics, verification pipeline
-tools/                 Node exporters feeding the pipeline
-src/core/              seeded RNG, exact fractions, combinatorics, Markov solver, scoring,
-                       item contract, store, spaced repetition, adaptive picking, readiness
-src/sections/<id>/     question families (generate + verify + lesson) and curated banks
-src/zapn/<game>/       engine (pure, tested), view, coach
-src/study/             Study guide: lesson schema and validators, micro-check grading, inline
-                       markup (text nodes only), block renderers, pages, progress
-src/study/diagrams/    one file per diagram type: render + an arithmetic validator
-src/study/content/     one folder per book, one module per lesson (pure data)
-src/ui/                shell, runner, item views, charts, pages
-tests/                 contract, verifier, volume and engine tests
-```
 
-## Design
+## Inside
 
-The visual system follows `src/ui/styles.css`: one near-black accent, 1px borders, radius 6–8, a single shadow, tabular monospace numbers, and light and dark modes. The Figma style guide mirrors those tokens as variables: [OA Trainer Style Guide](https://www.figma.com/design/SSJJYxsaSQq6rflRuGf0xZ).
+| Part | Language | What it does |
+|---|---|---|
+| App | JavaScript, no dependencies | Generators and verifiers, exam replicas, lessons, games, progress |
+| Engine | C++20 | Monte Carlo, orderbook search and game solvers behind a JSON-lines CLI |
+| Backend | Python, standard library | Optional local server: SQLite progress, an exam forecast, the verification pipeline |
 
-## Sources for the formats
+The design system lives in [`src/ui/styles.css`](src/ui/styles.css) and in the [Figma file](https://www.figma.com/design/SSJJYxsaSQq6rflRuGf0xZ).
 
-- QuantVault: [online assessment](https://quantvault.org/optiver-online-assessment.html), [Likelihood List](https://quantvault.org/optiver-likelihood-list.html), [Intervals](https://quantvault.org/optiver-intervals.html), [Zap-N](https://quantvault.org/zap-n.html)
-- [Aptitude Test Prep: Optiver assessment](https://aptitude-test-prep.com/employers/trading-assessments/optiver-assessment/)
-- [Tradermath online assessments](https://www.tradermath.org/practice/firms/optiver)
-- [PracHub](https://prachub.com/companies/optiver), [TrueInterview Zap-N](https://trueinterview.io/study/zap-n-reaction-games)
+## Contributing
 
-These reports disagree on some counts and timings; the numbers in `config/sections.js` are the most common ones and can be changed.
+Format reports matter most: they keep the replicas honest. Code and question families are welcome too. Read [CONTRIBUTING.md](CONTRIBUTING.md) first.
 
 ## License
 
-MIT
+[MIT](LICENSE). OptPrep is a personal project by Coflazo, an econometrics student, shared for free. It is not affiliated with, endorsed by or connected to Optiver, and it contains no Optiver test content. Read the [legal notice](LEGAL.md) and the [privacy notice](PRIVACY.md).

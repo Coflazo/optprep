@@ -44,11 +44,13 @@ export default {
         { id: 'budget', label: 'A few slips are fine', approach: 'Aimed for mostly right and accepted a handful of errors.', breaksAt: `The target leaves only ${BUDGET} errors in ${R} rounds, misses included.` },
       ] },
     { type: 'text', text: `Shapeshift is the reaction game of Zap-N. A circle or a square flashes for ${flashMs} ms somewhere on the stage. Press the **right arrow** for a circle and the **left arrow** for a square. You have ${windowMs / 1000} s from the flash to answer. ${R} rounds, exactly ${HALF} circles and ${R - HALF} squares in random order.` },
-    { type: 'text', text: `The tracked score is **accuracy**: correct answers out of ${R}, with misses counted as wrong. Mean reaction time on correct answers is recorded but is not the target. A key pressed before the shape appears is an early press, not an answer. Target: ${pct(TARGET)}.` },
-    { type: 'check', scope: 'the key mapping and the score', questions: [
+    { type: 'check', scope: 'the key mapping', questions: [
       mc({ q: 'A square flashes at the far right of the stage. Which key?', right: 'left arrow', at: 0,
         wrong: [['right arrow', 'followed where the shape appeared: position never matters, only the shape'], ['no key: wait for a circle', 'every round needs an answer; a miss counts as wrong']],
         explain: 'Square means left, wherever it appears.' }),
+    ] },
+    { type: 'text', text: `The tracked score is **accuracy**: correct answers out of ${R}, with misses counted as wrong. Mean reaction time on correct answers is recorded but is not the target. A key pressed before the shape appears is an early press, not an answer. Target: ${pct(TARGET)}.` },
+    { type: 'check', scope: 'the score', questions: [
       mc({ q: 'Which result counts against your accuracy?', right: 'both a wrong key and no key in time', at: 2,
         wrong: [['only pressing the wrong key for the shape', 'a miss is scored as wrong too'], ['only answers slower than the average', 'speed is recorded, not scored: a slow correct answer is correct'], ['only rounds where no key was pressed', 'a wrong key is wrong']],
         explain: `Accuracy = correct / ${R}. Wrong keys and misses both fall outside the numerator.` }),
@@ -68,6 +70,9 @@ export default {
     sec('picture'),
     { type: 'text', text: 'Four rounds as they might appear. The shapes land anywhere; the answer depends on the shape alone.' },
     { type: 'diagram', diagram: 'zapn-shapeshift', spec: { trials: [{ shape: 'circle', x: 0.2, y: 0.3 }, { shape: 'square', x: 0.85, y: 0.6 }, { shape: 'square', x: 0.3, y: 0.8 }, { shape: 'circle', x: 0.75, y: 0.25 }] }, caption: 'Circles (dark dots) get the right arrow, squares the left, wherever they land.' },
+    { type: 'check', scope: 'shape, not place', questions: [
+      { type: 'choice', q: 'A circle lands at the far left of the stage. Which key?', options: ['right arrow', 'left arrow'], answer: 0, stable: true, traps: { 1: 'position never decides: a circle means right' }, explain: 'Circle means right, wherever it lands.' },
+    ] },
     { type: 'diagram', diagram: 'zapn-shapeshift', spec: { trials: [{ shape: 'circle', x: 0.5, y: 0.5 }], timeline: true }, caption: `One round's timing: a random wait of ${itiMin / 1000}-${itiMax / 1000} s (keys there are early presses), the shape for ${flashMs} ms, and ${windowMs / 1000} s from the flash to answer. The shape is gone ${(windowMs - flashMs) / 1000} s before the window closes.` },
     { type: 'check', scope: 'the timing of a round', questions: [
       { make: (rng) => { const t = 100 * rng.int(6, 14); return mc({ q: `The shape flashed and vanished. You press the correct key ${t} ms after the flash. How is the round scored?`, right: 'correct', at: 0,
@@ -144,6 +149,9 @@ export default {
 
     sec('speed'),
     { type: 'callout', tone: 'speed', text: 'Before each round: eyes on the centre, both fingers resting on the arrows. Moving a finger to a key costs time every round and invites pressing the wrong one.' },
+    { type: 'check', scope: 'fingers at rest', questions: [
+      { type: 'choice', q: 'Where should your fingers be between rounds?', options: ['resting on both arrow keys', 'on the space bar', 'off the keys until the flash'], answer: 0, traps: { 1: 'the space bar is not an answer key', 2: 'moving to the keys costs time every round' }, explain: 'Eyes on the centre, fingers on both arrows.' },
+    ] },
     { type: 'callout', tone: 'speed', text: 'Get faster by removing the search, not by pressing sooner. If you catch yourself pressing before you have seen the shape, slow down for three rounds; errors cluster after fast streaks.' },
     { type: 'thinkaloud', problem: 'Mid-game. The stage is empty, then a shape flashes in the lower right. Times are from the flash.', lines: [
       { t: 0, say: 'Eyes on the centre dot, fingers resting on both arrows. Something appears low on the right.' },
@@ -156,6 +164,7 @@ export default {
       mc({ q: 'You want a faster mean reaction time without losing accuracy. What should change?', right: 'keep eyes centred and fingers on the keys, then react to the shape', at: 1,
         wrong: [['press the moment anything moves on the stage, before it is clear', 'that is guessing: half an error per round it happens'], ['look toward the corners, where the shapes often appear', 'positions are random; searching costs time'], ['answer circles quickly and take extra care over squares', 'squares count exactly as much as circles']],
         explain: 'Speed comes from removing the search and the finger travel, not from anticipation.' }),
+      { type: 'choice', q: 'In the think-aloud, the first thought was "right side, so right arrow". What was wrong?', options: ['position never decides', 'the shape was a circle', 'it was too early to press'], answer: 0, traps: { 1: 'straight edges and corners: a square', 2: 'the flash had already happened' }, explain: 'Only the shape decides: a square, so the left arrow.' },
     ] },
 
     sec('rule'),
@@ -177,6 +186,9 @@ export default {
       { change: 'You blinked and missed it, and 1.2 s have passed', effect: `Press either arrow before ${windowMs / 1000} s: a guess is right half the time, a miss never.` },
     ] },
     { type: 'callout', tone: 'edge', text: `Edge case: if you blinked and never saw the shape, press a key before the ${windowMs / 1000} s window ends. A miss is certainly wrong; a guess is right half the time. This is the only guess that pays.` },
+    { type: 'check', scope: 'the contrast table and the edge case', questions: [
+      mc({ q: 'You looked away and never saw the shape. 1.2 s have passed since the flash. Best action?', right: 'press either arrow now', at: 1, wrong: [['press nothing', 'a miss is certainly wrong; a guess is right half the time'], ['wait for the next shape and answer it twice', 'extra presses are early presses, not answers']], explain: 'With 0.3 s of window left, a guess scores 1/2 on average against 0 for a miss.' }),
+    ] },
     { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: the −1 rule of the multiple-choice tasks (answer only when your chance beats the break-even) is the same trade. In Shapeshift waiting costs nothing, so the break-even is simple: never answer before you know.' },
     { type: 'transfer',
       near: { make: (rng) => { const n = rng.pick([40, 50, 80, 100]), T = rng.pick([0.9, 0.95]); const b = Math.floor(n * (1 - T) + 1e-9); return { type: 'number', q: `Another reaction game: ${n} rounds, blue means up and red means down, target ${pct(T)} accuracy with misses counted wrong. How many errors can you afford?`, answer: b, hints: [`${pct(T)} of ${n} must be right.`, `${n} − ${n} × ${T}.`], explain: `${n} − ${n * T} = ${b}.` }; } },
@@ -185,9 +197,6 @@ export default {
         wrong: [['a fast answer always beats a slow correct one', 'speed earns nothing in either score'], ['errors average out, so guess whenever unsure', 'a guess costs its chance of being wrong, every time'], ['wait until the last moment before every answer', 'waiting past the deadline is a miss; the point is to answer once you know']],
         explain: 'In both, an answer you cannot back is scored by its chance of being right, and speed alone earns nothing.' }),
     },
-    { type: 'check', scope: 'the contrast table and the edge case', questions: [
-      mc({ q: 'You looked away and never saw the shape. 1.2 s have passed since the flash. Best action?', right: 'press either arrow now', at: 1, wrong: [['press nothing', 'a miss is certainly wrong; a guess is right half the time'], ['wait for the next shape and answer it twice', 'extra presses are early presses, not answers']], explain: 'With 0.3 s of window left, a guess scores 1/2 on average against 0 for a miss.' }),
-    ] },
 
     sec('tryit'),
     { type: 'tryit', game: 'shapeshift' },

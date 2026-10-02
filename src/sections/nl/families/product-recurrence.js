@@ -8,6 +8,7 @@ export default family({
   title: 'Product of the previous two',
   skill: 'Explosive growth where each term divides the next: test last × previous',
   levels: [3, 4],
+  view: 'table',
   show: (d, p) => p.show,
   limit: 1e8,
   params: (rng, d) => {

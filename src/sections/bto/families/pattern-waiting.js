@@ -1,6 +1,6 @@
 // Waiting for coin patterns: expected flips to HH vs HT, and Penney's game (which pattern first).
 import { hittingTimes, absorptionProbs } from '../../../core/markov.js';
-import { mcqItem, agree, q } from '../lib.js';
+import { mcqItem, agree, q, table } from '../lib.js';
 
 const ID = 'pattern-waiting';
 const PATTERNS = { 2: ['HH', 'HT', 'TH', 'TT'], 3: ['HHH', 'HHT', 'HTH', 'HTT', 'THH', 'THT', 'TTH', 'TTT'], 4: ['HHHH', 'HHTT', 'HTHT', 'HTTH', 'HHHT', 'THHH', 'HTHH'] };
@@ -43,6 +43,9 @@ export default {
         rule: 'E[wait for pattern] = Σ 2^k over self-overlaps k (full length always counts). HH = 6, HT = 4, HHH = 14.',
         anchor: 'Waiting for one head takes 2 flips on average. A pattern is the same wait with one change: a near miss may keep or destroy progress, depending on how the pattern overlaps itself.',
         hints: [`Does ${A} overlap itself? Compare its suffixes with its prefixes.`, 'Each overlap of length k contributes 2^k.', `Overlaps: ${ks.join(', ')}.`],
+        picture: table(['k', `Last k of ${A}`, `First k of ${A}`, 'Adds'], Array.from({ length: L }, (_, i) => i + 1).map((k) => [k, A.slice(-k), A.slice(0, k), ks.includes(k) ? `2^${k} = ${2 ** k}` : '0']), `Compare the end of ${A} with its start for every length k. The matching lengths add 2^k each: ${ks.map((k) => 2 ** k).join(' + ')} = ${E} flips.`),
+        fast: `Self-overlaps of ${A}: ${ks.join(', ')}; add 2^k for each: ${E}.`,
+        check: `Any pattern of length ${L} waits at least 2^${L} = ${2 ** L} (its full-length overlap) and at most ${run} (a run of one letter); ${E} sits in that range.`,
         data: { mode: 'wait', A },
       });
     }
@@ -71,6 +74,9 @@ export default {
       rule: 'Penney: odds(A before B) = (BB − BA) : (AA − AB). A pattern whose prefix is the other\'s suffix tends to win.',
       anchor: 'The single-pattern waiting time with one change: two patterns race, so what matters is how each overlaps the other.',
       hints: ['Think about what each pattern needs just before it completes. Can one pattern "set up" the other?', 'Compute the four overlap numbers AA, AB, BB, BA.', `Odds ${num} : ${den - num}.`],
+        picture: table(['Pair X·Y', 'Lengths k where the end of X is the start of Y', 'Value'], [[A, A], [A, B], [B, B], [B, A]].map(([X, Y]) => [`${X}·${Y}`, [...Array(L).keys()].map((i) => i + 1).filter((k) => X.slice(-k) === Y.slice(0, k)).join(', ') || 'none', corr(X, Y)]), `The four Conway numbers. Odds for ${A} first are (${B}·${B} − ${B}·${A}) : (${A}·${A} − ${A}·${B}) = ${num} : ${den - num}.`),
+        fast: `Odds (BB − BA) : (AA − AB) = ${num} : ${den - num}, so ${v}.`,
+        check: `P(${A} first) and P(${B} first) add to 1. A pattern that waits longer on its own (${A} ${EA}, ${B} ${EB}) does not have to lose the race, so 1/2 or a ratio of waits is not a shortcut.`,
       data: { mode: 'race', A, B },
     });
   },

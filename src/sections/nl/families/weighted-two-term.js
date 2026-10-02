@@ -8,6 +8,7 @@ export default family({
   title: 'Weighted two-term recurrence',
   skill: 'When last + previous is not enough, test small weights: 2·last + previous, last + 2·previous',
   levels: [3, 4, 5],
+  view: 'table',
   show: (d) => (d === 5 ? 7 : d === 4 ? 6 : 5),
   params: (rng, d) => {
     const [p, qq] = rng.pick(PQ[d]);

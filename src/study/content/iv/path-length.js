@@ -107,6 +107,9 @@ export default {
       { t: 22, say: `Total ${P2.totBars} bars × ${P2.u} = ${P2.len} ${P2.unit}. Check: more than the start-to-end gap, less than the legs added (${P2.manhattan}).` },
       { t: 30, say: `Two segments, one diagonal: about 6% error, ×/÷ ${dec(B[2].f, 2)}: [${dec(P2.len / B[2].f, 1)}, ${dec(P2.len * B[2].f, 1)}].` },
     ] },
+    { type: 'check', scope: 'the slip in the think-aloud', questions: [
+      { type: 'choice', q: 'In the think-aloud, the first try gave 3 + 4 = 7 bars for the diagonal. What was wrong?', options: ['it walked round the corner', 'the bar is 4 km', 'the first segment was wrong'], answer: 0, traps: { 1: 'the bar shows 2 km', 2: 'the horizontal 3 bars were right' }, explain: 'The segment is the hypotenuse: √(9 + 16) = 5 bars.' },
+    ] },
 
     sec('predict'),
     { type: 'predict', question: `You measure ${PR.bars} bars and each bar is ${PR.u} m. You trust your measuring to about 8%. What interval do you type?`, answer: `About [${dec(PR.lo, 1)}, ${dec(PR.hi, 1)}]: ${PR.m} ×/÷ ${dec(PR.f, 2)}.`, explain: `It has more room above ${PR.m} (+${dec(PR.hi - PR.m, 1)}) than below (−${dec(PR.m - PR.lo, 1)}) because it is symmetric in ratio, not in metres. Expected score ${dec(PR.e, 2)}.` },
@@ -130,8 +133,11 @@ export default {
 
     sec('speed'),
     { type: 'callout', tone: 'speed', text: `Right triangles to recognise at sight (in bars): 3-4-5, 6-8-10, 5-12-13; a 45° diagonal is ${dec(Math.SQRT2, 3)} × its leg; 1 across and 2 up is ${dec(Math.sqrt(5), 3)}. Budget: about 35 seconds to measure, 10 to add and type.` },
-    { type: 'callout', tone: 'speed', text: 'Use your fingertips or the cursor as calipers: set the gap to one bar once, then walk it along each segment. Resetting the gap for every segment is slower and less consistent. Count the segments before you start, and tick each one off as you measure it, so a short segment next to a long one is never skipped.' },
     { type: 'check', scope: 'quick triangles', questions: [{ make: diagQ }] },
+    { type: 'callout', tone: 'speed', text: 'Use your fingertips or the cursor as calipers: set the gap to one bar once, then walk it along each segment. Resetting the gap for every segment is slower and less consistent. Count the segments before you start and tick each one off as you measure it. Then a short segment next to a long one is never skipped.' },
+    { type: 'check', scope: 'calipers', questions: [
+      { type: 'choice', q: 'How do you use your fingertips as calipers on a path?', options: ['set one bar once, then walk it', 'reset the gap for each segment', 'measure the longest segment only'], answer: 0, traps: { 1: 'resetting is slower and less consistent', 2: 'every segment counts toward the length' }, explain: 'One gap, walked along every segment, with each segment ticked off.' },
+    ] },
 
     sec('rule'),
     { type: 'callout', tone: 'rule', text: `Path + scale bar → measure each segment in bars (diagonal = √(across² + up²)) → add in bars → × bar value once → band ×/÷ about ${dec(B[2].f, 2)} (few segments) to ${dec(B[4].f, 2)} (many).` },
@@ -150,13 +156,13 @@ export default {
       { fusion: true, change: `The bar is worth ${2 * P1.u} m AND the first segment becomes a diagonal 3 bars across and 4 up`, effect: `The diagonal counts 5 bars instead of ${P1.bars[0]}, and each bar is worth double: (${P1.totBars} − ${P1.bars[0]} + 5) × ${2 * P1.u} = ${(P1.totBars - P1.bars[0] + 5) * 2 * P1.u} m. Measure in bars first, convert once.` },
     ] },
     { type: 'callout', tone: 'edge', text: 'Edge cases: a closed loop still counts every segment, including the one back to the start. A bar that is not a round number of your finger widths is fine: you count in bars, not in fingers. A very short segment next to a long one is easy to skip; count the segments first.' },
-    { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: "measure in the picture\'s own unit, convert once" is the Fermi chain of units; Pythagoras is the distance in every grid-path question; and the percent band is the right shape for any measured quantity.' },
     { type: 'check', scope: 'contrast and edge cases', questions: [
       mc({ q: 'A square loop of side 2 bars, bar = 5 m. How long is the path?', right: String(4 * 2 * 5), wrong: [[String(3 * 2 * 5), 'forgot the side that closes the loop'], ['0', 'used the start-to-end distance of a loop'], [String(2 * 5), 'measured one side only']], explain: '4 sides × 2 bars × 5 m = 40 m.' }),
     ] },
+    { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: "measure in the picture\'s own unit, convert once" is the Fermi chain of units; Pythagoras is the distance in every grid-path question; and the percent band is the right shape for any measured quantity.' },
     { type: 'transfer',
       near: { make: (rng) => { const segs = [rng.pick([2, 2.5, 3.5]), rng.pick([1, 1.5, 2]), rng.pick([1.5, 3, 4])], u = rng.pick([4, 5, 20]); const t = segs.reduce((a, b) => a + b, 0); return { type: 'number', q: `A floor plan: a corridor runs ${segs[0]} bars east, ${segs[1]} bars north, then ${segs[2]} bars east. The bar is ${u} m. How long is the corridor, in m?`, answer: t * u, tolerance: 1e-9, explain: `${segs.join(' + ')} = ${t} bars × ${u} = ${t * u} m.` }; } },
-      far: { type: 'number', q: 'Outside the OA: a drone flies 6 km east and then 8 km north. How far is it from its base, in a straight line, in km?', answer: Math.hypot(6, 8), explain: '√(6² + 8²) = √100 = 10 km: the same Pythagoras as a diagonal segment.' },
+      far: { type: 'number', q: 'Outside the assessment: a drone flies 6 km east and then 8 km north. How far is it from its base, in a straight line, in km?', answer: Math.hypot(6, 8), explain: '√(6² + 8²) = √100 = 10 km: the same Pythagoras as a diagonal segment.' },
       principle: mc({ q: 'Which idea carried over from the path to the drone?', right: 'Diagonal = √(across² + up²)', wrong: [['Diagonal = across + up', 'that is the route round the corner'], ['Convert each segment separately', 'there was nothing to convert'], ['Use a fixed ± band', 'no band was asked']], explain: 'Both needed the length of a slanted line from its across and up parts.' }) },
 
     sec('tryit'),

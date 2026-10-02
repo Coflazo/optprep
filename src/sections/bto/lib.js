@@ -19,8 +19,77 @@ export function fmtAuto(v) {
 // Closest-value spacing: relative for tiny answers, otherwise the core default.
 const gap = (c) => { const a = Math.abs(c); return a > 0 && a < 0.04 ? Math.max(a * 0.3, 1e-6) : Math.max(0.012, a * 0.07); };
 
-// o: { text, value (Q | number), distractors: [{value, misconception}], steps, rule, anchor,
-//      hints, data, ev?: true for expectations (no [0,1] filter), exact?, format?, visual? }
+// ---------------------------------------------------------------- worked-solution helpers
+// The question sentence restated as what we want: "What is the probability that X?" -> "We want P(X)."
+export function askFrom(text) {
+  const sentences = String(text).split(/(?<=[.?])\s+(?=[A-Z0-9])/).map((s) => s.trim()).filter(Boolean);
+  let i = sentences.map((s) => s.endsWith('?')).lastIndexOf(true);
+  if (i < 0) i = sentences.length - 1;
+  const q = sentences[i].replace(/[.?]$/, '');
+  const low = (s) => s[0].toLowerCase() + s.slice(1);
+  let m, ask;
+  if ((m = q.match(/^Given that (.+?), what is the probability that (.+)$/i))) ask = `P(${m[2]} | ${m[1]})`;
+  else if ((m = q.match(/^What is the probability that (.+)$/i))) ask = `P(${m[1]})`;
+  else if ((m = q.match(/^What is the probability (of .+)$/i))) ask = `the probability ${m[1]}`;
+  else if ((m = q.match(/^Estimate the probability (?:that )?(.+)$/i))) ask = `an estimate of P(${m[1]})`;
+  else if ((m = q.match(/^What is the expected (.+)$/i))) ask = `E[${m[1]}]`;
+  else return `We want to know: ${low(q)}.`;
+  // A short ask leans on the sentence before it ("What is the expected number of flips?").
+  const prev = i > 0 ? sentences[i - 1].replace(/\.$/, '') : '';
+  return ask.split(/\s+/).length <= 4 && prev ? `We want ${ask}: ${low(prev)}.` : `We want ${ask}.`;
+}
+
+// A step whose words carry its arithmetic: the last "x = y" clause moves into `math`, the rest
+// stays as the words. A step that is only an equation keeps its words and gains no math.
+const CLAUSE = /(?<!\s):\s+|;\s+|,\s*so\s+|\.\s+(?=[A-Z])/;
+export function splitMath(st) {
+  if (st.math || !/=/.test(st.say)) return st;
+  const t = st.say.replace(/\.$/, '');
+  const parts = t.split(CLAUSE);
+  const j = parts.map((s) => s.includes('=')).lastIndexOf(true);
+  const lead = parts.slice(0, j).join(': ').trim();
+  // Words-then-equation splits cleanly; a step that is an equation already, or chains several,
+  // is turned into a short instruction plus its equation.
+  if (j > 0 && lead.split(/\s+/).length >= 3 && !lead.includes('=')) return { ...st, say: `${lead}.`, math: parts.slice(j).join('; ').trim() };
+  const lhs = t.split('=')[0].trim();
+  const rhs = t.split('=').pop().trim();
+  if (j === 0 && parts.length === 1 && lhs.split(/\s+/).length <= 4 && rhs.split(/\s+/).length <= 6) {
+    let m;
+    const say = /^[PE]$/.test(lhs) ? 'Put it together.' : /^[PE]\s*[([_]/.test(lhs) ? `Compute ${lhs}.` : (m = lhs.match(/^Let (.+)$/)) ? `Define ${m[1]}.` : /^Total/.test(lhs) ? 'Add it up.' : 'Work it out.';
+    return { ...st, say, math: t };
+  }
+  return st;
+}
+
+// Picture builders. Every number comes from the caller's own parameters.
+export const pic = (diagram, spec, caption) => ({ diagram, spec, caption });
+// Two fair dice as the 36 ordered pairs, rows = first die.
+export function diceGrid(hit, caption, extra = {}) {
+  const highlight = [];
+  for (let a = 1; a <= 6; a++) for (let b = 1; b <= 6; b++) if (hit(a, b)) highlight.push([a - 1, b - 1]);
+  return pic('grid', { rows: 6, cols: 6, highlight, count: highlight.length, rowTitle: 'first die', colTitle: 'second die', ...extra }, typeof caption === 'function' ? caption(highlight.length) : caption);
+}
+// Repeated trials until the first success: success leaves stop, a miss carries on; n levels.
+export function firstSuccessTree(n, p, miss, hitLabel, missLabel, markAll = true) {
+  let node = { p: miss, label: `${missLabel} ×${n}` };
+  for (let i = n; i >= 2; i--) node = { p: miss, label: missLabel, children: [{ p, label: hitLabel, mark: markAll || i === n }, node] };
+  return { label: '', children: [{ p, label: hitLabel, mark: markAll || n === 1 }, node] };
+}
+export const table = (columns, rows, caption) => pic('table', { columns, rows: rows.map((r) => r.map(String)) }, caption);
+
+// Steps with their arithmetic split out; at least one step always carries math.
+export function withMath(steps) {
+  const out = steps.map(splitMath);
+  if (!out.some((st) => st.math)) {
+    const j = out.map((st) => /=/.test(st.say)).lastIndexOf(true);
+    if (j >= 0) out[j] = { ...out[j], math: out[j].say.replace(/\.$/, '').split(CLAUSE).filter((s) => s.includes('=')).pop().trim() };
+  }
+  return out;
+}
+
+// o: { text, value (Q | number), distractors: [{value, misconception, step?}], steps, rule, anchor,
+//      hints, data, ev?: true for expectations (no [0,1] filter), exact?, format?, visual?,
+//      ask?, fast, check, picture (null only on the no-picture list) }
 export function mcqItem(family, rng, difficulty, o) {
   const correct = num(o.value);
   const prob = !o.ev;
@@ -29,6 +98,11 @@ export function mcqItem(family, rng, difficulty, o) {
     .filter((d) => Number.isFinite(d.value) && (!prob || (d.value >= 0 && d.value <= 1)));
   const format = o.format || fmtAuto;
   const mcq = buildMcq(rng, { correct, distractors, format, minGap: o.minGap || gap, fillers: o.fillers });
+  // Which solution step a false belief breaks (counted from 1), where the family names it.
+  for (const opt of mcq.options) {
+    const d = o.distractors.find((x) => x.step && x.misconception === opt.misconception);
+    if (d) opt.step = d.step;
+  }
   return {
     id: `bto:${family}:${rng.seed}`,
     section: 'bto',
@@ -38,7 +112,7 @@ export function mcqItem(family, rng, difficulty, o) {
     prompt: o.visual ? { text: o.text, visual: o.visual } : { text: o.text },
     ...mcq,
     answer: { value: correct, exact: o.exact ?? exactText(o.value, format) },
-    solution: { steps: o.steps, rule: o.rule, anchor: o.anchor },
+    solution: { ask: o.ask || askFrom(o.text), steps: withMath(o.steps), fast: o.fast, check: o.check, picture: o.picture ? JSON.parse(JSON.stringify(o.picture)) : null, rule: o.rule, anchor: o.anchor },
     hints: o.hints,
     // Structured inputs, sufficient to recompute the answer without reading the prompt text.
     params: plain({ family, ...(o.params ?? o.data) }),

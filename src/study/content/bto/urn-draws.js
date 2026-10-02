@@ -52,6 +52,9 @@ export default {
     ] },
     { type: 'text', text: 'An urn (bag, box, batch) holds balls of two kinds, r red and b blue. You draw k of them **without replacement** and the question asks how many of one kind you got: exactly j, at least j, none.' },
     { type: 'list', items: ['"An urn has 5 red and 5 blue balls. Draw 2. Probability of one of each?"', '"A batch of 10 items has 3 defective. You test 4. Probability exactly one is defective?"', '"A committee of 3 is picked from 4 women and 6 men. Probability of at least 2 women?"'] },
+    { type: 'check', scope: 'how many of one kind', questions: [
+      { type: 'choice', q: '"A batch of 12 has 3 defective items. You test 4. Probability that every tested item works?" Which count is asked?', options: ['none defective', 'at least one defective', 'exactly one defective', 'all four defective'], answer: 0, traps: { 1: 'that is the complement of the question', 2: 'one defective item means one tested item fails', 3: 'reversed the kinds: every item works' }, explain: 'Every tested item works means 0 of the 4 are defective.' },
+    ] },
     { type: 'text', text: 'Not this lesson: draws **with** replacement or independent trials (the binomial: bto/coin-sequences, bto/race-to-k), and card hands with many groups (bto/card-draws). Two kinds of ball, taken out and kept out, is this lesson.' },
     { type: 'check', scope: 'the recognition cues above', questions: [
       { type: 'choice', q: 'Which question belongs to this lesson?', options: ['12 bulbs, 4 faulty; pick 3 without looking: probability exactly 1 is faulty', 'Each bulb is faulty with 1/3 independently; 3 bulbs: probability exactly 1 faulty', 'Draw a ball, note its colour, put it back, three times', 'The 7th ball drawn from an urn: probability it is red'], answer: 0, traps: { 1: 'independent trials: binomial', 2: 'with replacement: binomial', 3: 'one position: symmetry gives r/(r + b)' }, explain: 'A fixed batch, sampled without replacement, counting one kind.' },
@@ -125,6 +128,9 @@ export default {
       { t: 11, say: `One defective and three good: C(3,1) × C(7,3) = ${C(3, 1)} × ${C(7, 3)} = ${C(3, 1) * C(7, 3)}.` },
       { t: 15, say: `P = ${C(3, 1) * C(7, 3)}/${C(10, 4)} = ${hyper(3, 7, 4, 1)}. One is the central count and urns concentrate there, so beating ${d3(TA_BIN)} fits. Answer ${hyper(3, 7, 4, 1)}.` },
     ] },
+    { type: 'check', scope: 'the slip in the think-aloud', questions: [
+      { type: 'choice', q: 'In the think-aloud, the first try gave about 0.412. What went wrong?', options: ['used the binomial, as if items went back', 'counted the defective items wrong', 'multiplied by C(4, 1)', 'answered at least one'], answer: 0, traps: { 1: '3 defective in 10 is right', 2: 'the four positions were fine; the slip was 3/10 at every draw', 3: 'the try was for exactly one' }, explain: 'Tested items are not put back. Count hands: C(3, 1) × C(7, 3) / C(10, 4) = 105/210 = 1/2.' },
+    ] },
 
     S('predict'),
     { type: 'predict', question: 'Urn with 5 red and 5 blue; draw 2 without replacement. Is P(one of each) above or below the binomial 1/2?', answer: `Above: ${hyper(5, 5, 2, 1)} ≈ ${d3(hyper(5, 5, 2, 1))}.`, explain: 'Taking a red makes blue more likely next, which favours mixed hands.' },
@@ -147,9 +153,12 @@ export default {
 
     S('speed'),
     { type: 'callout', tone: 'speed', text: `Know the small binomial coefficients: C(6,3) = ${C(6, 3)}, C(7,3) = ${C(7, 3)}, C(8,3) = ${C(8, 3)}, C(9,3) = ${C(9, 3)}, C(10,3) = ${C(10, 3)}, C(10,4) = ${C(10, 4)}. Most urn items are two small products over one of these.` },
-    { type: 'callout', tone: 'speed', text: `Sanity: the probabilities for 0, 1, …, k reds add to 1, and the answer is pulled toward the middle compared with the binomial. Time budget ${SECTIONS.bto.exam.perItemSeconds} seconds: an exact-j item takes 30, an at-least item 45.` },
     { type: 'check', scope: 'the coefficients and the sanity rule', questions: [
       { make: (rng) => { const n = rng.int(6, 10); const k = rng.int(2, 3); return { type: 'number', q: `C(${n}, ${k}) = ?`, answer: C(n, k), hints: [`n(n − 1)${k === 3 ? '(n − 2)' : ''} / ${k === 3 ? '6' : '2'}.`], explain: `C(${n},${k}) = ${C(n, k)}.` }; } },
+    ] },
+    { type: 'callout', tone: 'speed', text: `Sanity: the probabilities for 0, 1, …, k reds add to 1, and the answer is pulled toward the middle compared with the binomial. Time budget ${SECTIONS.bto.exam.perItemSeconds} seconds: an exact-j item takes 30, an at-least item 45.` },
+    { type: 'check', scope: 'pulled toward the middle', questions: [
+      { type: 'choice', q: 'An urn holds 3 red and 7 blue. Draw 3. Compared with drawing with replacement, P(exactly 1 red) is:', options: ['higher', 'lower', 'the same'], answer: 0, stable: true, traps: { 1: 'without replacement the count is pulled toward the middle, and 1 red is the middle here', 2: 'the draws change the urn, so the chances differ' }, explain: 'Urn: C(3, 1) × C(7, 2)/C(10, 3) = 63/120 = 0.525. With replacement: 3 × 0.3 × 0.7² = 0.441.' },
     ] },
 
     S('rule'),
@@ -163,11 +172,11 @@ export default {
       ['the 3rd ball alone is red', 'symmetry: r/(r + b)', '1/2'],
     ] },
     { type: 'callout', tone: 'edge', text: 'Edge cases: if k is larger than the number of blues, "no red" is impossible: C(b, k) = 0. Draw every ball and the count is certain. A single draw (k = 1) is the same with or without replacement.' },
-    { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: a deck is an urn with 4 suits or 13 ranks (bto/card-draws); a committee is an urn of people; quality control samples a batch. When the urn is huge compared with the sample, the binomial becomes a good approximation, which is how polls work.' },
     { type: 'check', scope: 'the contrast table and edge cases', questions: [
       { type: 'choice', q: 'An urn holds 2 red and 3 blue. Draw 4. P(no red)?', options: ['0', qpow(Q.of(3, 5), 4).toString(), '1/5'], answer: 0, traps: { 1: 'used the binomial (3/5)⁴, which allows the same blue ball twice', 2: 'guessed one of five balls' }, explain: 'Only 3 blues exist, so 4 draws must include a red.' },
     ] },
 
+    { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: a deck is an urn with 4 suits or 13 ranks (bto/card-draws); a committee is an urn of people; quality control samples a batch. When the urn is huge compared with the sample, the binomial becomes a good approximation, which is how polls work.' },
     { type: 'variation', base: `Urn: 4 red, 4 blue. Draw 3 without replacement. P(exactly 2 red) = C(4,2)C(4,1)/C(8,3) = ${hyper(4, 4, 3, 2)}.`, rows: [
       { change: 'Ask for exactly 2 blue instead', effect: `No change: ${hyper(4, 4, 3, 1)}. With as many blues as reds, swapping the colour names maps one event onto the other.`, same: true },
       { change: 'Draw the 3 balls together instead of one by one', effect: 'No change. A handful is a uniformly random subset, the same as three draws kept out.', same: true },

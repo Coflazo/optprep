@@ -50,9 +50,12 @@ export default {
       ] },
     { type: 'text', text: `The **gaps** change by a constant **factor**: ${seq(geo(1, 2, 4))}, or ${seq(geo(2, 3, 4))}, or ${seq(geo(3, -2, 4))}. The terms themselves are not geometric: they are a starting value plus a geometric run of gaps. When the factor is negative, the gaps alternate in sign and the terms zigzag with growing swings.` },
     { type: 'list', items: [`What number comes next?  ${seq(E2.slice(0, 5))}, ?`, `What number comes next?  ${seq(E3.slice(0, 5))}, ?`, `What number comes next?  ${seq(ZZ.slice(0, 6))}, ?`] },
-    { type: 'text', text: `Not this lesson: gaps that grow by a fixed amount (${seq(QD)} has gaps ${seq(g(QD))}, the second-difference lesson), or terms that are themselves geometric (${seq(GE)}, where the terms, not just the gaps, keep one ratio).` },
     { type: 'check', scope: 'the cue: gaps with a constant factor', questions: [
       { make: (rng) => { const p = d2(rng, 5), q = quad(rng.int(1, 20), rng.int(1, 5), rng.int(1, 3), 5), ge = geo(rng.int(2, 5), 3, 5); return pick(rng, 'In which sequence do the gaps (not the terms) multiply by a constant?', seq(p.xs), [[seq(q), `its gaps ${seq(g(q))} grow by a fixed amount`], [seq(ge), 'there the terms themselves multiply: divide the terms, not the gaps']], `The gaps of ${seq(p.xs)} are ${seq(g(p.xs))}: each is twice the one before.`); } },
+    ] },
+    { type: 'text', text: `Not this lesson: gaps that grow by a fixed amount (${seq(QD)} has gaps ${seq(g(QD))}, the second-difference lesson). Also terms that are themselves geometric (${seq(GE)}, where the terms, not just the gaps, keep one ratio).` },
+    { type: 'check', scope: 'steady gaps against multiplying gaps', questions: [
+      { type: 'choice', q: '3, 4, 7, 12, 19: which lesson is it?', options: ['second differences: gaps rise by 2', 'gaps that multiply (this lesson)', 'terms that multiply'], answer: 0, traps: { 1: 'the gaps 1, 3, 5, 7 rise by 2; they do not multiply', 2: '7/4 and 12/7 are different ratios' }, explain: 'Gaps 1, 3, 5, 7 grow by a fixed amount: the second-difference lesson.' },
     ] },
 
     S('why'),
@@ -67,6 +70,9 @@ export default {
     S('picture'),
     { type: 'text', text: 'Build the ladder as usual. The gap row is not flat, and the row under it is not flat either: it is the gap row scaled, the signature of multiplication. So under the gaps, write **ratios** instead of a second row of differences.' },
     { type: 'diagram', diagram: 'ladder', spec: { mode: 'diff', rows: ladderRows(E2.slice(0, 5), 2) }, caption: `${seq(E2.slice(0, 5))}: gaps ${seq(g(E2.slice(0, 5)))}, and the second row ${seq(g(g(E2.slice(0, 5))))} copies them. Subtraction will never settle here.` },
+    { type: 'check', scope: 'when the second row copies the gaps', questions: [
+      { type: 'choice', q: 'The second row of a ladder copies the gap row. What do you do next?', options: ['divide neighbouring gaps', 'build a third row of differences', 'stop: there is no rule'], answer: 0, traps: { 1: 'subtraction will never settle here', 2: 'dividing the gaps finds the rule' }, explain: 'A copied row is the sign of multiplication one layer down: divide the gaps.' },
+    ] },
     { type: 'diagram', diagram: 'ladder', spec: { mode: 'ratio', rows: [g(E2), ratios(g(E2))], predicted: true }, caption: `Divide the gaps instead: ${ratios(g(E2)).slice(0, 3).join(', ')}. The outlined cells continue it: next gap ${g(E2)[3]} × ${E2r} = ${g(E2)[4]}, so the next term is ${E2[4]} + ${g(E2)[4]} = ${E2[5]}.` },
     { type: 'check', scope: 'the ratio row under the gaps', questions: [
       { make: (rng) => { const p = anyP(rng, 5); return num(`What is the ratio between neighbouring gaps of ${seq(p.xs)}?`, p.r, `Gaps ${seq(g(p.xs))}; ${neg(g(p.xs)[1])} ÷ ${neg(g(p.xs)[0])} = ${neg(p.r)}.`, ['Write the gaps first.', 'Divide each gap by the one before it, keeping signs.']); } },
@@ -100,6 +106,9 @@ export default {
         ] },
     ] },
     { type: 'text', text: `The same sequence has a second description. If every gap is r times the one before, then every term is r × the previous term plus a fixed c, with c = term 2 − r × term 1. In the challenge: c = ${CH[1]} − ${CHr} × ${CH[0]} = ${CHc}, and ${CHr} × ${CH[4]} ${sgn(CHc)} = ${CH[5]}. Use whichever you see first; they always agree.` },
+    { type: 'check', scope: 'next = r × last + c', questions: [
+      { type: 'number', q: '4, 7, 13, 25, 49 has gaps 3, 6, 12, 24. With r = 2, what is c in next = 2 × previous + c?', answer: -1, explain: 'c = term 2 − r × term 1 = 7 − 8 = −1. Check: 2 × 7 − 1 = 13.' },
+    ] },
     { type: 'explain', prompt: 'Why does the second row never settle when the gaps multiply, and why do you divide the gaps rather than the terms?', model: 'If each gap is r times the last, the difference between neighbouring gaps is (r − 1) times a gap, which still multiplies, so every further row is another geometric run. The terms are a start plus a geometric run of gaps, so only the gaps share one ratio; dividing the terms gives drifting ratios.', points: ['Second row = (r − 1) × the gaps, still geometric', 'The constant ratio lives in the gap row', 'Terms = start + geometric gaps, so their own ratios drift'] },
 
     S('worked'),
@@ -153,7 +162,6 @@ export default {
       [seq(AF), seq(g(AF)), 'r × previous + c (the same idea seen from the terms)', String(AFk * AF[4] + AFc)],
     ] },
     { type: 'callout', tone: 'edge', text: 'Edge cases: a gap ratio of 1 is a constant gap; a negative ratio zigzags; a pure geometric sequence also has geometric gaps, but there the terms share the ratio too, so divide the terms first and stop if it works.' },
-    { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: a geometric run of additions is compound growth on top of a base. In probability, 1/2 + 1/4 + 1/8 + … is a geometric run of gaps whose running total climbs towards 1, the same picture you see in "keep flipping until" questions.' },
     { type: 'variation', base: `${seq(E25)}, ?  Gaps ${seq(g(E25))} double; next ${E2[4]} + ${g(E2)[4]} = ${E2[5]}.`, rows: [
       { same: true, change: `Drop the first term: ${seq(E25.slice(1))}, ?`, effect: `Still ${E2[5]}. The gaps ${seq(g(E25.slice(1)))} still double; two gap ratios are thinner evidence, but the rule is the same.` },
       { change: `Start at ${E2up[0]} instead of ${E2[0]}, same gaps: ${seq(E2up.slice(0, 5))}, ?`, effect: `${E2up[5]}. The start shifts every term; the gap row, and the next gap ${g(E2up)[4]}, do not move.` },
@@ -166,6 +174,7 @@ export default {
       { make: (rng) => { const xs = dg(rng.int(0, 30), rng.int(1, 4), -2, 7); return num(nextQ(xs.slice(0, 6)), xs[6], `Gaps ${seq(g(xs).slice(0, 5))} flip sign and double: next gap ${neg(g(xs)[5])}, so ${neg(xs[5])} ${sgn(g(xs)[5])} = ${neg(xs[6])}.`, ['The gaps alternate in sign.', 'Next gap = last gap × (−2).']); } },
     ] },
 
+    { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: a geometric run of additions is compound growth on top of a base. In probability, 1/2 + 1/4 + 1/8 + … is a geometric run of gaps whose total climbs towards 1. You see the same picture in "keep flipping until" questions.' },
     { type: 'transfer',
       near: { make: (rng) => { const g0 = rng.pick(HALVES), xs = dg(rng.int(1, 20), g0, 0.5, 6); return num(nextQ(xs.slice(0, 5)), xs[5], `Gaps ${seq(g(xs).slice(0, 4))} halve each time (ratio 1/2), so the next gap is ${g(xs)[4]}: ${xs[4]} + ${g(xs)[4]} = ${xs[5]}.`, ['The gaps shrink: by a fixed amount or by a fixed factor?', 'Divide neighbouring gaps.']); } },
       far: { make: (rng) => { const n = rng.int(4, 6); return { type: 'number', q: `A fair coin is flipped until the first head. The first head comes on flip 1 with chance 1/2, on flip 2 with chance 1/4, on flip 3 with chance 1/8, and so on. What is the chance that it comes within the first ${n} flips? (A fraction or a decimal to three places.)`, answer: 1 - 1 / 2 ** n, tolerance: 0.001, hints: ['Keep a running total: 1/2, then 1/2 + 1/4, then + 1/8.', 'Each step adds half of the step before; the total climbs towards 1.'], explain: `The running totals ${Array.from({ length: n }, (_, i) => `${2 ** (i + 1) - 1}/${2 ** (i + 1)}`).join(', ')} add gaps that halve: within ${n} flips, ${2 ** n - 1}/${2 ** n}.` }; } },

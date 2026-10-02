@@ -168,6 +168,9 @@ export default {
 
     sec('speed'),
     { type: 'callout', tone: 'speed', text: 'Say the copy out loud as trades before any arithmetic: "buy A, sell B". Then each price is automatic (buy → ask, sell → bid). Pricing first and signing later is where the sign errors come from.' },
+    { type: 'check', scope: 'say the copy as trades', questions: [
+      { type: 'choice', q: 'You buy a copy of A − B. Which prices do you pay?', options: ['A at its ask, B at its bid', 'A at its bid, B at its ask', 'both at their mids'], answer: 0, traps: { 1: 'buying A pays its ask; selling B gets its bid', 2: 'mids are not prices you can trade' }, explain: 'Buy A − B = buy A, sell B: A at the ask, B at the bid.' },
+    ] },
     { type: 'callout', tone: 'speed', text: 'With two spread cards, a fairly quoted one has its bid below the copy\'s cost and its ask above the copy\'s value. Check that quickly, drop it, and spend the time on the other card.' },
     { type: 'check', scope: 'two spread cards', questions: [{ make: twoSpreadsQ }] },
 
@@ -181,11 +184,11 @@ export default {
       ['B − A', 'buy B, sell A', 'ask(B) − bid(A)', 'bid(B) − ask(A)'],
     ] },
     { type: 'callout', tone: 'edge', text: 'Edge cases. B − A is A − B with every sign reversed: buying a copy of B − A costs exactly minus what selling a copy of A − B raises. A spread quote can straddle 0. A zero edge still does not count.' },
-    { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: chains build a missing product with a minus sign, B = (A + B) − A, and hidden boards add two spreads, (A − B) + (B − C) = A − C. Every minus sign is a leg traded the opposite way.' },
     { type: 'check', scope: 'the contrast table', questions: [
       mc({ q: 'Which prices make up the cost of buying a copy of B − A?', right: 'ask(B) − bid(A)', wrong: [['ask(A) − bid(B)', 'that copies A − B'], ['ask(B) − ask(A)', 'A is sold, so it earns its bid'], ['bid(B) − ask(A)', 'that is the value of selling the copy']], explain: 'Buy B (ask), sell A (bid).' }),
     ] },
 
+    { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: chains build a missing product with a minus sign: B = (A + B) − A. Hidden boards add two spreads: (A − B) + (B − C) = A − C. Every minus sign is a leg traded the opposite way.' },
     { type: 'variation', base: `Base: ${boardText([A, B, AB])}. Sell A − B, buy A, sell B: +${px(edgeSell(AB, rAB))}.`, rows: [
       { change: `B's bid and ask both rise by ${px(bumpB)}`, effect: `You sell B at its bid, which is now higher, so the copy gets cheaper: profit ${px(edgeSell(AB, repl(A, card('B', [0, 1], B.bid + bumpB, B.ask + bumpB))))}.` },
       { same: true, change: `B's ask rises by ${px(1)}`, effect: `Nothing: this package sells B, at its bid. Profit stays ${px(edgeSell(AB, repl(A, card('B', [0, 1], B.bid, B.ask + 1))))}.` },

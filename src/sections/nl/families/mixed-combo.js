@@ -16,6 +16,7 @@ export default family({
   title: 'Two rules combined',
   skill: 'Peel off the dominant rule (the multiplier) and solve whatever is left over as its own sequence',
   levels: [5],
+  view: 'table',
   show: 6,
   params: (rng) => rng.pick(Object.values(V))(rng),
   accept: (p, xs) => xs.every((v) => !v.isZero()) && new Set(xs.map((v) => v.toString())).size === xs.length,

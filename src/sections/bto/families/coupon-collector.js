@@ -1,6 +1,9 @@
 // Coupon collector: expected draws to see all n types, or k distinct faces of a die.
 import { hittingTimes } from '../../../core/markov.js';
-import { mcqItem, agree, q, harmonic } from '../lib.js';
+import { mcqItem, agree, q, harmonic, pic } from '../lib.js';
+
+// Expected wait in each stage of the collection: the bars add to the answer.
+const stageBars = (s, k, caption) => pic('bar', { categories: Array.from({ length: k }, (_, i) => `${i + 1}`), series: [{ name: 'expected draws', values: Array.from({ length: k }, (_, i) => Math.round((s / (s - i)) * 100) / 100) }], xLabel: 'stage (new type number)', yLabel: 'expected draws' }, caption);
 const singular = (u) => u.replace(/(x|ch|sh|ss)es$/, '$1').replace(/s$/, '');
 
 const ID = 'coupon-collector';
@@ -45,6 +48,9 @@ export default {
         rule: 'E[draws to see k of n types] = Σ_{i=0}^{k−1} n/(n − i).',
         anchor: 'The geometric wait 1/p, applied once per stage, with p shrinking as types are collected.',
         hints: ['When you have seen i faces, what is the chance the next throw is new?', 'Each stage is a geometric wait.', `Add ${parts.join(' + ')}.`],
+        picture: stageBars(s, k, `Stage i waits for a face not seen yet, ${s}/(${s} − i + 1) throws on average. The ${k} bars add to ${v.toNumber().toFixed(3)}; they stay short because most faces are still new.`),
+        fast: `${parts.join(' + ')} = ${v}.`,
+        check: `At least ${k} throws (one per new face) and only a little more, since ${k} of ${s} faces are a small part of the collection: the last stage alone is ${s}/${s - k + 1}.`,
         data: { s, k },
       });
     }
@@ -71,6 +77,9 @@ export default {
       rule: 'E[all n types] = n·H_n ≈ n(ln n + 0.577). Die: 14.7. Coin: 3. Four suits: 25/3.',
       anchor: 'The geometric wait 1/p, applied once per stage, with the one change that p falls as your collection grows.',
       hints: ['Break the wait into stages by how many types you have.', 'Stage i has success probability (n − i)/n.', `Sum ${parts.slice(0, 3).join(' + ')} + …`],
+      picture: stageBars(n, n, `Stage i waits for a type not seen yet, ${n}/(${n} − i + 1) on average. The last stage alone takes ${n}; all ${n} bars add to ${n}·H_${n} ≈ ${v.toNumber().toFixed(2)}.`),
+      fast: `${n}·H_${n} = ${n} × ${harmonic(n).toNumber().toFixed(3)} ≈ ${v.toNumber().toFixed(2)}.`,
+      check: `The last missing type alone takes ${n} on average, and the first takes 1, so the total sits well above ${n + 1}; n(ln n + 0.58) ≈ ${(n * (Math.log(n) + 0.5772)).toFixed(1)} is a quick estimate.`,
       data: { s: n, k: n },
     });
   },

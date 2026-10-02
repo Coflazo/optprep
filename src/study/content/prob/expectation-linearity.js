@@ -131,9 +131,12 @@ export default {
 
     sec('speed'),
     { type: 'callout', tone: 'speed', text: 'An expected count needs no distribution: chance of one event × number of events. E[total of n dice] = 3.5n; E[heads in n tosses] = n/2.' },
-    { type: 'callout', tone: 'speed', text: 'Symmetric payouts: if the payout distribution is symmetric about a value, that value is the EV. A die is symmetric about 3.5, the sum of two dice about 7.' },
     { type: 'check', scope: 'expected counts in one line', questions: [
       { make: (rng) => { const a = rng.int(4, 20), b = rng.pick([6, 12, 18]), ev = a / 2 + b / 6; return { type: 'number', q: `${a} coins are tossed and ${b} dice thrown. What is the expected number of heads plus sixes?`, answer: ev, hints: ['One indicator per coin (chance 1/2) and one per die (chance 1/6).', 'Add all the chances.'], explain: `${a}/2 + ${b}/6 = ${a / 2} + ${b / 6} = ${ev}.` }; } },
+    ] },
+    { type: 'callout', tone: 'speed', text: 'Symmetric payouts: if the payout distribution is symmetric about a value, that value is the EV. A die is symmetric about 3.5, the sum of two dice about 7.' },
+    { type: 'check', scope: 'symmetric payouts', questions: [
+      { type: 'number', q: 'A game pays €2 with chance 0.1, €5 with chance 0.4, €8 with chance 0.4 and €11 with chance 0.1. What is the EV, in euros?', answer: 6.5, tolerance: 1e-9, hints: ['Pair the values from the outside in. Do the pairs have equal chances?'], explain: '2 and 11 both have 0.1, 5 and 8 both have 0.4: symmetric about the midpoint 6.5, so EV = 6.5. Check: 0.2 + 2 + 3.2 + 1.1 = 6.5.' },
     ] },
 
     sec('rule'),
@@ -147,11 +150,15 @@ export default {
       ['P(sum is 7)', 'a probability, not an average', frac(6, 36)],
     ] },
     { type: 'callout', tone: 'edge', text: 'Edge cases: the expected value of a constant is the constant. An expected value need not be a possible outcome (a die never shows 3.5). A game is fair at exactly one price, its EV.' },
-    { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: dice-game fair prices and linearity questions in Beat the Odds, expected dice totals in Intervals, and the fair value of a bundle in Orderbooks. The next lesson, symmetry, uses indicators again.' },
-    { type: 'check', scope: 'mean versus most likely versus probability', questions: [
+    { type: 'check', scope: 'mean versus most likely versus probability, and a constant', questions: [
       mc({ q: 'Two dice. Which of these is not 7?', right: 'the expected larger face', at: 1,
         wrong: [['the expected sum', 'E[sum] = 3.5 + 3.5 = 7'], ['the most likely sum', 'sum 7 has the most pairs, 6 of 36'], ['the expected larger face plus the expected smaller face', 'larger + smaller is the sum, whose mean is 7']],
         explain: `The expected larger face is ${dec(eMax, 2)}; the other three are all 7.` }),
+      { type: 'number', q: 'A game pays €4 whatever happens. What is its fair price, in euros?', answer: 4, explain: 'The expected value of a constant is the constant, and the fair price is the EV: €4.' },
+    ] },
+    { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: dice-game fair prices and linearity questions in Beat the Odds, expected dice totals in Intervals, and the fair value of a bundle in Orderbooks. The next lesson, symmetry, uses indicators again.' },
+    { type: 'check', scope: 'linearity for a bundle', questions: [
+      { type: 'choice', q: 'Asset A is worth 30 on average and asset B 50. They tend to move together. What is the expected value of the bundle A + B?', options: ['80', 'cannot tell without knowing how they move together', '1500', '40'], answer: 0, traps: { 1: 'E[A + B] = E[A] + E[B] holds with or without independence', 2: 'multiplied the means: the bundle is a sum', 3: 'averaged the two instead of adding them' }, explain: 'Linearity: E[A + B] = 30 + 50 = 80, whatever the link between A and B.' },
     ] },
 
     sec('mastery', 'Mastery check'),

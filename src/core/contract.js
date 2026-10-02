@@ -2,7 +2,7 @@
 // Tests run validateItem over thousands of generated items per section.
 import { positionOutcome } from './check.js';
 
-export const SECTIONS = ['bto', 'nl', 'll', 'iv', 'ob'];
+export const SECTIONS = ['mm', 'bto', 'nl', 'll', 'iv', 'ob'];
 export const KINDS = ['mcq', 'rank', 'interval', 'orderbook'];
 export const RANK_MARGIN = 0.02;
 
@@ -21,11 +21,13 @@ export function validateItem(it) {
   else s.steps.forEach((st, i) => { if (!str(st.say) || !str(st.why)) e.push(`solution.steps[${i}] needs say and why`); });
   if (!str(s?.rule)) e.push('solution.rule missing');
   if (!str(s?.anchor)) e.push('solution.anchor missing');
+  if (s) e.push(...validateSolution(s));
   if (!Array.isArray(it.hints) || it.hints.length < 2 || !it.hints.every(str)) e.push('hints needs >= 2 strings');
 
   if (it.kind === 'mcq') {
     const o = it.options;
-    if (!Array.isArray(o) || o.length !== 5) e.push('mcq needs exactly 5 options');
+    const n = it.optionCount ?? 5; // the 80-in-8 has 4 options; every other mcq section 5
+    if (!Array.isArray(o) || o.length !== n) e.push(`mcq needs exactly ${n} options`);
     else {
       if (new Set(o.map((x) => x.label)).size !== o.length) e.push('mcq option labels must be distinct');
       if (!(Number.isInteger(it.answerIndex) && o[it.answerIndex])) e.push('answerIndex invalid');
@@ -62,5 +64,23 @@ export function validateItem(it) {
       }
     }
   }
+  return e;
+}
+
+// The worked solution every item carries: what is asked, a picture (or null where none
+// helps), steps with the arithmetic of each move in `math`, the exam-speed path and a
+// sanity check that would catch a wrong option. Diagram specs are checked against the
+// study diagram validators in tests/core/solutions.test.js.
+export function validateSolution(s) {
+  const e = [];
+  for (const k of ['ask', 'fast', 'check']) if (!str(s[k])) e.push(`solution.${k} missing`);
+  if (!('picture' in s)) e.push('solution.picture missing (null only where no picture helps)');
+  else if (s.picture !== null) {
+    const p = s.picture;
+    if (!(str(p?.diagram) && p.spec && typeof p.spec === 'object' && str(p.caption))) e.push('solution.picture needs diagram, spec and caption');
+  }
+  const steps = Array.isArray(s.steps) ? s.steps : [];
+  steps.forEach((st, i) => { if (st.math != null && !str(st.math)) e.push(`solution.steps[${i}].math must be text`); });
+  if (!steps.some((st) => str(st.math))) e.push('solution needs math on at least one step');
   return e;
 }

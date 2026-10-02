@@ -124,9 +124,14 @@ export default {
 
     sec('ruin', "Gambler's ruin"),
     { type: 'text', text: 'A fair ±1 walk starting at k stops at 0 (ruin) or at N (target). First step: p_{k} = ½ p_{k − 1} + ½ p_{k + 1}, with p_{0} = 0 and p_{N} = 1. Each p_{k} is the average of its neighbours, so the points lie on a straight line from 0 to 1: p_{k} = k/N.' },
+    { type: 'check', scope: "the fair gambler's ruin", questions: [{ hinge: true, make: (rng) => { const N = rng.int(5, 12), k0 = rng.int(1, N - 1), k = 2 * k0 === N ? k0 - 1 : k0; return mc({ q: `A fair ±1 walk starts at ${k} and stops at 0 or at ${N}. What is P(it reaches ${N} before 0)?`, right: frac(k, N), wrong: [['1/2', 'ignored where the walk starts'], [frac(N - k, N), 'that is P(reaching 0 first)'], [frac(1, N), 'counted only the path that goes straight up']], explain: `p_{k} = k/N = ${frac(k, N)}.` }, rng); } }] },
     { type: 'text', text: 'Expected length: E_{k} = 1 + ½ E_{k − 1} + ½ E_{k + 1} with E_{0} = E_{N} = 0. Try E_{k} = k(N − k): the right side is 1 + ½(k − 1)(N − k + 1) + ½(k + 1)(N − k − 1) = 1 + kN − k^{2} − 1 = k(N − k). It balances.' },
     { type: 'diagram', diagram: 'numberline', spec: { min: 0, max: 10, barriers: [0, 10], start: 3, target: 10, path: [3, 4, 3, 2, 3, 4, 5, 4, 5, 6, 7] }, caption: `Start at 3, absorbing ends at 0 and 10. P(reach 10 first) = ${frac(3, 10)}; expected steps 3 × 7 = ${3 * 7}. The path below is one possible walk.` },
-    { type: 'check', scope: "the fair gambler's ruin", questions: [{ hinge: true, make: (rng) => { const N = rng.int(5, 12), k0 = rng.int(1, N - 1), k = 2 * k0 === N ? k0 - 1 : k0; return mc({ q: `A fair ±1 walk starts at ${k} and stops at 0 or at ${N}. What is P(it reaches ${N} before 0)?`, right: frac(k, N), wrong: [['1/2', 'ignored where the walk starts'], [frac(N - k, N), 'that is P(reaching 0 first)'], [frac(1, N), 'counted only the path that goes straight up']], explain: `p_{k} = k/N = ${frac(k, N)}.` }, rng); } }] },
+    { type: 'check', scope: 'expected length of the walk', questions: [
+      { make: (rng) => { const N = rng.int(6, 12), k = rng.int(1, N - 1); return mc({ q: `A fair ±1 walk starts at ${k} and stops at 0 or at ${N}. Expected number of steps?`, right: String(k * (N - k)),
+        wrong: [[String(k * N), 'used k × N: the walk can also end at N'], [String(N - k), 'counted the straight path up only'], [String((N - k) ** 2), 'squared the distance to the top']],
+        explain: `E_{k} = k(N − k) = ${k} × ${N - k} = ${k * (N - k)}.` }, rng); } },
+    ] },
 
     sec('predict'),
     { type: 'predict', question: 'Fair coin. Which takes longer to appear on average: HT or HH?', answer: `HH: ${HH} tosses against ${HT} for HT.`, explain: `After H, a failed HH attempt (a T) sends you back to start, but a failed HT attempt (another H) leaves you at "last toss H". For HT: e_{1} = 1 + ½ e_{1} gives ${HT1}, and e_{0} = 2 + e_{1} = ${HT}.` },
@@ -148,11 +153,14 @@ export default {
 
     sec('speed'),
     { type: 'callout', tone: 'speed', text: 'Races: P(A before B) = P(A) / (P(A) + P(B)) per step. Throw away the steps where nothing happens.' },
-    { type: 'callout', tone: 'speed', text: 'Fair walk between 0 and N from k: P(reach N first) = k/N, expected steps k(N − k). A self-loop with chance q holds you for 1/(1 − q) steps on average.' },
     { type: 'check', scope: 'the race shortcut', questions: [
       { make: (rng) => { const [a, b] = rng.pick([[7, 12], [7, 2], [8, 12], [6, 11], [7, 11], [5, 10]]), wa = ways(a), wb = ways(b); return mc({ q: `Two dice are rolled repeatedly. What is P(a sum of ${a} appears before a sum of ${b})?`, right: frac(wa, wa + wb),
         wrong: [[frac(wa, 36), 'the chance on one roll only'], ['1/2', 'treated the two sums as equally likely'], [frac(wb, wa + wb), 'swapped the two sums']],
         explain: `Sum ${a}: ${wa} way${wa === 1 ? '' : 's'}, sum ${b}: ${wb} way${wb === 1 ? '' : 's'}. Ignore every other roll: ${wa}/(${wa} + ${wb}) = ${frac(wa, wa + wb)}.` }, rng); } },
+    ] },
+    { type: 'callout', tone: 'speed', text: 'Fair walk between 0 and N from k: P(reach N first) = k/N, expected steps k(N − k). A self-loop with chance q holds you for 1/(1 − q) steps on average.' },
+    { type: 'check', scope: 'the two ruin results', questions: [
+      { type: 'choice', q: 'A fair ±1 walk starts at 2 and stops at 0 or at 8. P(reach 8 first) and the expected number of steps?', options: ['1/4 and 12 steps', '1/4 and 16 steps', '3/4 and 12 steps', '1/2 and 12 steps'], answer: 0, traps: { 1: 'used k × N for the steps instead of k(N − k)', 2: 'that is P(reaching 0 first)', 3: 'ignored where the walk starts' }, explain: 'k/N = 2/8 = 1/4, and k(N − k) = 2 × 6 = 12.' },
     ] },
 
     sec('rule'),
@@ -166,9 +174,13 @@ export default {
       ['Long-run share of time (no ends)', 'none', 'a different tool: balance of flows'],
     ] },
     { type: 'callout', tone: 'edge', text: 'Edge cases: a state with a self-loop of chance q holds you for 1/(1 − q) steps on average (a geometric wait). With a biased walk, p_{k} = k/N no longer holds; the first-step equations still do, only their solution changes.' },
-    { type: 'callout', tone: 'transfer', text: "Same idea elsewhere: the gambler's-ruin, random-walk, polygon-walk, pattern-waiting and race-to-k families in Beat the Odds; Markov graph rows in Likelihood List (their long-run version); and the geometric mean 1/p, now proved by e = 1 + (1 − p)e." },
-    { type: 'check', scope: 'self-loops', questions: [
+    { type: 'check', scope: 'the table and self-loops', questions: [
       { make: (rng) => { const [n, d] = rng.pick([[1, 2], [2, 3], [3, 4], [4, 5]]); return { type: 'number', q: `A state loops back to itself with chance ${n}/${d} and leaves otherwise. How many steps do you expect to spend in it (counting the step that leaves)?`, answer: d / (d - n), hints: ['e = 1 + q e.'], explain: `e = 1 + ${n}/${d} e, so e = 1/(1 − ${n}/${d}) = ${d / (d - n)}.` }; } },
+      { type: 'choice', q: 'You want the expected number of steps. Which value do you give each absorbing end?', options: ['0 at every end', '1 at the target, 0 at the other ends', 'the payoff at each end'], answer: 0, traps: { 1: 'those are the end values for P(reach the target first)', 2: 'those are the end values for an expected payoff' }, explain: 'At an end no more steps are taken, so e = 0 there. The +1 per step goes into the equations.' },
+    ] },
+    { type: 'callout', tone: 'transfer', text: "Same idea elsewhere: the gambler's-ruin, random-walk, polygon-walk, pattern-waiting and race-to-k families in Beat the Odds; Markov graph rows in Likelihood List (their long-run version); and the geometric mean 1/p, now proved by e = 1 + (1 − p)e." },
+    { type: 'check', scope: 'the geometric mean by first step', questions: [
+      { type: 'number', q: 'Wait for a success with p = 1/4 per try. Solve e = 1 + (1 − p)e. What is e?', answer: 4, hints: ['Move the (3/4)e to the left side.'], explain: 'e − (3/4)e = 1, so e/4 = 1 and e = 4 = 1/p.' },
     ] },
 
     sec('mastery', 'Mastery check'),

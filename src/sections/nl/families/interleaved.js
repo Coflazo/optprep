@@ -17,7 +17,7 @@ function strandTerm(st, j) {
   return Q.of(x);
 }
 const describe = (st) => ({
-  arith: `adds ${st.d}`, geo: `multiplies by ${st.r}`, quad: `has gaps growing by ${st.s}`, fib: 'adds its previous two terms',
+  arith: st.d < 0 ? `subtracts ${-st.d}` : `adds ${st.d}`, geo: `multiplies by ${st.r}`, quad: `has gaps growing by ${st.s}`, fib: 'adds its previous two terms',
 })[st.k];
 const strandCheck = (xs, st) => (st.k === 'geo' ? `ratios ${ratiosQ(xs).map(L).join(', ')}` : st.k === 'fib' ? `${L(xs[0])} + ${L(xs[1])} = ${L(xs[2])}` : `gaps ${list(diffsQ(xs))}`);
 
@@ -26,6 +26,7 @@ export default family({
   title: 'Two interleaved sequences',
   skill: 'When neighbours make no sense, read every second term',
   levels: [2, 3, 4, 5],
+  view: 'strands',
   show: (d, p) => p.show,
   missing: 2,
   params: (rng, d) => {
@@ -46,6 +47,10 @@ export default family({
       { say: `Neighbouring terms follow no single rule, so split them: positions 1, 3, 5, … give ${list(A)}; positions 2, 4, 6, … give ${list(B)}.`, why: 'Two sequences written alternately make neighbours unrelated but every-second term regular.' },
       { say: `The first strand ${describe(strands[0])} (${strandCheck(A, strands[0])}); the second ${describe(strands[1])} (${strandCheck(B, strands[1])}).`, why: 'Each strand is solved on its own, as an ordinary sequence.' },
     ];
+  },
+  math: ({ strands }, all, k) => {
+    const st = strands[k % 2], a = all[k - 2], b = all[k];
+    return st.k === 'geo' ? `${L(a)} × ${st.r} = ${L(b)}` : st.k === 'fib' && k >= 4 ? `${L(all[k - 4])} + ${L(a)} = ${L(b)}` : `${L(a)} ${b.cmp(a) < 0 ? '−' : '+'} ${L(b.sub(a).n < 0n ? a.sub(b) : b.sub(a))} = ${L(b)}`;
   },
   compute: ({ strands }, all, k) => `Term ${k + 1} sits at an ${k % 2 === 0 ? 'odd' : 'even'} position, so it continues the ${k % 2 === 0 ? 'first' : 'second'} strand: ${L(all[k])}.`,
   rivals: ({ strands }, { shown, after }) => {

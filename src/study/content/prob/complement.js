@@ -68,8 +68,11 @@ export default {
     sec('picture'),
     { type: 'text', text: 'Picture the whole sample space as a square of area 1. A covers part of it; everything else is "not A". The two areas add to 1, so knowing one gives the other.' },
     { type: 'diagram', diagram: 'unitsquare', spec: { regions: [{ points: [[0, 0], [0.3, 0], [0.3, 1], [0, 1]], area: 0.3, label: 'A: 0.3', tone: 1 }, { points: [[0.3, 0], [1, 0], [1, 1], [0.3, 1]], area: 0.7, label: 'not A: 0.7', tone: 3 }] }, caption: 'The sample space as area 1. A and "not A" never overlap and together fill the square: 0.3 + 0.7 = 1.' },
+    { type: 'check', scope: 'the unit square', questions: [
+      { make: (rng) => { const a = rng.pick([0.15, 0.2, 0.25, 0.35, 0.4, 0.45]); return { type: 'number', q: `In the unit square, A has area ${a}. What is P(not A)?`, answer: Math.round((1 - a) * 100) / 100, explain: `A and "not A" fill the square without overlap, so P(not A) = 1 − ${a} = ${Math.round((1 - a) * 100) / 100}.` }; } },
+    ] },
     { type: 'diagram', diagram: 'grid', spec: diceGrid((a, b) => a === 6 || b === 6), caption: 'Two dice, at least one six: an L of 11 cells along the edges. The other cells form a 5 × 5 block with no six: 36 − 25 = 11.' },
-    { type: 'check', scope: 'reading the two pictures', questions: [
+    { type: 'check', scope: 'the two-dice grid', questions: [
       { type: 'number', q: 'In the two-dice grid, how many cells have no six?', answer: 25, explain: 'First die 1 to 5 and second die 1 to 5: a 5 × 5 block.' },
       mc({ q: 'Two dice. What is P(at least one six)?', right: frac(11, 36), at: 1,
         wrong: [[frac(2, 6), 'added 1/6 + 1/6, counting (6, 6) twice'], [frac(1, 36), 'that is P(both sixes)'], [frac(25, 36), 'that is P(no six), the complement']],
@@ -121,11 +124,16 @@ export default {
 
     sec('speed'),
     { type: 'callout', tone: 'speed', text: `Anchor values: (5/6)^{4} ≈ ${dec((5 / 6) ** 4, 2)}, so four dice give just over 1/2 for at least one six; (1/2)^{10} = 1/1024 ≈ 1/1000.` },
-    { type: 'callout', tone: 'speed', text: `The quick sum n × (chance per trial) is always an upper bound for "at least one", and close when it is small: two dice give 2/6 ≈ ${dec(2 / 6, 2)} against the true ${dec(11 / 36, 2)}. Use it to bracket the answer, never as the answer.` },
-    { type: 'check', scope: 'anchor values and the upper bound', questions: [
+    { type: 'check', scope: 'anchor values', questions: [
       mc({ q: 'Four fair dice. Which is closest to P(at least one six)?', right: dec(1 - (5 / 6) ** 4, 2), at: 1,
         wrong: [[dec(4 / 6, 2), 'added 4 × 1/6: that is only an upper bound'], [dec((5 / 6) ** 4, 2), 'that is P(no six)'], [dec((1 / 6) ** 4, 4), 'that is P(four sixes)']],
         explain: `1 − (5/6)^{4} = 1 − ${four.none}/${four.t} ≈ ${dec(1 - (5 / 6) ** 4, 3)}.` }),
+    ] },
+    { type: 'callout', tone: 'speed', text: `The quick sum n × (chance per trial) is always an upper bound for "at least one", and close when it is small: two dice give 2/6 ≈ ${dec(2 / 6, 2)} against the true ${dec(11 / 36, 2)}. Use it to bracket the answer, never as the answer.` },
+    { type: 'check', scope: 'the quick sum is an upper bound', questions: [
+      mc({ q: 'Three fair dice. The quick sum gives 3 × 1/6 = 0.5. What is P(at least one six), to 2 decimals?', right: dec(1 - (5 / 6) ** 3, 2), at: 0,
+        wrong: [['0.5', 'took the quick sum as the answer: it is only an upper bound'], [dec((5 / 6) ** 3, 2), 'that is P(no six), the complement']],
+        explain: `1 − (5/6)^{3} = 1 − 125/216 ≈ ${dec(1 - (5 / 6) ** 3, 2)}: just under the bound 0.5, because the sum counts throws with two sixes more than once.` }),
     ] },
 
     sec('rule'),
@@ -139,11 +147,15 @@ export default {
       ['At least one ace in k cards', 'no ace', 'C(48, k) of C(52, k)'],
     ] },
     { type: 'callout', tone: 'edge', text: 'Edge cases: P(A) = 0 exactly when P(not A) = 1. With zero trials, "at least one" is impossible: 1 − 1 = 0. The complement of the complement is the event itself.' },
-    { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: the birthday problem is 1 − P(all birthdays different); the at-least-one family in Beat the Odds; Likelihood List rows saying "at least one" are usually large. Whenever the direct count splits into cases, try the other side.' },
     { type: 'check', scope: 'the contrast table', questions: [
       mc({ q: 'Three fair dice. What is P(not all the same)?', right: frac(216 - 6, 216), at: 2,
         wrong: [[frac(6, 216), 'that is P(all the same)'], [frac(6 * 5 * 4, 216), 'that is P(all different), which also excludes throws with exactly one pair'], [frac(215, 216), 'only removed (6, 6, 6), not all six triples']],
         explain: `All the same: 6 of 216 throws. 1 − 6/216 = ${frac(210, 216)}.` }),
+      { type: 'number', q: 'A coin is tossed 0 times. What is P(at least one head)?', answer: 0, explain: 'With no tosses, "no head" is certain: 1 − 1 = 0.' },
+    ] },
+    { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: the birthday problem is 1 − P(all birthdays different); the at-least-one family in Beat the Odds; Likelihood List rows saying "at least one" are usually large. Whenever the direct count splits into cases, try the other side.' },
+    { type: 'check', scope: 'the other side elsewhere', questions: [
+      { type: 'choice', q: 'P(at least two of 23 people share a birthday) is 1 minus the probability of which event?', options: ['all 23 birthdays are different', 'exactly two share a birthday', 'nobody is born on 1 January', 'all 23 share one birthday'], answer: 0, traps: { 1: 'that is one case of the event, not its complement', 2: 'that is the complement of a different event', 3: 'that is the complement of "not all the same"' }, explain: '"At least two share" fails only when every birthday is different, so P = 1 − P(all different), one product.' },
     ] },
 
     sec('mastery', 'Mastery check'),

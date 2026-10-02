@@ -1,4 +1,5 @@
 import { h, mount } from '../dom.js';
+import { activePreset } from '../../../config/presets.js';
 import { GAMES, GAME_BY_ID } from '../../zapn/index.js';
 import { ZAPN_TARGETS } from '../../../config/sections.js';
 import { zapnMeets, zapnReadiness } from '../../core/readiness.js';
@@ -13,25 +14,21 @@ function best(runs, target) {
 }
 
 export function zapnHub(root, { store }) {
+  const games = GAMES.filter((g) => activePreset().zapn.includes(g.id));
   mount(root,
-    h('h1', {}, 'Zap-N'),
-    h('p', { class: 'muted' }, 'Nine short games. Learn each one, practise it with feedback, then run it in exam mode. A game is ready after three exam runs in a row at target.'),
-    h('div', { class: 'panel' }, h('table', {},
-      h('thead', {}, h('tr', {}, h('th', {}, 'Game'), h('th', {}, 'Trains'), h('th', { style: { textAlign: 'right' } }, 'Best'), h('th', {}, 'Target'), h('th', {}, 'Status'), h('th', {}))),
-      h('tbody', {}, GAMES.map((g) => {
-        const target = ZAPN_TARGETS[g.id];
-        const runs = store.zapnRuns(g.id);
-        const r = zapnReadiness(runs, target);
-        return h('tr', {},
-          h('td', {}, h('strong', {}, g.title)),
-          h('td', { class: 'muted' }, g.skill || '—'),
-          h('td', { class: 'num', style: { textAlign: 'right' } }, fmtVal(target.metric, best(runs, target))),
-          h('td', { class: 'muted small-note' }, target.label),
-          h('td', {}, g.pending ? h('span', { class: 'badge warn' }, 'Being built') : r.ready ? h('span', { class: 'badge ok' }, 'Ready') : h('span', { class: 'badge' }, `Streak ${r.streak}/${r.needed}`)),
-          h('td', { style: { textAlign: 'right', whiteSpace: 'nowrap' } }, g.pending ? null : [
-            h('a', { class: 'btn small', href: `#/zapn/${g.id}/practice` }, 'Practise'), ' ',
-            h('a', { class: 'btn small', href: `#/zapn/${g.id}/exam` }, 'Exam')]));
-      })))));
+    h('h1', {}, 'Zap-N games'),
+    h('p', { class: 'lede' }, 'Short games that test speed, memory and planning. Each has a coach, a practice mode and an exam mode.'),
+    activePreset().note ? h('p', { class: 'muted small-note' }, activePreset().note) : null,
+    h('ul', { class: 'task-list' }, games.map((g) => {
+      const target = ZAPN_TARGETS[g.id];
+      const runs = store.zapnRuns(g.id);
+      const r = zapnReadiness(runs, target);
+      const top = best(runs, target);
+      return h('li', {}, h('a', { class: 'task-row', href: g.pending ? '#/zapn' : `#/zapn/${g.id}/practice` },
+        h('span', { class: 'task-name' }, g.title, h('span', { class: 'task-blurb' }, g.skill || '')),
+        r.ready ? h('span', { class: 'stamp stamp-mastered' }, 'Ready') : null,
+        h('span', { class: 'task-progress num' }, top == null ? 'not played' : `best ${fmtVal(target.metric, top)}`)));
+    })));
 }
 
 export function zapnGame(root, { store, id, mode = 'practice' }) {

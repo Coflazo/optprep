@@ -54,9 +54,12 @@ export default {
       ] },
     { type: 'text', text: `The terms are **running totals of the counting numbers**: 1, 1 + 2, 1 + 2 + 3, and so on, giving ${seq(T10.slice(0, 6))}. The name comes from dots stacked in a triangle: one dot in the top row, two in the next, three below that. An item may start partway along the list, multiply every term by 2 or 3, or add a constant to each.` },
     { type: 'list', items: [`What number comes next?  ${seq(E1.slice(0, 5))}, ?`, `What number comes next?  ${seq(E3.slice(0, 5))}, ?`, `Which number replaces the question mark?  ${seq(E1.slice(0, 2))}, ?, ${seq(E1.slice(3, 5))}`] },
-    { type: 'text', text: `Not this lesson: gaps in odd numbers 3, 5, 7, 9, which make squares (${seq(SQ)}). And note the overlap with the previous lesson: any "add 1, 2, 3, …" sequence such as ${seq(ADD)} is a triangular list shifted by a constant. This lesson is about knowing the list itself and jumping to any T(m) with a formula.` },
     { type: 'check', scope: 'the cue: running totals', questions: [
       { make: (rng) => { const s = rng.int(1, 5), t = tr(s, 1, 0, 5), q = Array.from({ length: 5 }, (_, i) => (i + s) ** 2), p = Array.from({ length: 5 }, (_, i) => (i + s + 1) * (i + s + 3)); return pick(rng, 'Which sequence is a run of triangular numbers?', seq(t), [[seq(q), `those are squares: gaps ${seq(g(q))} are odd numbers`], [seq(p), `its gaps ${seq(g(p))} rise by 2, not by 1`]], `${seq(t)} has gaps ${seq(g(t))}: rising by 1.`); } },
+    ] },
+    { type: 'text', text: `Not this lesson: gaps in odd numbers 3, 5, 7, 9, which make squares (${seq(SQ)}). And note the overlap with the previous lesson: any "add 1, 2, 3, …" sequence such as ${seq(ADD)} is a triangular list shifted by a constant. This lesson is about knowing the list itself and jumping to any T(m) with a formula.` },
+    { type: 'check', scope: 'the overlap with add-the-index', questions: [
+      { type: 'choice', q: '10, 11, 13, 16, 20: what is it?', options: ['triangular numbers plus 10', 'squares plus a constant', 'unrelated to triangular numbers'], answer: 0, traps: { 1: 'gaps 1, 2, 3, 4 count up by 1; squares have odd gaps', 2: '"add 1, 2, 3, …" is a triangular list shifted' }, explain: 'T = 0, 1, 3, 6, 10, plus 10 each: 10, 11, 13, 16, 20.' },
     ] },
 
     S('why'),
@@ -71,9 +74,12 @@ export default {
     S('picture'),
     { type: 'text', text: `Stack T(m) dots in a triangle, then place a second, flipped copy against it. Together they fill a rectangle m dots tall and m + 1 dots wide. So two triangles hold m(m + 1) dots and one holds **T(m) = m(m + 1)/2**. In the picture m = ${DOT}: a ${DOT} × ${DOT + 1} rectangle of ${DOT * (DOT + 1)} dots, split into two triangles of ${tri(DOT)}.` },
     { type: 'diagram', diagram: 'dots', spec: { width: 24 * 2 + DOT * 30, height: 24 * 2 + (DOT - 1) * 30, items: dotItems(DOT), label: 'A rectangle of dots split into two triangles' }, caption: `First colour: the triangle ${Array.from({ length: DOT }, (_, i) => i + 1).join(' + ')} = ${tri(DOT)}. Second colour: the same triangle flipped. Together: ${DOT} × ${DOT + 1} = ${DOT * (DOT + 1)}, so one triangle is ${DOT * (DOT + 1)} ÷ 2.` },
-    { type: 'diagram', diagram: 'ladder', spec: { mode: 'diff', rows: ladderRows(T10.slice(0, 7), 2), predicted: true }, caption: `The ladder: gaps ${seq(g(T10.slice(0, 6)))} are the counting numbers, second row ${g(g(T10))[0]}. The gap into T(m) is m itself, so the gaps tell you where you are in the list.` },
     { type: 'check', scope: 'T(m) = m(m + 1)/2', questions: [
       { make: (rng) => { const m = rng.int(8, 16); return num(`What is T(${m}) = ${m}(${m} + 1)/2?`, tri(m), `${m} × ${m + 1} / 2 = ${tri(m)}.`, ['Multiply m by m + 1.', 'Halve the product.']); } },
+    ] },
+    { type: 'diagram', diagram: 'ladder', spec: { mode: 'diff', rows: ladderRows(T10.slice(0, 7), 2), predicted: true }, caption: `The ladder: gaps ${seq(g(T10.slice(0, 6)))} are the counting numbers, second row ${g(g(T10))[0]}. The gap into T(m) is m itself, so the gaps tell you where you are in the list.` },
+    { type: 'check', scope: 'the gap tells you m', questions: [
+      { type: 'number', q: 'The gap into a triangular number is 9. What is that triangular number?', answer: 45, explain: 'The gap into T(m) is m, so it is T(9) = 9 × 10 / 2 = 45.' },
     ] },
 
     S('derivation'),
@@ -101,6 +107,9 @@ export default {
     ] },
     { type: 'diagram', diagram: 'ladder', spec: { mode: 'diff', rows: ladderRows(E3, 2), predicted: true }, caption: `A multiple with a shift: ${seq(E3.slice(0, 5))} has gaps ${seq(g(E3.slice(0, 5)))} (${E3k} × the counting numbers) and second row ${g(g(E3))[0]}. Divided by ${E3k} the gaps count ${seq(g(E3.slice(0, 5)).map((v) => v / E3k))}, so the terms are ${E3k} × T${shift(E3c)}, and the next is ${E3k} × ${tri(E3s + 5)}${shift(E3c)} = ${E3[5]}.` },
     { type: 'text', text: 'Order of work for the harder items: gaps first, then divide the gaps by their common factor k, then place m from the last divided gap, and only at the end compare one term with k × T(m) to find c. Guessing c first is guesswork; finding it last is one subtraction.' },
+    { type: 'check', scope: 'a multiple with a shift', questions: [
+      { type: 'number', q: 'What comes next?  4, 10, 18, 28, 40, ?', answer: 54, explain: 'Gaps 6, 8, 10, 12 are 2 × the counting numbers: the next gap is 14, so 40 + 14 = 54.' },
+    ] },
     { type: 'explain', prompt: 'Why do two copies of the triangle make an m × (m + 1) rectangle, and why is the gap into T(m) exactly m?', model: 'Row r of the triangle has r dots; the flipped copy fills the remaining m + 1 − r places in that row, so every row has m + 1 dots and there are m rows. T(m) adds the counting numbers up to m, so going from T(m − 1) to T(m) adds just the last one, m.', points: ['Each row of the rectangle has m + 1 dots, m rows in all', 'Two triangles fill it, so T(m) = m(m + 1)/2', 'T(m) − T(m − 1) = m, the position marker'] },
 
     S('worked'),
@@ -154,7 +163,6 @@ export default {
       [seq(ADD), seq(g(ADD)), String(g(g(ADD))[0]), 'triangular shifted by a constant'],
     ] },
     { type: 'callout', tone: 'edge', text: `Edge cases: 2 × T(m) = m(m + 1), so ${seq(E2.slice(0, 5))} is both "twice triangular" and "products of neighbours": the two readings give the same next term. T(0) = 0, so a list can start at 0. A shift c changes no gap, so read m from the gaps first.` },
-    { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: T(m − 1) = m(m − 1)/2 is the number of pairs among m people, "m choose 2" in counting problems. It is also the partial-sum pattern of the two-dice tent in Beat the Odds.' },
     { type: 'variation', base: `${seq(E15)}, ?  T(3) to T(${E1m - 1}); next T(${E1m}) = ${E1[5]}.`, rows: [
       { same: true, change: `Drop the first term: ${seq(E15.slice(1))}, ?`, effect: `Still ${E1[5]}. The last gap is still ${E1m - 1}, so the last term is still T(${E1m - 1}) and the next is T(${E1m}).` },
       { change: `Double every term: ${seq(DB.slice(0, 5))}, ?`, effect: `${DB[5]}. Gaps double to ${seq(g(DB.slice(0, 5)))}; halve them to place m. (This list is also ${E1m - 1} × ${E1m} read as neighbours multiplied.)` },
@@ -167,6 +175,7 @@ export default {
       { make: (rng) => { const m = rng.int(8, 20); return num(`T(${m - 1}) + T(${m}) = ?`, m * m, `Neighbouring triangular numbers add to a square: ${tri(m - 1)} + ${tri(m)} = ${m * m} = ${m}².`, ['Use the square check rather than two formulas.', `It is ${m}².`]); } },
     ] },
 
+    { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: T(m − 1) = m(m − 1)/2 is the number of pairs among m people, "m choose 2" in counting problems. It is also the partial-sum pattern of the two-dice tent in Beat the Odds.' },
     { type: 'transfer',
       near: { make: (rng) => { const m = rng.int(12, 30); return num(`A shop stacks cans in a flat triangle: 1 can in the top row, and each row below has one more can. How many cans are in a stack with ${m} rows?`, tri(m), `A running total 1 + 2 + … + ${m} = T(${m}) = ${m} × ${m + 1} / 2 = ${tri(m)}.`, ['Rows hold 1, 2, 3, … cans.', `T(${m}) = ${m}(${m} + 1)/2: halve the even one first.`]); } },
       far: { make: (rng) => { const n = rng.pick([6, 8, 10, 12, 20]); return num(`Two fair ${n}-sided dice are thrown. In how many of the ${n * n} equally likely outcomes is the first die strictly lower than the second?`, tri(n - 1), `If the second die shows v, the first has v − 1 lower values: 0 + 1 + 2 + … + ${n - 1} = T(${n - 1}) = ${tri(n - 1)}.`, ['Fix the second die at 1, 2, 3, … and count the lower values for the first.', `The counts run 0, 1, 2, …, ${n - 1}: a running total.`]); } },

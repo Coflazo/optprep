@@ -115,6 +115,9 @@ export default {
       { t: 22, say: `${HT.a} × ${num(HT.b)} = ${num(HT.n)}. Check: all hands are C(52, 5) = ${num(C(52, 5))}, and about a quarter to a third of them having exactly ${HT.k} hearts is plausible.` },
       { t: 34, say: `The multiplication was long; I allow 3%: about [${num(Math.round(HT.n / B3.f))}, ${num(Math.round(HT.n * B3.f))}].` },
     ] },
+    { type: 'check', scope: 'the slip in the think-aloud', questions: [
+      { type: 'choice', q: 'In the think-aloud, the first try gave C(39, 3) = 39 × 38 × 37. What was wrong?', options: ['that counts ordered picks', 'it should be 39 × 39 × 39', 'it should be C(52, 3)'], answer: 0, traps: { 1: 'cards are not replaced', 2: 'the other three come from the 39 non-hearts' }, explain: 'Divide by 3! = 6: 54,834 ÷ 6 = 9,139.' },
+    ] },
 
     sec('predict'),
     { type: 'predict', question: 'Which is bigger: the number of ways to choose 3 people from 10, or to choose 7 people from 10?', answer: `They are equal: C(10, 3) = C(10, 7) = ${C(10, 3)}.`, explain: 'Choosing who is in is the same as choosing who is out.' },
@@ -138,8 +141,11 @@ export default {
 
     sec('speed'),
     { type: 'callout', tone: 'speed', text: `Cancel before multiplying: C(12, 4) = (12 × 11 × 10 × 9)/(4 × 3 × 2 × 1) = 11 × 5 × 9 = ${C(12, 4)}. Use C(n, k) = C(n, n − k) to keep k small. Worth knowing: C(52, 5) = ${num(C(52, 5))}, C(n, 2) = n(n − 1)/2.` },
-    { type: 'callout', tone: 'speed', text: 'Big counts: work in powers of ten. C(40, 6) ≈ 40^{6}/720 × a correction (the top factors shrink): write each factor, round, and track the ledger as in mental products.' },
     { type: 'check', scope: 'cancelling first', questions: [{ make: chooseQ }] },
+    { type: 'callout', tone: 'speed', text: 'Big counts: work in powers of ten. C(40, 6) ≈ 40^{6}/720 × a correction (the top factors shrink): write each factor, round, and track the ledger as in mental products.' },
+    { type: 'check', scope: 'big counts', questions: [
+      { type: 'choice', q: 'C(40, 6) ≈ 40^6/720 needs a correction. Which way?', options: ['down: the top factors shrink', 'up: the top factors grow', 'none: 40^6/720 is exact'], answer: 0, traps: { 1: '40, 39, …, 35 are all at most 40', 2: 'the factors are not all 40' }, explain: '40 × 39 × … × 35 is below 40^6, so the true value is lower.' },
+    ] },
 
     sec('rule'),
     { type: 'callout', tone: 'rule', text: `Count ordered, divide by orderings that do not matter (k! or repeat factorials); independent parts multiply; grid paths C(a + b, a). Small → exact point; big → rounded estimate, ×/÷ ${dec(B3.f, 2)} to ${dec(B6.f, 2)}.` },
@@ -158,13 +164,13 @@ export default {
       { fusion: true, change: `Roles are given AND there are ${VB.n + 1} people`, effect: `Both raise the count: ${VB.n + 1} × ${VB.n} × ${VB.n - 1} = ${P(VB.n + 1, VB.k)}, ordered picks from the bigger group.` },
     ] },
     { type: 'callout', tone: 'edge', text: 'Edge cases: C(n, 0) = C(n, n) = 1 (choose nobody, or everybody). A word with all letters different is plain n!. A hand with 0 hearts is C(39, 5), not zero. A word with one letter repeated three times divides by 3! = 6, not by 3.' },
-    { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: every probability count in Beat the Odds (hands, coin sequences with exactly k heads, grid walks) is one of these counts divided by a total. "Choose positions for one kind" counts binary strings, paths and heads alike.' },
     { type: 'check', scope: 'contrast and edge cases', questions: [
       mc({ q: 'How many 5-card hands contain no hearts?', right: `C(39, 5) = ${num(C(39, 5))}`, wrong: [['0: no hearts means no hand', 'a hand of five non-hearts is still a hand'], [`C(13, 0) = 1`, 'counted only the (empty) choice of hearts'], [`C(52, 5) − 13 = ${num(C(52, 5) - 13)}`, 'subtracted the hearts instead of choosing from the non-hearts']], explain: 'All five cards come from the 39 non-hearts.' }),
     ] },
+    { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: every probability count in Beat the Odds (hands, coin sequences with exactly k heads, grid walks) is one of these counts divided by a total. "Choose positions for one kind" counts binary strings, paths and heads alike.' },
     { type: 'transfer',
       near: { make: (rng) => { const n = rng.int(8, 14), k = rng.int(2, 4); return ivq(`A pizza place offers ${n} toppings. How many different pizzas have exactly ${k} toppings? Type your interval.`, C(n, k), `C(${n}, ${k}) = ${P(n, k)} ÷ ${fact(k)} = ${C(n, k)}. Exact: a point.`); } },
-      far: { type: 'number', q: 'Outside the OA: how many 10-bit binary strings contain exactly 4 ones?', answer: C(10, 4), explain: `Choose the positions of the 4 ones among 10: C(10, 4) = ${C(10, 4)}, the same count as grid paths with 4 rights and 6 ups.` },
+      far: { type: 'number', q: 'Outside the assessment: how many 10-bit binary strings contain exactly 4 ones?', answer: C(10, 4), explain: `Choose the positions of the 4 ones among 10: C(10, 4) = ${C(10, 4)}, the same count as grid paths with 4 rights and 6 ups.` },
       principle: mc({ q: 'Which idea carried over from grid paths to binary strings?', right: 'Choose positions for one kind; the rest are forced', wrong: [['Divide by the repeat factorial of every letter', 'that also works, but the shared idea is choosing positions'], ['Multiply independent choices', 'there was only one choice to make'], ['Ordered picks with no division', 'order within the chosen positions does not matter']], explain: 'A path is fixed by where its rights go; a string by where its ones go: C(n, k) both times.' }) },
 
     sec('tryit'),

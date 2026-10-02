@@ -1,6 +1,16 @@
 // "At least one" events: sixes, de Mere's double sixes, independent trades, lottery tickets.
 import { nCr } from '../../../core/combinatorics.js';
-import { mcqItem, agree, qpow, q } from '../lib.js';
+import { mcqItem, agree, qpow, q, pic, firstSuccessTree } from '../lib.js';
+
+// Every win/fail pattern of independent trades; the leaves with at least one win are marked.
+function tradesTree(P) {
+  const last = P.length - 1;
+  const grow = (i, any) => [
+    { p: P[i].toString(), label: `${i + 1} wins`, ...(i === last ? { mark: true } : { children: grow(i + 1, true) }) },
+    { p: q(1).sub(P[i]).toString(), label: `${i + 1} fails`, ...(i === last ? (any ? { mark: true } : {}) : { children: grow(i + 1, any) }) },
+  ];
+  return { label: '', children: grow(0, false) };
+}
 import { Q, sumQ } from '../../../core/rational.js';
 
 const ID = 'at-least-one';
@@ -26,6 +36,11 @@ function repeated(p, n, what, text) {
       { say: `P = 1 − (${miss})^${n} ≈ ${value.toNumber().toFixed(4)}.`, why: 'Complement rule.' },
     ],
     hints: ['What is the opposite of "at least one"?', `P(no ${what}) is one probability raised to the ${n}th power.`, `1 − (${miss})^${n}.`],
+    fast: `1 − (${miss})^${n} ≈ 1 − ${none.toNumber().toFixed(4)} = ${value.toNumber().toFixed(4)}.`,
+    check: `It must beat one trial alone (${p}) and stay below the overlap-blind sum ${n} × ${p}${p.mul(q(n)).cmp(q(1)) >= 0 ? ', which reaches 1 and so cannot be a probability of this event' : ` = ${p.mul(q(n))}`}.`,
+    picture: n <= 4
+      ? pic('tree', { root: firstSuccessTree(n, p.toString(), miss.toString(), what, `no ${what}`), total: value.toString() }, `Stop at the first ${what}; carry on after a miss. Only the bottom path, ${n} misses in a row, fails, so the marked leaves add to 1 − (${miss})^${n}.`)
+      : pic('plot', { x: { min: 0, max: n, label: 'trials' }, y: { min: 0, max: 1, label: `P(at least one ${what})` }, curves: [{ label: '1 − (1 − p)^k', points: Array.from({ length: n + 1 }, (_, k) => [k, 1 - (1 - p.toNumber()) ** k]) }], markers: [{ x: n, y: value.toNumber(), label: `${n} trials: ${value.toNumber().toFixed(3)}` }] }, `The chance of at least one ${what} after k trials. Each trial adds less than the one before, because it only helps when every earlier trial missed.`),
   };
 }
 
@@ -78,6 +93,9 @@ export default {
           { say: `P = 1 − ${none} = ${value} ≈ ${value.toNumber().toFixed(3)}.`, why: 'Complement rule.' },
         ],
         hints: ['Which single outcome makes "at least one succeeds" false?', 'Multiply the three failure probabilities.', `1 − ${none}.`],
+        fast: `1 − ${P.map((p) => `(1 − ${p})`).join(' × ')} = 1 − ${none} = ${value}.`,
+        check: `It must beat the best single trade (${P.reduce((m, p) => (p.cmp(m) > 0 ? p : m))}) and stay below the sum ${sumQ(P)}, which double counts the overlaps.`,
+        picture: pic('tree', { root: tradesTree(P), total: value.toString() }, 'All eight outcomes of the three trades. Every leaf except the bottom one, where all three fail, has at least one success.'),
       };
       data = { variant, ps };
     }

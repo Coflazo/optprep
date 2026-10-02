@@ -49,6 +49,9 @@ export default {
     ] },
     { type: 'text', text: 'Something is repeated until it first succeeds: a die until a six, a coin until a head, two players taking turns until one wins. The question fixes **when** the first success happens ("on the 4th throw"), bounds it ("more than 5 throws needed"), or asks **who** gets it first.' },
     { type: 'list', items: ['"A die is thrown repeatedly. What is the probability that the first six appears on the third throw?"', '"What is the chance you need more than 4 throws to get a six?"', '"Two players take turns throwing a die; the first to throw a six wins. What is the chance the starter wins?"', '"You throw a die until the first six. Probability it comes on an even-numbered throw?"'] },
+    { type: 'check', scope: 'when, a bound, or who', questions: [
+      { type: 'choice', q: '"A coin is flipped until the first head. Probability that you need at least 6 flips?" Which kind is it?', options: ['a bound on when', 'exactly when', 'who gets it first', 'an expected number'], answer: 0, traps: { 1: '"at least 6" allows flip 6, 7, 8 and so on', 2: 'there is only one player', 3: 'it asks a probability, not an average' }, explain: '"At least 6 flips" bounds when the first head comes.' },
+    ] },
     { type: 'text', text: 'Not this lesson: "at least one six in 4 throws" with no mention of which throw (bto/at-least-one), and the **expected** number of throws (bto/expected-waiting).' },
     { type: 'check', scope: 'the recognition cues above', questions: [
       { type: 'choice', q: 'Which question belongs to this lesson?', options: ['A coin is flipped until the first head: probability it takes exactly 5 flips', 'A coin is flipped 5 times: probability of at least one head', 'A coin is flipped 5 times: probability of exactly 2 heads', 'A coin is flipped until the first head: expected number of flips'], answer: 0, traps: { 1: 'an at-least-one question: no position is fixed', 2: 'a fixed-length count: bto/coin-sequences', 3: 'an expectation: bto/expected-waiting' }, explain: 'The first head on flip 5 fixes the position of the first success.' },
@@ -128,6 +131,9 @@ export default {
       { t: 11, say: `(5/6)⁴ = ${moreThan(SIX, 4)} ≈ ${d3(moreThan(SIX, 4))}.` },
       { t: 15, say: `Check: a six within 4 throws is ${d3(within(SIX, 4))}, just over half, so "none in 4" must be just under half. It is. Answer ${moreThan(SIX, 4)}.` },
     ] },
+    { type: 'check', scope: 'the slip in the think-aloud', questions: [
+      { type: 'choice', q: 'In the think-aloud, the first try gave (5/6)⁵. What went wrong?', options: ['one miss too many', 'left out the factor for the six', 'took the complement', 'used 1/6 for a miss'], answer: 0, traps: { 1: '"more than 4" has no hit factor, so that was right', 2: 'no complement was taken', 3: 'a miss is 5/6, as used' }, explain: 'A six on throw 5 already means more than 4 throws. Only throws 1 to 4 must miss: (5/6)⁴ = 625/1296.' },
+    ] },
 
     S('predict'),
     { type: 'predict', question: 'Without computing: is the first six more likely on throw 1 or on throw 2? And is it more likely on throw 1 than on all even throws together?', answer: `Throw 1 beats throw 2: 1/6 against ${onK(SIX, 2)}. But all even throws together give ${Q.of(1).sub(starter(SIX))} ≈ ${d3(Q.of(1).sub(starter(SIX)))}, much more than 1/6.`, explain: 'Each single later throw is less likely, but there are infinitely many of them.' },
@@ -151,6 +157,9 @@ export default {
 
     S('speed'),
     { type: 'callout', tone: 'speed', text: `Race values to know: die (p = 1/6) starter wins ${starter(SIX)} ≈ ${d3(starter(SIX))}; fair coin starter wins ${starter(Q.of(1, 2))}. The formula 1/(2 − p) is one subtraction and one division.` },
+    { type: 'check', scope: 'race values', questions: [
+      { type: 'choice', q: 'A fair coin; two players alternate and the first head wins. P(the starter wins)?', options: ['2/3', '1/2', '6/11', '1/3'], answer: 0, traps: { 1: 'ignored that the starter goes first', 2: 'that is the die value, p = 1/6', 3: 'that is the second player' }, explain: '1/(2 − 1/2) = 2/3.' },
+    ] },
     { type: 'callout', tone: 'speed', text: `Sanity checks: P(first success on k) always falls as k grows (ratio 1 − p). The three events "on k", "within k" and "more than k" satisfy within(k) + more than(k) = 1. The time you have is ${SECTIONS.bto.exam.perItemSeconds} seconds; a waiting item should take 20.` },
     { type: 'check', scope: 'race values and the sanity identity', questions: [
       { make: (rng) => { const k = rng.int(2, 5); return mc(rng, `A die is thrown until a six. P(within ${k} throws) + P(more than ${k} throws) equals:`, '1', [[`${onK(SIX, k)}`, 'confused one of them with "exactly on throw k"'], ['1/2', 'thought the two are halves']], 'They are complements: either a six has come by throw k or it has not.'); } },
@@ -167,11 +176,11 @@ export default {
       ['a six on throw k (first or not)', 'throw k only', '1/6', '1/6'],
     ] },
     { type: 'callout', tone: 'edge', text: 'Edge cases: k = 1 gives p (no misses needed). If p = 1 the first success is always trial 1. "More than 0 trials" is certain: (1 − p)⁰ = 1. In a race with p = 1 the starter always wins, and 1/(2 − 1) = 1 agrees.' },
-    { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: this is the geometric distribution. Its mean 1/p is the expected wait (bto/expected-waiting). Coin patterns such as HH replace the single success with a pattern (bto/pattern-waiting), and "first to k wins" series extend the one-round race to k wins (bto/race-to-k).' },
     { type: 'check', scope: 'the contrast table and edge cases', questions: [
       { type: 'choice', q: 'A die. Which is largest?', options: ['more than 3 throws needed', 'a six within 3 throws', 'first six on throw 3', 'a six on throw 3'], answer: 0, traps: { 1: `three throws are not enough to make a six likely: ${d3(within(SIX, 3))} against ${d3(moreThan(SIX, 3))}`, 2: 'one fixed path: the smallest of these', 3: 'one throw, 1/6' }, explain: `Within 3: ${d3(within(SIX, 3))}; more than 3: ${d3(moreThan(SIX, 3))}; on throw 3: ${d3(onK(SIX, 3))}; six on throw 3: ${d3(SIX)}.` },
     ] },
 
+    { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: this is the geometric distribution. Its mean 1/p is the expected wait (bto/expected-waiting). Coin patterns such as HH replace the single success with a pattern (bto/pattern-waiting). "First to k wins" series extend the one-round race to k wins (bto/race-to-k).' },
     { type: 'variation', base: `A die is thrown until the first six. P(first six on throw 3) = (5/6)² × 1/6 = ${onK(SIX, 3)}.`, rows: [
       { change: 'Wait for the first 1 instead of the first six', effect: 'No change. Any named face has chance 1/6; the path is still miss, miss, hit.', same: true },
       { change: 'Ask for "more than 3 throws needed"', effect: `Three misses and no hit factor: (5/6)³ = ${moreThan(SIX, 3)}.` },

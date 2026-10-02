@@ -2,20 +2,43 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>OA Trainer</title>
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self' https://api.github.com https://gist.githubusercontent.com; manifest-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>OptPrep · Optiver online assessment practice</title>
+  <meta name="description" content="Free, open-source practice for the Optiver online assessment: 80-in-8, Beat the Odds, NumberLogic, Likelihood List, Intervals, Orderbooks and Zap-N, on the real clocks, with a lesson for every question type. Works offline.">
+  <meta name="theme-color" content="#F4F7FA" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#021129" media="(prefers-color-scheme: dark)">
+  <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+  <link rel="icon" href="assets/icons/favicon-32.png" sizes="32x32" type="image/png">
+  <link rel="preload" href="assets/fonts/roboto-latin.woff2" as="font" type="font/woff2" crossorigin>
+  <script src="src/ui/theme-boot.js"></script>
+  <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
   <link rel="stylesheet" href="src/ui/styles.css">
 </head>
 <body>
+  <a class="skip" href="#view">Skip to content</a>
   <div class="app">
     <aside class="sidebar" aria-label="Main navigation">
-      <div class="brand">OA Trainer</div>
+      <div class="brand"></div>
       <nav id="nav"></nav>
+      <div class="sidebar-foot" id="sidebar-foot"></div>
     </aside>
-    <main class="main" id="view" tabindex="-1"></main>
+    <header class="topbar" id="topbar"></header>
+    <div class="sheet">
+      <div class="rail" id="rail" aria-hidden="true"></div>
+      <main class="main" id="view" tabindex="-1">
+        <div class="boot" aria-label="Loading OptPrep">
+          <img class="light-only" src="assets/wordmark.svg" alt="OptPrep">
+          <img class="dark-only" src="assets/wordmark-dark.svg" alt="">
+          <div class="boot-bar"><span></span></div>
+        </div>
+      </main>
+    </div>
+    <nav class="tabbar" id="tabbar" aria-label="Main"></nav>
   </div>
-  <noscript>This trainer needs JavaScript. Serve the folder with ./run.sh and open http://127.0.0.1:8765.</noscript>
+  <div id="live" class="visually-hidden" role="status" aria-live="polite"></div>
+  <noscript>OptPrep needs JavaScript. Run <code>npx optprep</code> or open <a href="https://coflazo.github.io/optprep/">https://coflazo.github.io/optprep/</a>.</noscript>
   <script type="module" src="app.js"></script>
 </body>
 </html>

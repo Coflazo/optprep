@@ -1,20 +1,20 @@
-"""Local static server for the trainer. Sends no-cache headers so the browser always
-loads the current modules after an update (python -m http.server lets it cache)."""
-import http.server
-import os
+"""Run OptPrep with its Python backend on any OS, no uv needed (stdlib only, Python 3.10+).
+
+    python serve.py [port]        # default 8765
+
+This starts the same hardened server as `uv run python -m oa_backend.server`: the app,
+progress in SQLite and the /api endpoints, on 127.0.0.1 only.
+"""
 import sys
+from pathlib import Path
 
+if sys.version_info < (3, 10):
+    sys.exit("OptPrep's backend needs Python 3.10 or newer. Without it, run: npx optprep")
 
-class NoCacheHandler(http.server.SimpleHTTPRequestHandler):
-    def end_headers(self):
-        self.send_header("Cache-Control", "no-store")
-        super().end_headers()
-
-    def log_message(self, *args):
-        pass
-
+sys.path.insert(0, str(Path(__file__).resolve().parent / "backend"))
+from oa_backend.server import main  # noqa: E402
 
 if __name__ == "__main__":
-    os.chdir(os.path.dirname(os.path.abspath(__file__)))
-    port = int(sys.argv[1]) if len(sys.argv) > 1 else 8765
-    http.server.ThreadingHTTPServer(("127.0.0.1", port), NoCacheHandler).serve_forever()
+    if len(sys.argv) == 2 and sys.argv[1].isdigit():  # the old `serve.py 8765` form
+        sys.argv[1:] = ["--port", sys.argv[1]]
+    main()

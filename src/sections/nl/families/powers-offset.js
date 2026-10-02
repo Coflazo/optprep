@@ -5,6 +5,7 @@ export default family({
   title: 'Powers of 2 or 3, shifted',
   skill: 'Know 2^0..2^12 and 3^0..3^8; subtract a constant to reveal them',
   levels: [2, 3],
+  view: 'table',
   show: 5,
   params: (rng, d) => (d === 2 ? { b: 2, s: rng.int(0, 5), c: nz(rng, -5, 5) } : { b: rng.pick([2, 3]), s: rng.int(1, 4), c: nz(rng, -9, 9) }),
   terms: ({ b, s, c }, n) => Array.from({ length: n }, (_, i) => q(b ** (i + s) + c)),

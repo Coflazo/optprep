@@ -2,13 +2,25 @@
 from __future__ import annotations
 
 import json
+import os
 import subprocess
 import threading
 from pathlib import Path
 from typing import Any
 
 REPO = Path(__file__).resolve().parents[2]
-DEFAULT_BINARY = REPO / "engine" / "build" / "oa-engine"
+
+
+def find_binary() -> Path:
+    """OA_ENGINE if set, else the first build output that exists (Ninja/Make, MinGW, MSVC)."""
+    if os.environ.get("OA_ENGINE"):
+        return Path(os.environ["OA_ENGINE"])
+    build = REPO / "engine" / "build"
+    candidates = [build / "oa-engine", build / "oa-engine.exe", build / "Release" / "oa-engine.exe"]
+    return next((c for c in candidates if c.is_file()), candidates[0])
+
+
+DEFAULT_BINARY = find_binary()
 
 
 class EngineError(RuntimeError):
@@ -21,7 +33,7 @@ class Engine:
         if not self.binary.exists():
             raise FileNotFoundError(f"oa-engine not built at {self.binary} (cmake --build engine/build)")
         self._proc = subprocess.Popen([str(self.binary)], stdin=subprocess.PIPE, stdout=subprocess.PIPE,
-                                      stderr=subprocess.PIPE, text=True, bufsize=1)
+                                      stderr=subprocess.PIPE, text=True, encoding="utf-8", bufsize=1)
         self._lock = threading.Lock()
 
     def call(self, request: dict[str, Any]) -> dict[str, Any]:

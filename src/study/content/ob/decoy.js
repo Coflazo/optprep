@@ -167,9 +167,15 @@ export default {
 
     sec('speed'),
     { type: 'callout', tone: 'speed', text: 'Skip mids entirely. For each bundle compute the two executable edges (bid − leg asks, leg bids − ask); they are as fast as mids and they are the answer.' },
-    { type: 'callout', tone: 'speed', text: 'Scan order on a multi-bundle board: tight quotes first. A wide quote needs a big gap to pay, so it is the likeliest decoy.' },
-    { type: 'callout', tone: 'speed', text: 'An edge of exactly 0 is a decoy: drop the card at once and keep scanning. Every board in this trainer has a package with a positive edge somewhere, so a zero means the answer is on another card, not that the board is empty.' },
     { type: 'check', scope: 'executable edges only', questions: [{ make: hingeQ }] },
+    { type: 'callout', tone: 'speed', text: 'Scan order on a multi-bundle board: tight quotes first. A wide quote needs a big gap to pay, so it is the likeliest decoy.' },
+    { type: 'check', scope: 'tight quotes first', questions: [
+      { type: 'choice', q: 'Two bundles, one quoted 0.5 wide and one 3.0 wide. Which do you check first?', options: ['the 0.5-wide one', 'the 3.0-wide one', 'neither: the legs first'], answer: 0, traps: { 1: 'a wide quote needs a big gap to pay: the likeliest decoy', 2: 'the scan starts with tight bundle quotes' }, explain: 'Tight quotes pay with a small gap, so they are checked first.' },
+    ] },
+    { type: 'callout', tone: 'speed', text: 'An edge of exactly 0 is a decoy: drop the card at once and keep scanning. Every board in this trainer has a package with a positive edge somewhere, so a zero means the answer is on another card, not that the board is empty.' },
+    { type: 'check', scope: 'a zero edge', questions: [
+      { type: 'choice', q: 'A bundle edge comes out at exactly 0. What do you do?', options: ['drop it and keep scanning', 'trade it: it costs nothing', 'submit: the board is empty'], answer: 0, traps: { 1: 'a zero edge earns nothing, and cash must be above zero', 2: 'every board has a positive edge somewhere' }, explain: 'Zero is a decoy: the answer is on another card.' },
+    ] },
 
     sec('rule'),
     { type: 'callout', tone: 'rule', text: 'Never trade a mid gap. Executable edge = bid received − asks paid (= mid gap − half-spreads crossed); trade only if it is above 0.' },
@@ -181,10 +187,10 @@ export default {
       ['Legs\' bids vs bundle ask', 'profit of buying the bundle', 'yes, if above 0'],
     ] },
     { type: 'callout', tone: 'edge', text: 'Edge cases. A decoy with an edge of exactly 0 looks like a trade and scores nothing. A card that looks cheap at mid can be a decoy too. Venues that only touch are the venue version of a decoy.' },
-    { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: chains and hidden boards cross three or four spreads, so their mid gaps must be larger still. Any time you see a gap, subtract what it costs to trade it before you believe it.' },
     { type: 'check', scope: 'mid vs executable', questions: [
       mc({ q: 'A card crosses its own half-spread of 1.0 and two legs with half-spreads of 0.5 each. What mid gap does it need before it pays?', right: 'More than 2.0', wrong: [['More than 0', 'a positive mid gap is not enough: the half-spreads come off'], ['More than 1.0', 'forgot the legs\' half-spreads'], ['More than 4.0', 'used whole spreads instead of half-spreads']], explain: '1.0 + 0.5 + 0.5 = 2.0 must be beaten.' }),
     ] },
+    { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: chains and hidden boards cross three or four spreads, so their mid gaps must be larger still. Any time you see a gap, subtract what it costs to trade it before you believe it.' },
     { type: 'variation', base: `Base: ${boardText([A, B, AB])}. A + B looks rich by ${px(gapAB)} at mid; selling it earns ${px(edgeSell(AB, lAB))}.`, rows: [
       { change: `The whole A + B quote moves up ${px(shiftUp)} (now ${quote(ABup)})`, effect: `The bid clears the legs' ask: edge ${px(edgeSell(ABup, lAB))}. No longer a decoy.` },
       { change: `A + B narrows to ${quote(ABnarrow)} (same mid)`, effect: `Less spread to cross, but still not enough: edge ${px(edgeSell(ABnarrow, lAB))}.` },

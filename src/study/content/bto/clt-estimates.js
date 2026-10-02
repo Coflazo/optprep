@@ -63,6 +63,9 @@ export default {
     ] },
     { type: 'text', text: 'Many independent trials are **added up** (heads in 100 flips, the total of 30 dice) and the question asks for a probability that is far too long to compute exactly in the time: at least 60 heads, a total of at least 120, a count between 45 and 55. The word "estimate" or "roughly" is a strong hint.' },
     { type: 'list', items: ['"100 flips: roughly P(at least 60 heads)?"', '"30 dice: estimate P(total at least 120)."', '"400 flips: P(heads between 190 and 210)?"'] },
+    { type: 'check', scope: 'the hint in the wording', questions: [
+      { type: 'choice', q: 'Which wording points most strongly to this lesson?', options: ['"roughly", with many trials added', '"exactly", with three dice', '"ever reaches" a level', '"first six" on throw k'], answer: 0, traps: { 1: 'three dice are counted exactly', 2: 'a path question: random walks', 3: 'a single first success' }, explain: 'Many trials added up and an estimate: the normal curve does it in time.' },
+    ] },
     { type: 'text', text: 'Not this lesson: a handful of trials you can count exactly (bto/coin-sequences, bto/three-dice), and "ever reaches" questions about a path (bto/random-walk-line).' },
     { type: 'check', scope: 'the recognition cues above', questions: [
       { type: 'choice', q: 'Which question belongs to this lesson?', options: ['50 dice: estimate P(total at least 190)', '3 dice: P(total is 10)', '10 flips: P(exactly 5 heads)', 'A ±1 walk: P(it ever reaches 3 in 10 steps)'], answer: 0, traps: { 1: 'few dice: count exactly (bto/three-dice)', 2: 'one binomial term: C(10, 5)/1024', 3: 'a path question: reflection (bto/random-walk-line)' }, explain: 'A sum of many trials, and a tail that is too long to count.' },
@@ -143,6 +146,9 @@ export default {
 
     S('speed'),
     { type: 'callout', tone: 'speed', text: `Coin sd at a glance (√n/2): ${[36, 64, 100, 144, 400].map((n) => `${n} → ${Math.sqrt(n) / 2}`).join(', ')}. Die sd ≈ 1.71√n: ${[12, 30, 50].map((n) => `${n} dice → ${(DIE_SD * Math.sqrt(n)).toFixed(1)}`).join(', ')}.` },
+    { type: 'check', scope: 'sd at a glance', questions: [
+      { make: (rng) => { const n = rng.pick([36, 64, 100, 144, 196, 400]); return { type: 'number', q: `Standard deviation of heads in ${n} fair flips?`, answer: Math.sqrt(n) / 2, explain: `√${n}/2 = ${Math.sqrt(n) / 2}.` }; } },
+    ] },
     { type: 'callout', tone: 'speed', text: `Two lines: "mean m, sd s, threshold is k sd away", then the landmark. Pick the option nearest the landmark; with the continuity correction the answer moves slightly towards the mean. About 30 of your ${SECTIONS.bto.exam.perItemSeconds} seconds.` },
     { type: 'thinkaloud', problem: `You throw ${TK.n} fair dice. Estimate the probability that the total is at least ${TK.t}.`, lines: [
       { t: 0, say: 'A sum of many dice and "estimate": normal approximation. One die: mean 3.5, variance 35/12.' },
@@ -153,8 +159,9 @@ export default {
       { t: 28, say: `Between 1.5 sd (${pct(up(1.5))}) and 2 sd (${pct(up(2))}), nearer 2: about ${pct(up(TK.z))}.` },
       { t: 34, say: `Sanity: about 2 sd up should be a few percent, and it is. Answer ≈ ${pct(up(TK.z))}, ${SECTIONS.bto.exam.perItemSeconds - 34} seconds left.` },
     ] },
-    { type: 'check', scope: 'sd at a glance', questions: [
-      { make: (rng) => { const n = rng.pick([36, 64, 100, 144, 196, 400]); return { type: 'number', q: `Standard deviation of heads in ${n} fair flips?`, answer: Math.sqrt(n) / 2, explain: `√${n}/2 = ${Math.sqrt(n) / 2}.` }; } },
+    { type: 'check', scope: 'the two lines and the think-aloud', questions: [
+      { type: 'choice', q: '100 flips, P(at least 60 heads). With the continuity correction, z is:', options: ['1.9', '2', '2.1', '0.38'], answer: 0, traps: { 1: 'cut at 60: the correction moves the cut toward the mean', 2: 'moved the cut the wrong way, to 60.5', 3: 'divided by the variance 25, not the sd 5' }, explain: 'Mean 50, sd 5, cut at 59.5: (59.5 − 50)/5 = 1.9.' },
+      { type: 'choice', q: 'In the think-aloud, the first try divided by 140. What was wrong?', options: ['140 is the variance; divide by its root', '140 is the mean of 48 dice', 'the total should be split by 48'], answer: 0, traps: { 1: 'the mean is 168', 2: 'that gives the average, a different question' }, explain: 'z uses the sd: √140 ≈ 11.8.' },
     ] },
 
     S('rule'),
@@ -168,10 +175,10 @@ export default {
       ['share of heads', 'sd shrinks like 1/√n', 'sd 0.05'],
     ] },
     { type: 'callout', tone: 'edge', text: `Edge cases: with few trials (n = 5) or far tails the curve is rough, so count exactly. Exactly one value, "exactly 50 heads", is one bar: about 1/(sd·√(2π)) = ${f4(1 / (5 * Math.sqrt(2 * Math.PI)))} against the exact ${f4(Number(nCr(100, 50)) / 2 ** 100)}.` },
-    { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: the Intervals section asks for ranges, and mean ± 2 sd is the natural first guess (iv/estimation-tricks). A ±1 walk after n steps is a sum of n fair ±1 steps, so its end point has sd √n (bto/random-walk-line).' },
     { type: 'check', scope: 'the contrast table and edge cases', questions: [
       { type: 'choice', q: 'You go from 100 flips to 400 flips. What happens to the sd of the number of heads?', options: ['It doubles', 'It quadruples', 'It stays the same', 'It halves'], answer: 0, traps: { 1: 'the variance quadruples; the sd grows like √n', 2: 'the count spreads more with more flips', 3: 'that is the share of heads, not the count' }, explain: '√400/2 = 10 against √100/2 = 5.' },
     ] },
+    { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: the Intervals section asks for ranges, and mean ± 2 sd is the natural first guess (iv/estimation-tricks). A ±1 walk after n steps is a sum of n fair ±1 steps, so its end point has sd √n (bto/random-walk-line).' },
     { type: 'variation', base: `100 fair flips: P(at least 60 heads). Mean 50, sd 5, so 60 is 2 sd up: about ${pct(up((60 - 0.5 - 50) / 5))} with the correction (exact ${pct(coinAtLeast(100, 60))}).`, rows: [
       { change: 'Ask for at most 40 tails instead', effect: `No change: ${pct(coinAtLeast(100, 60))}. At most 40 tails is the same event as at least 60 heads.`, same: true },
       { change: 'Ask for at least 55 heads', effect: `Now 1 sd up: about 16% (exact ${pct(coinAtLeast(100, 55))}).` },

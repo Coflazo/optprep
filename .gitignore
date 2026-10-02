@@ -10,3 +10,10 @@ __pycache__/
 backend/data/*.db
 backend/data/library/
 backend/data/zapn/
+.claude/
+brag-output*/
+.wrangler/
+*.tgz
+.playwright-mcp/
+.impeccable/review/
+.impeccable/mocks/

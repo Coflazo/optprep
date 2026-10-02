@@ -53,9 +53,12 @@ export default {
       ] },
     { type: 'text', text: `Every term is a perfect square **plus the same constant k**, or c times a square plus k. The bases of the squares count up by 1, or run through the odd numbers only. The shift is what hides them: ${seq(CH.slice(0, 3))} do not look square until you take ${CHk} off each.` },
     { type: 'list', items: [`What number comes next?  ${seq(E1.slice(0, 5))}, ?`, `What number comes next?  ${seq(ODD.slice(0, 5))}, ?`, `What number comes next?  ${seq(SC.slice(0, 5))}, ?`] },
-    { type: 'text', text: `Not this lesson: products of two neighbours like ${seq(PRON.slice(0, 4))} (factor them), cubes, which outgrow squares fast (${seq(CUBE.slice(0, 4))}), and squares of primes or of Fibonacci numbers, which have their own lessons.` },
     { type: 'check', scope: 'the cue: a fixed distance from squares', questions: [
       { make: (rng) => { const p = d1(rng, 5), cu = Array.from({ length: 5 }, (_, i) => (i + rng.int(2, 4)) ** 3 + rng.int(-3, 3)), ar = arith(rng.int(1, 30), rng.int(3, 9), 5); return pick(rng, 'Which sequence is squares plus a constant?', seq(p.xs), [[seq(cu), 'those grow far faster: they sit next to cubes'], [seq(ar), `constant gap ${ar[1] - ar[0]}: squares have growing gaps`]], `${seq(p.xs)} is ${seq(bases(p.s, 1, 5).map((b) => b * b))} ${p.k < 0 ? 'minus' : 'plus'} ${Math.abs(p.k)}.`); } },
+    ] },
+    { type: 'text', text: `Not this lesson: products of two neighbours like ${seq(PRON.slice(0, 4))} (factor them), and cubes, which outgrow squares fast (${seq(CUBE.slice(0, 4))}). Squares of primes or of Fibonacci numbers have their own lessons.` },
+    { type: 'check', scope: 'the neighbouring lists', questions: [
+      { type: 'choice', q: '2, 6, 12, 20, 30: which test settles it?', options: ['factor: 1 × 2, 2 × 3, 3 × 4', 'shift by a constant to reach squares', 'shift by a constant to reach cubes'], answer: 0, traps: { 1: 'no single constant turns these into squares', 2: 'cubes outgrow these fast' }, explain: 'Each term is a product of two neighbours, b(b + 1). Factor them.' },
     ] },
 
     S('why'),
@@ -70,9 +73,12 @@ export default {
     S('picture'),
     { type: 'text', text: 'Line the terms up against the squares of their bases. The last column, term minus square, is the same in every row: that constant is k. The ladder tells the same story from the other side: the gaps of b² are the odd numbers 2b + 1, so the second row is always 2, whatever k is.' },
     { type: 'diagram', diagram: 'table', spec: { columns: ['base b', 'b²', 'term', 'term − b²'], rows: bases(E1s, 1, 5).map((b, i) => [String(b), String(b * b), neg(E1[i]), neg(E1[i] - b * b)]) }, caption: `${seq(E1.slice(0, 5))} against the squares of ${seq(bases(E1s, 1, 5))}: the last column is ${neg(E1k)} in every row. Next: ${E1s + 5}² ${E1k < 0 ? '−' : '+'} ${Math.abs(E1k)} = ${E1[5]}.` },
-    { type: 'diagram', diagram: 'ladder', spec: { mode: 'diff', rows: ladderRows(E1, 2), predicted: true }, caption: `The ladder of the same sequence: gaps ${seq(g(E1.slice(0, 5)))} are consecutive odd numbers and the second row is ${g(g(E1))[0]}. A second difference of exactly 2 is the ladder's hint that a plain b² is inside.` },
     { type: 'check', scope: 'the constant column', questions: [
       { make: (rng) => { const p = d1(rng, 5); return num(`Each term of ${seq(p.xs)} is a square plus the same constant k. What is k? (It may be negative.)`, p.k, `${seq(p.xs)} minus ${seq(bases(p.s, 1, 5).map((b) => b * b))} is ${neg(p.k)} every time.`, ['Find the perfect square just below or above each term.', 'Term minus square, with its sign.']); } },
+    ] },
+    { type: 'diagram', diagram: 'ladder', spec: { mode: 'diff', rows: ladderRows(E1, 2), predicted: true }, caption: `The ladder of the same sequence: gaps ${seq(g(E1.slice(0, 5)))} are consecutive odd numbers and the second row is ${g(g(E1))[0]}. A second difference of exactly 2 is the ladder's hint that a plain b² is inside.` },
+    { type: 'check', scope: 'second row 2', questions: [
+      { type: 'number', q: '11, 18, 27, 38, 51: what is the constant second row?', answer: 2, explain: 'Gaps 7, 9, 11, 13: second row 2, the hint that a plain b² is inside (here b² + 2).' },
     ] },
 
     S('derivation'),
@@ -104,6 +110,9 @@ export default {
     ] },
     { type: 'text', text: 'Which reading to try first? Let the second difference choose. A second row of 2 means plain consecutive squares; 8 means the bases step by 2 (odd or even bases); 4 or 6 means a scale of 2 or 3 on consecutive squares. One subtraction layer more than usual, and you know exactly what you are looking for before you look.' },
     { type: 'diagram', diagram: 'ladder', spec: { mode: 'diff', rows: ladderRows(ODD, 2), predicted: true }, caption: `Odd bases: ${seq(ODD.slice(0, 5))} is b² + ${ODDk} for b = ${seq(bases(ODDs, 2, 5))}. The second row is ${g(g(ODD))[0]}, not 2: with bases two apart, each gap grows by ${g(g(ODD))[0]}. Next: ${ODDlast + 2}² + ${ODDk} = ${ODD[5]}.` },
+    { type: 'check', scope: 'let the second row choose', questions: [
+      { type: 'choice', q: 'The second row of a squares-type ladder is 8. What does it say?', options: ['the bases step by 2', 'plain consecutive squares', 'a scale of 3 on the squares'], answer: 0, traps: { 1: 'plain consecutive squares give 2', 2: 'a scale of 3 gives 6' }, explain: 'With bases two apart, each gap grows by 8.' },
+    ] },
     { type: 'explain', prompt: 'Why does subtracting the same k from every term leave the gaps unchanged, and why is the second difference of b² always 2?', model: 'A constant shift moves every term equally, so every difference between neighbours stays the same. The gap from b² to (b + 1)² is 2b + 1, which grows by 2 each time b grows by 1, so the second row is 2.', points: ['A shift cancels in every subtraction', 'Consecutive squares differ by 2b + 1', 'That gap grows by 2 per step, so the second difference is 2 (8 for odd bases, 2c for c·b²)'] },
 
     S('worked'),
@@ -131,6 +140,9 @@ export default {
 
     S('speed'),
     { type: 'callout', tone: 'speed', text: 'Learn 11² to 30² cold (table below). To build one you forgot: (10a + b)² = 100a² + 20ab + b², so ' + `${EXPv}² = ${100 * EXP.a ** 2} + ${20 * EXP.a * EXP.b} + ${EXP.b ** 2} = ${EXPv ** 2}.` },
+    { type: 'check', scope: 'building a square', questions: [
+      { type: 'number', q: 'Build 34² with (10a + b)² = 100a² + 20ab + b².', answer: 1156, explain: '900 + 240 + 16 = 1156.' },
+    ] },
     { type: 'callout', tone: 'speed', text: `Neighbouring squares differ by 2b + 1: the next square is last square + 2 × last base + 1. From 24² = ${24 * 24}, 25² = ${24 * 24} + ${2 * 24 + 1} = ${25 * 25}. That is also the next gap of any "square + k" sequence.` },
     { type: 'thinkaloud', problem: nextQ(TA.slice(0, 5)), lines: [
       { t: 0, say: `Gaps ${seq(TAg.slice(0, 4))} grow; second row ${seq(diffs(TAg.slice(0, 4)))}. Squares, bases two apart.` },
@@ -159,7 +171,6 @@ export default {
       [seq(CUBE), 'not constant', 'cubes + k: a third row is needed'],
     ] },
     { type: 'callout', tone: 'edge', text: `Edge cases: k can be negative and a term can be 0 (0 = 1² − 1). b(b + 2) is (b + 1)² − 1, so ${seq(Array.from({ length: 4 }, (_, i) => (i + 1) * (i + 3)))} can be read either way and gives the same answer. A scale c shows up as second difference 2c.` },
-    { type: 'callout', tone: 'transfer', text: `Same idea elsewhere: subtract a constant to reveal a famous list. The same move uncovers powers of 2 (${seq(geo(2, 2, 4).map((v) => v + 1))} is 2ⁿ + 1), cubes and primes shifted by a constant.` },
     { type: 'variation', base: `${seq(E15)}, ?  b² − ${-E1k} for b = ${seq(bases(E1s, 1, 5))}; next ${E1s + 5}² − ${-E1k} = ${E1[5]}.`, rows: [
       { same: true, change: `Drop the first term: ${seq(E15.slice(1))}, ?`, effect: `Still ${E1[5]}. Every remaining term is still b² − ${-E1k}, and the next base is still ${E1s + 5}.` },
       { change: `Shift by +5 instead of −${-E1k}: ${seq(KUP.slice(0, 5))}, ?`, effect: `${KUP[5]}. Same bases, same squares; only the constant you put back changes.` },
@@ -172,6 +183,7 @@ export default {
       { make: (rng) => { const p = odd(rng, 6); return num(nextQ(p.xs.slice(0, 5)), p.xs[5], `Odd bases ${seq(bases(p.s, 2, 5))}: next ${p.s + 10}² ${sgn(p.k)} = ${neg(p.xs[5])}.`, ['Remove the constant: which squares?', 'The bases step by 2.']); } },
     ] },
 
+    { type: 'callout', tone: 'transfer', text: `Same idea elsewhere: subtract a constant to reveal a famous list. The same move uncovers powers of 2 (${seq(geo(2, 2, 4).map((v) => v + 1))} is 2ⁿ + 1), cubes and primes shifted by a constant.` },
     { type: 'transfer',
       near: { make: (rng) => { const s = rng.int(18, 24), k = nz(rng, -9, 9), xs = sq(1, s, 1, k, 6); return num(nextQ(xs.slice(0, 5)), xs[5], `These are ${s}² to ${s + 4}² ${k < 0 ? 'minus' : 'plus'} ${Math.abs(k)}. The next gap is 2 × ${s + 4} + 1 = ${2 * (s + 4) + 1}, so ${xs[4]} + ${2 * (s + 4) + 1} = ${xs[5]} = ${s + 5}² ${k < 0 ? '−' : '+'} ${Math.abs(k)}.`, ['Which squares sit a fixed distance from these terms?', 'The next gap between squares is 2 × last base + 1.']); } },
       far: { make: (rng) => { const k = rng.int(3, 6); return num(`Two fair dice are thrown. The larger of the two faces is at most ${k} in ${k}² = ${k * k} of the 36 outcomes. In how many outcomes is the larger face exactly ${k}?`, 2 * k - 1, `Exactly ${k} = at most ${k} minus at most ${k - 1}: ${k * k} − ${(k - 1) ** 2} = ${2 * k - 1}, which is 2 × ${k - 1} + 1, the gap between neighbouring squares.`, [`"Exactly ${k}" = "at most ${k}" minus "at most ${k - 1}".`, `${k}² − ${k - 1}².`]); } },

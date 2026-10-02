@@ -48,9 +48,12 @@ export default {
     ], q: `Before any teaching: ${seq(CH.slice(0, 5))}, ? What comes next? Try two ways: once with the gaps, once by subtracting the same number from every term.`, answer: String(CH[5]), explain: `Gaps ${seq(g(CH.slice(0, 5)))} double, so the next gap is ${g(CH)[4]} and ${CH[4]} + ${g(CH)[4]} = ${CH[5]}. Or subtract ${CHc} from every term: ${seq(CH.slice(0, 5).map((v) => v - CHc))}, the powers of 2, so the next is ${2 ** 6} + ${CHc} = ${CH[5]}. If you answered ${2 * CH[4]}, you doubled the ${CHc} as well: the lesson shows why that fails.` },
     { type: 'text', text: 'Every term is a **power of 2 or 3 plus the same constant**. The gaps give it away: they multiply by exactly 2 (or 3), and for base 2 the gaps are themselves powers of 2. The terms do **not** keep one ratio, because the constant spoils it.' },
     { type: 'list', items: [`What number comes next?  ${seq(E1.slice(0, 5))}, ?`, `What number comes next?  ${seq(E2.slice(0, 5))}, ?`, `What number comes next?  ${seq(E3.slice(0, 5))}, ?`] },
-    { type: 'text', text: `Not this lesson: an exact ratio (${seq(GE)}: plain multiplication, no shift) or gaps that double from a start that is not a power, as in ${seq(DG.slice(0, 5))} with gaps ${seq(g(DG.slice(0, 5)))}, three times the powers of 2 (the gaps-that-multiply lesson covers it).` },
     { type: 'check', scope: 'the cue: gaps multiply by b, terms shifted powers', questions: [
       { make: (rng) => { const p = twos(rng, 5), ge = geo(rng.pick([3, 5, 7]) * 2 ** p.s, 2, 5), q = quad(rng.int(1, 20), rng.int(5, 15), rng.int(4, 8), 5); return pick(rng, 'Which sequence is a power of 2 plus the same constant?', seq(p.xs), [[seq(ge), `exact ratio 2 and ${ge[0]} is not a power of 2: plain multiplication`], [seq(q), `its gaps ${seq(g(q))} grow by a fixed amount, they do not double`]], `Subtract ${neg(p.c)}: ${seq(p.xs.map((v) => v - p.c))}, the powers of 2.`); } },
+    ] },
+    { type: 'text', text: `Not this lesson: an exact ratio (${seq(GE)}: plain multiplication, no shift). Also gaps that double from a start that is not a power, as in ${seq(DG.slice(0, 5))} with gaps ${seq(g(DG.slice(0, 5)))}: three times the powers of 2 (the gaps-that-multiply lesson covers it).` },
+    { type: 'check', scope: 'doubling gaps from another start', questions: [
+      { type: 'choice', q: '10, 13, 19, 31, 55: which lesson is it?', options: ['gaps that multiply: 3 × powers of 2', 'a power of 2 plus a constant', 'an exact ratio of 2'], answer: 0, traps: { 1: 'the gaps 3, 6, 12, 24 are 3 times powers of 2, so no single shift makes powers', 2: '13/10 is not 2' }, explain: 'The gaps 3, 6, 12, 24 double from 3: the gaps-that-multiply lesson.' },
     ] },
 
     S('why'),
@@ -65,6 +68,9 @@ export default {
     S('picture'),
     { type: 'text', text: 'Build the ladder. For base 2 the gap row **is** the list of powers, and the row under it copies the gaps: the signature of multiplication one layer down. The constant has vanished, because a constant shift never survives a subtraction.' },
     { type: 'diagram', diagram: 'ladder', spec: { mode: 'diff', rows: ladderRows(CH.slice(0, 5), 2) }, caption: `${seq(CH.slice(0, 5))}: gaps ${seq(g(CH.slice(0, 5)))} are powers of 2, and the second row ${seq(g(g(CH.slice(0, 5))))} copies them. Why: 2^{m + 1} − 2^{m} = 2^{m}, so each gap equals the power under the term to its left.` },
+    { type: 'check', scope: 'the constant vanishes', questions: [
+      { type: 'choice', q: 'In 5, 7, 11, 19, 35 the gaps are 2, 4, 8, 16. What happened to the constant?', options: ['it vanished in the subtraction', 'it doubled with the gaps', 'it became the second row'], answer: 0, traps: { 1: 'a constant cancels when you subtract neighbours', 2: 'the second row copies the gaps' }, explain: 'A constant shift never survives a subtraction, so the gaps are the pure powers.' },
+    ] },
     { type: 'diagram', diagram: 'table', spec: { columns: ['term', 'gap to its right', 'term − gap'], rows: CH.slice(0, 4).map((v, i) => [String(v), String(g(CH)[i]), sgn(v - g(CH)[i])]) }, caption: `Subtract each gap from the term on its left: the leftover is ${sgn(CH[0] - g(CH)[0])} every time. That leftover is c, and the gap was the power: ${CH[0]} = ${g(CH)[0]} + ${CHc}.` },
     { type: 'check', scope: 'the gap is the power under the term', questions: [
       { make: (rng) => { const p = twos(rng, 6), i = rng.int(1, 3); return num(`In ${seq(p.xs.slice(0, 5))} the gaps are ${seq(g(p.xs.slice(0, 5)))}. Which power of 2 sits under the term ${neg(p.xs[i])}?`, 2 ** (i + p.s), `The gap to the right of ${neg(p.xs[i])} is ${g(p.xs)[i]}, and for base 2 that gap is the power: ${neg(p.xs[i])} = ${2 ** (i + p.s)}${shift(p.c)}.`, ['Look at the gap to the right of that term.', 'For base 2, that gap equals the power.']); } },
@@ -98,6 +104,9 @@ export default {
         ] },
     ] },
     { type: 'text', text: `The five moves on a base-3 item, ${seq(E2.slice(0, 5))}: the gaps ${seq(g(E2.slice(0, 5)))} triple, so b = 3. The gap to the right of ${E2[1]} is ${g(E2)[1]}, so the power under ${E2[1]} is ${g(E2)[1]} ÷ 2 = ${3 ** 2} and c = ${E2[1]} − ${3 ** 2} = ${E2[1] - 9}. Check on ${E2[2]}: ${3 ** 3} + ${E2[1] - 9} = ${E2[2]}. Next: 3^{6} + ${E2[1] - 9} = ${E2[5]}, and the climb agrees: ${E2[4]} + ${g(E2)[3]} × 3 = ${E2[5]}.` },
+    { type: 'check', scope: 'the five moves', questions: [
+      { type: 'number', q: '4, 6, 10, 18, 34: the gaps double. What is c in 2^m + c?', answer: 2, explain: 'The gap right of 4 is 2, so the power under 4 is 2 and c = 4 − 2 = 2. Check: 8 + 2 = 10.' },
+    ] },
     { type: 'explain', prompt: 'Why does the constant disappear from the gaps, and why is b × last the wrong next term?', model: 'Every term is b^{m} + c, so a gap is (b^{m + 1} + c) − (b^{m} + c) = b^{m}(b − 1): the c cancels. Multiplying the whole last term by b gives b^{m + 1} + bc, which multiplies the constant too; the rule only moves the power, so the true next term is b^{m + 1} + c, off by (b − 1) × c.', points: ['c cancels in every subtraction', 'The gaps are (b − 1) × the powers', 'b × last multiplies c as well: it is off by (b − 1) × c'] },
 
     S('worked'),
@@ -125,6 +134,9 @@ export default {
 
     S('speed'),
     { type: 'callout', tone: 'speed', text: 'One line, no gaps: b × (b^{m} + c) = b^{m + 1} + bc, which is (b − 1) × c too much. So **next = b × last − (b − 1) × c**. For base 2: next = 2 × last − c.' },
+    { type: 'check', scope: 'next = b × last − (b − 1) × c', questions: [
+      { make: (rng) => { const p = draw(rng, 6); return num(`${seq(p.xs.slice(0, 5))} is ${p.b}^{m}${shift(p.c)}. Use next = ${p.b} × last − ${p.b - 1} × c. What comes next?`, p.xs[5], `${p.b} × ${neg(p.xs[4])} = ${neg(p.b * p.xs[4])}; minus ${p.b - 1} × ${p.c < 0 ? `(${neg(p.c)})` : p.c} = ${neg((p.b - 1) * p.c)}: ${neg(p.xs[5])}.`, [`Multiply the last term by ${p.b}.`, `Then subtract (${p.b} − 1) × c.`]); } },
+    ] },
     { type: 'callout', tone: 'speed', text: 'Spot c from the smallest term: it sits closest to its power. Then check one large term before answering. Budget: under 20 seconds.' },
     { type: 'thinkaloud', problem: nextQ(E2.slice(0, 5)), lines: [
       { t: 0, say: `Gaps ${seq(g(E2.slice(0, 5)))}: each is three times the last.` },
@@ -133,8 +145,9 @@ export default {
       { t: 14, say: `For base 3 the gap is twice the power: ${g(E2)[1]} ÷ 2 = ${3 ** 2} under ${E2[1]}, so c = ${E2[1] - 9}. Check: 3^{3} + ${E2[1] - 9} = ${E2[2]}.` },
       { t: 20, say: `Next power 3^{6} = ${3 ** 6}, plus ${E2[1] - 9}: ${E2[5]}. The tripled guess was off by ${3 * E2[4] - E2[5]}, twice c. Answer ${E2[5]}.` },
     ] },
-    { type: 'check', scope: 'next = b × last − (b − 1) × c', questions: [
-      { make: (rng) => { const p = draw(rng, 6); return num(`${seq(p.xs.slice(0, 5))} is ${p.b}^{m}${shift(p.c)}. Use next = ${p.b} × last − ${p.b - 1} × c. What comes next?`, p.xs[5], `${p.b} × ${neg(p.xs[4])} = ${neg(p.b * p.xs[4])}; minus ${p.b - 1} × ${p.c < 0 ? `(${neg(p.c)})` : p.c} = ${neg((p.b - 1) * p.c)}: ${neg(p.xs[5])}.`, [`Multiply the last term by ${p.b}.`, `Then subtract (${p.b} − 1) × c.`]); } },
+    { type: 'check', scope: 'spotting c, and the think-aloud', questions: [
+      { type: 'number', q: 'In 3, 5, 9, 17, 33 the gaps double. Spot c from the smallest term, then check it on 33. What is c?', answer: 1, explain: '3 = 2 + 1, and 33 = 32 + 1 agrees: c = 1.' },
+      { type: 'choice', q: 'In the think-aloud, the first try said the terms triple too: 735. What was wrong?', options: ['only the gaps triple; c spoils the terms', 'the gaps never triple, so no base 3', 'the base is 2 here, not 3'], answer: 0, traps: { 1: '6, 18, 54, 162 do triple', 2: 'gaps that triple mean base 3' }, explain: '3 × 11 = 33, not 29. A power of 3 plus 2: 3^6 + 2 = 731.' },
     ] },
 
     S('rule'),
@@ -155,12 +168,12 @@ export default {
       { change: 'Base 3 and one power later, together', fusion: true, effect: `Both changes act on the power part only: ${seq(pw(3, 2, CHc, 5))}, next 3^{7} + ${CHc} = ${pw(3, 2, CHc, 6)[5]}. The constant is untouched by either.` },
     ] },
     { type: 'callout', tone: 'edge', text: `Edge cases: c = 0 is plain geometric. 2^{m} − 1 (${seq(pw(2, 1, -1, 5))}) is also "double and add 1": both lenses give the same next term. A large negative c makes the first terms negative (${seq(pw(2, 0, -5, 4))}); the gaps still double.` },
-    { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: 2^{m} − 1 is the number written with m ones in binary, and the number of moves in the Tower of Hanoi. A balance that doubles each period after a fixed fee is taken follows b^{m} + c too: strip the constant to see the growth.' },
     { type: 'check', scope: 'the contrast table and edge cases', questions: [
       { make: (rng) => { const t = rng.int(0, 2); let xs; if (t === 0) xs = twos(rng, 5).xs; else if (t === 1) xs = geo(rng.pick([3, 5, 7]), 2, 5); else { xs = [rng.int(5, 20)]; const k = rng.pick([3, 5]); while (xs.length < 5) xs.push(xs[xs.length - 1] + k * 2 ** (xs.length - 1)); } const names = ['a power of 2 plus a constant', 'exact ratio 2', 'gaps double from a non-power start']; const trp = [[null, 'the ratios are not exact: the constant spoils them', 'the gaps start at a power of 2, so the terms are powers plus c'], [`every ratio is exactly 2; nothing is shifted`, null, 'the terms themselves double'], [`the gaps ${seq(g(xs))} are not powers of 2`, 'the terms do not keep one ratio', null]]; return pick(rng, `${seq(xs)}: which description fits?`, names[t], names.map((nm, i) => [nm, trp[t][i]]).filter((_, i) => i !== t), `Gaps: ${seq(g(xs))}.`); } },
       { make: (rng) => { const s = rng.int(1, 4), xs = pw(2, s, -1, 6); return num(`${seq(xs.slice(0, 5))}, ? Read it as "double, then add 1". What comes next?`, xs[5], `2 × ${xs[4]} + 1 = ${xs[5]}, the same as 2^{${s + 5}} − 1.`); } },
     ] },
 
+    { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: 2^{m} − 1 is the number written with m ones in binary, and the number of moves in the Tower of Hanoi. A balance that doubles each period after a fixed fee is taken follows b^{m} + c too: strip the constant to see the growth.' },
     { type: 'transfer',
       near: { make: (rng) => { const p = draw(rng, 6, 3); return num(`A meter shows ${seq(p.xs.slice(0, 5))}. Each reading is a power of ${p.b} plus the same constant. What is the next reading?`, p.xs[5], `c = ${neg(p.c)}; next ${p.b}^{${p.s + 5}}${shift(p.c)} = ${neg(p.xs[5])}.`, ['Gaps multiply by the base.', 'Find c, raise the power, add c back.']); } },
       far: { type: 'number', q: `The least number of moves for a Tower of Hanoi with 1, 2, 3, 4, 5 discs is ${seq(TOWER.slice(0, 5))}. How many moves for 7 discs?`, answer: TOWER[6], explain: `The counts are 2^{n} − 1 (add 1: ${seq(TOWER.slice(0, 5).map((v) => v + 1))}). For 7 discs: 2^{7} − 1 = ${TOWER[6]}.`, hints: ['Add 1 to every count.', 'Powers of 2, then subtract the 1 again.'] },

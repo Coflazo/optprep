@@ -1,0 +1,23 @@
+name: Bug
+description: Something in OptPrep does not work.
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What you did, what you expected, and what you saw instead.
+    validations:
+      required: true
+  - type: input
+    id: where
+    attributes:
+      label: Page or task
+      placeholder: "#/run/mm/exam, Beat the Odds practice..."
+  - type: input
+    id: env
+    attributes:
+      label: Browser and device
+      placeholder: Safari on iPhone 15, Chrome on Windows 11...
+    validations:
+      required: true

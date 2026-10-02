@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "runs": [
+    { "finishedAt": 1758800000000, "section": "bto", "mode": "exam", "score": 11, "max": 20, "items": [] },
+    { "finishedAt": 1758900000000, "section": "iv", "mode": "exam", "score": 12.4, "max": 18, "items": [] }
+  ],
+  "stats": { "bto:two-dice-sum": { "n": 12, "correct": 10, "ms": 360000 }, "nl:arith": { "n": 4, "correct": 1, "ms": 120000 } },
+  "srs": { "bto:two-dice-sum": { "box": 4, "due": 1759000000000 }, "nl:arith": { "box": 1, "due": 1758950000000 } },
+  "zapn": { "balloon": [{ "at": 1758700000000, "bank": 120 }] },
+  "settings": { "divNotation": "slash", "someFutureKey": [1, 2] },
+  "sets": { "bto": { "1": { "score": 14, "max": 20, "mode": "timed", "at": 1758600000000, "best": 14, "attempts": 1 } } },
+  "calibration": [{ "section": "bto", "confidence": "sure", "correct": true }],
+  "study": { "bto/two-dice-sum": { "readAt": 1758500000000, "masteredAt": 1758550000000, "due": 1758900000000 } },
+  "studyMeta": { "log": [{ "kind": "check", "clean": true, "at": 1758500000000 }], "beliefs": {}, "goal": null },
+  "unknownTopLevel": { "kept": true }
+}

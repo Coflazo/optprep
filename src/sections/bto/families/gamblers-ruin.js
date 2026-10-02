@@ -1,6 +1,8 @@
 // Gambler's ruin: fair win probability i/N, duration i(N − i), and the biased formula.
 import { hittingTimes, absorptionProbs } from '../../../core/markov.js';
-import { mcqItem, agree, q, qpow } from '../lib.js';
+import { mcqItem, agree, q, qpow, pic } from '../lib.js';
+
+const xs = (N) => Array.from({ length: N + 1 }, (_, x) => x);
 const par = (x) => (String(x).includes('/') ? `(${x})` : String(x));
 
 const ID = 'gamblers-ruin';
@@ -42,6 +44,9 @@ export default {
         rule: 'Fair walk from i between 0 and N: P(hit N first) = i/N.',
         anchor: 'Expected value of a fair bet is zero; applied to the whole game, it pins down the chance of each ending.',
         hints: ['In a fair game, what happens to your expected wealth?', 'At the end you hold either N or 0.', `${i}/${N}.`],
+        picture: pic('plot', { x: { min: 0, max: N, label: 'start' }, y: { min: 0, max: 1, label: `P(reach ${N} first)` }, curves: [{ label: 'x/N', points: xs(N).map((x) => [x, x / N]) }], markers: [{ x: i, y: i / N, label: `start ${i}: ${v}` }] }, `In a fair game the chance of reaching the top is a straight line in the starting point: 0 at 0, 1 at ${N}, so ${i}/${N} from ${i}.`),
+        fast: `${i}/${N} = ${v}.`,
+        check: `The two endings add to 1: P(reach ${N}) = ${v} and P(go broke) = ${q(N - i, N)}; starting ${i < N / 2 ? 'below' : i > N / 2 ? 'above' : 'at'} the middle puts the answer ${i < N / 2 ? 'below' : i > N / 2 ? 'above' : 'at'} 1/2.`,
         data: { mode: 'fairP', i, N },
       });
     }
@@ -66,6 +71,9 @@ export default {
         rule: 'Fair walk exit time from an interval = (distance to one end) × (distance to the other).',
         anchor: 'First-step analysis E = 1 + average of neighbours, with one change: two absorbing walls instead of one target.',
         hints: ['Set up E(x) = 1 + average of E at the two neighbours.', 'Try a quadratic that vanishes at 0 and N.', `${i} × ${N - i}.`],
+        picture: pic('plot', { x: { min: 0, max: N, label: 'start' }, y: { min: 0, max: Math.ceil((N * N) / 4) + 1, label: 'expected steps' }, curves: [{ label: 'x(N − x)', points: xs(N).map((x) => [x, x * (N - x)]) }], markers: [{ x: i, y: v, label: `start ${i}: ${v}` }] }, `The expected duration is a parabola: 0 at both walls, largest in the middle (${Math.floor(N / 2) * Math.ceil(N / 2)}). From ${i} it is ${i} × ${N - i}.`),
+        fast: `${i} × ${N - i} = ${v}.`,
+        check: `At least the distance to the nearer wall, ${Math.min(i, N - i)}, and at most the middle value ${Math.floor(N / 2) * Math.ceil(N / 2)}.`,
         data: { mode: 'fairE', i, N },
       });
     }
@@ -90,6 +98,9 @@ export default {
       rule: 'Biased ruin: P = (1 − r^i)/(1 − r^N), r = q/p. r → 1 recovers i/N.',
       anchor: 'The fair answer i/N, with one change: replace "wealth" by r^wealth, the quantity that stays fair when the game is not.',
       hints: ['What is r = q/p here?', 'Use (1 − r^i)/(1 − r^N).', `r = ${r}.`],
+      picture: pic('plot', { x: { min: 0, max: N, label: 'start' }, y: { min: 0, max: 1, label: `P(reach ${N} first)` }, curves: [{ label: `p = ${p}`, points: xs(N).map((x) => [x, (1 - r.toNumber() ** x) / (1 - r.toNumber() ** N)]) }, { label: 'fair', points: xs(N).map((x) => [x, x / N]) }], markers: [{ x: i, y: v.toNumber(), label: `start ${i}: ${v.toNumber().toFixed(3)}` }] }, `With p = ${p} the curve bends ${p.cmp(q(1, 2)) > 0 ? 'above' : 'below'} the fair straight line: a small edge per step compounds over the many steps of the game.`),
+      fast: `r = ${r}; (1 − r^${i})/(1 − r^${N}) ≈ ${v.toNumber().toFixed(4)}.`,
+      check: `With p ${p.cmp(q(1, 2)) > 0 ? 'above' : 'below'} 1/2 the answer must be ${p.cmp(q(1, 2)) > 0 ? 'above' : 'below'} the fair ${q(i, N)}, and the edge grows with the length of the game.`,
       data: { mode: 'biased', i, N, a, c },
     });
   },

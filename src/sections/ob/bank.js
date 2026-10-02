@@ -2,13 +2,13 @@
 // (bid) and buy (ask) price; tap prices to build a flat, profitable position. Every board is
 // hand-written; tests confirm the written trades are the solver's best package.
 import { positionOutcome } from '../../core/check.js';
-import { describe, promptText } from './lib.js';
+import { describe, promptText, obSolution } from './lib.js';
 import { families } from './registry.js';
 
 const SRC = {
   tm: 'Tradermath Orderbooks practice test: cards of products and bundles with sell and buy prices, flat profitable position, wrong submits cost time; original board',
   qv: 'QuantVault / Glassdoor reports of the 2026 Orderbooks module (20 boards in 8 minutes, bundle arbitrage); original board',
-  lj: 'Candidate write-up of the Orderbooks OA (cheap card against a related bundle, check the margin, submit); original board',
+  lj: 'Candidate write-up of the Orderbooks task (cheap card against a related bundle, check the margin, submit); original board',
 };
 const F = Object.fromEntries(families.map((f) => [f.id, f]));
 
@@ -34,7 +34,7 @@ function board(fam, d, src, products, cards, trades, idea) {
     prompt: { text: promptText(b) },
     board: b,
     best: { trades: tr, profit },
-    solution: { steps: [...idea.map(([say, why]) => ({ say, why })), ...describe(b, tr)], rule: F[fam].lesson.rule, anchor: F[fam].lesson.anchor },
+    solution: { ...obSolution(b, { trades: tr, profit }, fam), steps: [...idea.map(([say, why]) => ({ say, why })), ...describe(b, tr)], rule: F[fam].lesson.rule, anchor: F[fam].lesson.anchor },
     hints: ['Price every bundle from its parts on the side you would trade.', 'Look for a bid above an equivalent ask.'],
     params: { structure: fam },
     meta: { source: SRC[src] },

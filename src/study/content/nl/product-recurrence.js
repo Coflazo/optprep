@@ -55,9 +55,12 @@ export default {
     ], q: `Before any teaching: ${seq(CH.slice(0, 5))}, ? What comes next? Try two ways: once with the ratios, once by combining the two terms before each term.`, answer: String(CH[5]), explain: `Ratios ${CH.slice(1, 5).map((v, i) => ratio(CH[i], v)).join(', ')}: no constant ratio, and from the second one on they repeat the terms ${seq(CH.slice(0, 3))}. Combining: ${CH[1]} × ${CH[2]} = ${CH[3]}, ${CH[2]} × ${CH[3]} = ${CH[4]}. Next: ${CH[3]} × ${CH[4]} = ${CH[5]}.` },
     { type: 'text', text: 'Each term is the **product of the two terms before it**, sometimes plus a small constant. The terms explode: the number of digits roughly adds up from step to step, so after a few terms they are far larger than any constant-ratio sequence would give.' },
     { type: 'list', items: [`What number comes next?  ${seq(E1.slice(0, 6))}, ?`, `What number comes next?  ${seq(E2.slice(0, 6))}, ?`, `What number comes next?  ${seq(E3.slice(0, 5))}, ?`] },
-    { type: 'text', text: `Not this lesson: a constant ratio (${seq(GE.slice(0, 5))}: × 4 every time), the sum of the previous two (${seq(FB.slice(0, 6))}), or the square of the last term plus a constant (the next lesson).` },
     { type: 'check', scope: 'the cue: products of neighbours', questions: [
       { make: (rng) => { const p = pos(rng, 3), xs = p.xs.slice(0, 6), ge = geo(rng.int(2, 5), rng.pick([3, 4]), 6), f = fibl(rng.int(2, 5), rng.int(6, 9), 6); return pick(rng, 'In which sequence is every term the product of the two before it?', seq(xs), [[seq(ge), `every ratio is ${ge[1] / ge[0]}: the same multiplier each time`], [seq(f), `${f[3]} + ${f[4]} = ${f[5]}: a sum, not a product`]], `${xs[2]} × ${xs[3]} = ${xs[4]}.`); } },
+    ] },
+    { type: 'text', text: `Not this lesson: a constant ratio (${seq(GE.slice(0, 5))}: × 4 every time), the sum of the previous two (${seq(FB.slice(0, 6))}), or the square of the last term plus a constant (the next lesson).` },
+    { type: 'check', scope: 'the neighbouring rules', questions: [
+      { type: 'choice', q: '3, 4, 7, 11, 18, 29: which rule fits?', options: ['the sum of the previous two', 'the product of the previous two', 'a constant ratio'], answer: 0, traps: { 1: '4 × 7 = 28, not 11', 2: '7/4 and 11/7 are different' }, explain: '3 + 4 = 7, 4 + 7 = 11: a plain sum, not a product.' },
     ] },
 
     S('why'),
@@ -72,6 +75,9 @@ export default {
     S('picture'),
     { type: 'text', text: 'Two views of the same rule. As products: each row multiplies two neighbours and hits the next term. As ratios: dividing a term by the one before it leaves the term two places back, so the ratio row copies the sequence.' },
     { type: 'diagram', diagram: 'table', spec: { columns: ['term n − 2', 'term n − 1', 'product', 'term n'], rows: E1.slice(2, 5).map((v, i) => [String(E1[i]), String(E1[i + 1]), String(E1[i] * E1[i + 1]), String(v)]) }, caption: `${seq(E1.slice(0, 5))}: the product of each pair is the next term. Next: ${E1[3]} × ${E1[4]} = ${E1[5]}.` },
+    { type: 'check', scope: 'products of neighbours', questions: [
+      { type: 'number', q: 'What comes next?  2, 3, 6, 18, ?', answer: 108, explain: '6 × 18 = 108.' },
+    ] },
     { type: 'diagram', diagram: 'ladder', spec: { mode: 'ratio', rows: [E1.slice(0, 5), E1.slice(1, 5).map((v, i) => ratio(E1[i], v))] }, caption: `Ratios of the same list: ${E1.slice(1, 5).map((v, i) => ratio(E1[i], v)).join(', ')}. From the second ratio on they read ${seq(E1.slice(0, 3))}, the terms two places back. A ratio row that copies the sequence means multiply the last two terms.` },
     { type: 'check', scope: 'the ratio row copies the terms', questions: [
       { make: (rng) => { const p = pos(rng, 3), xs = p.xs; return num(`${seq(xs.slice(0, 5))}: what is ${xs[4]} ÷ ${xs[3]}?`, xs[4] / xs[3], `${xs[4]} ÷ ${xs[3]} = ${xs[2]}, which is the term two places before ${xs[4]}.`); } },
@@ -136,6 +142,9 @@ export default {
 
     S('speed'),
     { type: 'callout', tone: 'speed', text: 'Size first: digit counts add, so estimate the length of last × previous and cross out options of the wrong length. Then check the **last digit**: it is the last digit of (last digit × last digit) + c.' },
+    { type: 'check', scope: 'size and last digit', questions: [
+      { make: (rng) => { const p = pos(rng, 3), xs = p.xs, n = p.n, t = xs[n]; return pick(rng, `${seq(xs.slice(0, n))}, ? Use size and last digit only: which option can be right?`, t, [[t + 2 * (t % 10 === 9 ? -1 : 1), `wrong last digit: ${xs[n - 2] % 10} × ${xs[n - 1] % 10} ends in ${(xs[n - 2] * xs[n - 1]) % 10}`], [Math.round(t / 10), `wrong size: about ${digits(xs[n - 2]) + digits(xs[n - 1])} digits expected`], [xs[n - 1] + xs[n - 2], 'far too small: that is the sum, not the product']], `${xs[n - 2]} × ${xs[n - 1]} = ${t}.`); } },
+    ] },
     { type: 'callout', tone: 'speed', text: 'Use the calculator only for the final product, after two shown steps have confirmed the rule. Budget: 20 seconds, most of it spent on the two confirming products rather than on the answer.' },
     { type: 'thinkaloud', problem: nextQ(E3.slice(0, 6)), lines: [
       { t: 0, say: `Growth explodes: ${E3[4]} to ${E3[5]}.` },
@@ -146,8 +155,9 @@ export default {
       { t: 22, say: `Calculator: ${E3[4]} × ${E3[5]} = ${E3[4] * E3[5]}${plusC(E3c)} = ${E3[6]}.` },
       { t: 27, say: `Size: ${digits(E3[4])} + ${digits(E3[5])} digits give about ${digits(E3[4]) + digits(E3[5])}; ${E3[6]} has ${digits(E3[6])}. Answer ${E3[6]}.` },
     ] },
-    { type: 'check', scope: 'size and last digit', questions: [
-      { make: (rng) => { const p = pos(rng, 3), xs = p.xs, n = p.n, t = xs[n]; return pick(rng, `${seq(xs.slice(0, n))}, ? Use size and last digit only: which option can be right?`, t, [[t + 2 * (t % 10 === 9 ? -1 : 1), `wrong last digit: ${xs[n - 2] % 10} × ${xs[n - 1] % 10} ends in ${(xs[n - 2] * xs[n - 1]) % 10}`], [Math.round(t / 10), `wrong size: about ${digits(xs[n - 2]) + digits(xs[n - 1])} digits expected`], [xs[n - 1] + xs[n - 2], 'far too small: that is the sum, not the product']], `${xs[n - 2]} × ${xs[n - 1]} = ${t}.`); } },
+    { type: 'check', scope: 'the calculator last, and the think-aloud', questions: [
+      { type: 'choice', q: 'When do you use the calculator in a product item?', options: ['for the final product, after two checks', 'for every ratio first', 'never, not even for the answer'], answer: 0, traps: { 1: 'ratios are a hint; the products are the check', 2: 'the final product is the one place it helps' }, explain: 'Confirm the rule on two shown steps, then multiply once.' },
+      { type: 'choice', q: 'In the think-aloud, the first try multiplied 395 by the last ratio again. Why was that wrong?', options: ['the ratios keep growing', 'the last ratio was 4.9, not 9', 'the terms are sums'], answer: 0, traps: { 1: '395/44 is about 9; the one before was about 4.9', 2: 'products, not sums, fit the list' }, explain: 'Growing ratios point to products of neighbours: 44 × 395 − 1 = 17379.' },
     ] },
 
     S('rule'),
@@ -168,11 +178,11 @@ export default {
       { change: `First seed ${-E1[0]} and add 1 after every product`, fusion: true, effect: `The sign change and the constant interact: +1 is added to signed products, so the sizes no longer match the original. ${seq(prod(-E1[0], E1[1], 1, 5))}, …, sixth term ${neg(prod(-E1[0], E1[1], 1, 6)[5])}.` },
     ] },
     { type: 'callout', tone: 'edge', text: `Edge cases: a seed of 1 makes the third term equal the second (${seq(prod(1, 3, 0, 5))}), and seeds 1, 1 stall forever, so the rule only shows once both factors exceed 1. Negative seeds give sign patterns that follow the products (${seq(E2.slice(0, 5))}).` },
-    { type: 'callout', tone: 'transfer', text: `Same idea elsewhere: logarithms turn products into sums. ${seq(E1.slice(0, 6))} are the powers ${E1.slice(0, 6).map((v) => `2^{${Math.log2(v)}}`).join(', ')}, and the exponents follow the Fibonacci rule. Any multiplicative process (compounding on compounding) becomes additive on a log scale.` },
     { type: 'check', scope: 'the contrast table and edge cases', questions: [
       { make: (rng) => { const t = rng.int(0, 2), a = rng.int(2, 4), b = rng.int(3, 5); const xs = t === 0 ? prod(a, b, 0, 6) : t === 1 ? geo(a, b, 6) : fibl(a, b + 3, 6); const names = ['last × previous', 'a fixed multiplier', 'last + previous']; const trp = [[null, `the ratios ${xs.slice(1, 4).map((v, i) => ratio(xs[i], v)).join(', ')} are equal`, `${xs[3]} + ${xs[4]} = ${xs[5]}`], [`${xs[3]} × ${xs[4]} is not ${xs[5]}`, null, `${xs[3]} + ${xs[4]} is not ${xs[5]}`], [`${xs[3]} × ${xs[4]} is not ${xs[5]}`, 'the ratios are not constant', null]]; return pick(rng, `${seq(xs)}: which rule?`, names[t], names.map((nm, i) => [nm, t === 0 ? (i === 1 ? 'the ratios grow' : `${xs[3]} + ${xs[4]} is not ${xs[5]}`) : trp[t][i]]).filter((_, i) => i !== t), 'Test each rule on the last step.'); } },
     ] },
 
+    { type: 'callout', tone: 'transfer', text: `Same idea elsewhere: logarithms turn products into sums. ${seq(E1.slice(0, 6))} are the powers ${E1.slice(0, 6).map((v) => `2^{${Math.log2(v)}}`).join(', ')}, and the exponents follow the Fibonacci rule. Any multiplicative process (compounding on compounding) becomes additive on a log scale.` },
     { type: 'transfer',
       near: { make: (rng) => { const p = pos(rng, 3), xs = p.xs; return num(`In a chain reaction each round's count is the product of the two rounds before it: ${seq(xs.slice(0, p.n))}. What is the next round's count?`, xs[p.n], `${xs[p.n - 2]} × ${xs[p.n - 1]} = ${xs[p.n]}.`, ['Check a product on a shown round.', 'Multiply the last two rounds.']); } },
       far: { type: 'number', q: `The terms ${seq(POW2.slice(0, 5))} are powers of 2, and each is the product of the two before it. The next term is 2 to which power?`, answer: Math.log2(POW2[5]), explain: `The exponents are ${seq(POW2.slice(0, 5).map(Math.log2))}: multiplying powers adds exponents, so the exponents follow the Fibonacci rule. Next: ${Math.log2(POW2[3])} + ${Math.log2(POW2[4])} = ${Math.log2(POW2[5])}.`, hints: ['Write each term as 2 to a power.', 'Multiplying powers adds the exponents.'] },

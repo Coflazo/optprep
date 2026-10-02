@@ -86,8 +86,11 @@ export default {
         { id: 'timeout', label: 'Leave it when unsure', approach: 'Let the clock run out rather than risk a wrong answer.', breaksAt: 'A timeout scores the same as a wrong answer, so a pick among the survivors can only help.' },
       ] },
     { type: 'text', text: `CodeCompare is the proofreading game of Zap-N. A target code of letters and digits sits above ${OPTS} candidates. Exactly one candidate is identical; the other ${OPTS - 1} differ in one or two places. Press 1 to ${OPTS}, or click. ${R} rounds: codes grow from ${lengthAt(0)} to ${lengthAt(R - 1)} characters while the time limit falls from ${secs(allowanceMs(0))} s to ${secs(allowanceMs(R - 1))} s.` },
-    { type: 'text', text: `A distractor is built from the target by one or two edits of two kinds: a **look-alike swap** (O for 0, L for 1, S for 5, B for 8, and so on) or a **neighbour swap** (two adjacent characters trade places). No answer in time counts as wrong. Target: ${pct(TARGET)}, so at most ${BUDGET} errors.` },
     { type: 'check', scope: 'the game: one identical candidate', questions: [{ make: identicalQ }] },
+    { type: 'text', text: `A distractor is built from the target by one or two edits of two kinds. One is a **look-alike swap** (O for 0, L for 1, S for 5, B for 8, and so on). The other is a **neighbour swap**: two adjacent characters trade places. No answer in time counts as wrong. Target: ${pct(TARGET)}, so at most ${BUDGET} errors.` },
+    { type: 'check', scope: 'the two kinds of edit', questions: [
+      { type: 'choice', q: 'Target 7B8Q2LO. What kind of edit is 7B8Q2OL?', options: ['a neighbour swap', 'a look-alike swap', 'no edit: identical'], answer: 0, traps: { 1: 'no character changed shape: L and O traded places', 2: 'the last two characters are in the other order' }, explain: 'Two adjacent characters traded places: a neighbour swap.' },
+    ] },
 
     sec('why'),
     { type: 'text', text: 'Traders read order tickets, account codes and prices under time pressure, and one wrong character is one wrong trade. CodeCompare measures whether you verify character by character fast enough, instead of trusting the overall look of a string. The distractors are built exactly from the errors that shape-reading lets through.' },
@@ -162,10 +165,15 @@ export default {
 
     sec('speed'),
     { type: 'callout', tone: 'speed', text: `Look-alikes to expect: ${PAIRS.join(', ')}, plus neighbour swaps like 47 against 74. Knowing the list turns "looks the same" into a specific question at each position.` },
+    { type: 'check', scope: 'look-alikes', questions: [
+      { type: 'choice', q: 'Which pair is a look-alike swap?', options: ['S and 5', 'S and T', '4 and 7'], answer: 0, traps: { 1: 'S and T look nothing alike', 2: '47 against 74 is a neighbour swap, not a look-alike' }, explain: 'S and 5 are on the look-alike list.' },
+    ] },
     { type: 'callout', tone: 'speed', text: 'Budget: say each chunk silently ("K-5-O") before comparing it, stop the moment one candidate is left, and answer before the bar runs out even if two survive.' },
     { type: 'thinkaloud', problem: `Round ${TK.i + 1}, ${secs(allowanceMs(TK.i))} s. Target ${code(TK.target)}. Candidates: ${TK.options.map((o, i) => `${i + 1}) ${code(o)}`).join('  ')}.`, lines: TK.lines },
     { type: 'check', scope: 'the error budget', questions: [
       { make: (rng) => { const e = rng.int(1, 5); return mc({ q: `You made ${e} errors in ${R} rounds (timeouts included). Did you reach ${pct(TARGET)}?`, right: e <= BUDGET ? 'yes' : 'no', at: 0, wrong: [[e <= BUDGET ? 'no' : 'yes', e <= BUDGET ? `${R - e}/${R} = ${dec((R - e) / R)} is at least ${TARGET}` : `${R - e}/${R} = ${dec((R - e) / R)} is below ${TARGET}`]], explain: `${R - e}/${R} = ${dec((R - e) / R)}; the budget is ${BUDGET} errors.` }); } },
+      { type: 'choice', q: 'Two candidates survive and the bar is nearly out. What do you do?', options: ['answer one of the two now', 'wait until only one is left', 'skip the round'], answer: 0, traps: { 1: 'no answer in time counts as wrong', 2: 'there is no skip: a timeout is an error' }, explain: 'Answer before the bar runs out: a coin flip between two beats a certain miss.' },
+      { type: 'choice', q: 'In the think-aloud, the first impulse was to press 3 before the pass ended. Why not?', options: ['3 differed in the last chunk', '3 was already out', 'there was no time left'], answer: 0, traps: { 1: 'it matched the first two chunks', 2: 'about 1 s was still left' }, explain: 'Finish the pass: XMD against XDM put candidate 3 out.' },
     ] },
 
     sec('rule'),
@@ -187,6 +195,10 @@ export default {
       { change: `Round ${R}: ${lengthAt(R - 1)} characters and ${secs(allowanceMs(R - 1))} s`, effect: `${Math.ceil(lengthAt(R - 1) / 3)} chunks and ${Math.round(allowanceMs(R - 1) / lengthAt(R - 1))} ms per target character: same method, less slack for re-reading.` },
     ] },
     { type: 'callout', tone: 'edge', text: 'Edge cases: a distractor with two edits can match the first chunks, so one clean chunk never clears a candidate. Two look-alike edits can sit in one chunk. The identical candidate can be in any slot; do not favour one.' },
+    { type: 'check', scope: 'the contrast table', questions: [
+      mc({ q: 'Which game uses the same chunk-by-3 habit to remember a code that is no longer on screen?', right: 'Pincode', at: 1, wrong: [['Shapeshift', 'Shapeshift has no code, only a shape'], ['Figure It Out', 'Figure It Out tracks eliminated values, not a code'], ['Stock Master', 'Stock Master tracks needles, not characters']], explain: 'Pincode hides the code and asks you to type it back; chunks of 3 are how you hold it.' }),
+      { type: 'choice', q: 'A candidate matches the target in its first chunk. Is it cleared?', options: ['no: a later chunk can differ', 'yes: one clean chunk clears it', 'yes, if it sits in slot 1'], answer: 0, traps: { 1: 'a two-edit distractor can match the first chunks', 2: 'the identical code can be in any slot' }, explain: 'Only a full pass clears a candidate.' },
+    ] },
     { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: chunking by 3 is the Pincode memory trick used for perception instead of recall, and elimination (find one flaw per wrong option) is how Figure It Out and every multiple-choice task are won.' },
     { type: 'transfer',
       near: { make: identicalQ },
@@ -202,9 +214,6 @@ export default {
         wrong: [['pick the option that looks most familiar at a glance', 'swaps keep the familiar look: that is how they slip through'], ['check only the first few characters of each option', 'differences sit anywhere, including the end'], ['read every option in full, one after another', 'correct but slow: elimination needs only one difference per wrong option']],
         explain: 'Both are won by chunked, character-level elimination rather than an overall impression.' }),
     },
-    { type: 'check', scope: 'the contrast table', questions: [
-      mc({ q: 'Which game uses the same chunk-by-3 habit to remember a code that is no longer on screen?', right: 'Pincode', at: 1, wrong: [['Shapeshift', 'Shapeshift has no code, only a shape'], ['Figure It Out', 'Figure It Out tracks eliminated values, not a code'], ['Stock Master', 'Stock Master tracks needles, not characters']], explain: 'Pincode hides the code and asks you to type it back; chunks of 3 are how you hold it.' }),
-    ] },
 
     sec('tryit'),
     { type: 'tryit', game: 'codecompare' },

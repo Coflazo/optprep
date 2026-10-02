@@ -64,6 +64,9 @@ export default {
       explain: `Count: ${CH.m * CH.m} ordered pairs, ${CH.m} ties, the other ${CH.m * CH.m - CH.m} split evenly between higher and lower. Or symmetry: (1 − 1/${CH.m}) ÷ 2. If you typed a range such as [40, 48] "to be safe", you scored ${dec(40 / 48, 2)} on a question worth 1.` },
     { type: 'text', text: 'The cue is "What is the probability, **in percent**, that …" attached to a small, fully specified random setup: two or three dice, a handful of coin tosses, two cards from a deck, one uniform break of a stick. Every outcome can be counted or the event has a one-line formula.' },
     { type: 'list', items: ['"Two fair dice are thrown. What is the probability, in percent, that the sum is at least 9?"', '"A fair coin is tossed 5 times. Probability, in percent, of exactly 2 heads?"', '"Two cards are drawn without replacement. Probability, in percent, that they have the same suit?"'] },
+    { type: 'check', scope: 'what makes it exact', questions: [
+      { type: 'choice', q: 'Why is "two dice, sum at least 9, in percent" a question for this lesson?', options: ['every outcome can be counted', 'it needs a long simulation', 'it has no exact answer'], answer: 0, traps: { 1: '36 outcomes are few enough to count in seconds', 2: '10 of 36 outcomes qualify: an exact fraction' }, explain: '36 equally likely outcomes, 10 of them favourable: exactly 10/36.' },
+    ] },
     { type: 'text', text: 'Not this lesson: setups with many trials (30 people and birthdays, 100 coins, 20 dice). Those are exact in principle but too long for a minute, so you estimate them (iv/prob-estimate).' },
     { type: 'check', scope: 'the recognition cues above', questions: [
       mc({ q: 'Which question should you compute exactly and answer with zero width?', right: 'Three dice: P(all show different numbers), in percent', wrong: [['40 people: P(two share a birthday), in percent', 'exact in principle, but 40 factors do not fit in a minute: estimate'], ['100 coin tosses: P(at least 60 heads), in percent', 'a sum of 41 binomial terms: estimate with the normal curve'], ['20 dice: P(the total is at least 80), in percent', 'a 20-dice convolution: estimate with the normal curve']], explain: `Three dice: 6 × 5 × 4 = 120 of 216 outcomes, ${dec(P(120, 216), 4)}…%. The rest need estimation.` }),
@@ -114,6 +117,9 @@ export default {
       { t: 28, say: 'Sanity check: a bit under 25%, because one card of that suit is gone. Right.' },
       { t: 33, say: `I type ${exactEntry(P(12, 51)).text}, then re-read: "same suit", not "same colour". Done.` },
     ] },
+    { type: 'check', scope: 'the slip in the think-aloud', questions: [
+      { type: 'choice', q: 'In the think-aloud, the first try gave 13/52 = 25%. What was wrong?', options: ['the first card is already out', 'it should be same colour', 'it should be 13/51'], answer: 0, traps: { 1: 'the question says same suit', 2: 'the first card fixes the suit, so only 12 of that suit remain' }, explain: '12 of the remaining 51 share its suit: 4/17 ≈ 23.53%.' },
+    ] },
 
     sec('predict'),
     { type: 'predict', question: 'P(at least one head in 5 tosses) = 31/32. Do you type a point or a bracket, and what does [96.8, 96.9] score against the right answer?', answer: `31/32 = ${P(31, 32)}% terminates, so type [${P(31, 32)}, ${P(31, 32)}] for 1. [96.8, 96.9] contains it and scores ${dec(96.8 / 96.9, 4)}: close, but a free ${dec(1 - 96.8 / 96.9, 4)} thrown away.`, explain: 'Terminating denominators (powers of 2 and 5) never need a bracket.' },
@@ -137,8 +143,11 @@ export default {
 
     sec('speed'),
     { type: 'callout', tone: 'speed', text: `Know the repeating families by heart: 1/3 = ${dec(P(1, 3), 4)}…%, 1/6 = ${dec(P(1, 6), 4)}…%, 1/12 = ${dec(P(1, 12), 4)}…%, 1/36 = ${dec(P(1, 36), 4)}…%, 1/7 = ${dec(P(1, 7), 4)}…%. Then n/36 is n × ${dec(P(1, 36), 4)}, and the bracket follows at once.` },
-    { type: 'callout', tone: 'speed', text: `Budget: ${IV.exam.perItemSeconds} seconds per question. Aim for about 40 to compute, 10 to convert and type. If the fraction is not done by 45 seconds, switch to an estimate with a small band rather than submit nothing.` },
     { type: 'check', scope: 'the 1/36 table', questions: [{ make: n36Q }] },
+    { type: 'callout', tone: 'speed', text: `Budget: ${IV.exam.perItemSeconds} seconds per question. Aim for about 40 to compute, 10 to convert and type. If the fraction is not done by 45 seconds, switch to an estimate with a small band rather than submit nothing.` },
+    { type: 'check', scope: 'the time budget', questions: [
+      { type: 'choice', q: 'At 45 seconds the exact fraction is not done. What do you do?', options: ['switch to an estimate with a small band', 'keep computing past 60 seconds', 'submit nothing for this one'], answer: 0, traps: { 1: 'the clock stops at 60 seconds', 2: 'an estimate band still scores' }, explain: 'An estimate with a small band beats an empty answer.' },
+    ] },
 
     sec('rule'),
     { type: 'callout', tone: 'rule', text: 'Countable setup → exact fraction → × 100 → terminating: [x, x]; repeating: bracket at 4 significant figures. Never a rounded point, never a decimal instead of percent.' },
@@ -159,10 +168,10 @@ export default {
       { fusion: true, change: `Two dice become three AND sum ≥ ${G.k} becomes sum ≥ 16`, effect: `Both changes act on the count: 216 ordered triples, and only sums 16, 17, 18 qualify (${[16, 17, 18].map(tri).join(' + ')} = ${TRI16}), so ${TRI16}/216 = ${dec(P(TRI16, 216), 4)}…%, typed ${exactEntry(P(TRI16, 216)).text}.` },
     ] },
     { type: 'callout', tone: 'edge', text: 'Edge cases: a probability of exactly 0 cannot score, because the lower bound must be above 0; do not spend time on it. A certain event is [100, 100]. A value just under 1% (1/221) needs four decimals to stay tight.' },
-    { type: 'callout', tone: 'transfer', text: 'Same move elsewhere: any exact answer (an expected value, a waiting time, a count of arrangements) gets the same last step. Compute the fraction, and type a point if it terminates or a 4-significant-figure bracket if it does not.' },
     { type: 'check', scope: 'contrast and edge cases', questions: [
       mc({ q: 'Two dice: P(sum = 1). What do you type?', right: 'Skip it: an answer of 0 cannot score', wrong: [['[0, 0], since the answer is 0', 'a lower bound of 0 always scores 0'], ['[0, 1], a small safe band', 'the lower bound is still 0'], ['[2.77, 2.78], the smallest sum', 'that is P(sum = 2), not sum = 1']], explain: 'The sum is at least 2, so P = 0, and the rule requires a lower bound above 0. Move on.' }),
     ] },
+    { type: 'callout', tone: 'transfer', text: 'Same move elsewhere: any exact answer (an expected value, a waiting time, a count of arrangements) gets the same last step. Compute the fraction, and type a point if it terminates or a 4-significant-figure bracket if it does not.' },
     { type: 'transfer',
       near: { make: (rng) => { const [q, n, d] = rng.pick([['A fair 12-sided die is rolled. P(a multiple of 5), in percent', 2, 12], ['One card from a deck. P(a heart or a king), in percent', 16, 52], ['Three fair coins. P(exactly two heads), in percent', 3, 8], ['Two fair 4-sided dice. P(sum = 5), in percent', 4, 16]]); const e = exactEntry(P(n, d)); return ivq(`${q}. Type the best interval.`, P(n, d), `${n}/${d} = ${dec(P(n, d), 5)}${e.point ? '' : '…'}%. Type ${e.text}.`); } },
       far: ivq('Outside probability: a 60-second clock is split equally among 7 questions. How many seconds per question? Type the best interval.', 60 / 7, `60/7 = ${dec(60 / 7, 6)}…, which repeats: keep 4 significant figures, ${exactEntry(60 / 7).text}.`),

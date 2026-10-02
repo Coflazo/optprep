@@ -5,6 +5,7 @@ export default family({
   title: 'Sum of previous terms plus a constant',
   skill: 'When a sum-of-previous rule is off by the same amount every step, that amount is part of the rule',
   levels: [3, 4],
+  view: 'table',
   show: (d) => (d === 3 ? 6 : 7),
   params: (rng, d) => ({ k: d === 3 ? 2 : 3, c: nz(rng, -4, 4), s: Array.from({ length: d === 3 ? 2 : 3 }, () => rng.int(1, 6)) }),
   terms: ({ k, c, s }, n) => { const out = s.map((v) => q(v)); while (out.length < n) { const m = out.length; let t = q(c); for (let j = 1; j <= k; j++) t = t.add(out[m - j]); out.push(t); } return out.slice(0, n); },

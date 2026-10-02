@@ -54,9 +54,12 @@ export default {
     ], q: `Before any teaching: ${seq(CH.slice(0, 5))}, ? What comes next? Try two ways: once with the ratios, once by comparing each gap with the term before it.`, answer: String(CH[5]), explain: `Ratios ${CH.slice(1, 5).map((v, i) => (v / CH[i]).toFixed(2)).join(', ')}: around 2, but not constant. Gaps ${seq(g(CH.slice(0, 5)))}: ${g(CH)[0]} is ${CH[0]} backwards, ${g(CH)[1]} is ${CH[1]} backwards. So next = ${CH[4]} + ${rv(CH[4])} = ${CH[5]}.` },
     { type: 'text', text: 'Each term is the previous term **plus the same number written backwards**. Because a number and its reversal have the same number of digits, the terms roughly double; the ratio wanders, and it is exactly 2 whenever a term reads the same both ways (a palindrome).' },
     { type: 'list', items: [`What number comes next?  ${seq(E1.slice(0, 5))}, ?`, `What number comes next?  ${seq(E2.slice(0, 5))}, ?`, `What number comes next?  ${seq(E3.slice(0, 5))}, ?`] },
-    { type: 'text', text: `Not this lesson: exact doubling every time (${seq(DBL)}), double plus a constant (${seq(AF)}: the ratio settles instead of wandering) or a small digit-sum gap (${seq(DS)}).` },
     { type: 'check', scope: 'the cue: gap = the previous term backwards', questions: [
       { make: (rng) => { const p = draw(rng, 4), xs = p.xs.slice(0, 5), af = affine(rng.int(20, 60), 2, rng.int(1, 5), 5), d = run(rng.int(100, 999), ds, 5); return pick(rng, 'In which sequence is every gap the previous term written backwards?', seq(xs), [[seq(af), `its gaps ${seq(g(af))} double: that is 2 × previous + ${af[1] - 2 * af[0]}`], [seq(d), `its gaps ${seq(g(d))} are small digit sums`]], `${xs[1]} = ${xs[0]} + ${rv(xs[0])}, ${xs[2]} = ${xs[1]} + ${rv(xs[1])}.`); } },
+    ] },
+    { type: 'text', text: `Not this lesson: exact doubling every time (${seq(DBL)}), double plus a constant (${seq(AF)}: the ratio settles instead of wandering) or a small digit-sum gap (${seq(DS)}).` },
+    { type: 'check', scope: 'the neighbouring rules', questions: [
+      { type: 'choice', q: '5, 13, 29, 61, 125: which rule fits?', options: ['double, then add 3', 'add the term backwards', 'add the digit sum'], answer: 0, traps: { 1: '13 + 31 = 44, not 29', 2: '13 + 4 = 17, not 29' }, explain: '5 × 2 + 3 = 13, 13 × 2 + 3 = 29: the ratio settles toward 2.' },
     ] },
 
     S('why'),
@@ -71,9 +74,12 @@ export default {
     S('picture'),
     { type: 'text', text: 'Three views of one list. The table adds each term to its reversal. The ratio row shows the wandering growth. The bars show that every gap equals the reversal of the term on its left.' },
     { type: 'diagram', diagram: 'table', spec: { columns: ['term', 'written backwards', 'sum', 'next term'], rows: CH.slice(0, 4).map((v, i) => [String(v), String(rv(v)), String(v + rv(v)), String(CH[i + 1])]) }, caption: `${seq(CH.slice(0, 5))}: term + reversal = next term on every row. ${CH[2]} is a palindrome, so that step is an exact doubling. Next: ${CH[4]} + ${rv(CH[4])} = ${CH[5]}.` },
-    { type: 'diagram', diagram: 'ladder', spec: { mode: 'ratio', rows: [CH.slice(0, 5), CH.slice(1, 5).map((v, i) => ratio(CH[i], v))] }, caption: `Ratios ${CH.slice(1, 5).map((v, i) => (v / CH[i]).toFixed(2)).join(', ')}: around 2, never settling. A ratio that settles would mean a multiply-then-add rule instead.` },
     { type: 'check', scope: 'term + reversal = next term', questions: [
       { make: (rng) => { const p = draw(rng), xs = p.xs; return num(nextQ(xs.slice(0, 5)), xs[5], `${xs[4]} backwards is ${rv(xs[4])}; ${xs[4]} + ${rv(xs[4])} = ${xs[5]}.`, ['Compare each gap with the term before it, read backwards.', 'Add the last term reversed.']); } },
+    ] },
+    { type: 'diagram', diagram: 'ladder', spec: { mode: 'ratio', rows: [CH.slice(0, 5), CH.slice(1, 5).map((v, i) => ratio(CH[i], v))] }, caption: `Ratios ${CH.slice(1, 5).map((v, i) => (v / CH[i]).toFixed(2)).join(', ')}: around 2, never settling. A ratio that settles would mean a multiply-then-add rule instead.` },
+    { type: 'check', scope: 'a wandering ratio', questions: [
+      { type: 'choice', q: 'The ratios of a list wander around 2 and never settle. Which rule is ruled out?', options: ['double, then add a constant', 'add the term backwards', 'add the digit sum'], answer: 0, traps: { 1: 'a wandering ratio is what the reversal rule gives', 2: 'digit sums give ratios near 1, not 2' }, explain: 'Double plus a constant has ratios that settle; these wander.' },
     ] },
     { type: 'diagram', diagram: 'bar', spec: { title: `Gaps of ${seq(CH.slice(0, 5))} against reversals`, xLabel: 'step', yLabel: 'size', categories: g(CH.slice(0, 5)).map((_, i) => String(i + 1)), series: [{ name: 'gap', values: g(CH.slice(0, 5)) }, { name: 'left term written backwards', values: CH.slice(0, 4).map(rv) }], valueLabels: true }, caption: 'Each pair of bars is identical: every gap is the term before it, reversed. Unlike a digit sum, this gap is as large as the term itself.' },
     { type: 'check', scope: 'the gap is the reversal of the left term', questions: [
@@ -105,6 +111,9 @@ export default {
         ] },
     ] },
     { type: 'text', text: `How far the ratio wanders depends on the digits. In ${seq(PRED.slice(0, 4))}, ${PRED[1]} backwards (${rv(PRED[1])}) is much bigger than ${PRED[1]}, so that step multiplies by about ${(PRED[2] / PRED[1]).toFixed(1)}; a term whose reversal is smaller grows by less than 2. The ratio is only a symptom; the reversal is the rule.` },
+    { type: 'check', scope: 'how far the ratio wanders', questions: [
+      { type: 'choice', q: 'In 79, 176, 847, which step grows the most?', options: ['176 to 847', '79 to 176', 'both grow by about × 2'], answer: 0, traps: { 1: '176/79 ≈ 2.2, but 847/176 ≈ 4.8', 2: '671 is far bigger than 176, so that step jumps' }, explain: '176 backwards is 671, much bigger than 176: the step is about × 4.8.' },
+    ] },
     { type: 'explain', prompt: 'Why do the terms roughly double, and why is doubling exactly right only at a palindrome?', model: 'A number and its reversal have the same number of digits, so adding them gives roughly twice the number; the ratio is above 2 when the reversal is bigger and below 2 when it is smaller. Only when the number reads the same backwards is the reversal equal to the number, so only then is the step exactly 2 × last.', points: ['Same number of digits, so the sum is about double', 'The ratio depends on whether the reversal is bigger or smaller', 'Exact doubling happens only for palindromes'] },
 
     S('worked'),
@@ -132,6 +141,9 @@ export default {
 
     S('speed'),
     { type: 'callout', tone: 'speed', text: 'Last-digit check: the answer ends in the last digit of (last digit + first digit) of the last term, because those two digits are added in the units column. One glance removes most wrong options.' },
+    { type: 'check', scope: 'the last-digit check', questions: [
+      { make: (rng) => { const p = pals(rng, false), xs = p.xs, a = xs[4], t = xs[5], ld = (a % 10 + +String(a)[0]) % 10; return pick(rng, `${seq(xs.slice(0, 5))}, ? Using only the last-digit check, which option can be right?`, t, [[2 * a, `${2 * a} ends in ${(2 * a) % 10}, but ${a % 10} + ${String(a)[0]} ends in ${ld}`], [t + 1, `${t + 1} ends in ${(t + 1) % 10}, not ${ld}`], [t + 10 * (ld === 0 ? 1 : -1) + 1, `ends in ${(t + 1) % 10}: the units digit must be ${ld}`]], `${a} + ${rv(a)} = ${t}, ending in ${ld}.`); } },
+    ] },
     { type: 'callout', tone: 'speed', text: 'Reverse from the right: read the digits of the last term from its end and write them down, then add column by column. Test one earlier gap first, then answer: about 20 seconds. If the first gap you test is not a reversal, stop and go back to the ladder of tests.' },
     { type: 'thinkaloud', problem: nextQ(E1.slice(0, 5)), lines: [
       { t: 0, say: `Ratios roughly 2: ${E1.slice(1, 5).map((v, i) => (v / E1[i]).toFixed(1)).join(', ')}.` },
@@ -141,8 +153,9 @@ export default {
       { t: 15, say: `Last term ${E1[4]}, backwards ${rv(E1[4])}. Sum: ${E1[5]}.` },
       { t: 19, say: `Last digit check: ${E1[4] % 10} + ${String(E1[4])[0]} ends in ${(E1[4] % 10 + +String(E1[4])[0]) % 10}, and ${E1[5]} ends in ${E1[5] % 10}. Answer ${E1[5]}.` },
     ] },
-    { type: 'check', scope: 'the last-digit check', questions: [
-      { make: (rng) => { const p = pals(rng, false), xs = p.xs, a = xs[4], t = xs[5], ld = (a % 10 + +String(a)[0]) % 10; return pick(rng, `${seq(xs.slice(0, 5))}, ? Using only the last-digit check, which option can be right?`, t, [[2 * a, `${2 * a} ends in ${(2 * a) % 10}, but ${a % 10} + ${String(a)[0]} ends in ${ld}`], [t + 1, `${t + 1} ends in ${(t + 1) % 10}, not ${ld}`], [t + 10 * (ld === 0 ? 1 : -1) + 1, `ends in ${(t + 1) % 10}: the units digit must be ${ld}`]], `${a} + ${rv(a)} = ${t}, ending in ${ld}.`); } },
+    { type: 'check', scope: 'reverse from the right, and the think-aloud', questions: [
+      { type: 'number', q: 'What is 4517 + 7154?', answer: 11671, explain: 'Read 4517 from the right: 7154. Add column by column: 11671.' },
+      { type: 'choice', q: 'In the think-aloud, the first try doubled 9218. What showed it was wrong?', options: ['187 to 968 is × 5.2', 'the last-digit check passed', 'the ratios were exactly 2'], answer: 0, traps: { 1: 'the last-digit check came later, for the right answer', 2: 'the ratios wander: 2.1, 5.2, 1.9' }, explain: 'A ratio of 5.2 is no doubling; the gaps are the reversals: 9218 + 8129 = 17347.' },
     ] },
 
     S('rule'),
@@ -163,11 +176,11 @@ export default {
       { change: `Start at ${CH[0] + 1} and double instead of adding the reversal`, fusion: true, effect: `Doubling ignores the digits, so the new start just scales: ${seq(geo(CH[0] + 1, 2, 5))}, next ${geo(CH[0] + 1, 2, 6)[5]}, far from ${rr(CH[0] + 1, 6)[5]}.` },
     ] },
     { type: 'callout', tone: 'edge', text: `Edge cases: a trailing 0 vanishes when reversed (${10 * 12} backwards is ${rv(120)}), so these items avoid terms ending in 0. Palindromes double exactly (${seq(rr(16, 6))} ends in a run of doublings once it reaches ${rr(16, 6)[4]}).` },
-    { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: reverse-and-add is the classic route to palindromes (most starts reach one within a few steps, and 196 famously never seems to). Any rule that reads the digits rather than the size of a number needs a digit view, not algebra.' },
     { type: 'check', scope: 'the contrast table and edge cases', questions: [
       { make: (rng) => { const t = rng.int(0, 2); const xs = t === 0 ? draw(rng, 4).xs.slice(0, 5) : t === 1 ? affine(rng.int(3, 9), 2, rng.int(1, 5), 5) : run(rng.int(20, 60), ds, 5); const names = ['add the reversal', '2 × last + a constant', 'add the digit sum']; const trp = [[null, `2 × ${xs[3]} + ${xs[1] - 2 * xs[0]} = ${2 * xs[3] + xs[1] - 2 * xs[0]}, not ${xs[4]}`, `the gaps are as large as the terms, far above a digit sum`], [`${xs[3]} + ${rv(xs[3])} = ${xs[3] + rv(xs[3])}, not ${xs[4]}`, null, 'the gaps double; digit sums stay small'], [`${xs[3]} + ${rv(xs[3])} = ${xs[3] + rv(xs[3])}, not ${xs[4]}`, 'the ratios are near 1, not 2', null]]; return pick(rng, `${seq(xs)}: which rule?`, names[t], names.map((nm, i) => [nm, trp[t][i]]).filter((_, i) => i !== t), 'Test each rule on the last step.'); } },
     ] },
 
+    { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: reverse-and-add is the classic route to palindromes (most starts reach one within a few steps, and 196 famously never seems to). Any rule that reads the digits rather than the size of a number needs a digit view, not algebra.' },
     { type: 'transfer',
       near: { make: (rng) => { const p = pals(rng, false), xs = p.xs; return num(`Each day a number grows by itself written backwards: ${seq(xs.slice(0, 5))}. What is it next?`, xs[5], `${xs[4]} + ${rv(xs[4])} = ${xs[5]}.`, ['Compare each jump with the number before it, read backwards.', 'Reverse the last number and add.']); } },
       far: { type: 'number', q: `Reverse-and-add from ${PAL0}: ${PAL0} + ${rv(PAL0)} = ${PAL0 + rv(PAL0)}, then ${PAL0 + rv(PAL0)} + ${rv(PAL0 + rv(PAL0))}, and so on. After how many steps is the result a palindrome (the same read backwards) for the first time?`, answer: PSTEPS.length - 1, explain: `${seq(PSTEPS)}: ${PSTEPS[PSTEPS.length - 1]} reads the same both ways after ${PSTEPS.length - 1} steps.`, hints: ['Keep adding each number to its reversal.', 'Stop when the number reads the same backwards.'] },

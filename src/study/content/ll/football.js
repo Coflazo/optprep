@@ -68,13 +68,16 @@ export default {
         { id: 'counts', label: 'Compare the win counts', approach: `You compared raw counts: ${H} home wins against ${LW} Lions wins.`, breaksAt: `The counts sit over different totals (${N} and ${LIONS.length}); only the fractions compare.` },
       ] },
     { type: 'text', text: 'The prompt is a **table of match results**: home team, away team, score (home goals first). A match is picked at random, or from one team\'s matches. Statements: home win, away win, draw, at least g goals in total, both teams scored, the away side kept a clean sheet, or "a random match involving team T was won by T" (or saw T score).' },
-    { type: 'text', text: 'Not this lesson: a score table of students (a row per student, not per match) and two-way count tables. The counting idea is the same; what changes is how you read a row.' },
     { type: 'check', scope: 'the recognition cues above', questions: [
       mc(null, 'Which statement uses a smaller scope than the whole table?', '"A random match involving the Wolves was won by the Wolves."', [
         ['"A random match in the league was won by the Wolves."', 'names a team, but the pick is from every match in the league'],
         ['"A random match in the league was won by the away team."', 'every match is in scope; only the numerator changes'],
         ['"A random match in the league ended 0–0, with no scorer."', 'still a tally over all matches'],
       ], '"Involving the Wolves" restricts the pick to the Wolves\' matches.', { at: 3 }),
+    ] },
+    { type: 'text', text: 'Not this lesson: a score table of students (a row per student, not per match) and two-way count tables. The counting idea is the same; what changes is how you read a row.' },
+    { type: 'check', scope: 'the neighbouring prompts', questions: [
+      { type: 'choice', q: 'A prompt has one row per student with a Maths score. Which lesson is it?', options: ['score tables', 'football results (this lesson)', 'two-way count tables'], answer: 0, traps: { 1: 'a row here is a student, not a match', 2: 'each row holds scores, not counts in a 2 × 2 grid' }, explain: 'A row per student is a score table; how you read a row is what changes.' },
     ] },
 
     S('why'),
@@ -147,6 +150,9 @@ export default {
 
     S('speed'),
     { type: 'callout', tone: 'speed', text: 'Write the three statement labels on your scrap paper and make one pass down the score column, ticking each as you go. Twelve scores take about 15 seconds.' },
+    { type: 'check', scope: 'one pass', questions: [
+      { type: 'choice', q: 'You must rank three league statements on 12 matches. What is the fast route?', options: ['one pass, ticking all three labels', 'three passes, one per statement', 'read only the first six matches'], answer: 0, traps: { 1: 'three passes take three times as long', 2: 'every match counts toward the denominator 12' }, explain: 'One pass down the scores, ticking each label as you go: about 15 seconds for twelve scores.' },
+    ] },
     { type: 'callout', tone: 'speed', text: 'For a team statement, count the team\'s matches first (scan both name columns), then only look at those scores. Compare a/b with c/d by cross-multiplying when the fractions are close.' },
     { type: 'check', scope: 'one pass and cross-multiplying', questions: [
       { make: (rng) => again(() => { const a = rng.int(2, 5), b = rng.int(a + 1, 7), c = rng.int(3, 8), d = rng.int(c + 3, 16); if (a * d === b * c) return null; return mc(rng, `A team won ${a} of its ${b} matches; the league has ${c} draws in ${d} matches. Which is more likely for a random pick in its own scope?`, a * d > b * c ? 'the team winning one of its matches' : 'a league match ending in a draw', [[a * d > b * c ? 'a league match ending in a draw' : 'the team winning one of its matches', 'compared the counts, not the fractions'], ['both are equally likely', `the cross-products ${a * d} and ${b * c} differ`]], `${a} × ${d} = ${a * d} against ${c} × ${b} = ${b * c}.`); }) },
@@ -178,11 +184,11 @@ export default {
       ['T won', 'T\'s matches', 'T\'s goals > opponent\'s'],
     ] },
     { type: 'callout', tone: 'edge', text: 'Edge cases: every match is exactly one of home win, draw, away win, so the three probabilities add to 1. A 0–0 draw is a draw with no scorer; "at least 0 goals" is certain.' },
-    { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: a score table (a row per student), fund returns (a row per year; "years after a positive year" is a shrunken scope) and histograms (bars instead of rows) all follow count / scope.' },
     { type: 'check', scope: 'the contrast table and edge cases', questions: [
       { make: (rng) => { const h = rng.int(3, 7), d = rng.int(1, 4), n = h + d + rng.int(2, 6); return mc(rng, `${n} matches: P(home win) = ${h}/${n}, P(draw) = ${d}/${n}. What is P(away win)?`, `${n - h - d}/${n}`, [[`${n - h}/${n}`, 'forgot the draws: home win, draw and away win split every match'], [`${h}/${n}`, 'assumed home and away wins are equally common'], [`${d}/${n}`, 'confused away wins with draws']], `The three results add to 1: ${n} − ${h} − ${d} = ${n - h - d}.`); } },
     ] },
 
+    { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: a score table (a row per student), fund returns (a row per year; "years after a positive year" is a shrunken scope) and histograms (bars instead of rows) all follow count / scope.' },
     { type: 'variation', base: `The challenge: (a) home win ${H}/${N}, (b) a Lions match won by the Lions ${LW}/${LIONS.length}, (c) draw ${D}/${N}. Order (b) > (a) > (c).`, rows: [
       { same: true, change: 'Replace every 1–1 in the table with a 2–2', effect: 'No change. A draw is a draw at any score, so no result moves; only goal-total statements would notice.' },
       { change: 'Ask (b) about the Wolves instead of the Lions', effect: `The Wolves won ${WW} of their ${WOL.length}: ${dp(WW / WOL.length, 2)}. Same scope rule, weaker team: (b) drops from first to last.` },

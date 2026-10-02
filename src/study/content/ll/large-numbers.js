@@ -60,6 +60,9 @@ export default {
         { id: 'lln', label: 'Exactly half is likely', approach: 'You put (c) first: by the law of large numbers, half the births should be boys.', breaksAt: 'The proportion lands near 1/2, not on it: exactly 15 of 30 is one count among many, about √(2/(πn)).' },
       ] },
     { type: 'text', text: 'There is **no picture**: statements about the **proportion** of heads (or boys) in samples of **different sizes**: at least f% in n flips, exactly 50%, between two percentages, more than 60% boys in a small or a large hospital. The trap is to judge by the percentage alone.' },
+    { type: 'check', scope: 'the trap', questions: [
+      { type: 'choice', q: 'What is the trap in these items?', options: ['judging by the percentage alone', 'forgetting which coin is used', 'counting heads instead of tails'], answer: 0, traps: { 1: 'the coin is fair throughout', 2: 'heads and tails are symmetric' }, explain: 'The same percentage means different things for 10 flips and for 1,000.' },
+    ] },
     { type: 'text', text: 'Not this lesson: a fixed number of flips with patterns (coin strings) or a single binomial count. Here the point is comparing the same proportion across n, and the sample sizes are what the item is really about.' },
     { type: 'check', scope: 'the recognition cues above', questions: [
       mc(null, 'Which pair of statements does this lesson compare?', '"at least 70% heads in 10 flips" and "at least 70% heads in 100 flips"', [['"HH somewhere in 6 flips" and "HT somewhere in 6 flips"', 'patterns in one fixed string: coin strings'], ['"exactly 3 heads in 5 flips" and "exactly 2 heads in 5 flips"', 'same n, different counts: a single binomial'], ['"at least one six in 4 throws" and "at least one double six in 24"', 'at-least-one statements: dice triples']], 'Same proportion, different sample sizes.', { at: 0 }),
@@ -132,6 +135,9 @@ export default {
 
     S('speed'),
     { type: 'callout', tone: 'speed', text: `sd table for the proportion: n = 10 → ${dp(sd(10), 2)}, 25 → ${dp(sd(25), 2)}, 100 → ${dp(sd(100), 2)}, 400 → ${dp(sd(400), 3)}. Threshold 60%: z = 0.2√n. Tails: z = 1 → about ${T1}, z = 2 → about ${T2}.` },
+    { type: 'check', scope: 'the sd table', questions: [
+      { type: 'number', q: 'A fair coin is flipped 100 times. sd of the proportion of heads?', answer: 0.05, tolerance: 1e-9, explain: '0.5/√100 = 0.05.' },
+    ] },
     { type: 'callout', tone: 'speed', text: `Direction rules settle most items without numbers: extremes fall with n, bands around 1/2 rise with n, exactly 1/2 falls with n. Budget: ${LL.exam.perItemSeconds} seconds; use numbers only when two statements move the same way.` },
     { type: 'check', scope: 'direction rules and the sd table', questions: [
       { make: (rng) => again(() => { const keys = rng.shuffle(Object.keys(POOL)).slice(0, 3); return rank(rng, 'Fair coin (or equally likely boys and girls). Rank from most to least likely.', keys.map((k) => POOL[k](rng)), 'z-distance with sd 0.5/√n for tails; √(2/(πn)) for exactly half; bands rise with n.', { gap: 0.02 }); }) },
@@ -161,11 +167,11 @@ export default {
       ['at least 50% heads', 'falls towards 1/2', 'the tie at exactly half shrinks'],
     ] },
     { type: 'callout', tone: 'edge', text: 'Edge cases: n = 1 is maximally extreme (every sample is 0% or 100%). "At least 50%" is always above 1/2 for even n because it includes the tie; for odd n it is exactly 1/2.' },
-    { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: volatile funds (a small sample swings like a volatile fund), the 68-95 landmarks on density curves, and Intervals estimates where a sum of many pieces concentrates like √n.' },
     { type: 'check', scope: 'the contrast table and edge cases', questions: [
       { make: (rng) => { const n = rng.pick([5, 7, 9, 11]); return mc(rng, `P(at least 50% heads in ${n} flips)?`, '1/2', [['above 1/2, because it includes ties', `with ${n} (odd) flips a tie is impossible`], ['below 1/2', 'heads and tails are symmetric'], [dp(half(n + 1)), 'answered "exactly half" for the next even n']], 'Odd n: no tie, so symmetry splits the outcomes equally.'); } },
     ] },
 
+    { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: volatile funds (a small sample swings like a volatile fund) and the 68-95 landmarks on density curves. Also Intervals estimates, where a sum of many pieces concentrates like √n.' },
     { type: 'variation', base: `The challenge: (a) 10 births, more than 60% boys ≈ ${dp(morePct(10, 0.6))} > (c) exactly 15 of 30 ≈ ${dp(half(30))} > (b) 50 births, more than 60% boys ≈ ${dp(morePct(50, 0.6))}.`, rows: [
       { same: true, change: 'Ask about girls instead of boys in (a) and (b)', effect: 'No change. Boys and girls are equally likely, so "more than 60% girls" mirrors "more than 60% boys".' },
       { change: 'Change (b) to "the 50-birth hospital records between 40% and 60% boys"', effect: `A band around 1/2 in a large sample: ${dp(V.band)}. (b) jumps from last to first.` },
