@@ -63,6 +63,9 @@ export default {
         { id: 'samespot', label: 'HH and HT are a tie', approach: 'You gave (a) and (b) the same value: each pattern has chance 1/4 at any pair of spots.', breaksAt: 'Equal at a fixed spot is not equal somewhere: after a miss HT restarts at once, HH must start over.' },
       ] },
     { type: 'text', text: 'There is **no picture**: statements about a fixed number of fair flips. Some ask whether a pattern (HH, HT, HHH) **appears somewhere**; others ask for exactly k heads, perfect alternation, the first head on flip j, or more heads than tails.' },
+    { type: 'check', scope: 'the kinds of statement', questions: [
+      { type: 'choice', q: '"In 5 flips, HH appears somewhere." Which kind of statement is it?', options: ['a pattern appears somewhere', 'exactly k heads', 'perfect alternation', 'the first head on a given flip'], answer: 0, traps: { 1: 'no head count is fixed', 2: 'alternation allows only HTHTH or THTHT', 3: 'no position is fixed for a first head' }, explain: 'HH anywhere in the string: a pattern statement.' },
+    ] },
     { type: 'text', text: 'Not this lesson: flipping **until** a pattern appears (waiting times in Beat the Odds) and large samples of flips (proportions and the law of large numbers). Here n is small and fixed, and every string of n flips is equally likely.' },
     { type: 'check', scope: 'the recognition cues above', questions: [
       mc(null, 'How many equally likely strings does 6 flips of a fair coin produce?', `${2 ** 6}`, [['12', 'added 2 per flip instead of multiplying'], ['36', 'squared 6 as if two dice'], ['7', 'counted the possible numbers of heads, which are not equally likely']], 'Each flip doubles the count: 2^6.', { at: 0 }),
@@ -135,6 +138,9 @@ export default {
 
     S('speed'),
     { type: 'callout', tone: 'speed', text: `Memorise the HH-avoider counts a(n) = ${[1, 2, 3, 4, 5, 6, 7, 8].map((n) => fib(n + 2)).join(', ')} for n = 1 to 8, and HT-avoiders n + 1. Then "somewhere" is one subtraction.` },
+    { type: 'check', scope: 'the HH-avoider counts', questions: [
+      { type: 'number', q: 'How many strings of 6 flips avoid HH?', answer: 21, explain: 'The counts run 2, 3, 5, 8, 13, 21 for n = 1 to 6.' },
+    ] },
     { type: 'callout', tone: 'speed', text: `Single-line values: exactly k heads C(n, k)/2^n; alternates 2/2^n; first head on flip j is 1/2^j; more heads than tails (1 − P(tie))/2. Budget: ${LL.exam.perItemSeconds} seconds; none of these needs enumeration.` },
     { type: 'check', scope: 'the recall values', questions: [
       { make: (rng) => again(() => { const keys = rng.shuffle(Object.keys(POOL)).slice(0, 3); return rank(rng, 'A fair coin. Rank from most to least likely.', keys.map((k) => POOL[k](rng)), 'Avoider counts for patterns, one-line formulas for the rest.', { gap: 0.02 }); }) },
@@ -165,11 +171,11 @@ export default {
       ['alternates perfectly', '2', '2/2^n'],
     ] },
     { type: 'callout', tone: 'edge', text: 'Edge cases: with 2 flips HH and HT are both exactly 1/4; the gap only appears from 3 flips on. More heads than tails with an odd number of flips is exactly 1/2 (no ties possible).' },
-    { type: 'callout', tone: 'transfer', text: `Same idea elsewhere: waiting for a pattern (HH takes ${2 ** 2 + 2} flips on average, HT only ${2 ** 2}: the same overlap asymmetry), dice "all different" counts, and impossible statements from parity (heads minus tails always has the parity of n).` },
     { type: 'check', scope: 'the contrast table and edge cases', questions: [
       { make: (rng) => { const n = rng.pick([3, 5, 7, 9]); return mc(rng, `P(strictly more heads than tails in ${n} flips)?`, '1/2', [[dp(P.more(n + 1)), `used the even-n formula; with ${n} flips a tie is impossible`], ['less than 1/2, because of ties', 'ties need an even number of flips'], ['more than 1/2', 'heads and tails are symmetric']], 'Odd n: no ties, and heads/tails symmetry splits the rest equally.'); } },
     ] },
 
+    { type: 'callout', tone: 'transfer', text: `Same idea elsewhere: waiting for a pattern (HH takes ${2 ** 2 + 2} flips on average, HT only ${2 ** 2}: the same overlap asymmetry), dice "all different" counts, and impossible statements from parity (heads minus tails always has the parity of n).` },
     { type: 'variation', base: `Five flips: (a) HT somewhere ${2 ** 5 - 6}/32 > (b) HH somewhere ${2 ** 5 - fib(7)}/32 > (c) exactly 3 heads ${C(5, 3)}/32.`, rows: [
       { same: true, change: 'Swap heads and tails everywhere: TH, TT, exactly 3 tails', effect: 'No change. A fair coin is symmetric, so every string and its mirror image are equally likely.' },
       { change: 'Ask (b) for HHH instead of HH', effect: `${noRun(5, 3)} strings avoid HHH: 1 − ${noRun(5, 3)}/32 = ${dp(P.HHH(5))}. A longer run is harder to hit, and (b) drops to last.` },

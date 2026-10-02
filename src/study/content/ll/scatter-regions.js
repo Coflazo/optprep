@@ -57,9 +57,12 @@ export default {
         { id: 'nolink', label: 'x says nothing about y', approach: `You set (c) equal to (a), ${band}/${N}, since picking by x should not change y.`, breaksAt: 'The cloud slopes upward: the high-x strip is where the high-y points are, so (c) lands well above (a).' },
       ] },
     { type: 'text', text: 'The prompt is a **scatter plot**: each point is one item (a day, a student, a stock) with an x and a y value. One point is picked at random, or from the points meeting a condition. Statements name regions: x above a (a vertical strip), y above b (a horizontal band), both (a corner), or above the dashed line y = x. Gridlines sit at whole numbers and no point sits on one.' },
-    { type: 'text', text: 'Not this lesson: a histogram (one variable, bars of counts) or density curves (areas). Here you count dots.' },
     { type: 'check', scope: 'the recognition cues above', questions: [
       mc(null, '"x above 4 and y above 7" is which region of a scatter plot?', 'the top-right corner beyond x = 4 and y = 7', [['the vertical strip right of x = 4', 'that is "x above 4" alone: the y condition is dropped'], ['the band above y = 7', 'that is "y above 7" alone: the x condition is dropped'], ['everything right of x = 4 or above y = 7', 'that is the OR region, not AND']], 'AND keeps only the points meeting both: a corner.', { at: 0 }),
+    ] },
+    { type: 'text', text: 'Not this lesson: a histogram (one variable, bars of counts) or density curves (areas). Here you count dots.' },
+    { type: 'check', scope: 'what you count', questions: [
+      { type: 'choice', q: 'What do you count in a scatter-plot item?', options: ['dots', 'bar heights', 'areas under a curve'], answer: 0, traps: { 1: 'bars belong to histograms', 2: 'areas belong to density curves' }, explain: 'Each dot is one item; regions hold dots.' },
     ] },
 
     S('why'),
@@ -131,9 +134,12 @@ export default {
 
     S('speed'),
     { type: 'callout', tone: 'speed', text: 'Draw the two lines once and count four quadrants: every strip, band, corner and conditional is a sum or ratio of those four numbers.' },
-    { type: 'callout', tone: 'speed', text: `Containment first (corner below strip and band), trend second (which side of the plain fraction the conditional lands), counts last. Budget: ${LL.exam.perItemSeconds} seconds; four quadrant counts of about 30 dots take 30 seconds.` },
     { type: 'check', scope: 'quadrant counts and containment', questions: [
       { make: (rng) => { const c = [rng.int(2, 9), rng.int(2, 9), rng.int(2, 9), rng.int(2, 9)]; const n = c[0] + c[1] + c[2] + c[3]; return { type: 'number', q: `Quadrant counts: top-left ${c[0]}, top-right ${c[1]}, bottom-left ${c[2]}, bottom-right ${c[3]}. P(a random point is on the right or on top)? (2 decimals)`, answer: (n - c[2]) / n, tolerance: 0.006, hints: ['Only one quadrant is outside "right or top".'], explain: `Everything but bottom-left: ${n - c[2]}/${n} = ${dp((n - c[2]) / n, 2)}.` }; } },
+    ] },
+    { type: 'callout', tone: 'speed', text: `Containment first (corner below strip and band), trend second (which side of the plain fraction the conditional lands), counts last. Budget: ${LL.exam.perItemSeconds} seconds; four quadrant counts of about 30 dots take 30 seconds.` },
+    { type: 'check', scope: 'containment first', questions: [
+      { type: 'choice', q: 'Which pair is ordered by containment, with no counting?', options: ['the corner and the strip that holds it', 'the strip and the band that crosses it', 'the corner and the diagonal line y = x'], answer: 0, traps: { 1: 'a strip and a band overlap, but neither contains the other', 2: 'the diagonal cuts across the corner' }, explain: 'Every dot in the corner is also in its strip, so the corner can never beat the strip.' },
     ] },
 
     { type: 'thinkaloud', problem: 'The challenge plot. Rank: (a) a random day has x above 5, (b) among days with y above 6, a random one has x above 5, (c) a random day lies above the line y = x.', lines: [
@@ -159,11 +165,11 @@ export default {
       ['among x above a, y above b', 'corner', 'the strip'],
     ] },
     { type: 'callout', tone: 'edge', text: 'Edge cases: a strip with no points makes its conditional meaningless (items avoid it); a strip with one point makes it 0 or 1. With no trend, the conditional is close to the plain fraction.' },
-    { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: the 2 × 2 table (quadrants are cells), survey charts (the strip is the group), and histograms ("among values above a" is the same subgroup move in one dimension).' },
     { type: 'check', scope: 'the contrast table and edge cases', questions: [
       mc(null, 'Only one point has x above 9, and its y is 8. P(y above 6 | x above 9)?', '1', [['1/30', 'divided by all points instead of the one-point strip'], ['0', 'mixed up the thresholds: 8 is above 6'], ['1/2', 'treated the single point as a coin flip']], 'The strip has one point, and it qualifies.', { at: 0 }),
     ] },
 
+    { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: the 2 × 2 table (quadrants are cells) and survey charts (the strip is the group). In histograms, "among values above a" is the same subgroup move in one dimension.' },
     { type: 'variation', base: `The challenge: (a) y above 6 (${band}/${N}), (b) x above 5 and y above 6 (${corner}/${N}), (c) among x above 5, y above 6 (${corner}/${strip}). Order (c) > (a) > (b).`, rows: [
       { same: true, change: 'Slide every bottom-left point somewhere else inside the bottom-left quadrant', effect: 'No change. Every statement reads only the four quadrant counts, and none of them moves.' },
       { change: 'Change (c) to "among days with x below 5"', effect: `The low-x strip holds ${leftStrip} points, only ${Q.tl} of them high: ${Q.tl}/${leftStrip} = ${dp(cLeft, 2)}. Against the trend, the conditional falls to last.` },

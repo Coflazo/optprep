@@ -55,9 +55,12 @@ export default {
       ] },
     { type: 'text', text: 'The prompt is a story with numbers (shots made so far, dice, coin flips, cards dealt) and three statements, one of which **sounds reasonable but cannot happen** or **sounds uncertain but must happen**. A good shooter "reaching 96%", a coin whose heads minus tails is odd, five cards in four suits.' },
     { type: 'list', items: ['**Maximum achievable**: more successes needed than trials left.', '**Already guaranteed**: the target is met even if everything else fails.', '**Parity**: a difference or sum that can only be even (or odd).', '**Pigeonhole**: more items than boxes forces a repeat.'] },
-    { type: 'text', text: 'Not this lesson: statements that are merely very unlikely (100 makes in a row). Those are positive, just small. Here a counting argument gives exactly 0 or exactly 1.' },
     { type: 'check', scope: 'the recognition cues above', questions: [
       mc(null, 'Which statement is impossible (probability exactly 0)?', 'Two dice show a sum of 13', [['A fair coin lands heads 20 times in a row', 'very unlikely, but possible: (1/2)^20 is above 0'], ['A 5-card hand is a royal flush', 'rare, but some hands are royal flushes'], ['Three dice all show six', 'possible: 1/216']], 'The largest sum of two dice is 12.', { at: 1 }),
+    ] },
+    { type: 'text', text: 'Not this lesson: statements that are merely very unlikely (100 makes in a row). Those are positive, just small. Here a counting argument gives exactly 0 or exactly 1.' },
+    { type: 'check', scope: 'small is not zero', questions: [
+      { type: 'choice', q: '"An 80% shooter makes her next 100 shots." Which kind of statement is it?', options: ['positive but tiny, not impossible', 'impossible: probability exactly 0', 'certain: probability exactly 1'], answer: 0, traps: { 1: 'it can happen; it is only very unlikely', 2: 'she may well miss one' }, explain: '0.8^100 is tiny but positive. Only a counting argument gives exactly 0 or exactly 1.' },
     ] },
 
     S('why'),
@@ -127,9 +130,12 @@ export default {
 
     S('speed'),
     { type: 'callout', tone: 'speed', text: 'Run the four bounds on every statement before any estimate: max achievable, already guaranteed, parity, pigeonhole. Each takes a few seconds, and a hit fixes an end of the order.' },
-    { type: 'callout', tone: 'speed', text: `If the triple has one certain and one impossible statement, submit without computing the middle. Budget: ${LL.exam.perItemSeconds} seconds; these items can take 15.` },
     { type: 'check', scope: 'bounds first', questions: [
       { make: (rng) => again(() => { const s = shots(rng); const pct = Math.floor((1000 * s.made) / s.tot / 5) * 5 / 10; if (pct <= 0) return null; return mc(rng, `${s.made} of ${s.n} made, ${s.k} more to shoot. P(she finishes the ${s.tot} with at least ${pct}%)?`, '1', [['about 0.9', 'estimated from her accuracy instead of checking what is already guaranteed'], ['0', 'confused a guaranteed target with an impossible one'], ['1/2', 'guessed']], `${s.made}/${s.tot} = ${dp((100 * s.made) / s.tot, 1)}% ≥ ${pct}% even if she misses everything.`); }) },
+    ] },
+    { type: 'callout', tone: 'speed', text: `If the triple has one certain and one impossible statement, submit without computing the middle. Budget: ${LL.exam.perItemSeconds} seconds; these items can take 15.` },
+    { type: 'check', scope: 'one 1 and one 0', questions: [
+      { type: 'choice', q: 'Statement (a) is certain and statement (c) is impossible. What do you do with (b)?', options: ['put it in the middle, no computing', 'compute it to two decimals first', 'put it first in the order'], answer: 0, traps: { 1: 'with one 1 and one 0, the middle place is forced', 2: 'a certain statement always comes first' }, explain: 'Certain goes first and impossible last, so (b) sits in the middle whatever its value.' },
     ] },
 
     { type: 'thinkaloud', problem: `A player has made ${TK.made} of ${TK.n} free throws and takes ${TK.k} more at ${TK.p}. Rank: (a) she finishes the ${TK.tot} with at least ${TK.hi}% made, (b) she makes at least ${TK.m} of the next ${TK.k}, (c) she finishes with at least ${TK.lo}% made.`, lines: [
@@ -156,13 +162,13 @@ export default {
       ['100 makes in a row at 0.9', 'none: just rare', '0.9^100, tiny but positive'],
     ] },
     { type: 'callout', tone: 'edge', text: 'Edge cases: a target exactly equal to the maximum is possible (every remaining shot must go in). A statement can be both very likely and not certain; only a bound gives exactly 1.' },
-    { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: pigeonhole in collisions (more people than values), card hands (five cards, four suits), and Orderbooks, where a trade that cannot be filled is impossible whatever the prices look like.' },
     { type: 'check', scope: 'the contrast table and edge cases', questions: [
       { make: (rng) => { const s = shots(rng); const pct = Math.round((1000 * s.max) / s.tot) / 10; const exact = (pct * s.tot) / 100 === s.max;
         const opts = ['Possible: only if every remaining shot goes in', [['Impossible: the target is above her maximum', 'a target equal to the maximum is reachable by making every shot'], ['Certain: she is guaranteed to reach it', 'it needs every remaining shot, so it is far from certain']]];
         return exact ? mc(rng, `${s.made} of ${s.n} made, ${s.k} left. Can she finish at ${pct}%?`, ...opts, `${pct}% of ${s.tot} is exactly ${s.max}, the maximum.`) : mc(rng, `${s.made} of ${s.n} made, ${s.k} left. How does "she finishes with ${s.max} of ${s.tot} made" rank against the bounds?`, ...opts, `${s.max} is the maximum: making all ${s.k} gives it.`); } },
     ] },
 
+    { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: pigeonhole in collisions (more people than values) and card hands (five cards, four suits). In Orderbooks, a trade that cannot be filled is impossible whatever the prices look like.' },
     { type: 'variation', base: `The challenge: ${FT.made} of ${FT.n} made, ${FT.k} more at ${FT.p}. (a) at least ${HI}% is impossible (needs ${needHi}, at most ${FT.max}), (c) at least ${LO}% is certain, (b) at least ${MID} of the next ${FT.k} goes between.`, rows: [
       { same: true, change: `She is a 70% shooter instead of ${FT.p * 100}%`, effect: 'No change to the order. The bounds use counts only; her accuracy moves (b), and (b) stays between the 1 and the 0.' },
       { change: `Lower (a) to "at least ${V.edgePct}%"`, effect: `That needs ${FT.max}, exactly the maximum: possible only if all ${FT.k} go in, ${FT.p}^${FT.k} ≈ ${dp(V.edgeP, 4)}. No longer 0, so no free place: it ranks last only because (b) is about ${dp(PMID, 2)}.` },

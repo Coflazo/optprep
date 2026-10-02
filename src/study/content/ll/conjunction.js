@@ -50,13 +50,16 @@ export default {
       ] },
     { type: 'text', text: 'The prompt shows a **2 × 2 table**: a population counted by two yes/no traits (plays chess or not, trader or not). One person is picked at random, sometimes from a subgroup. The statements are built from the traits: one trait, both (**and**), either (**or**), **neither**, or "a randomly chosen X who is also Y" (a **conditional**).' },
     { type: 'list', items: ['"A randomly chosen attendee plays chess and is a trader." (both)', '"A randomly chosen attendee plays chess or is a trader (or both)." (either)', '"A randomly chosen attendee who plays chess is also a trader." (conditional)'] },
-    { type: 'text', text: 'Not this lesson: a table with one row per person and several scores (score tables), a list of match results (football), or the same counts drawn as grouped bars (survey bar charts). Those reuse the ideas here with a different picture.' },
     { type: 'check', scope: 'the recognition cues above', questions: [
       mc(null, 'Which statement is a conditional?', '"A randomly chosen trader plays chess."', [
         ['"A randomly chosen attendee is a trader who plays chess."', 'this is the joint "trader and chess" over everyone: the scope is all attendees'],
         ['"A randomly chosen attendee plays chess or trades."', 'an OR statement over everyone'],
         ['"A randomly chosen attendee does neither."', 'the neither cell over everyone'],
       ], '"A randomly chosen trader" restricts the pick to traders: the scope is the trader total.', { at: 2 }),
+    ] },
+    { type: 'text', text: 'Not this lesson: a table with one row per person and several scores (score tables), or a list of match results (football). Also the same counts drawn as grouped bars (survey bar charts). Those reuse the ideas here with a different picture.' },
+    { type: 'check', scope: 'the neighbouring prompts', questions: [
+      { type: 'choice', q: 'A prompt lists one row per match with home and away goals. Which lesson is it?', options: ['football results', 'two-way tables (this lesson)', 'survey bar charts'], answer: 0, traps: { 1: 'a 2 × 2 table counts people by two traits; this lists matches', 2: 'there are no grouped bars here' }, explain: 'A row per match is the football lesson; the counting idea is the same.' },
     ] },
 
     S('why'),
@@ -138,9 +141,11 @@ export default {
 
     S('speed'),
     { type: 'callout', tone: 'speed', text: 'OR is one subtraction: everyone minus the neither cell. Neither is one cell. AND is one cell. Only conditionals need a division.' },
-    { type: 'callout', tone: 'speed', text: 'Run containment first and you usually have two of the three placed before any arithmetic. For the last pair (typically a conditional against a single trait), cross-multiply: cell × total against row × column total.' },
-    { type: 'check', scope: 'one-cell reads and cross-multiplying', questions: [
+    { type: 'check', scope: 'one-cell reads', questions: [
       { make: (rng) => { const c = cells(rng); return { type: 'number', q: `${say(c)} What is P(a random attendee does neither)? (2 decimals)`, answer: c.NaNb / c.tot, tolerance: 0.006, hints: ['Neither is a single cell.'], explain: `${c.NaNb}/${c.tot} = ${dp(c.NaNb / c.tot, 2)}, which is also 1 − P(chess or trader).` }; } },
+    ] },
+    { type: 'callout', tone: 'speed', text: 'Run containment first and you usually have two of the three placed before any arithmetic. For the last pair (typically a conditional against a single trait), cross-multiply: cell × total against row × column total.' },
+    { type: 'check', scope: 'cross-multiplying', questions: [
       { make: (rng) => again(() => { const c = cells(rng); const x = c.ab * c.tot, y = c.A * c.B; if (x === y) return null; return mc(rng, `${say(c)} Compare P(trader | chess) = ${c.ab}/${c.A} with P(trader) = ${c.B}/${c.tot} by cross-multiplying. Which is larger?`, x > y ? 'P(trader | chess)' : 'P(trader)', [[x > y ? 'P(trader)' : 'P(trader | chess)', 'multiplied the wrong pairs, or compared the numerators alone'], ['They are equal', `the cross-products ${x} and ${y} differ, so the fractions differ`]], `${c.ab} × ${c.tot} = ${x} against ${c.A} × ${c.B} = ${y}.`, { hints: ['a/b > c/d exactly when a × d > c × b.'] }); }) },
     ] },
 
@@ -169,11 +174,11 @@ export default {
       ['B among A', 'the lens cell', 'the A row total', 'above A and B; anything else: compute'],
     ] },
     { type: 'callout', tone: 'edge', text: 'Edge cases: if every trader plays chess (the "trader only" cell is 0), then P(trader and chess) = P(trader): containment gives equality, never a reversal. If the lens is 0, every conditional between the two traits is 0.' },
-    { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: score tables ("at least 70 in both" inside "at least 70 in Maths"), survey bar charts (these four cells drawn as bars), scatter plots (a corner region inside a strip) and card statements ("a red king" inside "a king") all use containment for the free order and the scope for the denominator.' },
     { type: 'check', scope: 'the contrast table and edge cases', questions: [
       mc(null, 'In some table, nobody is a trader without playing chess. Then P(trader and chess) compared with P(trader) is:', 'equal', [['smaller', 'forgot the edge case: when one trait implies the other, AND equals the smaller trait'], ['larger', 'AND can never exceed one of its parts'], ['impossible to say', 'the empty "trader only" cell settles it']], 'Every trader is in the lens, so the lens equals the trader column.', { at: 0 }),
     ] },
 
+    { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: score tables ("at least 70 in both" inside "at least 70 in Maths") and survey bar charts (these four cells drawn as bars). Scatter plots (a corner inside a strip) and card statements ("a red king" inside "a king") work the same way. All use containment for the free order and the scope for the denominator.' },
     { type: 'variation', base: `The ${T.tot} attendees. Rank "plays chess" (${T.A}), "plays chess and trades" (${T.ab}) and "plays chess or trades" (${T.or}), all over everyone: OR > chess > AND.`, rows: [
       { same: true, change: 'Add a story: the attendee is quiet and loves puzzles', effect: 'No change. The story moves nobody between cells, and containment gives OR > chess > AND for every table.' },
       { same: true, change: 'Double every cell of the table', effect: 'No change. Numerator and denominator of every statement double together, so every fraction keeps its value.' },
