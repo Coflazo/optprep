@@ -7,9 +7,10 @@ import nl from './nl/index.js';
 import iv from './iv/index.js';
 import ob from './ob/index.js';
 import zapn from './zapn/index.js';
+import mm from './mm/index.js';
 import { lessonsOf } from '../schema.js';
 
-export const BOOKS = [assessment, prob, bto, ll, nl, iv, ob, zapn];
+export const BOOKS = [assessment, prob, mm, bto, ll, nl, iv, ob, zapn];
 export const BOOK_BY_ID = Object.fromEntries(BOOKS.map((b) => [b.id, b]));
 export const ALL_LESSONS = BOOKS.flatMap((b) => (b.pending ? [] : lessonsOf(b)));
 export const LESSON_BY_ID = Object.fromEntries(ALL_LESSONS.map((l) => [l.id, l]));

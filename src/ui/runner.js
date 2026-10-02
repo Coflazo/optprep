@@ -19,19 +19,23 @@ import { SECTIONS } from '../../config/sections.js';
 import { SECTION_MODULES } from '../sections/index.js';
 import { readiness, runMeetsTarget } from '../core/readiness.js';
 import { lessonForFamily } from '../study/content/index.js';
+import { divNotation } from '../core/format.js';
 
 const VIEWS = { mcq: mcqView, rank: rankView, interval: intervalView, orderbook: orderbookView };
+// Sure/unsure buttons. Not the 80-in-8: one tap answers there, so there is no second button to press.
 const CALIBRATED = new Set(['bto', 'nl']);
 
-export function itemBody(item, { onChange, preview = true } = {}) {
+// notation: 'colon' shows ÷ as : (European), the learner's setting.
+export function itemBody(item, { onChange, preview = true, notation } = {}) {
   const view = VIEWS[item.kind](item, { onChange, showPreview: preview });
   let visual = null;
   if (item.prompt.visual) {
     try { visual = renderVisual(item.prompt.visual); } catch (e) { visual = h('p', { class: 'muted' }, `Visual unavailable: ${e.message}`); }
   }
-  const el = h('div', {}, h('p', { class: 'prompt' }, item.prompt.text), visual, view.el);
+  const el = h('div', {}, h('p', { class: 'prompt' }, divNotation(item.prompt.text, notation)), visual, view.el);
   return { el, view };
 }
+const notationOf = (store) => store?.settings?.().divNotation;
 
 function familyTitle(section, id) { return section.families.find((f) => f.id === id)?.title || id; }
 
@@ -48,6 +52,11 @@ export function runFeedbackSession(root, { sectionId, mode, family, count, store
   const cfg = SECTIONS[sectionId];
   const rng = makeRng(`${sectionId}:${mode}:${Date.now()}`);
   const perItemMs = drillMs(cfg);
+  // One-tap sections (the 80-in-8): a pace line against the exam's seconds per question, and in
+  // drill a tap on an option submits it, as in the exam. Practice keeps Submit, so you can rethink.
+  const paceMs = cfg.exam.autoAdvance ? perItemMs() : 0;
+  const tapSubmits = cfg.exam.autoAdvance && mode === 'drill';
+  const notation = notationOf(store);
   const log = [];
   let idx = 0;
   let current = null;
@@ -75,14 +84,15 @@ export function runFeedbackSession(root, { sectionId, mode, family, count, store
     if (unsureBtn) submitBtn.textContent = 'Submit (sure)';
     const skipBtn = item.kind === 'mcq' ? h('button', { class: 'btn', type: 'button', onclick: () => submit({ skip: true }) }, 'Skip') : null;
     const hints = mode === 'drill' || noHints ? null : hintLadder(item, (n) => { current.hints = n; });
-    const body = itemBody(item, { preview: mode !== 'drill' });
+    const body = itemBody(item, { preview: mode !== 'drill', notation, onChange: tapSubmits && item.kind === 'mcq' ? () => submit() : undefined });
     const t = timerEl();
+    const paceEl = paceMs && mode !== 'drill' ? h('span', { class: 'num pace', title: 'Seconds on this question against the exam pace' }) : null;
     // The family name can give the method away (e.g. "cheap bundle: buy it, sell the parts"),
     // so it is shown only after the answer is in, except when the learner chose the family.
     const famLabel = h('span', {}, family || mode === 'learn' ? ` · ${familyTitle(section, item.family)}` : '');
     const head = h('div', { class: 'qhead' },
       h('span', {}, `${title || cfg.title} · ${modeLabel(mode)}`, famLabel),
-      h('span', {}, Number.isFinite(limit) ? `${idx + 1} / ${limit}` : `#${idx + 1}`, mode === 'drill' ? ' · ' : '', mode === 'drill' ? t : ''));
+      h('span', {}, Number.isFinite(limit) ? `${idx + 1} / ${limit}` : `#${idx + 1}`, mode === 'drill' ? ' · ' : '', mode === 'drill' ? t : '', paceEl ? ' · ' : '', paceEl));
     const controls = h('div', { class: 'row' }, submitBtn, unsureBtn, skipBtn, hints?.btn,
       h('span', { style: { flex: 1 } }), h('button', { class: 'btn', type: 'button', onclick: () => { idx = limit; summary(); } }, 'End session'));
     const after = h('div', {});
@@ -100,6 +110,14 @@ export function runFeedbackSession(root, { sectionId, mode, family, count, store
     if (mode === 'drill') {
       const cd = makeCountdown(perItemMs(item));
       const tick = () => { paintTimer(t, cd.remaining()); if (cd.expired()) submit({ timeout: true }); else raf = requestAnimationFrame(tick); };
+      tick();
+    } else if (paceEl) {
+      const tick = () => {
+        const ms = performance.now() - current.start;
+        paceEl.textContent = `${(ms / 1000).toFixed(1)} s / ${paceMs / 1000} s`;
+        paceEl.classList.toggle('over', ms > paceMs);
+        if (!current.done) raf = requestAnimationFrame(tick);
+      };
       tick();
     }
     cleanup = () => { document.removeEventListener('keydown', onKey); cancelAnimationFrame(raf); };
@@ -130,7 +148,8 @@ export function runFeedbackSession(root, { sectionId, mode, family, count, store
     const sol = diagnose && !result.correct && item.solution?.steps?.length
       ? diagnosePanel(item, (d) => onMiss?.({ item, response, ...d }), () => solutionPanel(item, { stepwise: true }))
       : solutionPanel(item, { stepwise: !result.correct });
-    mount(current.after, banner, sol,
+    const pace = paceMs && !response.skip ? h('p', { class: 'small-note num' }, `Answered in ${(ms / 1000).toFixed(1)} s · exam pace ${paceMs / 1000} s${ms > paceMs ? ' · slower than the exam allows' : ''}`) : null;
+    mount(current.after, banner, pace, sol,
       h('div', { class: 'row', style: { marginTop: '12px' } }, h('button', { class: 'btn primary', type: 'button', onclick: () => { idx++; show(); } }, idx + 1 >= limit ? 'Finish' : 'Next (Enter)'),
         !result.correct && lessonForFamily(sectionId, item.family) ? h('a', { class: 'btn', href: `#/study/lesson/${lessonForFamily(sectionId, item.family)}` }, `Study: ${familyTitle(section, item.family)}`) : null));
     if (item.kind === 'interval') intervalCoach(item, banner.querySelector('.coach-slot'));
@@ -212,13 +231,20 @@ export function runExam(root, { sectionId, variant, store, seed = Date.now(), on
   let perItem = null;
   let current = null;
   const t = timerEl();
+  // autoAdvance (80-in-8): tapping an option is the answer and the next question appears; no Next
+  // button and no Enter. allowSkip false removes the Skip button. Both default to the old behaviour.
+  const canSkip = exam.allowSkip !== false;
+  const notation = notationOf(store);
 
   function show() {
     if (finished) return;
     if (idx >= items.length) return exam.navigation === 'free' ? endScreen() : finish();
     const item = items[idx];
-    const body = itemBody(item, { preview: false });
+    const tap = exam.autoAdvance && item.kind === 'mcq';
+    let live = false; // restoring a saved answer must not advance
+    const body = itemBody(item, { preview: false, notation, onChange: tap ? () => { if (live) { save(); idx++; show(); } } : undefined });
     if (responses[idx] && !responses[idx].skip) body.view.setResponse?.(responses[idx]);
+    live = true;
     current = { item, body };
     if (exam.perItemSeconds) perItem = makeCountdown(exam.perItemSeconds * 1000);
     const free = exam.navigation === 'free';
@@ -231,13 +257,13 @@ export function runExam(root, { sectionId, variant, store, seed = Date.now(), on
       free && idx > 0 ? h('button', { class: 'btn', type: 'button', onclick: () => { save(); idx--; show(); } }, 'Previous') : null,
       item.kind === 'orderbook'
         ? h('button', { class: 'btn primary', type: 'button', onclick: () => submitBoard(note) }, 'Submit position')
-        : h('button', { class: 'btn primary', type: 'button', onclick: () => { save(); idx++; show(); } }, 'Next'),
-      item.kind === 'mcq' || item.kind === 'orderbook' ? h('button', { class: 'btn', type: 'button', onclick: () => { if (!free || !responses[idx]) responses[idx] = { skip: true }; idx++; show(); } }, free ? 'Skip for now' : 'Skip') : null,
+        : tap ? null : h('button', { class: 'btn primary', type: 'button', onclick: () => { save(); idx++; show(); } }, 'Next'),
+      (item.kind === 'mcq' || item.kind === 'orderbook') && canSkip ? h('button', { class: 'btn', type: 'button', onclick: () => { if (!free || !responses[idx]) responses[idx] = { skip: true }; idx++; show(); } }, free ? 'Skip for now' : 'Skip') : null,
       h('span', { style: { flex: 1 } }),
       h('button', { class: 'btn', type: 'button', onclick: () => { if (confirm('Finish the exam now? Unanswered questions score 0.')) { save(); finish(); } } }, 'Finish exam'));
     mount(root, h('div', { class: 'panel exam' },
       h('div', { class: 'qhead' }, h('span', {}, `${base.title} · Exam${mock ? ' (mock)' : ''} · Question ${idx + 1} of ${items.length}`), t),
-      palette, body.el, note, controls));
+      palette, body.el, tap && idx === 0 ? h('p', { class: 'small-note muted' }, `Tap an option or press 1 to ${item.options.length}: that is your answer, and the next question appears. There is no going back${canSkip ? '' : ' and no skip'}.`) : null, note, controls));
   }
 
   // Free navigation (NumberLogic): before finishing, show which questions are still open.
@@ -286,8 +312,11 @@ export function runExam(root, { sectionId, variant, store, seed = Date.now(), on
 
   const onKey = (e) => {
     if (!current || finished) return;
+    const tap = exam.autoAdvance && current.item.kind === 'mcq';
+    if (tap && e.repeat) return; // a held key must not answer a run of questions
     current.body.view.keyHandler?.(e);
-    if (e.key === 'Enter' && !e.target.closest?.('button') && current.item.kind !== 'orderbook') { e.preventDefault(); save(); idx++; show(); }
+    // With one-tap answering, Enter would only skip (no answer chosen yet), so it does nothing.
+    if (e.key === 'Enter' && !tap && !e.target.closest?.('button') && current.item.kind !== 'orderbook') { e.preventDefault(); save(); idx++; show(); }
   };
   document.addEventListener('keydown', onKey);
 
@@ -323,13 +352,13 @@ export function runExam(root, { sectionId, variant, store, seed = Date.now(), on
     const meets = runMeetsTarget({ score, max }, target);
     const ready = readiness(store.runs(sectionId, 'exam'), target);
     const rows = items.map((it, i) => {
-      const detail = h('tr', { hidden: true }, h('td', { colspan: 5 }, h('div', { class: 'review-item' }, itemBody(it, { preview: false }).el, feedbackBanner(it, results[i], responses[i] || { skip: true }), solutionPanel(it, { stepwise: false }))));
+      const detail = h('tr', { hidden: true }, h('td', { colspan: 5 }, h('div', { class: 'review-item' }, itemBody(it, { preview: false, notation }).el, feedbackBanner(it, results[i], responses[i] || { skip: true }), solutionPanel(it, { stepwise: false }))));
       const toggle = h('button', { class: 'btn small', type: 'button', onclick: () => { detail.hidden = !detail.hidden; toggle.textContent = detail.hidden ? 'Solution' : 'Hide'; } }, 'Solution');
       const r = results[i];
       return [h('tr', {},
         h('td', { class: 'num' }, String(i + 1)),
         h('td', {}, familyTitle(section, it.family)),
-        h('td', {}, r.skipped ? h('span', { class: 'badge' }, 'Skipped') : r.correct || r.score > 0 ? h('span', { class: 'badge ok' }, it.kind === 'interval' ? r.score.toFixed(2) : 'Right') : h('span', { class: 'badge no' }, 'Wrong')),
+        h('td', {}, r.skipped ? h('span', { class: 'badge' }, canSkip ? 'Skipped' : 'Not answered') : r.correct || r.score > 0 ? h('span', { class: 'badge ok' }, it.kind === 'interval' ? r.score.toFixed(2) : 'Right') : h('span', { class: 'badge no' }, 'Wrong')),
         h('td', { class: 'num', style: { textAlign: 'right' } }, it.kind === 'interval' ? r.score.toFixed(2) : String(r.score)),
         h('td', { style: { textAlign: 'right' } }, toggle)), detail];
     });

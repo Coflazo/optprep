@@ -62,3 +62,16 @@ test('validateItem checks interval truth and orderbook best trade', () => {
   const lie = { ...ok, best: { ...ok.best, profit: 5 } };
   assert.ok(validateItem(lie).some((e) => e.includes('profit')));
 });
+
+test('validateItem: mcq option count is 5 by default and item.optionCount when set (80-in-8 uses 4)', () => {
+  const ds = [0.25, 0.75, 0.1, 0.9].map((v) => ({ value: v, misconception: 'some specific error' }));
+  const five = { ...base, kind: 'mcq', ...buildMcq(makeRng(7), { correct: 0.5, distractors: ds, format: (v) => v.toFixed(2) }) };
+  assert.deepEqual(validateItem(five), []);
+  assert.ok(validateItem({ ...five, optionCount: 4 }).some((e) => e.includes('exactly 4 options')));
+  const four = { ...base, kind: 'mcq', section: 'mm', optionCount: 4, ...buildMcq(makeRng(7), { correct: 0.5, distractors: ds, format: (v) => v.toFixed(2), count: 4 }) };
+  assert.equal(four.options.length, 4);
+  assert.deepEqual(validateItem(four), []);
+  const { optionCount, ...noCount } = four;
+  assert.equal(optionCount, 4);
+  assert.ok(validateItem(noCount).some((e) => e.includes('exactly 5 options')));
+});

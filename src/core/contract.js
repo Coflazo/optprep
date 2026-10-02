@@ -2,7 +2,7 @@
 // Tests run validateItem over thousands of generated items per section.
 import { positionOutcome } from './check.js';
 
-export const SECTIONS = ['bto', 'nl', 'll', 'iv', 'ob'];
+export const SECTIONS = ['mm', 'bto', 'nl', 'll', 'iv', 'ob'];
 export const KINDS = ['mcq', 'rank', 'interval', 'orderbook'];
 export const RANK_MARGIN = 0.02;
 
@@ -25,7 +25,8 @@ export function validateItem(it) {
 
   if (it.kind === 'mcq') {
     const o = it.options;
-    if (!Array.isArray(o) || o.length !== 5) e.push('mcq needs exactly 5 options');
+    const n = it.optionCount ?? 5; // the 80-in-8 has 4 options; every other mcq section 5
+    if (!Array.isArray(o) || o.length !== n) e.push(`mcq needs exactly ${n} options`);
     else {
       if (new Set(o.map((x) => x.label)).size !== o.length) e.push('mcq option labels must be distinct');
       if (!(Number.isInteger(it.answerIndex) && o[it.answerIndex])) e.push('answerIndex invalid');

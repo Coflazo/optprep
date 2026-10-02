@@ -154,18 +154,19 @@ def check_structure(it: dict[str, Any]) -> list[str]:
     kind = it.get("kind")
     if kind == "mcq":
         opts, ai = it.get("options", []), it.get("answerIndex")
-        if len(opts) != 5 or not isinstance(ai, int) or not 0 <= ai < len(opts):
-            return ["mcq needs 5 options and a valid answerIndex"]
-        if len({o["label"] for o in opts}) != 5:
+        n = it.get("optionCount", 5)  # the 80-in-8 has 4 options; every other mcq section 5
+        if len(opts) != n or not isinstance(ai, int) or not 0 <= ai < len(opts):
+            return [f"mcq needs {n} options and a valid answerIndex"]
+        if len({o["label"] for o in opts}) != n:
             errs.append("duplicate option labels")
         vals = [o["value"] for o in opts if isinstance(o.get("value"), (int, float))]
-        if len(vals) == 5 and vals != sorted(vals):
+        if len(vals) == n and vals != sorted(vals):
             errs.append("options not sorted")
         ans = (it.get("answer") or {}).get("value")
         if isinstance(ans, (int, float)) and isinstance(opts[ai].get("value"), (int, float)):
             if abs(opts[ai]["value"] - ans) > 1e-9 * max(1.0, abs(ans)):
                 errs.append("answer option value differs from answer")
-            closest = min(range(5), key=lambda i: abs(opts[i]["value"] - ans))
+            closest = min(range(n), key=lambda i: abs(opts[i]["value"] - ans))
             if closest != ai:
                 errs.append("another option is closer to the true value")
         for i, o in enumerate(opts):

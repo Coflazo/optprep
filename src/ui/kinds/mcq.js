@@ -1,6 +1,7 @@
 import { h } from '../dom.js';
 
-// Five options, keys 1-5 or A-E select. Response: { choice } or null.
+// Four or five options (item.options decides); keys 1-5 or A-E select, ignoring keys past the last option.
+// Response: { choice } or null.
 export function mcqView(item, { onChange } = {}) {
   let choice = null;
   let locked = false;
@@ -17,8 +18,9 @@ export function mcqView(item, { onChange } = {}) {
   const el = h('div', { class: 'options', role: 'group', 'aria-label': 'Answer options' }, buttons);
   const onKey = (e) => {
     if (e.target.closest?.('input, textarea')) return;
+    if (e.metaKey || e.ctrlKey || e.altKey) return;
     const k = e.key.toUpperCase();
-    const i = '12345'.indexOf(k) >= 0 ? '12345'.indexOf(k) : 'ABCDE'.indexOf(k);
+    const i = k.length !== 1 ? -1 : '12345'.indexOf(k) >= 0 ? '12345'.indexOf(k) : 'ABCDE'.indexOf(k);
     if (i >= 0 && i < buttons.length) { select(i); e.preventDefault(); }
   };
   return {

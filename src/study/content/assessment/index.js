@@ -9,25 +9,25 @@ const secs = (c) => (c.exam.perItemSeconds ? c.exam.perItemSeconds : c.exam.tota
 const SCORING = { plusMinus: '+1 right, −1 wrong, 0 skipped', exactOrder: '1 point only for the exact order', ratio: 'lower ÷ upper if the truth is inside, else 0', solved: 'boards solved; a wrong submit costs time' };
 
 const sixTasks = {
-  id: 'assessment/six-tasks', book: 'assessment', kind: 'strategy', title: 'The six tasks at a glance',
+  id: 'assessment/six-tasks', book: 'assessment', kind: 'strategy', title: 'The tasks at a glance',
   summary: 'What each portal task asks, how long you get, and how it is scored.',
   blocks: [
     sec('formats', 'The formats'),
-    { type: 'text', text: 'The portal lists six tasks. Each is a separate sitting with its own clock, and a task you open cannot be reset, so you take each one only when its row in Readiness says Ready.' },
+    { type: 'text', text: 'The Kickstarter portal lists six tasks. Candidates for Quant Trader, graduate and intern trader roles also report a separate mental arithmetic test, the 80-in-8 (80 questions in 8 minutes); this app lists it first. Each is a separate sitting with its own clock, and a task you open cannot be reset, so you take each one only when its row in Readiness says Ready.' },
     { type: 'compare', columns: ['Task', 'Questions', 'Time', 'Scoring', 'Going back'], rows: PORTAL_ORDER.filter((id) => id !== 'zapn').map((id) => {
       const c = SECTIONS[id];
-      return [c.title, String(c.exam.count), c.exam.perItemSeconds ? `${c.exam.perItemSeconds} s each` : `${c.exam.totalSeconds / 60} min total`, SCORING[c.exam.scoring], c.exam.navigation === 'free' ? 'yes, skip and return' : 'no'];
+      return [c.title, String(c.exam.count), c.exam.perItemSeconds ? `${c.exam.perItemSeconds} s each` : `${c.exam.totalSeconds / 60} min total`, c.exam.allowSkip === false ? '+1 right, −1 wrong, no skipping' : SCORING[c.exam.scoring], c.exam.navigation === 'free' ? 'yes, skip and return' : 'no'];
     }).concat([['Zap-N', '9 games', 'per game', 'speed, accuracy and planning per game', 'no']]) },
     { type: 'diagram', diagram: 'flow', spec: { root: 'start', nodes: [
       { id: 'start', text: 'Portal order', kind: 'note' },
       ...PORTAL_ORDER.map((id, i) => ({ id, text: `${i + 1}. ${id === 'zapn' ? 'Zap-N: 9 mini-games' : `${SECTIONS[id].title}: ${SECTIONS[id].kind === 'mcq' ? 'multiple choice' : SECTIONS[id].kind === 'rank' ? 'order three statements' : SECTIONS[id].kind === 'interval' ? 'give a range' : 'build a trade'}`}`, kind: 'a' })),
-    ], edges: PORTAL_ORDER.map((id, i) => ({ from: i ? PORTAL_ORDER[i - 1] : 'start', to: id })) }, caption: 'The tasks in the order the portal lists them.' },
+    ], edges: PORTAL_ORDER.map((id, i) => ({ from: i ? PORTAL_ORDER[i - 1] : 'start', to: id })) }, caption: 'The tasks in this app\'s order: the 80-in-8 (a separate test), then the six portal tasks in the order the portal lists them.' },
     { type: 'check', scope: 'the format table', questions: [
       { type: 'choice', q: 'In which task can you skip a question and come back to it later?', options: ['NumberLogic', 'Beat the Odds', 'Likelihood List', 'Intervals'], answer: 0, explain: 'NumberLogic has one 25-minute clock and free navigation; the others move forward only.' },
       { type: 'choice', q: 'Which task gives partial credit for a close answer?', options: ['Intervals', 'Likelihood List', 'Beat the Odds', 'Orderbooks'], answer: 0, traps: { 1: 'Likelihood List scores only the exact order' }, explain: 'Intervals scores lower ÷ upper whenever the truth is inside the range, so a tight range scores near 1.' },
     ] },
     sec('rule', 'Rule'),
-    { type: 'callout', tone: 'rule', text: 'Six separate sittings, one clock each, no resets: open a task only when its row says Ready.' },
+    { type: 'callout', tone: 'rule', text: 'Separate sittings, one clock each, no resets: open a task only when its row says Ready.' },
     sec('predict', 'Predict'),
     { type: 'predict', question: 'Before reading the next lesson: in a task scored +1/−1, is it ever right to leave a question blank?', answer: 'Yes: whenever your chance of being right is below one half.', explain: 'The next lesson derives this from the expected score.' },
   ],
@@ -39,7 +39,7 @@ const minusOne = {
   prerequisites: ['assessment/six-tasks'],
   blocks: [
     sec('ev', 'Expected score of answering'),
-    { type: 'text', text: 'Beat the Odds and NumberLogic score +1 for right, −1 for wrong and 0 for a skip. If you answer with probability p of being right, your expected score is p × (+1) + (1 − p) × (−1).' },
+    { type: 'text', text: 'Beat the Odds and NumberLogic score +1 for right, −1 for wrong and 0 for a skip (the 80-in-8 scores the same, but usually without a skip button). If you answer with probability p of being right, your expected score is p × (+1) + (1 − p) × (−1).' },
     { type: 'formula', text: 'E[score] = p − (1 − p) = 2p − 1' },
     { type: 'diagram', diagram: 'plot', spec: { x: { min: 0, max: 1, label: 'p = chance your answer is right' }, y: { min: -1, max: 1, label: 'expected points' }, curves: [{ label: 'answer: 2p − 1', points: [[0, -1], [0.5, 0], [1, 1]] }, { label: 'skip: 0', points: [[0, 0], [1, 0]] }], vlines: [{ x: 0.5, label: 'break-even' }] }, caption: 'Answering beats skipping exactly when the line is above zero: p > 1/2.' },
     { type: 'check', scope: 'E[score] = 2p − 1', questions: [
@@ -67,7 +67,7 @@ const pacing = {
   blocks: [
     sec('budgets', 'Time per question'),
     { type: 'compare', columns: ['Task', 'Seconds per question', 'Clock'], rows: PORTAL_ORDER.filter((id) => id !== 'zapn').map((id) => [SECTIONS[id].title, fmt(secs(SECTIONS[id])), SECTIONS[id].exam.perItemSeconds ? 'resets every question' : 'one clock for the whole task']) },
-    { type: 'text', text: 'Per-question clocks (Beat the Odds, Likelihood List, Intervals) cannot be banked: unused seconds vanish. The single clocks (NumberLogic, Orderbooks) can: finishing the easy questions fast pays for the hard ones.' },
+    { type: 'text', text: 'Per-question clocks (Beat the Odds, Likelihood List, Intervals) cannot be banked: unused seconds vanish. The single clocks (the 80-in-8, NumberLogic, Orderbooks) can: finishing the easy questions fast pays for the hard ones.' },
     { type: 'check', scope: 'per-question vs single clocks', questions: [
       { type: 'choice', q: 'You finish a Beat the Odds question in 40 seconds. What happens to the other 50?', options: ['They are lost', 'They carry over to the next question', 'They add to the Zap-N clock'], answer: 0, explain: 'Beat the Odds has a fresh 90-second clock per question.' },
       { type: 'number', q: `NumberLogic: ${SECTIONS.nl.exam.count} questions in ${SECTIONS.nl.exam.totalSeconds / 60} minutes. Average seconds per question (1 decimal)?`, answer: Math.round(secs(SECTIONS.nl) * 10) / 10, tolerance: 0.051, explain: `${SECTIONS.nl.exam.totalSeconds} ÷ ${SECTIONS.nl.exam.count} = ${fmt(secs(SECTIONS.nl))} s.` },

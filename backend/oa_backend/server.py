@@ -27,7 +27,7 @@ REPO = Path(__file__).resolve().parents[2]
 DATA = REPO / "backend" / "data"
 MAX_BODY = 2_000_000
 BANK_NAME = re.compile(r"^[a-z0-9-]{1,40}$")
-SECTIONS = ["bto", "nl", "ll", "iv", "ob"]
+SECTIONS = ["mm", "bto", "nl", "ll", "iv", "ob"]
 # Only the app itself is served: never dot-directories (.git) or backend/engine/tools/tests files.
 PRIVATE_DIRS = {"backend", "engine", "tools", "tests", "node_modules", "screenshots"}
 # Every app file has a plain ASCII name; anything else (escapes left after decoding, backslashes,

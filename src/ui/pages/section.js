@@ -27,6 +27,12 @@ function checkpoints(store, id) {
   ];
 }
 
+// Some 80-in-8 reports write division as 735 : 15. The learner picks; items keep ÷ underneath.
+function notationToggle(store) {
+  const box = h('input', { type: 'checkbox', checked: store.settings().divNotation === 'colon', onchange: () => store.setSetting('divNotation', box.checked ? 'colon' : 'obelus') });
+  return h('label', { class: 'check-line small-note' }, box, 'Write division as 735 : 15, as some European tests print it');
+}
+
 export function sectionMap(store, id) {
   const mod = SECTION_MODULES[id];
   const book = BOOK_BY_ID[id];
@@ -78,7 +84,8 @@ export function sectionPage(root, { store, id }) {
         ...cfg.variants.map((v, i) => h('a', { class: 'btn ghost', href: `#/run/${id}/exam/v${i}` }, v.label)),
         due ? h('a', { class: 'btn ghost', href: `#/run/${id}/mistakes` }, `Review ${due} due`) : null,
         h('a', { class: 'btn ghost', href: `#/s/${id}/sets` }, `Library: ${nSets} sets`),
-        BOOK_BY_ID[id] && !BOOK_BY_ID[id].pending ? h('a', { class: 'btn ghost', href: `#/study/book/${id}` }, 'Study book') : null)),
+        BOOK_BY_ID[id] && !BOOK_BY_ID[id].pending ? h('a', { class: 'btn ghost', href: `#/study/book/${id}` }, 'Study book') : null),
+      id === 'mm' ? notationToggle(store) : null),
     map.units.map((u) => h('section', { class: 'unit' },
       h('header', { class: 'unit-head' },
         h('h2', {}, u.title),

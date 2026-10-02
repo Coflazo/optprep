@@ -4,7 +4,7 @@ import { SECTION_MODULES } from '../../sections/index.js';
 import { runExam } from '../runner.js';
 import { formatLine } from './home.js';
 
-// Full mock: the five scored sections in portal order, each on its own clock,
+// Full mock: the scored sections in portal order, each on its own clock,
 // with a pause screen between them (the real tasks are separate portal items).
 export function mockPage(root, { store }) {
   const order = PORTAL_ORDER.filter((id) => id !== 'zapn' && SECTION_MODULES[id].families.length);
