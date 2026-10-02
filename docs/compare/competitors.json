@@ -1,0 +1,91 @@
+{
+  "checked": "2026-10-02",
+  "checkedLabel": "2 October 2026",
+  "rates": { "USD": 1.1225, "GBP": 0.85033 },
+  "ratesNote": "ECB euro reference rates for 2026-10-02, in units per euro: https://www.ecb.europa.eu/stats/eurofxref/eurofxref-daily.xml",
+  "tasks": ["80-in-8", "Beat the Odds", "NumberLogic", "Likelihood List", "Intervals", "Orderbooks", "Zap-N"],
+  "products": [
+    {
+      "name": "OptPrep",
+      "self": true,
+      "url": "https://github.com/Coflazo/optprep",
+      "price": { "amount": 0, "currency": "EUR" },
+      "tasks": { "80-in-8": "yes", "Beat the Odds": "yes", "NumberLogic": "yes", "Likelihood List": "yes", "Intervals": "yes", "Orderbooks": "yes", "Zap-N": "yes" },
+      "zapn": "9 games",
+      "sources": ["https://github.com/Coflazo/optprep"]
+    },
+    {
+      "name": "Tradermath",
+      "url": "https://www.tradermath.org/practice/firms/optiver",
+      "price": { "amount": 24.95, "currency": "EUR", "per": "2 weeks", "note": "Two-weekly plan; renews automatically. Monthly €39.95, half-yearly €119.95." },
+      "tasks": { "80-in-8": "yes", "Beat the Odds": "yes", "NumberLogic": "yes", "Likelihood List": "yes", "Intervals": "yes", "Orderbooks": "yes", "Zap-N": "yes" },
+      "zapn": "9 games",
+      "evidence": {
+        "Orderbooks": "'This test is designed to prepare you for Orderbooks, the fifth stage of the Optiver online assessment.'",
+        "Intervals": "'This test is designed to prepare you for Intervals, the fourth stage of the Optiver online assessment.'"
+      },
+      "sources": [
+        "https://www.tradermath.org/subscriptions",
+        "https://www.tradermath.org/practice/firms/optiver",
+        "https://www.tradermath.org/online-assessments/math-test/lobby",
+        "https://www.tradermath.org/online-assessments/probability-test/lobby",
+        "https://www.tradermath.org/online-assessments/sequence-test/lobby",
+        "https://www.tradermath.org/online-assessments/likelihood-test/lobby",
+        "https://www.tradermath.org/online-assessments/interval-estimation-test/lobby",
+        "https://www.tradermath.org/online-assessments/orderbook-test/lobby",
+        "https://www.tradermath.org/online-assessments/cognitive-tests/lobby"
+      ]
+    },
+    {
+      "name": "Aptitude Test Prep",
+      "url": "https://aptitude-test-prep.com/employers/trading-assessments/optiver-assessment/",
+      "price": { "amount": 30, "currency": "USD", "per": "30 days", "note": "Single payment, 30-day access. Amount shown on the vendor's checkout page." },
+      "tasks": { "80-in-8": "no", "Beat the Odds": "yes", "NumberLogic": "no", "Likelihood List": "no", "Intervals": "no", "Orderbooks": "no", "Zap-N": "no" },
+      "evidence": { "Beat the Odds": "Product title 'Optiver Beat the Odds Preparation': 2 practice tests, 40 questions, with explanations." },
+      "sources": [
+        "https://aptitude-test-prep.com/employers/trading-assessments/optiver-assessment/",
+        "https://www.paypal.com/ncp/payment/9BLNKA2XH3YEJ"
+      ]
+    },
+    {
+      "name": "QuantPrep",
+      "url": "https://quantprep.io/premium",
+      "price": { "amount": 35, "currency": "USD", "per": "2 weeks", "vat": true, "note": "2 Week Plan, one-time. 1 month $49 + VAT, 6 months $99 + VAT." },
+      "tasks": { "80-in-8": "yes", "Beat the Odds": "yes", "NumberLogic": "yes", "Likelihood List": "not stated", "Intervals": "not stated", "Orderbooks": "not stated", "Zap-N": "not stated" },
+      "sources": [
+        "https://quantprep.io/premium",
+        "https://quantprep.io/company_packs/optiver",
+        "https://quantprep.io/mental_math_optiver_intro",
+        "https://quantprep.io/sequences_optiver_intro",
+        "https://quantprep.io/probability_optiver_intro"
+      ]
+    },
+    {
+      "name": "JobTestPrep",
+      "url": "https://www.jobtestprep.com/optiver-test",
+      "price": { "amount": 39, "currency": "USD", "per": "1 week", "note": "Basic, one-time, 1-week access. Advanced $49, 3 Months $89. The UK store lists the same pack from £49." },
+      "tasks": { "80-in-8": "yes", "Beat the Odds": "no", "NumberLogic": "partial", "Likelihood List": "not stated", "Intervals": "not stated", "Orderbooks": "not stated", "Zap-N": "partial" },
+      "evidence": {
+        "Beat the Odds": "'We are working on a Complete PrepPack for Optiver Test practice, which will include practice questions for this section.'",
+        "NumberLogic": "Bonus tests only: 'Bonus: 3 Balloon Games + 1 Digit + 9 Number Logic tests'.",
+        "Zap-N": "Digits, Code Compare, Shapeshift and NumberBox practice, plus Balloon as a bonus."
+      },
+      "sources": ["https://www.jobtestprep.com/optiver-test", "https://www.jobtestprep.co.uk/optiver-test"]
+    },
+    {
+      "name": "EverythingQuant",
+      "url": "https://everythingquant.com/online-assessments/",
+      "price": { "amount": 39.99, "currency": "USD", "per": "month", "note": "Premium, billed monthly. 3-monthly $99.99, yearly $239.99." },
+      "tasks": { "80-in-8": "yes", "Beat the Odds": "yes", "NumberLogic": "yes", "Likelihood List": "not stated", "Intervals": "not stated", "Orderbooks": "not stated", "Zap-N": "partial" },
+      "evidence": { "Zap-N": "Number Box is the only Zap-N game with a tool." },
+      "sources": [
+        "https://everythingquant.com/upgrade/",
+        "https://everythingquant.com/online-assessments/",
+        "https://everythingquant.com/online-assessments/optiver-mental-maths-tool/",
+        "https://everythingquant.com/online-assessments/optiver-probability-tool/",
+        "https://everythingquant.com/online-assessments/optiver-sequences-tool/",
+        "https://everythingquant.com/online-assessments/optiver-number-box-tool/"
+      ]
+    }
+  ]
+}

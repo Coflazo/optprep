@@ -10,7 +10,7 @@ OptPrep is not affiliated with, endorsed by, sponsored by or connected to Optive
 
 ## Trademarks
 
-"Optiver" is a trademark of its owner. OptPrep uses the name only to say which assessment it helps you practise for. The OptPrep name, wordmark and icons are original work and are not designed to look like Optiver's logo or branding. Other product and company names in this project, such as Zap-N, belong to their owners and appear only to describe the tasks.
+"Optiver" is a trademark of its owner. OptPrep uses the name only to say which assessment it helps you practise for. The OptPrep name, wordmark and icons are original work and are not designed to look like Optiver's logo or branding. Other product and company names in this project, such as Zap-N and the products in the README's comparison, belong to their owners. They appear only to describe the tasks, or to compare prices and coverage as each product's own pages state them on the date given.
 
 ## Where the content comes from
 

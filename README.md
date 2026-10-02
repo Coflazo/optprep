@@ -61,6 +61,30 @@ Pick the battery you will sit, and OptPrep matches the tasks and clocks to it.
 
 After the online assessment, Optiver's interviews include market-making games. OptPrep's bonus round has you quote two-sided markets against a trader who knows more than you.
 
+## How it compares
+
+Paid prep exists for parts of the Optiver online assessment. Here is what each product's own pages say it covers, next to OptPrep.
+
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/media/compare-dark.svg">
+    <img src="docs/media/compare-light.svg" alt="Lowest listed price and Optiver task coverage for OptPrep and five paid products. The table below holds the same data." width="896">
+  </picture>
+</p>
+
+| | Lowest listed price | 80-in-8 | Beat the Odds | NumberLogic | Likelihood List | Intervals | Orderbooks | Zap-N |
+|---|---|:-:|:-:|:-:|:-:|:-:|:-:|:-:|
+| **OptPrep** | **Free** | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ 9 games |
+| [Tradermath](https://www.tradermath.org/practice/firms/optiver) | €24.95 / 2 weeks, renews | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ 9 games |
+| [Aptitude Test Prep](https://aptitude-test-prep.com/employers/trading-assessments/optiver-assessment/) | $30 / 30 days | | ✓ | | | | | |
+| [QuantPrep](https://quantprep.io/premium) | $35 + VAT / 2 weeks | ✓ | ✓ | ✓ | | | | |
+| [JobTestPrep](https://www.jobtestprep.com/optiver-test) | $39 / 1 week | ✓ | | partly | | | | partly |
+| [EverythingQuant](https://everythingquant.com/online-assessments/) | $39.99 / month | ✓ | ✓ | ✓ | | | | Number Box |
+
+Prices and coverage come from each product's own pages on 2 October 2026. A blank cell means the page doesn't list that task. Prices change; if a row is out of date, [open an issue](https://github.com/Coflazo/optprep/issues) and the next release fixes it. Every source link is in [`docs/compare/competitors.json`](docs/compare/competitors.json). Free practice sites exist too, and this table lists only paid ones.
+
+OptPrep also runs offline, needs no account, and is open source, so you can read how every question is generated and checked.
+
 ## How you learn
 
 Each task has a roadmap that runs from Foundations to Exam pace. A skill has five levels. Three clean answers in a row earn a level; the fifth also needs exam speed.
