@@ -1,7 +1,13 @@
 // Drawing cards without replacement: pairs, suits, colours, at least one ace, all red, flushes.
 import { nCr } from '../../../core/combinatorics.js';
 import { Q } from '../../../core/rational.js';
-import { mcqItem, agree, q, qpow } from '../lib.js';
+import { mcqItem, agree, q, qpow, pic, table } from '../lib.js';
+
+// Draw by draw: good cards left over cards left, the factors of the chain rule.
+function draws(goods, what, caption) {
+  return table(['Draw', `${what} left`, 'Cards left', 'Factor'], goods.map((g, i) => [i + 1, g, 52 - i, `${g}/${52 - i}`]), caption);
+}
+const firstFixes = (label, good, pGood) => pic('tree', { root: { label: 'first card fixes it', children: [{ p: `${good}/51`, label, mark: true }, { p: `${51 - good}/51`, label: 'no match' }] }, total: pGood }, `Whatever the first card is, the second must be one of the ${good} matching cards among the 51 left.`);
 
 const ID = 'card-draws';
 const words = ['', 'one', 'two', 'three', 'four', 'five'];
@@ -27,6 +33,9 @@ function build(kind, rng) {
       { say: 'P = 4/52 × 3/51 = 12/2652 = 1/221 ≈ 0.0045.', why: 'Chain rule for dependent draws.' },
     ],
     hints: ['After one ace is drawn, what is left?', '3 aces in 51 cards.', '(4/52)(3/51).'],
+    picture: pic('tree', { root: { label: '', children: [{ p: '4/52', label: 'ace', children: [{ p: '3/51', label: 'ace again', mark: true }, { p: '48/51', label: 'no ace' }] }, { p: '48/52', label: 'no ace' }] }, total: '1/221' }, 'Two draws without replacement. After a first ace, 3 aces remain among 51 cards; the marked path is 4/52 × 3/51.'),
+    fast: '4/52 × 3/51 = 1/13 × 1/17 = 1/221.',
+    check: 'With replacement it would be (1/13)² = 1/169; drawing without replacement removes an ace, so the answer must be a little smaller.',
   };
   if (kind === 'sameSuit') return {
     value: q(12, 51), data: { kind },
@@ -43,6 +52,9 @@ function build(kind, rng) {
       { say: 'The second card must be one of the 12 remaining cards of that suit among 51: P = 12/51 = 4/17 ≈ 0.235.', why: 'Without replacement, both the suit count and the deck drop by one.' },
     ],
     hints: ['Does the first card matter?', 'How many cards of its suit are left, out of how many?', '12/51.'],
+    picture: firstFixes('same suit', 12, '12/51'),
+    fast: '12 of the other 51 cards share the first card\'s suit: 12/51 = 4/17.',
+    check: 'A little below 1/4 = 13/52, because the first card used up one card of its suit.',
   };
   if (kind === 'sameColour') return {
     value: q(25, 51), data: { kind },
@@ -59,6 +71,9 @@ function build(kind, rng) {
       { say: 'P = 25/51 ≈ 0.490.', why: 'Slightly below 1/2 because of the missing card.' },
     ],
     hints: ['Fix the first card\'s colour.', 'How many of that colour are left?', '25/51.'],
+    picture: firstFixes('same colour', 25, '25/51'),
+    fast: '25 of the other 51 cards share the colour: 25/51.',
+    check: 'Slightly below 1/2: same and different colour add to 1, and different has 26/51 because the first card is missing from its own colour.',
   };
   if (kind === 'pair') return {
     value: q(3, 51), data: { kind },
@@ -75,6 +90,9 @@ function build(kind, rng) {
       { say: 'P = 3/51 = 1/17 ≈ 0.059.', why: 'Favourable over remaining.' },
     ],
     hints: ['After the first card, how many of its rank remain?', 'Out of 51 cards.', '3/51.'],
+    picture: firstFixes('same rank', 3, '1/17'),
+    fast: '3 of the other 51 cards share the rank: 3/51 = 1/17.',
+    check: 'A little below 1/13 = 4/52, because one card of that rank is already in your hand.',
   };
   if (kind === 'atLeastAce') {
     const k = rng.int(2, 5);
@@ -99,6 +117,9 @@ function build(kind, rng) {
         { say: `P = 1 − ${none} ≈ ${v.toNumber().toFixed(4)}.`, why: 'Complement rule.' },
       ],
       hints: ['What is the complement of "at least one ace"?', 'Every card must be a non-ace: 48/52, 47/51, …', `1 − ${none}.`],
+      picture: draws(Array.from({ length: k }, (_, i) => 48 - i), 'Non-aces', `The complement: every one of the ${k} cards is a non-ace. Multiply the factors to get P(no ace) = ${none}, then subtract from 1.`),
+      fast: `1 − ${Array.from({ length: k }, (_, i) => `${48 - i}/${52 - i}`).join(' × ')} = ${v}.`,
+      check: `It must sit below ${k} × 4/52 = ${q(4 * k, 52)}, the sum that double counts hands with two aces, and above 4/52 for one card.`,
     };
   }
   if (kind === 'allRed') {
@@ -119,6 +140,9 @@ function build(kind, rng) {
         { say: `P = C(26,${k})/C(52,${k}) = ${v} ≈ ${v.toNumber().toFixed(4)}.`, why: 'Same value as counting red hands over all hands.' },
       ],
       hints: ['Draw one card at a time. How many reds remain after each?', `26/52, 25/51, …, ${k} factors.`, `C(26,${k})/C(52,${k}).`],
+      picture: draws(Array.from({ length: k }, (_, i) => 26 - i), 'Reds', `Each red card drawn removes one red and one card, so every factor is a little below 1/2.`),
+      fast: `${Array.from({ length: k }, (_, i) => `${26 - i}/${52 - i}`).join(' × ')} = ${v}.`,
+      check: `Every factor after the first is below 1/2, so the answer is below (1/2)^${k} = 1/${2 ** k}.`,
     };
   }
   if (kind === 'atLeastHeart') {
@@ -140,6 +164,9 @@ function build(kind, rng) {
         { say: `P = 1 − ${none} ≈ ${v.toNumber().toFixed(4)}.`, why: 'Complement of "no heart".' },
       ],
       hints: ['Complement of "at least one heart"?', 'All cards from the 39 non-hearts.', `1 − C(39,${k})/C(52,${k}).`],
+      picture: draws(Array.from({ length: k }, (_, i) => 39 - i), 'Non-hearts', `The complement: all ${k} cards come from the 39 non-hearts. The product is P(no heart) = ${none}; the answer is 1 minus that.`),
+      fast: `1 − ${Array.from({ length: k }, (_, i) => `${39 - i}/${52 - i}`).join(' × ')} = ${v}.`,
+      check: `Without replacement the answer is a little above the with-replacement value 1 − (3/4)^${k} = ${q(1).sub(qpow(q(3, 4), k))}, because each non-heart drawn makes the next heart likelier.`,
     };
   }
   if (kind === 'allDiffRanks') {
@@ -160,6 +187,9 @@ function build(kind, rng) {
         { say: `P = ${v} ≈ ${v.toNumber().toFixed(3)}.`, why: 'Chain rule.' },
       ],
       hints: ['How many cards avoid the first card\'s rank?', 'Each new card loses 4 good cards; the deck loses 1.', `Product of ${k} factors.`],
+      picture: draws(Array.from({ length: k }, (_, i) => 52 - 4 * i), 'Cards of an unused rank', 'Each new card must avoid every rank already in the hand: 4 fewer good cards each draw, 1 fewer card in the deck.'),
+      fast: `${Array.from({ length: k }, (_, i) => `${52 - 4 * i}/${52 - i}`).join(' × ')} = ${v}.`,
+      check: `Each factor shrinks faster than the one before (52/52, 48/51, 44/50, …), so the answer falls quickly with ${k}; it must be below 48/51 × 44/50 = ${q(48 * 44, 51 * 50)}.`,
     };
   }
   // Flush (five of one suit, straight flushes included).
@@ -178,6 +208,9 @@ function build(kind, rng) {
       { say: `P = ${v} ≈ ${v.toNumber().toFixed(5)} (about 1 in 505).`, why: 'Equivalently 4 × C(13,5)/C(52,5).' },
     ],
     hints: ['Does the first card matter?', 'Four more cards must match its suit, without replacement.', '(12/51)(11/50)(10/49)(9/48).'],
+    picture: table(['Card', 'Same suit left', 'Cards left', 'Factor'], [[1, 'any', 52, '1'], [2, 12, 51, '12/51'], [3, 11, 50, '11/50'], [4, 10, 49, '10/49'], [5, 9, 48, '9/48']], 'The first card sets the suit for free; each later card must come from the shrinking suit.'),
+    fast: '12/51 × 11/50 × 10/49 × 9/48 ≈ 0.00198, about 1 in 505.',
+    check: 'Each factor is at most 12/51 ≈ 0.24, so four of them give less than 0.24⁴ ≈ 0.0033.',
   };
 }
 

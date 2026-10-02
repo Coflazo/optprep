@@ -1,5 +1,8 @@
 // Linearity of expectation with indicator variables: fixed points, distinct faces, empty boxes, runs, records.
-import { mcqItem, agree, q, qpow, harmonic, sequences, permutations } from '../lib.js';
+import { mcqItem, agree, q, qpow, harmonic, sequences, permutations, table } from '../lib.js';
+
+// The count as a sum of 0/1 indicators: one row per kind of indicator, then the total.
+const indicators = (rows, total, caption) => table(['Indicator: 1 when', 'Chance it is 1', 'How many', 'Adds'], [...rows, ['expected count', '', '', total]], caption);
 
 const ID = 'linearity';
 
@@ -22,6 +25,9 @@ function build(kind, rng) {
         { say: `E[count] = ${n} × 1/${n} = 1.`, why: 'Linearity holds even though the indicators are dependent.' },
       ],
       rule: 'Expected fixed points of a random permutation = 1, for every n.',
+      picture: indicators([['a given person gets their own hat', `1/${n}`, n, '1']], '1', `One indicator per person, each 1 with chance 1/${n}. The indicators are dependent, which changes the spread of the count but not its mean.`),
+      fast: `${n} people × 1/${n} = 1.`,
+      check: 'The answer does not depend on the number of people: it is 1 for any n. An option that changes with n is computing a probability, not an expected count.',
     };
   }
   if (kind === 'distinct') {
@@ -43,6 +49,9 @@ function build(kind, rng) {
         { say: `E = ${s} × (1 − (${s - 1}/${s})^${n}) = ${v} ≈ ${v.toNumber().toFixed(3)}.`, why: 'Linearity over faces.' },
       ],
       rule: 'E[distinct values] = s(1 − (1 − 1/s)^n).',
+      picture: indicators([['a given face appears at least once', `1 − (${s - 1}/${s})^${n}`, s, v.toString()]], v.toString(), `One indicator per face, not per roll. Each face shows up with chance 1 − (${s - 1}/${s})^${n}.`),
+      fast: `${s} × (1 − (${s - 1}/${s})^${n}) = ${v.toNumber().toFixed(3)}.`,
+      check: `At least 1 and at most ${Math.min(n, s)} (no more faces than rolls or than the die has); repeats keep it below ${Math.min(n, s)}.`,
     };
   }
   if (kind === 'empty') {
@@ -62,6 +71,9 @@ function build(kind, rng) {
         { say: `E[empty] = ${k} × (${k - 1}/${k})^${m} = ${v} ≈ ${v.toNumber().toFixed(3)}.`, why: 'Sum of indicators over boxes.' },
       ],
       rule: 'E[empty boxes] = k(1 − 1/k)^m.',
+      picture: indicators([['a given box stays empty', `(${k - 1}/${k})^${m}`, k, v.toString()]], v.toString(), `One indicator per box: every one of the ${m} balls must miss it.`),
+      fast: `${k} × (${k - 1}/${k})^${m} = ${v.toNumber().toFixed(3)}.`,
+      check: `Between 0 and ${Math.max(k - 1, 0)} (at least one box gets a ball); more balls shrink it, so it must be below ${k} × (${k - 1}/${k})^${m - 1} = ${q(k).mul(qpow(q(k - 1, k), m - 1)).toNumber().toFixed(3)}.`,
     };
   }
   if (kind === 'runs') {
@@ -81,6 +93,9 @@ function build(kind, rng) {
         { say: `E = 1 + (${n - 1})/2 = ${q(n + 1, 2)}.`, why: 'Linearity.' },
       ],
       rule: 'E[runs in n fair flips] = (n + 1)/2.',
+      picture: indicators([['the first flip (always starts a run)', '1', 1, '1'], ['flip i differs from flip i − 1', '1/2', n - 1, q(n - 1, 2).toString()]], q(n + 1, 2).toString(), 'A run starts at the first flip and at every change, so count the changes.'),
+      fast: `1 + (${n} − 1)/2 = ${q(n + 1, 2)}.`,
+      check: `Between 1 (all equal) and ${n} (alternating); the answer sits in the middle, ${q(n + 1, 2)}.`,
     };
   }
   if (kind === 'hh') {
@@ -99,6 +114,9 @@ function build(kind, rng) {
         { say: `E = ${n - 1}/4.`, why: 'Linearity works despite overlaps.' },
       ],
       rule: 'E[count of a pattern of length L] = (n − L + 1)/2^L.',
+      picture: indicators([['flips i and i + 1 are both heads', '1/4', n - 1, q(n - 1, 4).toString()]], q(n - 1, 4).toString(), `One indicator per neighbouring pair. Overlapping pairs are dependent, which does not matter for the mean.`),
+      fast: `${n - 1} pairs × 1/4 = ${q(n - 1, 4)}.`,
+      check: `At most ${n - 1} (all heads); each pair is HH a quarter of the time, so ${q(n - 1, 4)}.`,
     };
   }
   if (kind === 'records') {
@@ -119,6 +137,9 @@ function build(kind, rng) {
         { say: `E = 1 + 1/2 + … + 1/${n} = ${v} ≈ ${v.toNumber().toFixed(3)}.`, why: 'Linearity.' },
       ],
       rule: 'E[records] = H_n ≈ ln n + 0.577.',
+      picture: table(['Position k', 'Chance it is a record', 'Adds'], Array.from({ length: n }, (_, i) => [i + 1, `1/${i + 1}`, `1/${i + 1}`]).concat([['expected records', '', v.toString()]]), `Position k is a record when it holds the largest of the first k numbers, chance 1/k. The column adds to H_${n}.`),
+      fast: `H_${n} = 1 + 1/2 + … + 1/${n} ≈ ${v.toNumber().toFixed(3)}.`,
+      check: `At least 1 (the first number) and well below ${n}: records get rarer as the order goes on, about ln ${n} + 0.58 ≈ ${(Math.log(n) + 0.5772).toFixed(2)}.`,
     };
   }
   const deck = rng.pick([[26, 26], [4, 4], [13, 39], [6, 6], [10, 5]]);
@@ -140,6 +161,9 @@ function build(kind, rng) {
       { say: `E = ${N - 1} × ${pSame} = ${v} ≈ ${v.toNumber().toFixed(3)}.`, why: 'Linearity.' },
     ],
     rule: 'E[count] = (number of places) × P(event at one place), dependence or not.',
+    picture: indicators([['cards i and i + 1 share a colour', pSame.toString(), N - 1, v.toString()]], v.toString(), `One indicator per adjacent pair. Two fixed positions hold a random ordered pair of different cards, so the chance is (${r}·${r - 1} + ${b}·${b - 1})/(${N}·${N - 1}).`),
+    fast: `${N - 1} × ${pSame} = ${v.toNumber().toFixed(3)}.`,
+    check: `Without replacement a match is a little less likely than with replacement (${q(r * r + b * b, N * N)} per pair), so the answer is below ${N - 1} × ${q(r * r + b * b, N * N)}.`,
   };
 }
 

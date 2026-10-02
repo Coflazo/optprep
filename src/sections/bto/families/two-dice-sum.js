@@ -5,6 +5,7 @@
 import { buildMcq } from '../../../core/options.js';
 import { fmtP } from '../../../core/format.js';
 import { Q } from '../../../core/rational.js';
+import { askFrom, diceGrid, withMath } from '../lib.js';
 
 const ways = (s) => (s < 2 || s > 12 ? 0 : 6 - Math.abs(s - 7)); // ordered pairs summing to s
 
@@ -54,11 +55,15 @@ export default {
       ...mcq,
       answer: { value: p, exact: exact.toString() },
       solution: {
-        steps: [
+        ask: askFrom(`What is the probability that ${ev.text}?`),
+        picture: diceGrid((a, b) => ev.sums.includes(a + b), `Rows are the first die, columns the second. Each sum is one anti-diagonal; the ${count} shaded cells are the pairs where ${ev.text}.`, { cellText: [1, 2, 3, 4, 5, 6].map((a) => [1, 2, 3, 4, 5, 6].map((b) => String(a + b))) }),
+        fast: count > 18 ? `Count the complement: ${36 - count} pairs, so ${count}/36 = ${exact.toString()}.` : `Ordered pairs per sum, 6 − |s − 7|: ${tally}. Total ${count}/36 = ${exact.toString()}.`,
+        check: `Mirror check: sums s and 14 − s have the same count, and the counts over 2 to 12 add to 36. ${count}/36 ${count === 18 ? 'is exactly 1/2' : count > 18 ? 'is above 1/2' : 'is below 1/2'}.`,
+        steps: withMath([
           { say: 'The sample space is 6 × 6 = 36 ordered pairs, all equally likely.', why: 'Each die is independent and fair, so every (first, second) pair has probability 1/36.' },
           { say: `Ordered pairs per qualifying sum: ${tally}.`, why: 'A sum s between 2 and 12 is made by 6 − |s − 7| ordered pairs; 7 is the peak with 6.' },
           { say: `Total favourable pairs = ${count}, so P = ${count}/36 = ${exact.toString()} ≈ ${fmtP(p)}.`, why: 'Equally likely outcomes: probability = favourable / total.' },
-        ],
+        ]),
         rule: 'Two dice → 36 ordered pairs; ways(s) = 6 − |s − 7|.',
         anchor: 'Counting favourable over total, the same as a single die but with 36 outcomes instead of 6.',
       },

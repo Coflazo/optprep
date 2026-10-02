@@ -1,5 +1,21 @@
 // Conditional probability with two dice (and two children): restrict the sample space, then count.
-import { mcqItem, agree, q } from '../lib.js';
+import { mcqItem, agree, q, pic, table } from '../lib.js';
+
+// The same predicates the verifier reads from params, used here to draw the restricted grid.
+const holds = ([k, x], a, b) => ({ atLeastOne: a === x || b === x, both: a === x && b === x, sumParity: (a + b) % 2 === x, bothParity: a % 2 === x && b % 2 === x, different: a !== b, sumIn: Array.isArray(x) && x.includes(a + b), sumAtLeast: a + b >= x, firstParity: a % 2 === x })[k];
+function restricted(c) {
+  const highlight = [], cellText = [];
+  for (let a = 1; a <= 6; a++) {
+    cellText.push([]);
+    for (let b = 1; b <= 6; b++) {
+      const inA = holds(c.params.cond, a, b), inB = holds(c.params.event, a, b);
+      if (inA) highlight.push([a - 1, b - 1]);
+      cellText[a - 1].push(inA && inB ? '●' : '');
+    }
+  }
+  return pic('grid', { rows: 6, cols: 6, highlight, count: highlight.length, cellText, rowTitle: 'first die', colTitle: 'second die' },
+    `Shaded: the ${c.A} outcomes where ${c.cond}, the only ones still possible. Dots: the ${c.AB} of them where ${c.ev}. The answer is dots over shaded, ${c.AB}/${c.A}.`);
+}
 
 const ID = 'conditional-dice';
 const ways = (s) => (s < 2 || s > 12 ? 0 : 6 - Math.abs(s - 7));
@@ -69,6 +85,9 @@ export default {
         rule: 'Condition = delete the outcomes that contradict the information, then renormalise.',
         anchor: 'Counting equally likely outcomes, with one change: the information deletes some outcomes before you count.',
         hints: ['List the four ordered outcomes.', 'Delete the ones the information rules out.', 'Count what is left.'],
+        picture: table(['Older', 'Younger', 'Still possible?'], [['boy', 'boy', 'yes'], ['boy', 'girl', 'yes'], ['girl', 'boy', older ? 'no' : 'yes'], ['girl', 'girl', 'no']], `Four equally likely families. The information leaves ${older ? 'two' : 'three'}, and both-boys is one of them: ${older ? '1/2' : '1/3'}.`),
+        fast: older ? 'Only the younger child is unknown: 1/2.' : 'BB is one of the three families with a boy: 1/3.',
+        check: older ? 'Knowing which child is a boy tells you nothing about the other child, so the answer is the plain 1/2.' : '"At least one boy" does not name a child, so the answer must differ from the 1/2 of "the older is a boy".',
         params: { kids: true, older },
       });
     }
@@ -93,6 +112,9 @@ export default {
       rule: 'P(B | A) = |A ∩ B| / |A| for equally likely outcomes.',
       anchor: 'Favourable over total, with one change: the total is only the outcomes consistent with what you were told.',
       hints: ['Which of the 36 outcomes are still possible?', 'Count the event inside that smaller set.', `${c.AB} of ${c.A}.`],
+      picture: restricted(c),
+      fast: `Count inside the condition only: ${c.AB} of ${c.A} = ${v}.`,
+      check: `Dividing by 36 instead of ${c.A} gives the unconditional ${q(c.AB, 36)}; the condition removes ${36 - c.A} outcomes, so the answer must be at least that.`,
       params: { dice: 2, sides: 6, ...c.params },
     });
   },

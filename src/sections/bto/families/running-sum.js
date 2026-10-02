@@ -1,6 +1,6 @@
 // Running totals: P(the running sum ever equals n) and the expected number of throws to pass n.
 import { absorptionProbs, hittingTimes } from '../../../core/markov.js';
-import { mcqItem, agree, q } from '../lib.js';
+import { mcqItem, agree, q, pic } from '../lib.js';
 
 const ID = 'running-sum';
 
@@ -63,6 +63,9 @@ export default {
         rule: 'E(m) = 1 + average E(m − k). Large n: E ≈ (n + expected overshoot)/mean.',
         anchor: 'First-step analysis for waiting times, with one change: the state is the remaining distance to the target.',
         hints: ['Define E(m) for the remaining distance m.', 'Condition on the first step.', 'Fill the table from small m upwards.'],
+        picture: pic('plot', { x: { min: 0, max: n, label: 'target total' }, y: { min: 0, max: Math.ceil(v.toNumber()) + 1, label: `expected ${coin ? 'flips' : 'throws'}` }, curves: [{ label: 'E(m)', points: Array.from({ length: n + 1 }, (_, m) => [m, passTime(m, steps).toNumber()]) }, { label: `m/${mean}`, points: [[0, 0], [n, n / mean]] }], markers: [{ x: n, y: v.toNumber(), label: `E(${n}) ≈ ${v.toNumber().toFixed(2)}` }] }, `The exact waits E(m) sit above the straight line m/${mean}: the total usually overshoots the target, and the overshoot costs part of an extra step.`),
+        fast: `About (n + overshoot)/mean; exactly, E(${n}) = ${v.toNumber().toFixed(3)} from the table.`,
+        check: `It must be at least ${n}/${steps[steps.length - 1]} = ${(n / steps[steps.length - 1]).toFixed(2)} (every step at its largest) and a little above ${n}/${mean} = ${(n / mean).toFixed(2)}, because of the overshoot.`,
         params: { mode: 'pass', n, steps },
       });
     }
@@ -85,6 +88,9 @@ export default {
       rule: 'p(n) = average of the previous p values; limit 1/(mean step) (dice: 2/7).',
       anchor: 'The recursion for "number of ways to climb stairs", with one change: each way is weighted by its probability.',
       hints: ['How can the total land exactly on n? What must it have been one step earlier?', 'p(n) averages p(n − 1), …, p(n − 6).', 'For large n the answer settles near 2/7 for a die.'],
+      picture: pic('plot', { x: { min: 0, max: Math.max(n, 12), label: 'target total m' }, y: { min: 0, max: 1, label: 'P(total ever equals m)' }, curves: [{ label: 'p(m)', points: Array.from({ length: Math.max(n, 12) + 1 }, (_, m) => [m, hitProb(m, steps).toNumber()]) }], hlines: [{ y: 1 / mean, label: `limit 1/${mean}` }], markers: [{ x: n, y: v.toNumber(), label: `p(${n}) ≈ ${v.toNumber().toFixed(3)}` }] }, `Each p(m) averages the ${steps.length} values before it, so the curve wobbles and then settles at 1/${mean}, one landing per mean step.`),
+      fast: n > 3 * steps.length ? `Far from the start, p ≈ 1/${mean} = ${(1 / mean).toFixed(4)}; exactly ${v.toNumber().toFixed(4)}.` : `Average the earlier values: p(${n}) = ${v} ≈ ${v.toNumber().toFixed(4)}.`,
+      check: `A probability, so below 1, and for targets past the first few it stays close to 1/${mean} ≈ ${(1 / mean).toFixed(3)}; values far from that come from adding the step chances instead of averaging them.`,
       params: { mode: 'hit', n, steps },
     });
   },

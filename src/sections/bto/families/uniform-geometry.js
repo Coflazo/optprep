@@ -1,5 +1,8 @@
 // Continuous uniform geometry: broken sticks, meeting times, sums and products of uniforms, points on circles.
-import { mcqItem, agreeMc, q } from '../lib.js';
+import { mcqItem, agreeMc, q, pic, table } from '../lib.js';
+
+const sq = (regions, xLabel, yLabel, caption) => pic('unitsquare', { regions, xLabel, yLabel }, caption);
+const r4 = (x) => Math.round(x * 1e4) / 1e4;
 const par = (x) => (String(x).includes('/') ? `(${x})` : String(x));
 
 const ID = 'uniform-geometry';
@@ -25,6 +28,9 @@ function build(kind, rng) {
           { say: `P = ${q(2, k + 1)}.`, why: 'Uniform break: probability = length of the favourable set.' },
         ],
         sim: (r) => { const x = r.next(); const s = Math.min(x, 1 - x); return 1 - s >= k * s; },
+        picture: pic('numberline', { min: 0, max: 1, step: 0.1, barriers: [1 / (k + 1), k / (k + 1)], marks: [{ x: 1 / (k + 1), label: `1/${k + 1}` }, { x: k / (k + 1), label: `${k}/${k + 1}` }] }, `The stick from 0 to 1. A break outside the two bars leaves a short piece of at most 1/${k + 1}: two end zones, ${q(2, k + 1)} of the length.`),
+        fast: `Two end zones of 1/${k + 1}: ${q(2, k + 1)}.`,
+        check: `k = 1 must give 1 (the longer piece is always at least as long), and the answer shrinks as k grows: 2/${k + 1} fits both.`,
       };
     }
     case 'triangle':
@@ -43,6 +49,9 @@ function build(kind, rng) {
           { say: 'P(triangle) = 1 − 3/4 = 1/4.', why: 'Complement.' },
         ],
         sim: (r) => { const a = r.next(), b = r.next(); const x = Math.min(a, b), y = Math.max(a, b); return x < 0.5 && y - x < 0.5 && 1 - y < 0.5; },
+        picture: sq([{ points: [[0, 0.5], [0.5, 0.5], [0.5, 1]], area: '1/8', label: 'triangle', tone: 3 }, { points: [[0.5, 0], [1, 0.5], [0.5, 0.5]], area: '1/8', label: 'triangle', tone: 3 }], 'first break', 'second break', 'Each point of the square is a pair of break points. The two shaded triangles are where every piece is shorter than 1/2: 1/8 + 1/8 = 1/4.'),
+        fast: 'Complement: some piece is at least 1/2 with chance 3 × 1/4; so 1/4.',
+        check: 'Each of the three pieces is too long with chance 1/4 and only one piece can be, so 1 − 3/4. Answers like 1/2 count breaks, not pieces.',
       };
     case 'meet': {
       const w = rng.pick([5, 10, 12, 15, 20, 30]);
@@ -62,6 +71,9 @@ function build(kind, rng) {
           { say: `P = 1 − (${60 - w}/60)² = ${(1 - (1 - f) ** 2).toFixed(4)}.`, why: 'Area of the band over area of the square.' },
         ],
         sim: (r) => Math.abs(r.next() - r.next()) <= f,
+        picture: sq([{ points: [[0, 0], [r4(f), 0], [1, r4(1 - f)], [1, 1], [r4(1 - f), 1], [0, r4(f)]], label: 'meet', tone: 3 }], 'first arrival (hour)', 'second arrival (hour)', `The hour as a unit square of arrival pairs. They meet inside the band |x − y| ≤ ${w}/60; the two corner triangles with legs ${60 - w}/60 are misses, so 1 − (${60 - w}/60)².`),
+        fast: `1 − (1 − ${w}/60)² = 1 − (${60 - w}/60)² ≈ ${(1 - (1 - f) ** 2).toFixed(4)}.`,
+        check: `At least ${w}/60 (the band is wider than that near the middle) and below 2 × ${w}/60 = ${((2 * w) / 60).toFixed(3)}, which counts the band's corners twice.`,
       };
     }
     case 'sum': {
@@ -83,6 +95,9 @@ function build(kind, rng) {
           { say: `P = ${v} ≈ ${v.toNumber().toFixed(4)}.`, why: 'Probability = area.' },
         ],
         sim: (r) => r.next() + r.next() < sv,
+        picture: sq([{ points: sv <= 1 ? [[0, 0], [sv, 0], [0, sv]] : [[0, 0], [1, 0], [1, sv - 1], [sv - 1, 1], [0, 1]], area: v.toString(), label: `x + y < ${s}`, tone: 3 }], 'X', 'Y', `The shaded part of the square lies below the line x + y = ${s}. ${sv <= 1 ? `It is a triangle with legs ${s}: ${par(s)}²/2.` : `It is everything except a corner triangle with legs 2 − ${s}.`}`),
+        fast: sv <= 1 ? `${par(s)}²/2 = ${v}.` : `1 − (2 − ${s})²/2 = ${v}.`,
+        check: `By symmetry P(X + Y < 1) = 1/2, so the answer is ${sv < 1 ? 'below' : sv > 1 ? 'above' : 'exactly'} 1/2; treating X + Y as uniform on [0, 2] would give ${q(1, 2).mul(s)}, which ignores the peak at 1.`,
       };
     }
     case 'product': {
@@ -104,6 +119,9 @@ function build(kind, rng) {
           { say: `P = ${a}(1 − ln ${a}) ≈ ${v.toFixed(4)}.`, why: 'Combine.' },
         ],
         sim: (r) => r.next() * r.next() < a,
+        picture: sq([{ points: [[0, 0], [1, 0], ...Array.from({ length: 21 }, (_, i) => { const x = 1 - (i * (1 - a)) / 20; return [r4(x), r4(Math.min(1, a / x))]; }), [0, 1]], label: `xy < ${a}`, tone: 3 }], 'X', 'Y', `The region under the curve y = ${a}/x: the full strip x < ${a} (area ${a}) plus the area under the curve from ${a} to 1, which is −${a} ln ${a}.`),
+        fast: `${a}(1 − ln ${a}) ≈ ${v.toFixed(4)}.`,
+        check: `At least ${a} (the strip where X < ${a} always works) and far more than ${a}² = ${(a * a).toFixed(3)}, which would require both X and Y below ${a}.`,
       };
     }
     case 'semicircle':
@@ -122,6 +140,9 @@ function build(kind, rng) {
           { say: 'P = 3 × 1/4 = 3/4.', why: 'Add disjoint events (n/2^(n−1) for n points).' },
         ],
         sim: (r) => { const t = [r.next(), r.next(), r.next()].sort((a, b) => a - b); const gaps = [t[1] - t[0], t[2] - t[1], 1 - t[2] + t[0]]; return Math.max(...gaps) >= 0.5; },
+        picture: table(['Event', 'Chance'], [['the other two fall within half a turn clockwise of point 1', '1/4'], ['… of point 2', '1/4'], ['… of point 3', '1/4'], ['all three on one semicircle (disjoint, so add)', '3/4']], 'If the points fit in a semicircle, exactly one of them is the clockwise-first point of that semicircle, so the three events never overlap and their chances add.'),
+        fast: 'n points: n/2^(n − 1); for 3 points, 3/4.',
+        check: 'Two points always share a semicircle, so three points do so with a high chance; 1/2 or 1/4 understate it, and the n/2^(n − 1) rule gives 1 for n = 2 as it must.',
       };
     default: { // distance of a random point in the unit square to the centre
       const rr = rng.pick([0.25, 0.3, 0.4, 0.5]);
@@ -141,6 +162,9 @@ function build(kind, rng) {
           { say: `P = area = π × ${rr}² ≈ ${v.toFixed(4)}.`, why: 'Uniform point: probability = area / 1.' },
         ],
         sim: (r) => (r.next() - 0.5) ** 2 + (r.next() - 0.5) ** 2 < rr * rr,
+        picture: sq([{ points: Array.from({ length: 48 }, (_, i) => [r4(0.5 + rr * Math.cos((2 * Math.PI * i) / 48)), r4(0.5 + rr * Math.sin((2 * Math.PI * i) / 48))]), label: `radius ${rr}`, tone: 3 }], 'x', 'y', `The favourable region is the disc of radius ${rr} around the centre, fully inside the square, so the probability is its area π × ${rr}².`),
+        fast: `π × ${rr}² ≈ ${v.toFixed(4)}.`,
+        check: `The disc fits inside the square of side ${2 * rr} around the centre, so the answer is below ${(2 * rr) ** 2} and above the inner square's ${(2 * rr * rr).toFixed(3)}.`,
       };
     }
   }
@@ -157,7 +181,7 @@ export default {
     const kind = difficulty === 2 ? rng.pick(['ratio', 'sum', 'disc']) : difficulty === 3 ? rng.pick(['meet', 'triangle', 'sum']) : rng.pick(['product', 'semicircle', 'triangle', 'meet']);
     const b = build(kind, rng);
     return mcqItem(ID, rng, difficulty, {
-      value: b.value, exact: b.exact, text: b.text, distractors: b.distractors, steps: b.steps,
+      value: b.value, exact: b.exact, text: b.text, distractors: b.distractors, steps: b.steps, picture: b.picture, fast: b.fast, check: b.check,
       rule: 'Two independent uniforms = a uniform point in the unit square; probability = area. Triangle from a broken stick: 1/4. Semicircle, n points: n/2^(n−1).',
       anchor: 'A single uniform point on a line has P(in an interval) = its length. Two uniforms are the same idea with one change: a point in a square, so lengths become areas.',
       hints: ['Draw the sample space: a segment or a unit square.', 'Shade the favourable region.', 'Compute its length or area.'],

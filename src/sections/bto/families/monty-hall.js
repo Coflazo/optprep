@@ -1,5 +1,5 @@
 // Monty Hall with n doors: a knowing host versus a host who opens doors at random.
-import { mcqItem, agree, q } from '../lib.js';
+import { mcqItem, agree, q, table } from '../lib.js';
 
 const ID = 'monty-hall';
 
@@ -53,8 +53,19 @@ export default {
       ? { value: 0, misconception: 'Believed staying can never win. It wins whenever your first pick was the car: 1/n of the time.' }
       : { value: 1, misconception: 'Believed switching always wins. It wins only when your first pick was a goat, and then only if you land on the car.' });
     if (variant === 'random') distractors.unshift({ value: q(n - 1, n * closedOthers), misconception: 'Used the knowing-host answer. A host who opens doors at random, and happens to show goats, does not move probability onto the other doors.' });
+    const random = variant === 'random';
+    const mine = random ? q(1, n - m) : q(1, n), other = random ? q(1, n - m) : q(n - 1, n * closedOthers);
+    const picture = table(['Doors', 'How many', 'Each, before', 'Each, after the reveal'], [
+      ['your door', 1, `1/${n}`, mine.toString()],
+      [m === 1 ? 'opened door' : 'opened doors', m, `1/${n}`, '0'],
+      [closedOthers === 1 ? 'other closed door' : 'other closed doors', closedOthers, `1/${n}`, other.toString()],
+    ], random
+      ? `A host who opens doors blindly and happens to show goats only eliminates them: the ${n - m} unopened doors stay equal at 1/${n - m} each.`
+      : `A host who knows avoids the car, so your door keeps 1/${n} and the opened doors' share moves to the ${closedOthers} other closed door${closedOthers > 1 ? 's' : ''}: ${other} each.`);
+    const fast = random ? `Blind host: the ${n - m} unopened doors are equal, 1/${n - m}.` : variant === 'stay' ? `Your door keeps its 1/${n}.` : `(1 − 1/${n}) spread over ${closedOthers} closed door${closedOthers > 1 ? 's' : ''}: ${value}.`;
+    const check = `After the reveal the closed doors must add to 1: ${mine} + ${closedOthers} × ${other} = 1. ${random ? 'Here every closed door is equal.' : `Switching beats staying (1/${n}) whenever the host knows.`}`;
     return mcqItem(ID, rng, difficulty, {
-      value, text, distractors, steps,
+      value, text, distractors, steps, picture, fast, check,
       rule: 'Knowing host: your door keeps 1/n; the other closed doors share (n−1)/n. Random host who happens to show goats: all unopened doors are equal.',
       anchor: 'Conditioning on new information (the opened doors), with one change: what the information means depends on whether the host could have revealed the car.',
       hints: ['Could the host have shown the car? What does his choice tell you about your own door?', 'Your door\'s probability does not move with a knowing host.', 'Split the rest over the other closed doors.'],

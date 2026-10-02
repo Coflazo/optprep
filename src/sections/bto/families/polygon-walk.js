@@ -1,6 +1,6 @@
 // Symmetric random walks on polygons: return time, hitting time, last vertex visited, two walkers meeting.
 import { hittingTimes, absorptionProbs } from '../../../core/markov.js';
-import { mcqItem, agree, q } from '../lib.js';
+import { mcqItem, agree, q, pic } from '../lib.js';
 
 const ID = 'polygon-walk';
 const NAMES = { 4: 'square', 5: 'pentagon', 6: 'hexagon', 7: 'heptagon', 8: 'octagon', 9: 'nonagon', 10: 'decagon', 12: 'dodecagon' };
@@ -37,6 +37,9 @@ export default {
         rule: 'Return time to a vertex of an n-cycle = n (1/stationary probability).',
         anchor: 'Long-run frequency 1/n per vertex, with one change: turn a frequency into a waiting time by taking the reciprocal.',
         hints: ['What fraction of time does the token spend at each vertex in the long run?', 'Mean return time = 1 / long-run fraction.', `${n}.`],
+        picture: pic('cycle', { n, start: 0, note: `long run: 1/${n} of the time at each vertex` }, `By symmetry the token spends 1/${n} of its time at every vertex, so visits to the start are ${n} seconds apart on average.`),
+        fast: `Return time = 1/(1/${n}) = ${n}.`,
+        check: `The first step always moves to a neighbour, and from there the hitting time is 1 × ${n - 1}: 1 + ${n - 1} = ${n}.`,
         data: { kind, n },
       });
     }
@@ -63,6 +66,9 @@ export default {
         rule: 'Hitting time on an n-cycle from distance k = k(n − k). Opposite vertex of a hexagon: 9.',
         anchor: 'Gambler\'s ruin duration a·b, with one change: the polygon is a line whose two ends are the same vertex.',
         hints: ['Unroll the polygon: which two ends stop the walk?', 'Fair walk between walls at distance a and b lasts a·b on average.', `${k} × ${n - k}.`],
+        picture: pic('cycle', { n, start: 0, target: k, note: `${k} steps one way, ${n - k} the other` }, `Cut the polygon open at vertex ${k}: the token is ${k} steps from one end and ${n - k} from the other, and a fair walk between walls lasts the product, ${v}.`),
+        fast: `${k} × ${n - k} = ${v}.`,
+        check: `At least ${k} (the short way, straight there) and at most ${Math.floor(n / 2) * Math.ceil(n / 2)}, the time to the opposite vertex; every back-step costs extra time.`,
         data: { kind, n, k },
       });
     }
@@ -87,6 +93,9 @@ export default {
         rule: 'On a cycle, every non-starting vertex is equally likely to be the last one visited: 1/(n − 1).',
         anchor: 'Gambler\'s ruin i/N, used twice, with one change: the walls move as the visited arc grows.',
         hints: ['What must have happened just before vertex k is visited last?', 'The token sits at one neighbour of k, having visited everything else.', 'The answer does not depend on k.'],
+        picture: pic('cycle', { n, start: 0, target: k, highlight: [(k + n - 1) % n, (k + 1) % n].filter((x) => x !== 0), note: `every non-start vertex: 1/${n - 1}` }, `Vertex ${k} is last when the token reaches one of its marked neighbours and then goes all the way round to the other without touching ${k}. The chance comes out 1/${n - 1} for every vertex.`),
+        fast: `Every vertex except the start is equally likely to be last: 1/${n - 1}.`,
+        check: `The ${n - 1} chances "vertex j is last" must add to 1, and the answer is the same for near and far vertices, so 1/${n - 1}; a far vertex is not likelier to be last.`,
         data: { kind, n, k },
       });
     }
@@ -115,6 +124,9 @@ export default {
       rule: 'Two walkers: study the difference. Gap steps −2/0/+2 with 1/4, 1/2, 1/4 → lazy walk on an (n/2)-cycle: E = 2j(n/2 − j).',
       anchor: 'Single-walker hitting time k(n − k), with one change: the gap is itself a walk that sometimes stands still.',
       hints: ['Follow the distance between the tokens, not the tokens themselves.', 'How does the gap change in one second? What is its parity?', `A lazy walk on a ${m}-cycle from distance ${j}.`],
+      picture: pic('cycle', { n, highlight: [0, D], note: `gap ${D}: changes by −2, 0 or +2` }, `Follow the gap between the two marked tokens. It moves by 2 at a time, and only half the time, so it is a lazy walk on a ${m}-cycle starting ${j} away: 2 × ${j} × ${m - j} = ${v}.`),
+      fast: `Gap walk on a ${m}-cycle from ${j}, moving half the time: 2 × ${j} × ${m - j} = ${v}.`,
+      check: `Two movers do not meet twice as fast as one: half of the seconds leave the gap unchanged, which doubles the single-walk time ${j * (m - j)}.`,
       data: { kind: 'meet', n, D },
     });
   },

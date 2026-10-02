@@ -1,11 +1,11 @@
 // Optimal stopping on a small red/black deck: +1 per red, -1 per black, stop whenever you like.
-import { mcqItem, agree, q } from '../lib.js';
+import { mcqItem, agree, q, table } from '../lib.js';
 
 const ID = 'card-stopping';
 
 // Exact value V(r, b) with the option to stop (value 0 for the future) at any time.
 const MEMO = new Map();
-function value(r, b, memo = MEMO) {
+export function value(r, b, memo = MEMO) {
   if (r === 0) return q(0);
   if (b === 0) return q(r);
   const key = `${r},${b}`;
@@ -78,6 +78,9 @@ export default {
       rule: 'V(r,b) = max(0, [r(1 + V(r−1,b)) + b(−1 + V(r,b−1))]/(r+b)). V(1,1) = 1/2, V(2,2) = 2/3, V(3,3) = 17/20.',
       anchor: 'The reroll rule for dice (keep iff the sure value beats continuing), with one change: the deck changes as you draw, so the value of continuing depends on what is left.',
       hints: ['Start from tiny decks: what is V(1,1)?', 'At each state compare 0 (stop) with the expected value of one more draw.', `Build the table up to (${r}, ${b}).`],
+      picture: table(['Reds left ↓ / blacks left →', ...Array.from({ length: b + 1 }, (_, j) => String(j))], Array.from({ length: r + 1 }, (_, i) => [String(i), ...Array.from({ length: b + 1 }, (_, j) => value(i, j).toString())]), `Each cell is the value of the game with that many reds and blacks left. A cell uses only the cell above it (one red fewer) and the cell to its left (one black fewer); the answer is the corner (${r}, ${b}).`),
+      fast: `Fill V from small decks up; V(${r}, ${b}) = ${V}.`,
+      check: `At least max(0, ${r} − ${b}) = ${Math.max(0, r - b)} (stop at once, or play everything) and below the hindsight value ${hindsight(r, b).toNumber().toFixed(3)} of knowing the whole order in advance. Stopping as soon as you are ahead gives ${ahead.toNumber().toFixed(3)}.`,
       data: { r, b },
     });
   },

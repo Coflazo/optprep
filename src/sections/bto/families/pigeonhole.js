@@ -1,7 +1,7 @@
 // Pigeonhole certainties next to look-alike events that are only likely.
 import { nCr } from '../../../core/combinatorics.js';
 import { Q } from '../../../core/rational.js';
-import { mcqItem, agree, q, sequences } from '../lib.js';
+import { mcqItem, agree, q, sequences, table } from '../lib.js';
 
 const ID = 'pigeonhole';
 // P(Bin(n, 1/k) > m): the chance that one particular box overflows.
@@ -41,6 +41,9 @@ export default {
         rule: 'n items, k boxes: some box has at least ⌈n/k⌉. If n > k·m, "some box > m" is certain.',
         anchor: 'You know 3 socks from 2 colours give a pair. The coin version is the same idea with one change: more boxes and a larger cap.',
         hints: ['What is the most coins the boxes can hold if none has more than the cap?', `Compare ${k} × ${m} with ${n}.`, 'The event is certain.'],
+        picture: table(['', 'Coins'], [[`${k} boxes filled to the cap of ${m}`, k * m], ['coins thrown', n], ['coins with nowhere to go', n - k * m]], `Even the most even spread that keeps every box at ${m} or fewer holds only ${k * m} coins. The other ${n - k * m} must push some box past ${m}, whatever the throws.`),
+        fast: `${k} × ${m} = ${k * m} < ${n}: certain, P = 1.`,
+        check: `One box alone overflows with chance ${tail.toNumber().toFixed(3)}, but the question asks for any box; the cap count ${k * m} < ${n} makes it certain, so anything below 1 is wrong.`,
         data: { kind, n, k, m },
       });
     }
@@ -73,6 +76,9 @@ export default {
         rule: 'First test n > k·(t − 1). If it fails, the event is uncertain: count the complement.',
         anchor: 'The pigeonhole certainty with one change: too few coins, so it becomes an ordinary counting problem.',
         hints: [`Can ${k} boxes hold ${n} coins with none reaching ${t}?`, 'If yes, count the placements where no box reaches the threshold.', `${good} of ${k ** n} placements avoid it.`],
+        picture: table(['Placements of the coins', 'Count'], [[`every box below ${t}`, good], [`some box at ${t} or more`, k ** n - good], [`all (${k}^${n})`, k ** n]], `${k} × ${t - 1} = ${k * (t - 1)} ≥ ${n}, so the boxes can stay below ${t} and the event is not certain. Count the placements that avoid it and take the rest.`),
+        fast: `${k * (t - 1)} ≥ ${n}, so not certain: 1 − ${good}/${k ** n} = ${v}.`,
+        check: `The pigeonhole test fails (${k} × ${t - 1} = ${k * (t - 1)} ≥ ${n}), so the answer is below 1; the ${k} placements with every coin in one box already give at least ${k}/${k ** n}.`,
         data: { kind, n, k, t },
       });
     }
@@ -107,6 +113,11 @@ export default {
         rule: 'More items than categories → a repeat is certain. Otherwise 1 − P(all different).',
         anchor: 'The birthday problem with one change: few categories (colours), so it can tip over into certainty.',
         hints: ['Compare the number of socks with the number of colours.', kind === 'socksSure' ? 'More socks than colours.' : 'All-different is possible, so use the complement.', kind === 'socksSure' ? 'Certain.' : `1 − ${none}.`],
+        picture: kind === 'socksSure'
+          ? table(['', 'Socks'], [[`one of each of the ${c} colours`, c], ['socks taken', d]], `With ${c} colours, ${c} socks is the most you can hold without a match; the ${d}th sock must repeat a colour.`)
+          : table(['Sock', 'Socks of a new colour', 'Socks left', 'Factor'], Array.from({ length: d }, (_, i) => [i + 1, s * (c - i), s * c - i, `${s * (c - i)}/${s * c - i}`]), `The complement, all colours different: each sock must avoid every colour already taken. The product is ${none}; the answer is 1 minus that.`),
+        fast: kind === 'socksSure' ? `${d} socks > ${c} colours: certain.` : `1 − ${Array.from({ length: d }, (_, i) => `${s * (c - i)}/${s * c - i}`).join(' × ')} = ${v}.`,
+        check: kind === 'socksSure' ? 'More socks than colours forces a match in every draw, so the answer is exactly 1.' : `${d} socks ≤ ${c} colours, so a match is possible but not forced: the answer is strictly between 0 and 1.`,
         data: { kind, c, s, d },
       });
     }
@@ -141,6 +152,9 @@ export default {
       rule: 'Build the boxes (complementary pairs), then compare items with boxes.',
       anchor: 'Coins into boxes, with one change: the boxes are pairs of numbers that sum to the target.',
       hints: ['Which numbers pair up to the target?', `There are ${N} such pairs. Compare with ${r}.`, sure ? 'Certain.' : 'Count sets using at most one number from each pair.'],
+      picture: table(['Box', `Numbers adding to ${2 * N + 1}`], Array.from({ length: N }, (_, i) => [i + 1, `${i + 1} and ${2 * N - i}`]), sure ? `${N} boxes, ${r} numbers: two of them must share a box, and a shared box is a pair adding to ${2 * N + 1}.` : `${r} numbers in ${N} boxes can all sit in different boxes, so a hit is not forced: count the sets that use at most one number per box.`),
+      fast: sure ? `${r} numbers into ${N} pairs: certain.` : `No hit: C(${N},${r}) × 2^${r} of C(${2 * N},${r}) sets, so 1 − ${noPair} = ${v}.`,
+      check: sure ? `${r} > ${N} boxes, so every possible choice contains a pair: exactly 1.` : `${r} ≤ ${N}, so some choices avoid every pair: the answer is below 1.`,
       data: { kind, N, r },
     });
   },

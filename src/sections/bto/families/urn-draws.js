@@ -1,7 +1,7 @@
 // Hypergeometric draws from an urn: exactly j red, at least j red, first blue on draw m.
 import { nCr } from '../../../core/combinatorics.js';
 import { Q } from '../../../core/rational.js';
-import { mcqItem, agree, q, qpow } from '../lib.js';
+import { mcqItem, agree, q, qpow, table } from '../lib.js';
 
 const ID = 'urn-draws';
 const words = ['no', 'one', 'two', 'three', 'four', 'five'];
@@ -55,6 +55,9 @@ export default {
       rule: 'P(j red in k draws) = C(r,j)C(b,k−j)/C(r+b,k). A sequential product must be multiplied by C(k,j) orders.',
       anchor: 'The binomial C(k,j)p^j(1−p)^(k−j) you know, with one change: without replacement, the red chance shrinks as reds come out, so count subsets instead.',
       hints: ['Does the order of the drawn balls matter for the colour count?', `Count sets: choose ${jj} of ${r} reds and ${k - jj} of ${b} blues.`, `${termText} over C(${n},${k}).`],
+      picture: table(['Reds in the hand', 'Sets', `Out of C(${n},${k}) = ${nCr(n, k)}`], Array.from({ length: k + 1 }, (_, t) => [`${t}${terms.includes(t) ? ' (wanted)' : ''}`, `C(${r},${t}) × C(${b},${k - t}) = ${nCr(r, t) * nCr(b, k - t)}`, hyper(r, b, k, t).toString()]), `Every hand of ${k} balls has some number of reds, so the column adds to 1. The wanted row${terms.length > 1 ? 's add' : ' gives'} ${value}.`),
+      fast: `${termText} = ${value.mul(new Q(nCr(n, k), 1n))} sets out of ${nCr(n, k)}: ${value}.`,
+      check: `The rows for 0 to ${k} reds add to 1. With replacement the answer would be ${withRep}; drawing without replacement moves it, so an option equal to that used the wrong model.`,
       data: { r, b, k, j: jj, atLeast },
     });
   },

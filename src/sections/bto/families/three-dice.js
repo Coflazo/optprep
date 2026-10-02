@@ -1,7 +1,39 @@
 // Three dice: sums, all different, exactly a pair, triples, maximum, even product.
-import { mcqItem, agree, q } from '../lib.js';
+import { mcqItem, agree, q, pic, table } from '../lib.js';
 
 const ID = 'three-dice';
+const SPLIT = [['all different', 120, '6 × 5 × 4'], ['exactly a pair', 90, '3 positions × 6 × 5'], ['three of a kind', 6, 'one per face'], ['total', 216, '6³']];
+
+function explain(d) {
+  if (d.kind === 'sum') {
+    const s = d.s, highlight = [], cellText = [];
+    for (let a = 1; a <= 6; a++) { cellText.push([]); for (let b = 1; b <= 6; b++) { const c = s - a - b; cellText[a - 1].push(c >= 1 && c <= 6 ? String(c) : ''); if (c >= 1 && c <= 6) highlight.push([a - 1, b - 1]); } }
+    return {
+      picture: pic('grid', { rows: 6, cols: 6, highlight, count: highlight.length, cellText, rowTitle: 'first die', colTitle: 'second die' }, `Each cell is a first-two-dice pair; the number in it is the third die needed for sum ${s}. ${highlight.length} cells have a legal third die (1 to 6), so ${highlight.length} of 216.`),
+      fast: `Fix the first two dice and ask whether ${s} − a − b is a face: ${highlight.length} pairs work, ${highlight.length}/216.`,
+      check: `Sums s and 21 − s have the same count (here ${s} and ${21 - s}), and the peak is 27 ways at 10 and 11; ${highlight.length} fits that shape.`,
+    };
+  }
+  if (d.kind === 'max') {
+    const k = d.k, w = k ** 3 - (k - 1) ** 3;
+    return {
+      picture: table(['Event', 'Ordered triples'], [[`max ≤ ${k}`, `${k}³ = ${k ** 3}`], [`max ≤ ${k - 1}`, `${k - 1}³ = ${(k - 1) ** 3}`], [`max = ${k}`, `${k ** 3} − ${(k - 1) ** 3} = ${w}`]], `"Max at most ${k}" is a ${k} × ${k} × ${k} cube of outcomes. Peel off the smaller cube and the ${w} triples left have max exactly ${k}.`),
+      fast: `Difference of cubes: ${k}³ − ${k - 1}³ = ${w}, over 216.`,
+      check: `The max leans high: P(max = 6) = 91/216 is the largest, and the counts for 1 to 6 (1, 7, 19, 37, 61, 91) add to 216.`,
+    };
+  }
+  if (d.kind === 'product') return {
+    picture: table(['Dice', 'Ordered triples'], [['all three odd', '3 × 3 × 3 = 27'], ['at least one even', '216 − 27 = 189']], 'An odd product needs every die odd: 27 triples. Every other triple has an even factor.'),
+    fast: 'Complement: 1 − (1/2)³ = 7/8.',
+    check: 'One even die is enough, so the answer must be well above 1/2: 7/8.',
+  };
+  const pick = { allDiff: 0, pair: 1, triple: 2 }[d.kind];
+  return {
+    picture: table(['Type', 'Ordered triples', 'Count'], SPLIT.map(([t, n, how]) => [t, how, n]), `Every one of the 216 triples is exactly one type. Here we want "${SPLIT[pick][0]}": ${SPLIT[pick][1]} of 216.`),
+    fast: { allDiff: '6/6 × 5/6 × 4/6 = 120/216 = 5/9.', pair: '216 − 120 (all different) − 6 (triples) = 90, so 90/216.', triple: 'The first die is free; the other two match it: (1/6)² = 1/36.' }[d.kind],
+    check: 'The three types must add to 216: 120 + 90 + 6. An option that breaks the sum counts the wrong type.',
+  };
+}
 // Ordered triples summing to s: coefficient of x^s in (x + ... + x^6)^3.
 const ways3 = (s) => { let n = 0; for (let a = 1; a <= 6; a++) for (let b = 1; b <= 6; b++) { const c = s - a - b; if (c >= 1 && c <= 6) n++; } return n; };
 // Unordered multisets {a <= b <= c} summing to s.
@@ -127,6 +159,7 @@ export default {
     const b = build(kind, rng);
     return mcqItem(ID, rng, difficulty, {
       ...b,
+      ...explain(b.data),
       rule: '216 ordered triples = 120 all different + 90 exactly a pair + 6 triples. P(max ≤ k) = (k/6)³.',
       anchor: 'Two dice give 36 ordered pairs; three dice are the same idea with one more factor of 6: 216 ordered triples.',
     });

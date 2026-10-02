@@ -1,5 +1,13 @@
 // Geometric distribution: first six on throw k, more than k throws, first success on an even throw.
-import { mcqItem, agree, qpow, q } from '../lib.js';
+import { mcqItem, agree, qpow, q, pic } from '../lib.js';
+
+// Trials until the first success, cut after k trials. mark: 'hitK' marks the success on trial k,
+// 'none' marks the path of k misses.
+function waitTree(k, p, m, hit, miss, mark) {
+  let node = { p: m.toString(), label: `${miss} ×${k}`, ...(mark === 'none' ? { mark: true } : {}) };
+  for (let i = k; i >= 2; i--) node = { p: m.toString(), label: miss, children: [{ p: p.toString(), label: `${hit} on ${i}`, ...(mark === 'hitK' && i === k ? { mark: true } : {}) }, node] };
+  return { label: '', children: [{ p: p.toString(), label: `${hit} on 1`, ...(mark === 'hitK' && k === 1 ? { mark: true } : {}) }, node] };
+}
 
 const ID = 'first-success';
 const COINS = [[1, 3], [2, 5], [3, 4], [1, 4], [3, 5]];
@@ -37,6 +45,9 @@ export default {
             { say: `P = (5/6)^${k} = ${value} ≈ ${value.toNumber().toFixed(3)}.`, why: 'Independent misses multiply.' },
           ],
           hints: [`What must happen on the first ${k} throws?`, `All ${k} throws miss.`, `(5/6)^${k}.`],
+          picture: pic('tree', { root: waitTree(k, p, m, 'six', 'no six', 'none'), total: value.toString() }, `Throw until the first six, but look only at the first ${k} throws. The marked path, ${k} misses in a row, is the event: (5/6)^${k}.`),
+          fast: `No six in ${k} throws: (5/6)^${k} = ${value}.`,
+          check: `This and P(a six within ${k} throws) = ${q(1).sub(value)} must add to 1, and it must sit below (5/6)^${k - 1} = ${qpow(m, k - 1)}, the "more than ${k - 1}" answer.`,
           data: { variant, a, c, k },
         };
       } else {
@@ -56,6 +67,9 @@ export default {
             { say: `P = (${m})^${k - 1} × ${p} = ${value} ≈ ${value.toNumber().toFixed(4)}.`, why: 'Independent trials multiply along the single path.' },
           ],
           hints: [`What must the first ${k - 1} trials show?`, `${k - 1} misses, then one success.`, `(${m})^${k - 1} × ${p}.`],
+          picture: pic('tree', { root: waitTree(k, p, m, what, `no ${what}`, 'hitK'), total: value.toString() }, `Stop at the first ${what}. The one marked leaf is the path of ${k - 1} misses and then a ${what}, so it is the only way to have the first ${what} on trial ${k}.`),
+          fast: `(${m})^${k - 1} × ${p} = ${value}.`,
+          check: `A first ${what} on trial ${k} needs earlier misses, so the answer is below ${p}, the chance on trial 1, and each later trial is smaller again by the factor ${m}.`,
           data: { variant, a, c, k },
         };
       }
@@ -81,6 +95,9 @@ export default {
           { say: `P = ${value} ≈ ${value.toNumber().toFixed(3)}.`, why: variant === 'evenThrow' ? 'Even share = 5/(6 + 5).' : 'Ann has the odd throws: 6/(6 + 5).' },
         ],
         hints: ['Does the game look the same after two misses?', 'Compare 1/6 (odd throw wins) with 5/36 (even throw wins) inside one round.', 'Ratio 6 : 5.'],
+        picture: pic('tree', { root: { label: 'round', children: [{ p: '1/6', label: variant === 'evenThrow' ? 'six on the odd throw' : 'Ann throws a six', ...(variant === 'duel' ? { mark: true } : {}) }, { p: '5/6', label: variant === 'evenThrow' ? 'odd throw misses' : 'Ann misses', children: [{ p: '1/6', label: variant === 'evenThrow' ? 'six on the even throw' : 'Bob throws a six', ...(variant === 'evenThrow' ? { mark: true } : {}) }, { p: '5/6', label: 'both miss: start again' }] }] } }, `One round of two throws. It ends at 1/6 for the ${variant === 'evenThrow' ? 'odd' : 'first'} throw or 5/36 for the ${variant === 'evenThrow' ? 'even' : 'second'}; the 25/36 branch replays the same round, so only the ratio 6 : 5 matters.`),
+        fast: variant === 'evenThrow' ? 'Odd : even = 1/6 : 5/36 = 6 : 5, so the even share is 5/11.' : 'The first thrower wins with 1/(2 − p) = 1/(2 − 1/6) = 6/11.',
+        check: variant === 'evenThrow' ? 'Below 1/2, because the odd throw gets the first chance in every round; odd and even together make 1, so odd is 6/11.' : 'Above 1/2, because Ann gets the first chance in every round; Ann and Bob together make 1, so Bob has 5/11.',
         data: { variant },
       };
     }
