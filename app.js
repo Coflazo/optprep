@@ -81,7 +81,6 @@ function renderNav(hash) {
   const link = (href, label, extra = null, ico = null, on = here(href)) => h('a', { href, 'aria-current': on ? 'page' : null }, ico ? icon(ico, { size: 18 }) : null, h('span', {}, label), extra);
   const studyOwn = /^#\/study\/(mistakes|week)/.test(hash);
   const tasks = presetSections(activePreset());
-  mount(document.getElementById('nav-today'), todayBits());
   mount(nav,
     link('#/', 'Today', null, 'path'),
     h('div', { class: 'group' }, 'Tasks'),

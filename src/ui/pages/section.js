@@ -44,19 +44,18 @@ export function sectionMap(store, id) {
 }
 
 function row(r, n, id) {
-  const actions = r.kind === 'skill'
-    ? [r.lesson ? h('a', { class: 'btn small ghost', href: `#/study/lesson/${r.lesson}` }, 'Lesson') : h('a', { class: 'btn small ghost', href: `#/s/${id}/learn/${r.id}` }, 'Learn'),
-      h('a', { class: `btn small${r.current ? ' primary' : ''}`, href: r.href }, r.state === 'needs-review' ? 'Review' : 'Practise')]
-    : [h('a', { class: `btn small${r.current ? ' primary' : ''}`, href: r.href }, r.kind === 'lesson' ? 'Read' : 'Start')];
+  // One action per row; the title opens the lesson, so the row never needs two buttons.
+  const titleHref = r.kind === 'skill' ? (r.lesson ? `#/study/lesson/${r.lesson}` : `#/s/${id}/learn/${r.id}`) : r.href;
+  const actions = [h('a', { class: `btn small${r.current ? ' primary' : ' ghost'}`, href: r.href }, r.kind === 'skill' ? (r.state === 'needs-review' ? 'Review' : 'Practise') : r.kind === 'lesson' ? 'Read' : 'Start')];
   return h('li', { class: `grid-row${r.current ? ' is-current' : ''}${r.later ? ' is-later' : ''}${r.done ? ' is-done' : ''}`, id: r.current ? 'current-row' : null, 'aria-current': r.current ? 'step' : null },
     h('span', { class: 'grid-num num' }, String(n)),
     h('span', { class: 'grid-body' },
-      h('span', { class: 'grid-title' }, r.title),
-      r.kind === 'skill' && r.skill ? h('span', { class: 'grid-skill' }, r.skill) : null,
+      h('a', { class: 'grid-title', href: titleHref }, r.title),
+      r.current && r.kind === 'skill' && r.skill ? h('span', { class: 'grid-skill' }, r.skill) : null,
       r.current ? h('span', { class: 'you-are-here' }, icon('pencil', { size: 14 }), 'You are here') : null),
     h('span', { class: 'grid-level' },
       r.kind === 'skill' ? bubbles(5, r.lv, { label: `Level ${r.lv} of 5`, current: r.current }) : bubbles(1, r.done ? 1 : 0, { label: r.done ? 'Done' : 'Not done', current: r.current })),
-    h('span', { class: 'grid-state' }, r.state !== 'new' || r.current ? stamp(r.state) : null),
+    h('span', { class: 'grid-state' }, r.state === 'needs-review' || r.state === 'mastered' ? stamp(r.state) : null),
     h('span', { class: 'grid-actions' }, actions));
 }
 
@@ -74,17 +73,17 @@ export function sectionPage(root, { store, id }) {
   mount(root,
     h('h1', {}, cfg.title),
     h('p', { class: 'lede' }, cfg.blurb),
-    h('section', { class: 'field format-field' },
-      h('h2', { class: 'field-label' }, 'Exam replica'),
+    h('section', { class: 'format-line' },
       h('p', { class: 'num-ish' }, formatLine(cfg)),
-      h('p', { class: 'muted small-note' }, `Trainer bar: ${cfg.target.label}. `, rep ? ['Reported pass: ', h('span', { class: 'num' }, rep.text), ' (', h('a', { href: SOURCES[rep.source].url, target: '_blank', rel: 'noopener' }, SOURCES[rep.source].label), ').'] : 'No pass line is reported for this task.'),
       h('div', { class: 'row' },
         h('a', { class: 'btn primary', href: `#/run/${id}/practice` }, 'Practise'),
-        h('a', { class: 'btn', href: `#/run/${id}/exam` }, 'Exam replica'),
-        ...cfg.variants.map((v, i) => h('a', { class: 'btn ghost', href: `#/run/${id}/exam/v${i}` }, v.label)),
-        due ? h('a', { class: 'btn ghost', href: `#/run/${id}/mistakes` }, `Review ${due} due`) : null,
-        h('a', { class: 'btn ghost', href: `#/s/${id}/sets` }, `Library: ${nSets} sets`),
-        BOOK_BY_ID[id] && !BOOK_BY_ID[id].pending ? h('a', { class: 'btn ghost', href: `#/study/book/${id}` }, 'Study book') : null),
+        h('a', { class: 'btn', href: `#/run/${id}/exam` }, 'Exam replica')),
+      h('p', { class: 'quiet-links small-note' },
+        due ? [h('a', { href: `#/run/${id}/mistakes` }, `Review ${due} due`), ' '] : null,
+        cfg.variants.map((v, i) => [h('a', { href: `#/run/${id}/exam/v${i}` }, `Exam: ${v.label}`), ' ']),
+        h('a', { href: `#/s/${id}/sets` }, `Library, ${nSets} sets`), ' ',
+        BOOK_BY_ID[id] && !BOOK_BY_ID[id].pending ? h('a', { href: `#/study/book/${id}` }, 'Study book') : null),
+      h('p', { class: 'muted small-note' }, `Trainer bar: ${cfg.target.label}. `, rep ? ['Reported pass: ', rep.text, ' (', h('a', { href: SOURCES[rep.source].url, target: '_blank', rel: 'noopener' }, 'source'), ').'] : null),
       id === 'mm' ? notationToggle(store) : null),
     map.units.map((u) => h('section', { class: 'unit' },
       h('header', { class: 'unit-head' },

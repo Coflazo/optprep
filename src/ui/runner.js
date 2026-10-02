@@ -20,6 +20,9 @@ import { SECTION_MODULES } from '../sections/index.js';
 import { readiness, runMeetsTarget } from '../core/readiness.js';
 import { lessonForFamily } from '../study/content/index.js';
 import { divNotation } from '../core/format.js';
+import { setRail, scanSheet, bubbles } from './sheet.js';
+import { mistakeRow } from '../core/mistakes.js';
+import { timingOf } from '../../config/presets.js';
 
 const VIEWS = { mcq: mcqView, rank: rankView, interval: intervalView, orderbook: orderbookView };
 // Sure/unsure buttons. Not the 80-in-8: one tap answers there, so there is no second button to press.
@@ -58,6 +61,8 @@ export function runFeedbackSession(root, { sectionId, mode, family, count, store
   const tapSubmits = cfg.exam.autoAdvance && mode === 'drill';
   const notation = notationOf(store);
   const log = [];
+  const xp0 = store.xpTotal();
+  const lv0 = { ...store.mastery() };
   let idx = 0;
   let current = null;
   let cleanup = () => {};
@@ -79,10 +84,10 @@ export function runFeedbackSession(root, { sectionId, mode, family, count, store
     const item = nextItem();
     if (!item) return summary();
     current = { item, start: performance.now(), hints: 0 };
+    if (Number.isFinite(limit)) setRail(idx / limit, `Question ${idx + 1} of ${limit}`);
     const submitBtn = h('button', { class: 'btn primary', type: 'button', onclick: () => submit() }, 'Submit');
-    const unsureBtn = CALIBRATED.has(sectionId) ? h('button', { class: 'btn', type: 'button', onclick: () => submit({ confidence: 0.6 }) }, 'Submit (unsure)') : null;
-    if (unsureBtn) submitBtn.textContent = 'Submit (sure)';
-    const skipBtn = item.kind === 'mcq' ? h('button', { class: 'btn', type: 'button', onclick: () => submit({ skip: true }) }, 'Skip') : null;
+    const unsureBtn = CALIBRATED.has(sectionId) ? h('button', { class: 'btn ghost', type: 'button', onclick: () => submit({ confidence: 0.6 }) }, 'Submit, not sure') : null;
+    const skipBtn = item.kind === 'mcq' ? h('button', { class: 'btn ghost', type: 'button', onclick: () => submit({ skip: true }) }, 'Skip') : null;
     const hints = mode === 'drill' || noHints ? null : hintLadder(item, (n) => { current.hints = n; });
     const body = itemBody(item, { preview: mode !== 'drill', notation, onChange: tapSubmits && item.kind === 'mcq' ? () => submit() : undefined });
     const t = timerEl();
@@ -94,7 +99,7 @@ export function runFeedbackSession(root, { sectionId, mode, family, count, store
       h('span', {}, `${title || cfg.title} · ${modeLabel(mode)}`, famLabel),
       h('span', {}, Number.isFinite(limit) ? `${idx + 1} / ${limit}` : `#${idx + 1}`, mode === 'drill' ? ' · ' : '', mode === 'drill' ? t : '', paceEl ? ' · ' : '', paceEl));
     const controls = h('div', { class: 'row' }, submitBtn, unsureBtn, skipBtn, hints?.btn,
-      h('span', { style: { flex: 1 } }), h('button', { class: 'btn', type: 'button', onclick: () => { idx = limit; summary(); } }, 'End session'));
+      h('span', { style: { flex: 1 } }), h('button', { class: 'btn ghost', type: 'button', onclick: () => { idx = limit; summary(); } }, 'End session'));
     const after = h('div', {});
     mount(root, h('div', { class: 'panel' }, head, body.el, hints?.box, controls, after));
     current.body = body; current.after = after; current.controls = controls; current.famLabel = famLabel;
@@ -137,7 +142,11 @@ export function runFeedbackSession(root, { sectionId, mode, family, count, store
     const ms = performance.now() - current.start;
     const confidence = opts.confidence ?? (CALIBRATED.has(sectionId) && !response.skip ? 0.9 : undefined);
     const correctNoHelp = result.correct && current.hints === 0;
-    store.recordAnswer(sectionId, item.family, { correct: correctNoHelp, ms, confidence: response.skip ? undefined : confidence, difficulty: item.difficulty, score: item.kind === 'interval' ? result.score : undefined });
+    store.recordAnswer(sectionId, item.family, {
+      correct: correctNoHelp, ms, confidence: response.skip ? undefined : confidence, difficulty: item.difficulty, score: item.kind === 'interval' ? result.score : undefined,
+      hints: current.hints, mode, fresh: setNumber == null, budgetMs: perItemMs(item),
+      miss: !result.correct && !response.skip ? mistakeRow(item, response, { mode, ms: Math.round(ms) }) : undefined,
+    });
     store.srs = srsRecord(store.srs, `${sectionId}:${item.family}`, correctNoHelp);
     log.push({ family: item.family, correct: result.correct, score: result.score, hints: current.hints, ms });
     body.view.reveal(result, response);
@@ -165,15 +174,34 @@ export function runFeedbackSession(root, { sectionId, mode, family, count, store
     const weakest = [...byFam.entries()].sort((a, b) => a[1].c / a[1].n - b[1].c / b[1].n)[0];
     if (mode === 'drill' && n) store.recordRun({ section: sectionId, mode: 'drill', score: log.reduce((s, x) => s + x.score, 0), max: n, items: log });
     if (setNumber != null && n === limit) store.recordSet(sectionId, setNumber, { score: Math.round(log.reduce((s, x) => s + x.score, 0) * 100) / 100, max: n, mode: 'practice' });
-    mount(root, h('div', { class: 'panel' },
-      h('h2', { style: { marginTop: 0 } }, `${modeLabel(mode)} summary`),
-      n ? h('p', {}, `${correct} of ${n} correct (${Math.round((100 * correct) / n)}%).`) : h('p', { class: 'muted' }, mode === 'mistakes' ? 'Nothing is due for review in this section right now.' : 'No questions answered.'),
-      n ? h('table', {}, h('thead', {}, h('tr', {}, h('th', {}, 'Family'), h('th', { style: { textAlign: 'right' } }, 'Correct'))),
-        h('tbody', {}, [...byFam.entries()].map(([f, v]) => h('tr', {}, h('td', {}, familyTitle(section, f)), h('td', { class: 'num', style: { textAlign: 'right' } }, `${v.c}/${v.n}`))))) : null,
-      h('div', { class: 'row', style: { marginTop: '16px' } },
-        weakest && weakest[1].c < weakest[1].n ? h('a', { class: 'btn primary', href: `#/s/${sectionId}/learn/${weakest[0]}` }, `Learn: ${familyTitle(section, weakest[0])}`) : null,
-        weakest && weakest[1].c < weakest[1].n && lessonForFamily(sectionId, weakest[0]) ? h('a', { class: 'btn', href: `#/study/lesson/${lessonForFamily(sectionId, weakest[0])}` }, `Study: ${familyTitle(section, weakest[0])}`) : null,
-        h('a', { class: 'btn', href: `#/s/${sectionId}` }, 'Back to section'))));
+    const xpGain = store.xpTotal() - xp0;
+    const now = store.mastery();
+    const spentS = Math.round(log.reduce((t, x) => t + x.ms, 0) / 1000);
+    const famRows = [...byFam.entries()].map(([f, v]) => {
+      const k = `${sectionId}:${f}`;
+      const before = lv0[k]?.lv || 0, after = now[k]?.lv || 0;
+      const marks = bubbles(5, after, { label: `Level ${after} of 5` });
+      // Level-up: the newly filled bubbles pop in once (rare, so it earns a moment).
+      [...marks.children].slice(before, after).forEach((b) => b.classList.add('is-new'));
+      return h('li', { class: 'summary-row' },
+        h('span', { class: 'summary-fam' }, familyTitle(section, f)),
+        h('span', { class: 'num muted' }, `${v.c}/${v.n}`),
+        marks,
+        after > before ? h('span', { class: 'stamp stamp-mastered' }, `Level ${after}`) : null);
+    });
+    setRail(1, 'Session complete');
+    mount(root, h('section', { class: 'field session-summary' },
+      h('h2', { class: 'field-label' }, `${modeLabel(mode)} summary`),
+      n ? h('div', { class: 'summary-stats' },
+        h('span', {}, h('span', { class: 'num big' }, `${correct}/${n}`), ' right'),
+        h('span', {}, h('span', { class: 'num big' }, `+${xpGain}`), ' XP'),
+        h('span', {}, h('span', { class: 'num big' }, `${Math.floor(spentS / 60)}:${String(spentS % 60).padStart(2, '0')}`), ' on questions'))
+        : h('p', { class: 'muted' }, mode === 'mistakes' ? 'Nothing is due for review in this task right now.' : 'No questions answered.'),
+      n ? h('ol', { class: 'summary-list' }, famRows) : null,
+      h('div', { class: 'row' },
+        weakest && weakest[1].c < weakest[1].n && lessonForFamily(sectionId, weakest[0]) ? h('a', { class: 'btn primary', href: `#/study/lesson/${lessonForFamily(sectionId, weakest[0])}` }, `Study: ${familyTitle(section, weakest[0])}`) : null,
+        weakest && weakest[1].c < weakest[1].n ? h('a', { class: 'btn', href: `#/s/${sectionId}/learn/${weakest[0]}` }, `Worked examples: ${familyTitle(section, weakest[0])}`) : null,
+        h('a', { class: 'btn ghost', href: `#/s/${sectionId}` }, 'Back to the roadmap'))));
     onDone?.({ n, correct, clean: log.filter((x) => x.correct && !x.hints).length, family: fixedItems?.[0]?.family, ms: log.map((x) => Math.round(x.ms)), budgetMs: perItemMs(fixedItems?.[0] || {}) });
   }
 
@@ -235,17 +263,22 @@ export function runExam(root, { sectionId, variant, store, seed = Date.now(), on
   // button and no Enter. allowSkip false removes the Skip button. Both default to the old behaviour.
   const canSkip = exam.allowSkip !== false;
   const notation = notationOf(store);
+  const spent = items.map(() => 0); // ms on screen per question, summed over revisits
+  const budgetMs = exam.perItemSeconds ? exam.perItemSeconds * 1000 : (exam.totalSeconds * 1000) / items.length;
+  const leave = () => { if (current?.i != null) { spent[current.i] += performance.now() - current.t; current.i = null; } };
 
   function show() {
     if (finished) return;
+    leave();
     if (idx >= items.length) return exam.navigation === 'free' ? endScreen() : finish();
+    setRail(idx / items.length, `Question ${idx + 1} of ${items.length}`);
     const item = items[idx];
     const tap = exam.autoAdvance && item.kind === 'mcq';
     let live = false; // restoring a saved answer must not advance
     const body = itemBody(item, { preview: false, notation, onChange: tap ? () => { if (live) { save(); idx++; show(); } } : undefined });
     if (responses[idx] && !responses[idx].skip) body.view.setResponse?.(responses[idx]);
     live = true;
-    current = { item, body };
+    current = { item, body, i: idx, t: performance.now() };
     if (exam.perItemSeconds) perItem = makeCountdown(exam.perItemSeconds * 1000);
     const free = exam.navigation === 'free';
     const palette = free ? h('div', { class: 'palette', role: 'navigation', 'aria-label': 'Questions' }, items.map((_, i) => h('button', {
@@ -323,6 +356,7 @@ export function runExam(root, { sectionId, variant, store, seed = Date.now(), on
   function finish() {
     if (finished) return;
     finished = true;
+    leave();
     cancelAnimationFrame(raf);
     document.removeEventListener('keydown', onKey);
     const results = items.map((it, i) => {
@@ -332,11 +366,15 @@ export function runExam(root, { sectionId, variant, store, seed = Date.now(), on
     const { score, max } = examScore(sectionId, results.map((r) => r.score));
     items.forEach((it, i) => {
       if (responses[i] && !responses[i].skip) {
-        store.recordAnswer(sectionId, it.family, { correct: results[i].correct, ms: 0, difficulty: it.difficulty, score: it.kind === 'interval' ? results[i].score : undefined });
+        store.recordAnswer(sectionId, it.family, {
+          correct: results[i].correct, ms: Math.round(spent[i]), difficulty: it.difficulty, score: it.kind === 'interval' ? results[i].score : undefined,
+          mode: 'exam', fresh: setNumber == null, budgetMs,
+          miss: !results[i].correct && it.kind !== 'orderbook' ? mistakeRow(it, responses[i], { mode: 'exam', ms: Math.round(spent[i]) }) : undefined,
+        });
         store.srs = srsRecord(store.srs, `${sectionId}:${it.family}`, results[i].correct);
       }
     });
-    const run = { section: sectionId, mode: 'exam', mock, variant: variant?.label || null, score, max, items: items.map((it, i) => ({ family: it.family, score: results[i].score })) };
+    const run = { section: sectionId, mode: 'exam', mock, variant: variant?.label || null, score, max, timing: timingOf(exam), perfect: results.every((r) => r.correct), targetMet: runMeetsTarget({ score, max }, base.target), items: items.map((it, i) => ({ family: it.family, score: results[i].score, ms: Math.round(spent[i]) })) };
     // Only fresh full-length replicas count toward readiness; numbered sets and
     // short variants are practice (a set can be memorised on a second attempt).
     const official = !variant && setNumber == null;
@@ -355,21 +393,25 @@ export function runExam(root, { sectionId, variant, store, seed = Date.now(), on
       const detail = h('tr', { hidden: true }, h('td', { colspan: 5 }, h('div', { class: 'review-item' }, itemBody(it, { preview: false, notation }).el, feedbackBanner(it, results[i], responses[i] || { skip: true }), solutionPanel(it, { stepwise: false }))));
       const toggle = h('button', { class: 'btn small', type: 'button', onclick: () => { detail.hidden = !detail.hidden; toggle.textContent = detail.hidden ? 'Solution' : 'Hide'; } }, 'Solution');
       const r = results[i];
-      return [h('tr', {},
+      return [h('tr', { 'data-grade': r.skipped ? 'skip' : r.correct || r.score > 0 ? 'right' : 'wrong' },
         h('td', { class: 'num' }, String(i + 1)),
         h('td', {}, familyTitle(section, it.family)),
         h('td', {}, r.skipped ? h('span', { class: 'badge' }, canSkip ? 'Skipped' : 'Not answered') : r.correct || r.score > 0 ? h('span', { class: 'badge ok' }, it.kind === 'interval' ? r.score.toFixed(2) : 'Right') : h('span', { class: 'badge no' }, 'Wrong')),
         h('td', { class: 'num', style: { textAlign: 'right' } }, it.kind === 'interval' ? r.score.toFixed(2) : String(r.score)),
         h('td', { style: { textAlign: 'right' } }, toggle)), detail];
     });
-    mount(root, h('div', { class: 'panel' },
-      h('h2', { style: { marginTop: 0 } }, `${base.title}: ${sectionId === 'iv' ? `${score.toFixed(2)} of ${max} (mean ${(score / max).toFixed(2)})` : `${score} of ${max}`}`),
+    const sheet = h('div', { class: 'panel exam-review' },
+      h('h2', { class: 'score-print is-pending', style: { marginTop: 0 } }, `${base.title}: ${sectionId === 'iv' ? `${score.toFixed(2)} of ${max} (mean ${(score / max).toFixed(2)})` : `${score} of ${max}`}`),
       h('p', {}, h('span', { class: `badge ${meets ? 'ok' : 'no'}` }, meets ? 'Target met' : 'Below target'), ` Target: ${target.label}.`),
       setNumber != null ? h('p', { class: 'muted' }, `Set ${setNumber} is fixed practice: it does not count toward readiness. Fresh full exams do.`) : official ? h('p', { class: 'muted' }, ready.ready ? 'Ready: the last 3 exams all met the target. This section is safe to open.' : `Readiness streak ${ready.streak} of ${ready.needed}. The section turns ready after 3 exams in a row at target.`) : h('p', { class: 'muted' }, 'Short variant: good practice, but only the full-length exam counts toward readiness.'),
       h('table', {}, h('thead', {}, h('tr', {}, h('th', {}, '#'), h('th', {}, 'Family'), h('th', {}, 'Result'), h('th', { style: { textAlign: 'right' } }, 'Points'), h('th', {}))), h('tbody', {}, rows.flat())),
       h('div', { class: 'row', style: { marginTop: '16px' } },
         h('a', { class: 'btn primary', href: setNumber != null ? `#/s/${sectionId}/sets` : `#/s/${sectionId}` }, setNumber != null ? 'Back to sets' : 'Back to section'),
-        h('a', { class: 'btn', href: `#/run/${sectionId}/mistakes` }, 'Review mistakes'))));
+        h('a', { class: 'btn', href: `#/run/${sectionId}/mistakes` }, 'Review mistakes')));
+    mount(root, sheet);
+    setRail(1, 'Exam finished');
+    // Submit is a scan: the line sweeps the sheet, grading each row as it passes, then the score prints.
+    scanSheet(sheet, [...sheet.querySelectorAll('tr[data-grade]')]).then(() => sheet.querySelector('.score-print')?.classList.remove('is-pending'));
   }
 
   show();

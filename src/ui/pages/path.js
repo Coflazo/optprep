@@ -2,7 +2,7 @@
 // candidate's battery. First launch asks which battery they will sit.
 import { h, mount } from '../dom.js';
 import { SECTIONS } from '../../../config/sections.js';
-import { PRESETS, activatePreset, activePreset, presetSections, SOURCES, REPORTED } from '../../../config/presets.js';
+import { PRESETS, activatePreset, activePreset, presetSections } from '../../../config/presets.js';
 import { SECTION_MODULES } from '../../sections/index.js';
 import { GAMES } from '../../zapn/index.js';
 import { roadmap, nextStep } from '../../core/path.js';
@@ -11,7 +11,6 @@ import { timingAtLeastAsStrict } from '../../../config/presets.js';
 import { bubbles, field, choice, setRail } from '../sheet.js';
 import { icon } from '../icons.js';
 import { sectionMap } from './section.js';
-import { formatLine } from './format.js';
 
 export function presetPicker(store, { onDone, compact = false } = {}) {
   let picked = store.settings().preset?.id || 'full';
@@ -22,48 +21,23 @@ export function presetPicker(store, { onDone, compact = false } = {}) {
       h('button', { class: 'btn primary', type: 'button', onclick: () => { store.setSetting('preset', { id: picked }); store.setSetting('presetConfirm', false); activatePreset({ id: picked }); onDone?.(); } }, compact ? 'Save' : 'Start')));
 }
 
-function readinessLine(store, id) {
-  const cfg = SECTIONS[id];
-  const runs = store.runs(id, 'exam').filter((r) => timingAtLeastAsStrict(r, cfg.exam));
-  const r = readiness(runs, cfg.target);
-  const last = [...runs].sort((a, b) => a.finishedAt - b.finishedAt).slice(-3);
-  const fmt = (x) => (id === 'iv' ? (x.score / x.max).toFixed(2) : `${x.score}/${x.max}`);
-  const rep = REPORTED[id];
-  return h('div', { class: 'readiness' },
-    h('div', { class: 'readiness-line' },
-      h('span', {}, 'Ready gate: ', h('span', { class: 'num' }, `${r.streak} of ${r.needed}`), ' exams in a row at ', cfg.target.label, '.'),
-      r.ready ? h('span', { class: 'stamp stamp-mastered' }, 'Ready') : null),
-    h('div', { class: 'readiness-meta' },
-      h('span', {}, 'Last exams ', h('span', { class: 'num' }, last.length ? last.map(fmt).join('  ') : 'none yet')),
-      rep ? h('span', {}, 'Reported pass ', h('span', { class: 'num' }, rep.text), ' (', h('a', { href: SOURCES[rep.source].url, target: '_blank', rel: 'noopener' }, SOURCES[rep.source].label), ')') : h('span', {}, 'No pass line is reported for this task.')));
-}
-
-function sectionField(store, id, map) {
+// One quiet row per task: name, progress, and Ready when earned. Details live on the roadmap.
+function taskRow(store, id, map) {
   if (id === 'zapn') {
     const games = GAMES.filter((g) => activePreset().zapn.includes(g.id));
     const played = games.filter((g) => store.zapnRuns(g.id).length).length;
-    return h('article', { class: 'field sheet-section' },
-      h('header', { class: 'sheet-section-head' },
-        h('h3', {}, h('a', { href: '#/zapn' }, 'Zap-N games')),
-        h('span', { class: 'num muted' }, `${played} of ${games.length} played`)),
-      bubbles(games.length, played, { label: `${played} of ${games.length} games played` }),
-      h('p', { class: 'muted small-note' }, activePreset().note || 'Short cognitive games. Each has a coach and an exam mode.'),
-      h('div', { class: 'row' }, h('a', { class: 'btn', href: '#/zapn' }, 'Open games')));
+    return h('li', {}, h('a', { class: 'task-row', href: '#/zapn' },
+      h('span', { class: 'task-name' }, 'Zap-N games'),
+      h('span', { class: 'task-progress num' }, `${played} of ${games.length} played`)));
   }
   const cfg = SECTIONS[id];
-  return h('article', { class: 'field sheet-section' },
-    h('header', { class: 'sheet-section-head' },
-      h('h3', {}, h('a', { href: `#/s/${id}` }, cfg.title)),
-      h('span', { class: 'num muted' }, `${map.skillsDone} of ${map.skillsTotal} skills`)),
-    h('p', { class: 'muted small-note num-ish' }, formatLine(cfg)),
-    h('ol', { class: 'unit-strip' }, map.units.map((u) => h('li', { class: map.current && map.units[map.current.unit] === u ? 'is-current' : '' },
-      h('span', { class: 'unit-name' }, u.title),
-      bubbles(Math.min(u.total, 12), u.total > 12 ? (u.done / u.total) * 12 : u.done, { size: 'sm', label: `${u.title}: ${u.done} of ${u.total} done` })))),
-    readinessLine(store, id),
-    h('div', { class: 'row' },
-      h('a', { class: 'btn', href: `#/s/${id}` }, 'Open roadmap'),
-      h('a', { class: 'btn ghost', href: `#/run/${id}/practice` }, 'Practise'),
-      h('a', { class: 'btn ghost', href: `#/run/${id}/exam` }, 'Exam replica')));
+  const runs = store.runs(id, 'exam').filter((r) => timingAtLeastAsStrict(r, cfg.exam));
+  const ready = readiness(runs, cfg.target).ready;
+  return h('li', {}, h('a', { class: 'task-row', href: `#/s/${id}` },
+    h('span', { class: 'task-name' }, cfg.title),
+    ready ? h('span', { class: 'stamp stamp-mastered' }, 'Ready') : null,
+    h('span', { class: 'task-progress num' }, `${map.skillsDone} of ${map.skillsTotal} skills`),
+    map.due ? h('span', { class: 'stamp stamp-needs-review' }, `${map.due} to review`) : null));
 }
 
 export function pathPage(root, { store }) {
@@ -86,7 +60,7 @@ export function pathPage(root, { store }) {
   const st = store.streak();
   setRail(Math.min(1, minutes / goal), `${minutes} of ${goal} minutes today`);
 
-  const stepTitle = step ? `${SECTIONS[step.sectionId].title}: ${step.row.title}` : 'Pick a task below';
+  const stepTitle = step ? step.row.title : 'Pick a task below';
   const stepVerb = !step ? null : step.why === 'review' ? 'Review' : step.row.kind === 'lesson' ? 'Read the lesson' : step.row.kind === 'checkpoint' ? 'Take it' : 'Continue';
 
   mount(root,
@@ -100,12 +74,10 @@ export function pathPage(root, { store }) {
         h('span', { class: 'stat' }, icon('bolt', { size: 18 }), h('span', { class: 'num' }, String(store.xpTotal())), ' XP'),
         st.freezes ? h('span', { class: 'stat muted' }, h('span', { class: 'num' }, String(st.freezes)), st.freezes === 1 ? ' freeze' : ' freezes') : null)),
     step ? h('a', { class: 'next-step', href: step.row.href },
-      h('span', { class: 'next-kind' }, step.why === 'review' ? 'Review due' : 'Next on your sheet'),
+      h('span', { class: 'next-kind' }, `${step.why === 'review' ? 'Review due' : 'Next'} in ${SECTIONS[step.sectionId].title}`),
       h('span', { class: 'next-title' }, stepTitle),
       step.row.kind === 'skill' ? bubbles(5, step.row.lv, { label: `Level ${step.row.lv} of 5` }) : null,
       h('span', { class: 'btn primary' }, stepVerb, icon('arrow', { size: 18 }))) : null,
-    h('p', { class: 'preset-line muted' }, 'Training for ', h('strong', {}, active.title), '. ', h('a', { href: '#/settings' }, 'Change')),
-    h('h2', {}, 'Your sheet'),
-    h('div', { class: 'sheet-sections' }, ids.map((id) => (id === 'zapn' || mapOf[id] ? sectionField(store, id, mapOf[id]) : null))),
-    h('p', { class: 'muted small-note' }, 'One attempt every eight months. Ready means your last three full exams met this trainer\'s bar, which sits above the reported pass lines. It lowers the risk; it does not guarantee a pass.'));
+    h('div', { class: 'tasks-head' }, h('h2', {}, 'Your tasks'), h('a', { class: 'small-note muted', href: '#/settings' }, `Battery: ${active.title}`)),
+    h('ul', { class: 'task-list' }, ids.map((id) => (id === 'zapn' || mapOf[id] ? taskRow(store, id, mapOf[id]) : null))));
 }
