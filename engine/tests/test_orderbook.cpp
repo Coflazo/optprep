@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <gtest/gtest.h>
 #include "oa/orderbook.hpp"
 #include "oa/rng.hpp"
