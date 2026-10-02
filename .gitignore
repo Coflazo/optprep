@@ -14,3 +14,6 @@ backend/data/zapn/
 brag-output*/
 .wrangler/
 *.tgz
+.playwright-mcp/
+.impeccable/review/
+.impeccable/mocks/
