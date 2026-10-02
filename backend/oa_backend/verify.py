@@ -268,7 +268,7 @@ def verify(library_dir: Path, samples: int = 300_000) -> dict[str, Any]:
     engine = Engine() if available() else None
     try:
         for f in sorted(library_dir.glob("*.json")):
-            lib = json.loads(f.read_text())
+            lib = json.loads(f.read_text(encoding="utf-8"))
             sec = lib["section"]
             stats: Counter[str] = Counter()
             failures: list[dict[str, Any]] = []
@@ -323,7 +323,7 @@ def main() -> None:
     args = ap.parse_args()
     report = verify(args.library, args.samples)
     args.out.parent.mkdir(parents=True, exist_ok=True)
-    args.out.write_text(json.dumps(report, indent=1))
+    args.out.write_text(json.dumps(report, indent=1), encoding="utf-8")
     for sec, s in report["sections"].items():
         st = s["stats"]
         print(f"{sec}: {st.get('items', 0)} items, {st.get('failed', 0)} failed, {st.get('warnings', 0)} warnings, "
@@ -337,7 +337,7 @@ if __name__ == "__main__":
 
 def verify_zapn(export_file: Path) -> dict[str, Any]:
     """Re-solve JS-generated Zap-N puzzles in C++ and compare."""
-    data = json.loads(export_file.read_text())
+    data = json.loads(export_file.read_text(encoding="utf-8"))
     res: dict[str, Any] = {}
     with Engine() as e:
         bad = []
