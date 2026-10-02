@@ -10,7 +10,7 @@ import { validateDiagram, DIAGRAM_TYPES } from '../../src/study/diagrams/index.j
 import { makeRng } from '../../src/core/rng.js';
 import { parseLabel } from '../../src/sections/mm/lib.js';
 
-const SECTIONS = ['mm'];
+const SECTIONS = ['mm', 'ob'];
 const SEEDS = 40;
 
 // Families whose solutions carry no picture, with the reason. Keep this list short.
@@ -33,6 +33,10 @@ function agrees(it) {
     const [a, b, c] = sp.rows.slice(1).map((r) => Number(r.slice(1).join('')));
     const want = sp.rows[2][0] === '+' ? a + b : a - b;
     if (want !== c || Math.abs(c) !== Math.abs(it.answer.value)) return `column view ${a} ${sp.rows[2][0]} ${b} = ${c}, answer ${it.answer.value}`;
+  }
+  if ((p.diagram === 'bundle' || p.diagram === 'ledger') && it.best) {
+    const stated = p.diagram === 'bundle' ? sp.stated.profit : sp.stated.cash;
+    if (Math.abs(stated - it.best.profit) > 1e-9) return `${p.diagram} states ${stated}, best profit ${it.best.profit}`;
   }
   if (p.diagram === 'tree' && sp.total != null && it.answer?.value != null) {
     const [n, d = '1'] = String(sp.total).split('/');
