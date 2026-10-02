@@ -178,8 +178,11 @@ export default {
 
     sec('speed'),
     { type: 'callout', tone: 'speed', text: 'Write the replica once as signed cards, "+C +(A + B) −A", and read each price from its sign and your direction. That line is also your tap list, so you never have to rebuild it.' },
-    { type: 'callout', tone: 'speed', text: 'Chains cost four or five taps. Budget for that, and read the net row product by product before submitting: the A that A + B drags in is the classic leftover.' },
     { type: 'check', scope: 'signed cards as a tap list', questions: [{ make: packageQ }] },
+    { type: 'callout', tone: 'speed', text: 'Chains cost four or five taps. Budget for that, and read the net row product by product before submitting: the A that A + B drags in is the classic leftover.' },
+    { type: 'check', scope: 'the leftover', questions: [
+      { type: 'choice', q: 'After a chain trade, which product is the classic leftover?', options: ['the A that A + B drags in', 'the B inside B + C', 'none: chains are always flat'], answer: 0, traps: { 1: 'B cancels between A + B and B + C', 2: 'only a hedged chain is flat: read the net row' }, explain: 'A + B brings an A you did not want; the chain must sell or buy it back.' },
+    ] },
 
     sec('rule'),
     { type: 'callout', tone: 'rule', text: 'Missing product → build it from an overlapping bundle minus its other leg, B = (A + B) − A; hedge the target with the signed replica, + cards one way, − cards the other.' },
@@ -192,11 +195,11 @@ export default {
       ['Chain, 4 products', 'D + (B + C) − (A + B) + A', '5'],
     ] },
     { type: 'callout', tone: 'edge', text: 'Edge cases. A replica that exactly equals the target\'s quote earns 0. Four cards means four spreads crossed, so a gap that looks big on mids can vanish. If the missing product could be built two ways, either replica is a valid hedge.' },
-    { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: hidden boards hedge a card with another bundle even when the legs are quoted, because the bundle is cheaper to trade. The principle is the same: any exposure you can build from the cards, you can hedge.' },
     { type: 'check', scope: 'the contrast table', questions: [
       mc({ q: 'How many taps does the package for a mispriced C + D on a five-card chain (A, A + B, B + C, C + D, D) take?', right: '5', wrong: [['3', 'that would be a plain bundle with both legs quoted'], ['4', 'that is the three-product chain'], ['6', 'every card is traded once, and there are five']], explain: 'The target plus its four-card replica.' }),
     ] },
 
+    { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: hidden boards hedge a card with another bundle even when the legs are quoted, because the bundle is cheaper to trade. The principle is the same: any exposure you can build from the cards, you can hedge.' },
     { type: 'variation', base: `Base board: ${boardText([A, AB, BC, C])}. Sell B + C, buy the replica C + (A + B) − A: +${px(edgeSell(BC, rep))}.`, rows: [
       { change: `A's bid falls by ${px(vDropA)}`, effect: `The replica sells A, so it now costs ${px(buyCost(withA(A.bid - vDropA, A.ask)))}: profit ${px(edgeSell(BC, withA(A.bid - vDropA, A.ask)))}.` },
       { same: true, change: `A's ask rises by ${px(vAskA)}`, effect: `Nothing: this package sells A, so only A's bid counts. Profit stays ${px(edgeSell(BC, withA(A.bid, A.ask + vAskA)))}.` },

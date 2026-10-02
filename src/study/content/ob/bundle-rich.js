@@ -173,8 +173,11 @@ export default {
 
     sec('speed'),
     { type: 'callout', tone: 'speed', text: 'Add the leg asks once and hold that one number. The decision is a single comparison with the bundle bid; you never need the mids, the bundle ask or the legs\' bids for this direction.' },
-    { type: 'callout', tone: 'speed', text: 'Sanity check before tapping: the edge is usually small (a tick or a few). If your "edge" is several points, you have almost certainly priced a leg at its bid.' },
     { type: 'check', scope: 'one number, one comparison', questions: [{ make: edgeQ }] },
+    { type: 'callout', tone: 'speed', text: 'Sanity check before tapping: the edge is usually small (a tick or a few). If your "edge" is several points, you have almost certainly priced a leg at its bid.' },
+    { type: 'check', scope: 'the sanity check', questions: [
+      { type: 'choice', q: 'Your edge on a bundle comes out at 6 points. What is the likeliest cause?', options: ['a leg priced at its bid', 'a huge mispricing on the board', 'a stale bundle quote'], answer: 0, traps: { 1: 'edges are usually a tick or a few', 2: 'the quotes on the board are live' }, explain: 'A buy leg must be priced at its ask; using the bid inflates the edge.' },
+    ] },
 
     sec('rule'),
     { type: 'callout', tone: 'rule', text: 'Bundle bid > leg asks added → sell the bundle, buy one of each leg. Profit = bundle bid − leg asks added.' },
@@ -187,7 +190,6 @@ export default {
       ['Weighted bundle (2A + B)', 'bid vs 2 × ask(A) + ask(B)', 'sell bundle, buy A twice and B once'],
     ] },
     { type: 'callout', tone: 'edge', text: 'Edge cases. A bid exactly equal to the legs\' ask earns 0: not a solution. Three legs means three spreads to beat, so a three-leg bundle needs a bigger gap on mids to be rich. A distractor product never enters the package.' },
-    { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: every harder type keeps "sell the card at its bid, buy its replica at the asks". Weighted bundles repeat a leg, spreads flip a leg\'s side, chains build a missing leg from other bundles, and hidden boards use another bundle as the replica.' },
     { type: 'check', scope: 'the contrast table and edge cases', questions: [
       { make: (rng) => { const { cs, parts } = richBoard(rng, 2); const La = buyCost(parts), e = rng.pick([0, 0, 0.5]), go = e > 0; const X = card('A + B', [1, 1], r6(La + e), r6(La + e + 1)); const yes = 'Yes: one package is enough', no = 'No: the package earns nothing';
         return mc({ q: `A ${quote(cs[0])}, B ${quote(cs[1])}, A + B ${quote(X)}. Does selling A + B and buying the legs solve the board?`, right: go ? yes : no,
@@ -195,6 +197,7 @@ export default {
           explain: `${px(X.bid)} − ${px(La)} = ${px(e)}${go ? ': one package solves it.' : ': zero does not count.'}` }, rng); } },
     ] },
 
+    { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: every harder type keeps "sell the card at its bid, buy its replica at the asks". Weighted bundles repeat a leg and spreads flip a leg\'s side. Chains build a missing leg from other bundles, and hidden boards use another bundle as the replica.' },
     { type: 'variation', base: `Base: ${boardText([A2, B2, AB2])}. Sell A + B, buy A and B: +${px(edgeSell(AB2, legs2))}.`, rows: [
       { same: true, change: `The bundle ask rises by ${px(1)}`, effect: `Nothing: you sell the bundle, so only its bid counts. Profit stays ${px(edgeSell(card('A + B', [1, 1], AB2.bid, AB2.ask + 1), legs2))}.` },
       { same: true, change: `B's bid falls by ${px(1)}`, effect: `Nothing: you buy B, so its bid never enters. Profit stays ${px(edgeSell(AB2, [part(A2), part(card('B', [0, 1], B2.bid - 1, B2.ask))]))}.` },

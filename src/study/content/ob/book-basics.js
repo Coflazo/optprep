@@ -240,9 +240,11 @@ export default {
     sec('recognise', 'What a board looks like'),
     { type: 'challenge', q: `Before any teaching. A board shows three cards, each with two prices written sell price / buy price: A ${quote(A0)}; B ${quote(B0)}; A + B ${quote(AB)}. Each tap trades one unit. Find trades that leave you holding nothing at the end and still make money. Try two approaches, then write the trades and the profit.`, answer: `${cap(tradeText(richPkg))}: profit ${px(outcome(richPkg, 2).cash)}.`, explain: `If you added ${px(A0.bid)} + ${px(B0.bid)} = ${px(sellValue(legs0))} and compared it with the bundle, or bought the bundle, keep that attempt. The lesson shows which price each trade really uses, and why the answer is the bundle's ${px(AB.bid)} against the legs' ${px(buyCost(legs0))}.` },
     { type: 'text', text: `The Orderbooks task gives you **${OB.count} boards** on one clock of **${OB.totalSeconds / 60} minutes**. A board is a list of **cards**: single products (A, B, C, D), and **bundles** that hold several products at once, such as A + B, 2A + B or A − B. Each card shows two prices. You tap prices to trade one unit at a time, then submit.` },
-    { type: 'text', text: `A board counts as solved when your trades leave you holding **nothing** in every product (flat) and your cash is **above zero**. A wrong submit costs **${PENALTY} seconds**; you can then fix the trades and resubmit, or skip. The trainer's bar is ${TARGET} of ${OB.count} boards.` },
-    { type: 'check', scope: 'the task format above', questions: [
+    { type: 'check', scope: 'the task format', questions: [
       { type: 'number', q: `${OB.count} boards share one ${OB.totalSeconds / 60}-minute clock. How many seconds is that per board on average?`, answer: PER_BOARD, hints: ['Convert the clock to seconds first.', `${OB.totalSeconds} seconds shared by ${OB.count} boards.`], explain: `${OB.totalSeconds} ÷ ${OB.count} = ${PER_BOARD} seconds.` },
+    ] },
+    { type: 'text', text: `A board counts as solved when your trades leave you holding **nothing** in every product (flat) and your cash is **above zero**. A wrong submit costs **${PENALTY} seconds**; you can then fix the trades and resubmit, or skip. The trainer's bar is ${TARGET} of ${OB.count} boards.` },
+    { type: 'check', scope: 'what counts as solved', questions: [
       mc({ q: 'Which submission solves a board?', right: 'Trades that leave every product flat with cash above zero',
         wrong: [['The most profitable trades on the board, and nothing less', 'any flat position with positive cash counts; you do not need the maximum'], ['Any trades whose cash is above zero', 'cash with an open position is not locked in: the position must be flat too'], ['Flat trades, even with zero cash', 'zero cash is no profit: it must be above zero']],
         explain: 'Solved = flat in every product and cash > 0. Nothing else is scored.' }),
@@ -253,6 +255,9 @@ export default {
 
     sec('anchor', 'Start from what you know: the two prices of a shop'),
     { type: 'text', text: `A second-hand phone shop buys a phone from you for ${shop.buys} and sells you the same phone for ${shop.sells}. You always get the **lower** price when you sell and pay the **higher** one when you buy; the gap of ${shop.sells - shop.buys} is how the shop earns.` },
+    { type: 'check', scope: 'the shop', questions: [
+      { type: 'choice', q: 'The shop buys a phone at 200 and sells at 250. You buy one and sell it straight back. Your result?', options: ['−50: you pay the gap', '0: you get your money back', '+50: the shop pays you'], answer: 0, traps: { 1: 'you buy at 250 and sell at 200', 2: 'the gap goes to the shop, not to you' }, explain: 'You pay the higher price and receive the lower one: 200 − 250 = −50.' },
+    ] },
     { type: 'text', text: 'An order book is that shop with **one change**: the two prices come from other traders. The **bid** is the highest price anyone will pay, so it is where **you sell**. The **ask** (or offer) is the lowest price anyone will sell at, so it is where **you buy**. The gap, ask − bid, is the **spread**.' },
     { type: 'check', scope: 'bid, ask and spread', questions: [
       { make: (rng) => { const [a] = singles(rng, ['A'], 20, 150, [0.5, 1, 1.5]); return mc({ q: `A card reads A ${quote(a)} (bid / ask). You want to buy one A. Which price do you pay?`, right: px(a.ask),
@@ -356,11 +361,14 @@ export default {
 
     sec('speed'),
     { type: 'callout', tone: 'speed', text: `Budget: ${OB.totalSeconds} seconds for ${OB.count} boards is ${PER_BOARD} seconds each. A wrong submit burns ${PENALTY} seconds, so count each product's net to 0 **before** you submit. To reach ${TARGET} of ${OB.count} you can afford to miss only ${OB.count - TARGET}.` },
-    { type: 'callout', tone: 'speed', text: 'Scan order on every board: (1) the same product on two venues: best bid against best ask; (2) each bundle: its bid against the legs\' asks added, its ask against the legs\' bids added. Add the legs once each way and keep both totals in your head.' },
     { type: 'check', scope: 'the time budget and the scan', questions: [
       { type: 'number', q: `How many boards can you miss and still reach ${TARGET} of ${OB.count}?`, answer: OB.count - TARGET, explain: `${OB.count} − ${TARGET} = ${OB.count - TARGET}.` },
       mc({ q: 'What is the last thing to do before pressing submit?', right: 'Check that every product nets to 0',
         wrong: [['Check that the cash is as large as possible', 'any positive flat package solves the board'], ['Add one more copy of the package', 'copies only cost taps and time'], ['Nothing: the board checks it for you', `a wrong submit costs ${PENALTY} seconds`]], explain: 'Flat and cash > 0 is the whole scoring rule; the net per product is the part people get wrong.' }),
+    ] },
+    { type: 'callout', tone: 'speed', text: 'Scan order on every board: (1) the same product on two venues: best bid against best ask; (2) each bundle: its bid against the legs\' asks added, its ask against the legs\' bids added. Add the legs once each way and keep both totals in your head.' },
+    { type: 'check', scope: 'the scan order', questions: [
+      { type: 'choice', q: 'A board shows A on two venues and a bundle A + B. What do you check first?', options: ['A: best bid against best ask', 'the bundle: its mid against the legs', 'the widest spread on the board'], answer: 0, traps: { 1: 'mids never decide a trade, and venues come first in the scan', 2: 'a wide spread does not show a crossed price' }, explain: 'Step 1: the same product on two venues. Step 2: each bundle against its legs.' },
     ] },
 
     sec('rule'),
