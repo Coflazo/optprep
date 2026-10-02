@@ -69,6 +69,11 @@ function audit() {
     if (el.closest('.visually-hidden') || (el.tagName === 'INPUT' && (el.type === 'radio' || el.type === 'checkbox' || el.type === 'file'))) continue;
     if (r.height < 24 || r.width < 24) { problems.push(`small target ${Math.round(r.width)}x${Math.round(r.height)}: ${el.textContent.trim().slice(0, 30) || el.getAttribute('aria-label') || el.tagName}`); break; }
   }
+  // Chrome bars keep their own height; spare height on a short page belongs to the sheet.
+  for (const id of ['topbar', 'tabbar']) {
+    const el = document.getElementById(id);
+    if (el && getComputedStyle(el).display !== 'none' && el.getBoundingClientRect().height > 120) problems.push(`#${id} stretched to ${Math.round(el.getBoundingClientRect().height)}px`);
+  }
   for (const el of document.querySelectorAll('main *, nav *')) {
     if (!el.childNodes.length || ![...el.childNodes].some((n) => n.nodeType === 3 && n.textContent.trim())) continue;
     const fs = parseFloat(getComputedStyle(el).fontSize);

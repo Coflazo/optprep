@@ -17,9 +17,9 @@ function patternsTab(store) {
   return h('ol', { class: 'patterns' }, list.map((p) => {
     const lesson = lessonForFamily(p.sid, p.fam);
     return h('li', { class: 'pattern' },
-      h('div', { class: 'pattern-where' }, `${secTitle(p.sid)}: ${famTitle(p.sid, p.fam)}`),
+      h('h3', { class: 'pattern-title' }, famTitle(p.sid, p.fam)),
       h('p', { class: 'pattern-text' }, p.type === 'belief' ? p.text : 'You miss this skill more often than chance would explain.'),
-      h('p', { class: 'muted small-note' }, 'Misses at least ', h('span', { class: 'num' }, pct(p.lb)), ' of recent answers (', h('span', { class: 'num' }, p.n.toFixed(1)), ' weighted answers, recent ones count more).'),
+      h('p', { class: 'muted small-note' }, `${secTitle(p.sid)} · misses at least `, h('span', { class: 'num' }, pct(p.lb)), ' of recent answers (', h('span', { class: 'num' }, String(+p.n.toFixed(1))), ' weighted answers, recent ones count more).'),
       h('div', { class: 'row' },
         h('a', { class: 'btn primary', href: `#/run/${p.sid}/practice/${p.fam}` }, 'Practise 10 now'),
         lesson ? h('a', { class: 'btn ghost', href: `#/study/lesson/${lesson}` }, 'Open the lesson') : null));
