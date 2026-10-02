@@ -1,0 +1,34 @@
+name: Format report
+description: Your online assessment differed from OptPrep's replica.
+title: "Format: "
+labels: [format]
+body:
+  - type: markdown
+    attributes:
+      value: Describe the format only. Do not paste or paraphrase real test questions.
+  - type: dropdown
+    id: task
+    attributes:
+      label: Task
+      options: [80-in-8, Beat the Odds, NumberLogic, Likelihood List, Intervals, Orderbooks, Zap-N, Other]
+    validations:
+      required: true
+  - type: input
+    id: role
+    attributes:
+      label: Role you applied for
+      placeholder: Career Kickstarter, graduate trader, intern, quant trader...
+  - type: input
+    id: when
+    attributes:
+      label: Month and year you sat it
+      placeholder: March 2026
+    validations:
+      required: true
+  - type: textarea
+    id: format
+    attributes:
+      label: What was different
+      description: Number of questions, time limit, scoring, skipping, navigation, number of games.
+    validations:
+      required: true
