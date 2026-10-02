@@ -114,6 +114,9 @@ export default {
       { t: 19, say: `E = 2^{2} + 2^{4} = ${wait(TAB, fair).toString()}. Check: at least 2^{4} = 16, and it overlaps, so a bit more. Fine.` },
       { t: 24, say: `I type [${wait(TAB, fair).toString()}, ${wait(TAB, fair).toString()}].` },
     ] },
+    { type: 'check', scope: 'the slip in the think-aloud', questions: [
+      { type: 'choice', q: 'In the think-aloud, the first try said every prefix of HTHT overlaps. What was wrong?', options: ['each k must be checked', 'the coin is biased', 'k = 4 never counts'], answer: 0, traps: { 1: 'the coin is fair', 2: 'the full pattern always counts' }, explain: 'Only k = 2 and k = 4 overlap: E = 4 + 16 = 20.' },
+    ] },
 
     sec('predict'),
     { type: 'predict', question: 'Fair die: which comes sooner on average, two sixes in a row (66) or a six followed by a one (61)? By how many rolls?', answer: `61 is sooner: ${wait('61', die).toString()} rolls against ${wait('66', die).toString()} for 66, a difference of ${wait('66', die).sub(wait('61', die)).toString()}.`, explain: '66 overlaps itself (the second 6 can start a new attempt), which adds 1/P(6) = 6.' },
@@ -137,9 +140,12 @@ export default {
 
     sec('speed'),
     { type: 'callout', tone: 'speed', text: 'Fair coin: E = Σ 2^{k} over overlap lengths k. Fair die: Σ 6^{k}. So with a fair coin, a length-n pattern that overlaps only as a whole takes 2^{n}; a run of n equal letters takes 2 + 4 + … + 2^{n} = 2^{n+1} − 2.' },
-    { type: 'callout', tone: 'speed', text: 'Finding overlaps fast: check whether the last letter equals the first, then whether the last two equal the first two, and so on. Most patterns fail at k = 1, which settles them at once.' },
     { type: 'check', scope: 'the fast forms', questions: [
       { make: (rng) => { const n = rng.int(2, 6); const w = 'H'.repeat(n); return { type: 'number', q: `Fair coin: expected tosses until ${n} heads in a row?`, answer: 2 ** (n + 1) - 2, hints: ['Every prefix of a run of heads is also a suffix.', `2 + 4 + … + 2^{${n}}.`], explain: `${terms(w, fair)} = ${2 ** (n + 1) - 2} = 2^{${n + 1}} − 2.` }; } },
+    ] },
+    { type: 'callout', tone: 'speed', text: 'Finding overlaps fast: check whether the last letter equals the first, then whether the last two equal the first two, and so on. Most patterns fail at k = 1, which settles them at once.' },
+    { type: 'check', scope: 'finding overlaps', questions: [
+      { type: 'choice', q: 'Pattern HTTH with a fair coin: which overlap lengths k count?', options: ['k = 1 and k = 4', 'k = 4 only', 'k = 2 and k = 4', 'every k from 1 to 4'], answer: 0, traps: { 1: 'the last letter H equals the first letter H', 2: 'TH against HT is no overlap', 3: 'TTH against HTT is no overlap' }, explain: 'k = 1 (H, H) and k = 4 count: E = 2 + 16 = 18.' },
     ] },
 
     sec('rule'),
@@ -160,8 +166,8 @@ export default {
       { same: true, change: 'HT becomes TH', effect: `No change: TH does not overlap itself either, so it is still ${wait('TH', fair).toString()}.` },
     ] },
     { type: 'callout', tone: 'edge', text: `Edge cases: a one-letter pattern is the plain geometric wait. A biased coin changes the numbers but not the overlaps: HH with P(heads) = 1/3 takes ${terms('HH', biased(Q.of(1, 3)))} = ${wait('HH', biased(Q.of(1, 3))).toString()}. The probability of a pattern at one position says nothing about how long you wait for it.` },
-    { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: the casino argument also gives Conway\'s odds for which of two patterns comes first (Beat the Odds, pattern races), and the "how much progress survives" machine is the first-step method for any process that runs until something happens.' },
     { type: 'check', scope: 'contrast and edge cases', questions: [{ make: biasQ }] },
+    { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: the casino argument also gives Conway\'s odds for which of two patterns comes first (Beat the Odds, pattern races). The "how much progress survives" machine is the first-step method for any process that runs until something happens.' },
     { type: 'transfer',
       near: { make: (rng) => { const [w, ph] = rng.pick([['THT', Q.of(1, 2)], ['HHT', Q.of(1, 3)], ['TT', Q.of(2, 3)], ['HTH', Q.of(1, 3)]]); const p = biased(ph), e = wait(w, p); return { type: 'number', q: `A coin with P(heads) = ${ph.toString()} is tossed until ${w} appears. Expected tosses? (2 decimal places)`, answer: round(e.toNumber(), 2), tolerance: 0.006, explain: `Overlaps ${overlaps(w).join(', ')}: ${sumText(w, p)}${e.d === 1n ? '' : ` ≈ ${dec(e.toNumber(), 3)}`}.` }; } },
       far: { type: 'number', q: 'A trading signal fires in each minute with probability 1/10, independently. Expected minutes until it fires in two consecutive minutes?', answer: 10 + 100, explain: 'The pattern "fire, fire" overlaps itself at one fire: 1/(1/10) + 1/(1/100) = 10 + 100 = 110.' },

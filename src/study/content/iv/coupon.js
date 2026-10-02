@@ -78,9 +78,12 @@ export default {
       explain: `Tempting wrong answers: 3 (one box per toy), ${1 / CH.ps[2].toNumber()} (the rare green toy alone) and ${CH_SINGLE.toString()} (adding every 1/p, which double-counts waits that overlap). The lesson shows why ${CH_SINGLE.toString()} − ${CH.rows.filter((r) => r.bits === 2).reduce((a, r) => a.add(r.inv), Q.of(0)).toString()} + 1 is right.` },
     { type: 'text', text: 'The cue: keep drawing (rolling a die, opening boxes) **until every** item has appeared, and give the expected number of draws. Either the items are equally likely (a fair n-sided die) or each has its own probability (toys, stickers).' },
     { type: 'list', items: ['"A fair 8-sided die is rolled until every face has appeared. Expected number of rolls?"', '"A box holds one of 3 toys with probabilities 1/2, 1/3, 1/6. Expected boxes to collect all 3?"'] },
-    { type: 'text', text: 'Not this lesson: waiting for one **specific** item (a single geometric wait, 1/p) and waiting for a **run** such as two sixes in a row (iv/waiting-time).' },
     { type: 'check', scope: 'the recognition cues above', questions: [
       mc({ q: 'Which question is a coupon-collector question?', right: 'Roll a fair die until all six faces have appeared: expected rolls', wrong: [['Roll a fair die until a six appears: expected rolls', 'one specific face: a single geometric wait of 6'], ['Roll until two sixes in a row: expected rolls', 'a run: the waiting-time family'], ['Roll a die 6 times: expected number of different faces', 'a fixed number of rolls: linearity with indicators']], explain: 'Every face must appear, and you keep rolling until they have.' }),
+    ] },
+    { type: 'text', text: 'Not this lesson: waiting for one **specific** item (a single geometric wait, 1/p) and waiting for a **run** such as two sixes in a row (iv/waiting-time).' },
+    { type: 'check', scope: 'one item, or a run', questions: [
+      { type: 'choice', q: '"Roll a die until two sixes in a row. Expected rolls?" Which lesson is it?', options: ['waiting for a run: iv/waiting-time', 'collecting every face (this lesson)', 'a single geometric wait'], answer: 0, traps: { 1: 'nothing is collected: the target is a run', 2: 'a run needs two sixes back to back, not one six' }, explain: 'A run of consecutive results is a waiting-time question.' },
     ] },
 
     sec('why'),
@@ -129,6 +132,9 @@ export default {
       { t: 31, say: `Check: above the rare toy's 4 and above 3·H(3) = ${dec(nH(3).toNumber(), 2)}, below ${S3sum.toString()}. It passes.` },
       { t: 38, say: `Checked once only, so about 2%: roughly [${dec(TA.e.toNumber() / B3.f, 2)}, ${dec(TA.e.toNumber() * B3.f, 2)}].` },
     ] },
+    { type: 'check', scope: 'the slip in the think-aloud', questions: [
+      { type: 'choice', q: 'In the think-aloud, the first try added the pair terms. What was wrong?', options: ['the signs alternate', 'the singles were wrong', 'there are no pair terms'], answer: 0, traps: { 1: '2 + 4 + 4 = 10 is right', 2: 'inclusion-exclusion has pair terms, subtracted' }, explain: 'Singles added, pairs subtracted, the triple added back: 10 − 14/3 + 1 = 19/3.' },
+    ] },
 
     sec('predict'),
     { type: 'predict', question: `Stickers with probabilities ${PRED.ps.map((p) => p.toString()).join(', ')}. Is the expected number of boxes closer to 8, 12 or 16?`, answer: `Closer to ${PRED.near}: ${show(PRED.e)}.`, explain: `Each 1/8 sticker alone takes 8 boxes, and you need both of them: that pair alone takes 8 + 8 − 1/(1/8 + 1/8) = ${show(PRED.pair)}. The two common stickers add a little more.` },
@@ -152,6 +158,9 @@ export default {
 
     sec('speed'),
     { type: 'callout', tone: 'speed', text: `Harmonic numbers: H(4) = ${show(H(4))}, H(6) = ${show(H(6))}, H(8) = ${show(H(8))}, H(10) = ${show(H(10))}. Multiply by n. For a quick check, n(ln n + 0.577) + ½.` },
+    { type: 'check', scope: 'harmonic numbers', questions: [
+      { type: 'number', q: 'A fair six-sided die: expected rolls until every face has appeared?', answer: 14.7, tolerance: 0.01, explain: '6 × H(6) = 6 × 49/20 = 14.7.' },
+    ] },
     { type: 'callout', tone: 'speed', text: 'Sanity bounds for the weighted case: the answer is at least 1/p_{min} and at least the uniform answer n·H(n) for the same number of items (equal weights are the fastest), and below Σ 1/p. If your result is outside, a sign slipped.' },
     { type: 'check', scope: 'sanity bounds', questions: [
       mc({ q: `Three toys with probabilities ${S3.map((p) => p.toString()).join(', ')}. Which answer is possible?`, right: show(ie(S3).e), wrong: [['4', 'equal to 1/p_{min}: that would need the other toys to cost nothing extra'], [dec(nH(3).toNumber() - 0.5, 1), `below the uniform 3·H(3) = ${show(nH(3))}, which is the fastest possible`], [S3sum.toString(), `equal to Σ 1/p = ${S3sum.toString()}: that would need the waits never to overlap`]], explain: `Exact: ${show(ie(S3).e)}, above both 1/p_{min} = 4 and ${show(nH(3))}, and below ${S3sum.toString()}.` }),
@@ -176,10 +185,10 @@ export default {
       { fusion: true, change: 'Six faces become twelve AND every face becomes any three different faces', effect: `Only the first three stages of a 12-face collection: 12/12 + 12/11 + 12/10 = ${show(Q.of(12, 12).add(Q.of(12, 11)).add(Q.of(12, 10)))}. More faces make each early stage quicker, and stopping at three cuts the long tail.` },
     ] },
     { type: 'callout', tone: 'edge', text: `Edge cases: one item takes exactly 1 draw. Two items with probabilities p and q = 1 − p take 1/p + 1/q − 1. If one probability is tiny, the answer is close to 1/p_{min} plus a small correction. With four items the signed sum has ${2 ** 4 - 1} terms: group them by size (${[1, 2, 3, 4].map((k) => ie(qs([[1, 4], [1, 4], [1, 4], [1, 4]])).rows.filter((r) => r.bits === k).length).join(', ')} sets of 1, 2, 3, 4 items) so that none is lost.` },
-    { type: 'callout', tone: 'transfer', text: 'Same ideas elsewhere: stage-by-stage geometric waits appear in Beat the Odds ("expected rolls to see k different faces"), and the max-min inclusion-exclusion trick answers any "expected time until all of several independent things have happened".' },
     { type: 'check', scope: 'contrast and edge cases', questions: [
       mc({ q: 'Roll a fair die until a 6 and a 1 have both appeared. Expected rolls?', right: String(6 + 6 - 3), wrong: [['12', 'added the two waits: they overlap'], ['6', 'only the first of the two'], [dec(nH(2).toNumber(), 1), 'used the two-item uniform collector, but most rolls show neither face']], explain: 'max-min: 6 + 6 − (wait for either, chance 2/6, mean 3) = 9.' }),
     ] },
+    { type: 'callout', tone: 'transfer', text: 'Same ideas elsewhere: stage-by-stage geometric waits appear in Beat the Odds ("expected rolls to see k different faces"). The max-min inclusion-exclusion trick answers any "expected time until all of several independent things have happened".' },
     { type: 'transfer',
       near: { make: (rng) => { const n = rng.int(4, 8), q = nH(n); return ivq(`A playlist picks one of ${n} songs at random each time, repeats allowed. Expected picks until every song has played? Type the best interval.`, q.toNumber(), `Stages ${n}/${n} + … + ${n}/1 = ${show(q)}. Type ${exactEntry(q.toNumber()).text}.`); } },
       far: { type: 'number', q: 'Two servers each crash on any given day with probability 1/2, independently. Expected days until both have crashed at least once? (3 decimal places)', answer: round(2 + 2 - 4 / 3, 3), tolerance: 0.0015, explain: `max = a + b − min: each server alone waits 2 days; "either crashes" has chance 3/4 a day, so it waits 4/3. E = 2 + 2 − 4/3 = ${dec(2 + 2 - 4 / 3, 4)}.` },

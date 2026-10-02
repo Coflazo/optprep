@@ -115,6 +115,9 @@ export default {
       { t: 24, say: `Extend ${L.tStar - L.tb} steps: ${dec(L.yb, 1)} + ${dec(L.slope, 2)} × ${L.tStar - L.tb} ≈ ${dec(L.est, 1)}. Check: it keeps the data's pace. Fine.` },
       { t: 34, say: `${L.tStar - L.T} steps beyond the data, error about ±${dec(L.sd, 1)}: I type [${Math.floor(L.band.lo)}, ${Math.ceil(L.band.hi)}]. (True trend ${dec(L.truth, 1)}.)` },
     ] },
+    { type: 'check', scope: 'the slip in the think-aloud', questions: [
+      { type: 'choice', q: 'In the think-aloud, the first try took the slope from the last two points. What was wrong?', options: ['one step is mostly noise', 'the trend is not straight', 'the points were misread'], answer: 0, traps: { 1: 'the series is a straight-line trend', 2: '59.77 and 74.51 were read correctly' }, explain: 'Cluster averages cancel the noise: slope about 1.8, not 14.7.' },
+    ] },
 
     sec('predict'),
     { type: 'predict', question: 'Data from t = 1 to 30 average 40 near t = 3 and 70 near t = 28. What is the trend at t = 40?', answer: `Slope 30 ÷ 25 = ${dec(30 / 25, 2)} per step, so 70 + ${40 - 28} × ${dec(30 / 25, 2)} = ${dec(70 + 12 * (30 / 25), 1)}.`, explain: 'Walk from the nearer cluster: the last one.' },
@@ -138,9 +141,12 @@ export default {
 
     sec('speed'),
     { type: 'callout', tone: 'speed', text: 'Read cluster averages off the chart by eye: the middle of a band of five points is good enough. Rule of 70 for growth: doubling time × growth% ≈ 70. For cycles, first find where t* sits: at a whole number of cycles the cycle adds nothing.' },
-    { type: 'callout', tone: 'speed', text: 'Budget: 25 seconds to read two clusters, 15 to extend, 10 to type. A band about ±5% of the value is a safe default when you have no time to think about the error; widen it further as the target moves further beyond the data.' },
     { type: 'check', scope: 'growth by doubling', questions: [
       { make: (rng) => { const a = rng.pick([10, 20, 40]), d = rng.pick([7, 10, 14]), k = rng.pick([1, 2, 3]); return { type: 'number', q: `A trend is ${a} now and doubles every ${d} steps. What is it ${k * d} steps later?`, answer: a * 2 ** k, explain: `${k * d} steps is ${k} doublings: ${a} × 2^{${k}} = ${a * 2 ** k}.` }; } },
+    ] },
+    { type: 'callout', tone: 'speed', text: 'Budget: 25 seconds to read two clusters, 15 to extend, 10 to type. A band about ±5% of the value is a safe default when you have no time to think about the error; widen it further as the target moves further beyond the data.' },
+    { type: 'check', scope: 'the default band', questions: [
+      { type: 'choice', q: 'No time to think about the error. What default band do you type around your value?', options: ['about ±5% of the value', 'zero width on the value', 'about ±50% of the value'], answer: 0, traps: { 1: 'a point almost never contains the truth', 2: 'too wide: it throws away most of the score' }, explain: 'About ±5%, widened further the further the target sits beyond the data.' },
     ] },
 
     sec('rule'),
@@ -160,8 +166,8 @@ export default {
       { fusion: true, change: 'The target moves twice as far out AND the noise doubles', effect: `The errors multiply: twice the noise, and about ×${dec(seAt(L.T + 2 * (L.tStar - L.T)) / seAt(L.tStar), 2)} for the distance, so the band is roughly ${dec(2 * seAt(L.T + 2 * (L.tStar - L.T)) / seAt(L.tStar), 1)} times as wide.` },
     ] },
     { type: 'callout', tone: 'edge', text: 'Edge cases: a target inside the data range is interpolation, the easiest case, with the smallest error. A falling trend can cross zero: an Intervals truth is always positive, so check the direction of the slope. A target at a whole number of cycles adds nothing from the cycle.' },
-    { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: averaging to beat noise is the √n rule from the CLT, doubling times are the rule of 72 from compound growth, and "error grows with the distance beyond the data" is why forecasts widen with the horizon.' },
     { type: 'check', scope: 'contrast and edge cases', questions: [{ make: phaseQ }] },
+    { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: averaging to beat noise is the √n rule from the CLT, and doubling times are the rule of 72 from compound growth. "Error grows with the distance beyond the data" is why forecasts widen with the horizon.' },
     { type: 'transfer',
       near: { make: (rng) => { const ya = rng.int(30, 60), yb = ya + rng.int(10, 30), ta = 3, tb = 22, ts = tb + rng.int(6, 12); const s = (yb - ya) / (tb - ta), v = yb + s * (ts - tb); return { type: 'number', q: `Monthly sales are noisy. The first five months average ${ya} (centred at month ${ta}); the last five average ${yb} (centred at month ${tb}). Trend value at month ${ts}? (1 decimal place)`, answer: round(v, 1), tolerance: 0.051, explain: `Slope ${yb - ya} ÷ ${tb - ta} = ${dec(s, 3)}; ${yb} + ${dec(s, 3)} × ${ts - tb} = ${dec(v, 2)}.` }; } },
       far: { type: 'number', q: 'Outside the assessment: a stock traded 2.0 million shares a day on average in January and 2.6 million in June, five months later. If the trend continues, what in September? (2 decimal places, millions)', answer: round(2.6 + ((2.6 - 2.0) / 5) * 3, 2), tolerance: 0.006, explain: `Slope 0.6 ÷ 5 = 0.12 a month; 2.6 + 0.12 × 3 = ${dec(2.6 + 0.12 * 3, 2)} million.` },

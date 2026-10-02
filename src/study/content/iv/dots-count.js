@@ -142,6 +142,9 @@ export default {
       { t: 33, say: `Coins: about 5% error, so ±${TA.sd}. Two errors below, a bit more above.` },
       { t: 40, say: `I type ${band(TA.b)}. Expected score about ${dec(TA.b.e, 2)}.` },
     ] },
+    { type: 'check', scope: 'the slip in the think-aloud', questions: [
+      { type: 'choice', q: 'In the think-aloud, the first try called the bottom-left quadrant the same as the top-left. What was wrong?', options: ['a guess is not a count', 'the quadrants were too small', 'it should count by rows'], answer: 0, traps: { 1: 'four quadrants is a fine split', 2: 'clusters work for a scatter' }, explain: 'Counted, the quadrant held 14, not 11.' },
+    ] },
 
     sec('predict'),
     { type: 'predict', question: `You counted ${PR.n} coins and trust yourself to ±${PR.sd}. Which interval, and what does it score if the truth is inside?`, answer: `About [${dec(PR.lo, 1)}, ${dec(PR.hi, 1)}], so [${Math.floor(PR.lo)}, ${Math.ceil(PR.hi)}] in whole numbers: it scores ${dec(Math.floor(PR.lo) / Math.ceil(PR.hi), 2)} when it hits, and hits almost always.`, explain: `Expected score about ${dec(PR.e, 2)}. The extra room sits above ${PR.n}, not below.` },
@@ -165,8 +168,11 @@ export default {
 
     sec('speed'),
     { type: 'callout', tone: 'speed', text: 'You see up to about four items at a glance without counting. Count rows of a grid in chunks of two to four, and coins in clusters of three to five. Say the running total, not each item.' },
-    { type: 'callout', tone: 'speed', text: 'Budget: about 40 seconds to count, 10 to type. If time allows a second pass, recount only the densest block: agreement lets you tighten the band, disagreement tells you to widen it.' },
     { type: 'check', scope: 'chunk counting', questions: [{ make: gapQ }] },
+    { type: 'callout', tone: 'speed', text: 'Budget: about 40 seconds to count, 10 to type. If time allows a second pass, recount only the densest block: agreement lets you tighten the band, disagreement tells you to widen it.' },
+    { type: 'check', scope: 'the second pass', questions: [
+      { type: 'choice', q: 'Your second pass of the densest block agrees with the first. What do you do?', options: ['tighten the band', 'widen the band', 'recount every block'], answer: 0, traps: { 1: 'disagreement is what calls for a wider band', 2: 'time is short: recount only the densest block' }, explain: 'Agreement is evidence the count is right, so a narrower band pays.' },
+    ] },
 
     sec('rule'),
     { type: 'callout', tone: 'rule', text: 'Picture + "how many" → count in blocks (fewer side, quadrants, one shape per row) → error ≈ 1 + 2% (grid), 5% (coins), 6% (one shape) → band ≈ two errors below, a bit more above.' },
@@ -186,10 +192,10 @@ export default {
       { fusion: true, change: `The grid becomes coins AND the count doubles to ${2 * CH.n}`, effect: `Both raise the error: 5% of ${2 * CH.n} is ±${sdCoin(2 * CH.n)}, so about ${band(bestNorm(2 * CH.n, sdCoin(2 * CH.n)))}. In ratio terms the band is similar, because a bigger count also has a bigger centre.` },
     ] },
     { type: 'callout', tone: 'edge', text: 'Edge cases: a sparse grid (under 20 dots) counted twice with the same result is effectively exact, so zero width is optimal. A near-empty or near-full grid: count the rare side and the error drops to about one item.' },
-    { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: blocks and a known error drive every visual item in Intervals (the dice grid, the 200-score grid, the scale-bar path), and "count the smaller side" is the complement rule of probability in picture form.' },
     { type: 'check', scope: 'contrast and edge cases', questions: [
       mc({ q: 'A grid has 12 dots. You counted twice and got 12 both times. What do you type?', right: '[12, 12]', wrong: [['[10, 15]', 'a band for an uncertain count: this one is not uncertain'], ['[6, 24]', 'panic width on an easy count'], ['[11, 13]', 'still gives away 15% for an error you do not have']], explain: 'Two agreeing counts of a sparse grid: the count is exact, so zero width scores 1.' }),
     ] },
+    { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: blocks and a known error drive every visual item in Intervals (the dice grid, the 200-score grid, the scale-bar path). "Count the smaller side" is the complement rule of probability in picture form.' },
     { type: 'transfer',
       near: { make: (rng) => { const n = rng.int(30, 60), sd = rng.pick([1.5, 2, 2.5]), b = bestNorm(n, sd); const opt = [Math.floor(b.lo), Math.ceil(b.hi)], one = [Math.round(n - sd), Math.round(n + sd)], wide = [Math.round(n * 0.6), Math.round(n * 1.4)]; return mc({ q: `A photo of a queue: you count ${n} people with an error of about ±${sd}. Which interval is best?`, right: `[${opt.join(', ')}]`, wrong: [[`[${one.join(', ')}]`, '± one error misses about a third of the time'], [`[${wide.join(', ')}]`, 'panic width'], [`[${n}, ${n}]`, 'a point on an uncertain count']], explain: `Two errors each way, a little more above: [${opt.join(', ')}].` }, rng); } },
       far: mc({ q: `Outside the assessment: a delivery is due about ${FAR.m} minutes after noon, give or take ${FAR.sd} (one SD). You must give a window [L, U] in minutes after noon, scored L ÷ U if it arrives inside. Which window is best?`, right: `[${Math.floor(FAR.b.lo)}, ${Math.ceil(FAR.b.hi)}]`, wrong: [[`[${FAR.m - FAR.sd}, ${FAR.m + FAR.sd}]`, '± one SD misses about a third of the time'], [`[${FAR.m - 25}, ${FAR.m + 15}]`, 'leans low: a lower window has a worse ratio'], [`[${FAR.m / 2}, ${FAR.m * 2}]`, 'panic width']], explain: `An absolute error again: two SDs each way, leaning high: [${dec(FAR.b.lo, 1)}, ${dec(FAR.b.hi, 1)}].` }),

@@ -121,6 +121,9 @@ export default {
       { t: 28, say: `Check: a correction of ${Math.abs(2.5 * (G.n[6] - G.n[1]))} is well inside the usual ±${dec(SD_TOT, 0)}, so nothing looks miscounted.` },
       { t: 34, say: `Fives and twos unscanned, so about ±12, leaning high: [${Math.floor(bestNorm(G.quick, 12).lo)}, ${Math.ceil(bestNorm(G.quick, 12).hi)}]. (True total ${G.total}.)` },
     ] },
+    { type: 'check', scope: 'the slip in the think-aloud', questions: [
+      { type: 'choice', q: 'In the think-aloud, the first try corrected by 6 × (17 − 15). What was wrong?', options: ['each six is only 2.5 above 3.5', 'the ones were counted twice', 'the baseline is 600'], answer: 0, traps: { 1: '15 ones were counted once', 2: 'the baseline is 100 × 3.5 = 350' }, explain: 'The baseline already counts each die at 3.5: 2.5 × (17 − 15) = 5.' },
+    ] },
 
     sec('predict'),
     { type: 'predict', question: `You count ${PR.six} sixes and ${PR.one} ones among 100 dice, and the rest look balanced. What is your estimate of the total?`, answer: `About 350 + 2.5 × (${PR.six} − ${PR.one}) = ${PR.est}.`, explain: 'Each extra six is 2.5 above the average and each missing one is 2.5 fewer below it, so both push the total up.' },
@@ -144,9 +147,12 @@ export default {
 
     sec('speed'),
     { type: 'callout', tone: 'speed', text: 'Remember the weights 2.5, 1.5, 0.5. With 20 seconds, count sixes and ones only. With 35, add fives and twos. Never count threes and fours for a total. For a single face, sweep each row once, left to right, saying the running count; a second sweep of the same face is the best use of spare seconds.' },
-    { type: 'callout', tone: 'speed', text: `If a question comes when you have less than 15 seconds left, type the baseline band for the total, [${Math.floor(BASE.lo)}, ${Math.ceil(BASE.hi)}]: it still earns about ${dec(BASE.e, 2)} on average.` },
     { type: 'check', scope: 'weights and the fallback band', questions: [
       { make: (rng) => { const a = rng.int(12, 24), b = rng.int(12, 24); return { type: 'number', q: `You counted ${a} fives and ${b} twos. What does that add to the total (negative if it lowers it)?`, answer: 1.5 * (a - b), explain: `1.5 × (${a} − ${b}) = ${1.5 * (a - b)}.` }; } },
+    ] },
+    { type: 'callout', tone: 'speed', text: `If a question comes when you have less than 15 seconds left, type the baseline band for the total, [${Math.floor(BASE.lo)}, ${Math.ceil(BASE.hi)}]: it still earns about ${dec(BASE.e, 2)} on average.` },
+    { type: 'check', scope: 'the fallback band', questions: [
+      { type: 'choice', q: 'Less than 15 seconds left for "total pips" on a 10 × 10 grid. What do you type?', options: ['the baseline band [315, 387]', 'a single number: 350 exactly', 'nothing for this one'], answer: 0, traps: { 1: 'a zero-width guess almost never scores', 2: 'the baseline band still earns about 0.79' }, explain: 'Type the baseline band: it scores well on average.' },
     ] },
 
     sec('rule'),
@@ -167,10 +173,10 @@ export default {
       { fusion: true, change: 'The grid becomes 8 × 8 AND the question becomes "how many show a six"', effect: `Baseline 64/6 ≈ ${dec(64 / 6, 1)}, scanned for sixes only; the error stays about ±1.5 at this size.` },
     ] },
     { type: 'callout', tone: 'edge', text: 'Edge cases: a face count can be small (under 10), where one missed die is a 10% error, so the band never goes below about ±1.5. If a grid looks strongly skewed (many sixes), trust the scan over the baseline: the correction can be far bigger than 17.' },
-    { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: "expectation plus a measured correction" is how the percentile grid, the noisy series and every Fermi estimate are refined. In Beat the Odds the same 350 ± 17 appears as a CLT question about 100 dice.' },
     { type: 'check', scope: 'contrast and edge cases', questions: [
       mc({ q: 'An 8 × 8 grid of dice. What is the baseline for the total pips?', right: String(64 * 3.5), wrong: [['350', 'used 100 dice'], [String(64 * 6), 'counted every die as a six'], [String(64 * 3), 'used 3 as the average face']], explain: '64 × 3.5 = 224.' }),
     ] },
+    { type: 'callout', tone: 'transfer', text: 'Same idea elsewhere: "expectation plus a measured correction" is how the percentile grid, the noisy series and every Fermi estimate are refined. In Beat the Odds the same 350 ± 17 appears as a CLT question about 100 dice.' },
     { type: 'transfer',
       near: { make: (rng) => { const s = rng.pick([6, 8]), n6 = rng.int(3, 14), n1 = rng.int(3, 14); const base = s * s * 3.5; return { type: 'number', q: `A ${s} × ${s} grid of dice shows ${n6} sixes and ${n1} ones; the other faces look balanced. Estimate the total pips.`, answer: base + 2.5 * (n6 - n1), explain: `Baseline ${s * s} × 3.5 = ${base}; correction 2.5 × (${n6} − ${n1}) = ${2.5 * (n6 - n1)}; about ${base + 2.5 * (n6 - n1)}.` }; } },
       far: { type: 'number', q: 'Outside the assessment: 30 exams are expected to average 70. You spot 4 scores of 95 and 2 of 45; the rest look average. Estimate the class total.', answer: 30 * 70 + 4 * (95 - 70) + 2 * (45 - 70), explain: `Baseline 30 × 70 = ${30 * 70}; deviations 4 × 25 − 2 × 25 = ${4 * 25 - 2 * 25}; total about ${30 * 70 + 4 * 25 - 2 * 25}.` },
