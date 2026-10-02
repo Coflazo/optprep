@@ -38,7 +38,8 @@ def test_health_answers_state_and_analytics(server):
 
 
 def test_rejects_bad_input_and_unknown_banks(server):
-    assert call(server + "/api/state", "PUT", {"version": 2})[0] == 400
+    assert call(server + "/api/state", "PUT", {"version": 3})[0] == 400
+    assert call(server + "/api/state", "PUT", {"version": 2, "runs": []})[0] == 200
     assert call(server + "/api/answers", "POST", [{"section": "bto"}])[0] == 400
     assert call(server + "/api/banks/..%2Fsecret")[0] == 404
     assert call(server + "/api/nope")[0] == 404

@@ -161,8 +161,8 @@ def make_handler(db: Database, root: Path):
                 if self.path != "/api/state":
                     return self._json(404, {"ok": False, "error": "unknown endpoint"})
                 body = self._body()
-                if not isinstance(body, dict) or body.get("version") != 1:
-                    raise ValueError("state must be a version 1 object")
+                if not isinstance(body, dict) or body.get("version") not in (1, 2):
+                    raise ValueError("state must be a version 1 or 2 object")
                 db.put_state(body)
                 return self._json(200, {"ok": True})
             except (ValueError, json.JSONDecodeError) as e:
