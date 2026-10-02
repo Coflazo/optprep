@@ -101,3 +101,9 @@ export function timingAtLeastAsStrict(run, exam) {
 let active = applyPreset(resolvePreset(null));
 export const activePreset = () => active;
 export function activatePreset(stored) { active = applyPreset(resolvePreset(stored)); return active; }
+
+// Pass lines candidates have reported, with their source. Only verified reports belong
+// here; a task without one says so on the page.
+export const REPORTED = {
+  mm: { text: 'about 55 net, 70+ competitive', source: 'mm' },
+};

@@ -17,12 +17,7 @@ function studyLine(store, id) {
   return h('div', { class: 'muted small-note' }, h('a', { href: `#/study/book/${id}` }, 'Study'), `: ${m}/${ls.length} lessons mastered`);
 }
 
-export function formatLine(cfg) {
-  const e = cfg.exam;
-  const time = e.perItemSeconds ? `${e.perItemSeconds} s each` : `${Math.round(e.totalSeconds / 60)} min total`;
-  const scoring = { plusMinus: '+1 / −1 / skip 0', exactOrder: '1 point per exact order', ratio: 'lower ÷ upper if inside', solved: 'boards solved; wrong submit costs time' }[e.scoring];
-  return `${e.count} questions, ${time}, ${scoring}`;
-}
+export { formatLine } from './format.js';
 
 export function sectionStatus(store, id) {
   const cfg = SECTIONS[id];

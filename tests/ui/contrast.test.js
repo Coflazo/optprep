@@ -19,7 +19,7 @@ const PAIRS = [
   ['text-3', 'surface', 3], ['brand-text', 'surface', 4.5], ['brand-text', 'bg', 4.5], ['accent-text', 'accent', 4.5],
   ['correct', 'correct-bg', 4.5], ['correct', 'surface', 4.5], ['wrong', 'wrong-bg', 4.5], ['wrong', 'surface', 4.5],
   ['warn', 'warn-bg', 4.5], ['warn', 'surface', 4.5], ['ring', 'bg', 3], ['ring', 'surface', 3], ['border-strong', 'surface', 3],
-  ['brand', 'surface', 3], ['xp', 'surface', 4.5],
+  ['brand', 'surface', 3], ['xp', 'surface', 4.5], ['ink', 'surface', 3], ['ink', 'surface-2', 3], ['ink', 'brand-bg', 3],
 ];
 
 for (const name of ['light', 'dark']) {

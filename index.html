@@ -15,12 +15,26 @@
   <link rel="stylesheet" href="src/ui/styles.css">
 </head>
 <body>
+  <a class="skip" href="#view">Skip to content</a>
   <div class="app">
     <aside class="sidebar" aria-label="Main navigation">
-      <div class="brand">OptPrep</div>
+      <div class="brand"></div>
+      <div class="nav-today" id="nav-today"></div>
       <nav id="nav"></nav>
+      <div class="sidebar-foot" id="sidebar-foot"></div>
     </aside>
-    <main class="main" id="view" tabindex="-1"></main>
+    <header class="topbar" id="topbar"></header>
+    <div class="sheet">
+      <div class="rail" id="rail" role="img" aria-label="Today"></div>
+      <main class="main" id="view" tabindex="-1">
+        <div class="boot" aria-label="Loading OptPrep">
+          <img class="light-only" src="assets/wordmark.svg" alt="OptPrep">
+          <img class="dark-only" src="assets/wordmark-dark.svg" alt="">
+          <div class="boot-bar"><span></span></div>
+        </div>
+      </main>
+    </div>
+    <nav class="tabbar" id="tabbar" aria-label="Main"></nav>
   </div>
   <noscript>OptPrep needs JavaScript. Run <code>npx optprep</code> or open <a href="https://coflazo.github.io/optprep/">https://coflazo.github.io/optprep/</a>.</noscript>
   <script type="module" src="app.js"></script>
