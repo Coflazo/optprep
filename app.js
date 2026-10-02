@@ -12,6 +12,7 @@ import { setsPage, setRunPage } from './src/ui/pages/sets.js';
 import { runFeedbackSession, runExam } from './src/ui/runner.js';
 import { optiverLogo } from './src/ui/logo.js';
 import { createSync } from './src/ui/sync.js';
+import { initPwa } from './src/ui/pwa.js';
 import { studyHome, bookPage, lessonPage, cheatPage, drillPage, mixedPage, reviewPage, mistakesPage, weekPage } from './src/study/pages.js';
 import { dueLessons, openBeliefs } from './src/study/progress.js';
 
@@ -95,3 +96,4 @@ window.addEventListener('hashchange', route);
 window.addEventListener('beforeprint', () => view.querySelectorAll('[data-print-expand]:not([hidden])').forEach((b) => b.click()));
 sync.start(store).then((ok) => { if (ok && (location.hash || '#/') === '#/') route(); });
 route();
+initPwa();

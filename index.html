@@ -2,9 +2,13 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>OA Trainer</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>OptPrep · Optiver online assessment practice</title>
+  <meta name="theme-color" content="#F4F7FA" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#021129" media="(prefers-color-scheme: dark)">
+  <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
   <link rel="stylesheet" href="src/ui/styles.css">
 </head>
 <body>
@@ -15,7 +19,7 @@
     </aside>
     <main class="main" id="view" tabindex="-1"></main>
   </div>
-  <noscript>This trainer needs JavaScript. Serve the folder with ./run.sh and open http://127.0.0.1:8765.</noscript>
+  <noscript>OptPrep needs JavaScript. Run <code>npx optprep</code> or open <a href="https://coflazo.github.io/optprep/">https://coflazo.github.io/optprep/</a>.</noscript>
   <script type="module" src="app.js"></script>
 </body>
 </html>
